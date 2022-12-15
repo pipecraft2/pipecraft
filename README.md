@@ -2,7 +2,7 @@
 
 ## Release 0.1.3
 
-Download: https://github.com/SuvalineVana/pipecraft/releases/tag/v0.1.3
+Download: https://github.com/pipecraft2/pipecraft/releases/tag/v0.1.3
 
 ---
 
@@ -28,8 +28,3 @@ yarn run install_pipe
 yarn electron:serve
 ```
 
-If yarn install fails on windows
-
-```bash
-yarn config set msvs_version 2019
-```

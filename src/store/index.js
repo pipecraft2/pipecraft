@@ -113,91 +113,6 @@ export default new Vuex.Store({
               },
             ],
           },
-          // {
-          //   tooltip: "",  scriptName: "exampleScript.sh",
-          //   imageName: "exmaple:image",
-          //   serviceName: "example inputs",
-          //   selected: false,
-          //   showExtra: false,
-          //   extraInputs: [],
-          //   Inputs: [
-          //     {
-          //       name: "param1",
-          //       value: 2,
-          //       disabled: "never",
-          //       tooltip: "numeric",
-          //       type: "numeric",
-          //     },
-          //     {
-          //       name: "param2",
-          //       value: true,
-          //       disabled: "never",
-          //       tooltip: "boolean",
-          //       type: "bool",
-          //     },
-          //     {
-          //       name: "select 1",
-          //       items: ["16S", "ITS", "18S"],
-          //       value: "16S",
-          //       disabled: "never",
-          //       tooltip: "selection",
-          //       type: "select",
-          //     },
-          //     {
-          //       name: "file 1",
-          //       btnName: "select file",
-          //       value: "undefined",
-          //       disabled: "never",
-          //       tooltip: "file select",
-          //       type: "file",
-          //     },
-          //     {
-          //       name: "file 2",
-          //       btnName: "select file",
-          //       value: "undefined",
-          //       disabled: "never",
-          //       tooltip: "boolean file select",
-          //       active: false,
-          //       type: "boolfile",
-          //     },
-          //     {
-          //       name: "select 2",
-          //       items: ["16S", "ITS", "18S"],
-          //       disabled: "never",
-          //       tooltip: "boolean select",
-          //       value: "undefined",
-          //       active: true,
-          //       type: "boolselect",
-          //     },
-          //     {
-          //       name: "chips",
-          //       value: ["ACCTTGG", "GCGTAAA", "YNAAGGCCTT"],
-          //       disabled: "never",
-          //       tooltip: "IUPAC primers",
-          //       type: "chip",
-          //       iupac: true,
-          //       rules: [(v) => v.length <= 13 || "TOO MANY PRIMERS"],
-          //     },
-          //     {
-          //       name: "slide",
-          //       value: 0,
-          //       disabled: "never",
-          //       tooltip: "slide 4 life",
-          //       max: 1,
-          //       min: 0,
-          //       step: 0.01,
-          //       type: "slide",
-          //     },
-          //     {
-          //       name: "combobox",
-          //       items: ["nii", "palju", "asju", "mida", "valida"],
-          //       value: [],
-          //       disabled: "never",
-          //       tooltip: "combobreaker",
-          //       type: "combobox",
-          //     },
-          //   ],
-          // },
         ],
       },
       {
@@ -403,15 +318,6 @@ export default new Vuex.Store({
                     "ERROR: specify values >= 0.1 or leave it empty (=no action taken)",
                 ],
               },
-              // {
-              //   name: "min_size",
-              //   value: 1,
-              //   disabled: "never",
-              //   tooltip:
-              //     "discard sequences with an abundance lower than the specified value",
-              //   type: "numeric",
-              //   rules: [(v) => v >= 1 || "ERROR: specify values >= 1"],
-              // },
             ],
             Inputs: [
               {
@@ -1723,62 +1629,6 @@ export default new Vuex.Store({
               },
             ],
           },
-
-          // {
-          //   tooltip: "cluster ASVs to OTUs using vsearch",
-          //   scriptName: "xxx.sh",
-          //   imageName: "pipecraft/vsearch_dada2:1",
-          //   serviceName: "ASV_to_OTU",
-          //   disabled: "never",
-          //   selected: false,
-          //   showExtra: false,
-          //   extraInputs: [
-          //     {
-          //       name: "minOverlap",
-          //       value: 20,
-          //       disabled: "never",
-          //       tooltip: "collapseNoMismatch setting. Default = 20. The minimum overlap of base pairs between ASV sequences required to collapse them together",
-          //       type: "numeric",
-          //       rules: [(v) => v >= 1 || "ERROR: specify values >= 1"],
-          //     },
-          //     {
-          //       name: "vec",
-          //       value: true,
-          //       disabled: "never",
-          //       tooltip:
-          //         "collapseNoMismatch setting. Default = TRUE. Use the vectorized aligner. Should be turned off if sequences exceed 2kb in length",
-          //       type: "bool",
-          //     },
-          //   ],
-          //   Inputs: [
-          //     {
-          //       name: "DADA2_table",
-          //       value: "undefined",
-          //       btnName: "select rds",
-          //       disabled: "never",
-          //       tooltip:
-          //         "select the RDS file (ASV table), output from DADA2 workflow; usually in denoised_assembled.dada2/ASVs_table.denoised-merged.rds",
-          //       type: "file",
-          //     },
-          //     {
-          //       name: "collapseNoMismatch",
-          //       value: true,
-          //       disabled: "never",
-          //       tooltip:
-          //         "collapses ASVs in an ASV table that are identical up to shifts or length variation, i.e. that have no mismatches or internal indels",
-          //       type: "bool",
-          //     },
-          //     {
-          //       name: "by_length",
-          //       value: 250,
-          //       disabled: "never",
-          //       tooltip: "discard ASVs from the ASV table that are shorter than specified value (in base pairs). Value 0 means OFF; no filtering by length.",
-          //       type: "numeric",
-          //       rules: [(v) => v >= 0 || "ERROR: specify values >= 0"],
-          //     },
-          //   ],
-          // },
-
         ],
       },
 
@@ -2481,15 +2331,6 @@ export default new Vuex.Store({
                 "ERROR: specify values >= 0.1 or leave it empty (=no action taken)",
             ],
           },
-          // {
-          //   name: "min_size",
-          //   value: 1,
-          //   disabled: "never",
-          //   tooltip:
-          //     "discard sequences with an abundance lower than the specified value",
-          //   type: "numeric",
-          //   rules: [(v) => v >= 1 || "ERROR: specify values >= 1"],
-          // },
         ],
         Inputs: [
           {
@@ -3106,114 +2947,6 @@ export default new Vuex.Store({
             tooltip: "Which marker classifier will you be using?",
             type: "select",
           },
-          // ITSx
-          // {
-          //   name: "ITS_region",
-          //   items: ["ITS1", "ITS2"],
-          //   value: "ITS1",
-          //   disabled: "never",
-          //   tooltip: "Indicate which space region to focus on",
-          //   type: "select",
-          // },
-          // // Assign taxonomy
-          // {
-          //   name: "built-in classifiers",
-          //   items: ["fungallsu", "fungal_unite", "fungal_warcup"],
-          //   disabled: "never",
-          //   tooltip:
-          //     "Use one of the RDP classifier built-in fungal classifiers",
-          //   value: "fungallsu",
-          //   active: true,
-          //   type: "boolselect",
-          // },
-          // {
-          //   name: "custom ref set",
-          //   btnName: "select file",
-          //   value: "undefined",
-          //   disabled: "never",
-          //   tooltip: "Link and use a custom rained reference set",
-          //   active: false,
-          //   type: "boolfile",
-          // },
-          // // Pseudogene filtering
-          // {
-          //   name: "tax_to_target",
-          //   value: [],
-          //   disabled: "never",
-          //   tooltip:
-          //     "Add taxonomic groups to target eg. 'Metazoa' to target Metazoa",
-          //   type: "chip",
-          //   iupac: true,
-          //   rules: [(v) => v.length <= 20 || "TOO MANY GROUPS"],
-          // },
-          // {
-          //   name: "tax_to_exclude",
-          //   value: [],
-          //   disabled: "never",
-          //   tooltip:
-          //     "Add taxonomic groups to exclude eg. Chordata' to exclude vertebrates",
-          //   type: "chip",
-          //   iupac: true,
-          //   rules: [(v) => v.length <= 20 || "TOO MANY GROUPS"],
-          // },
-          // {
-          //   name: "HMM_profile_analysis",
-          //   active: false,
-          //   btnName: "select file",
-          //   value: "undefined",
-          //   disabled: "never",
-          //   tooltip:
-          //     "Removal of sequences with unusually low HMM scores, link a HMM profile",
-          //   type: "boolfile",
-          // },
-          // {
-          //   name: "gene_code",
-          //   items: [
-          //     "standard code",
-          //     "vertebrate mitochondrial",
-          //     "invertebrate mitochondrial",
-          //   ],
-          //   disabled: "never",
-          //   tooltip:
-          //     "Use one of the RDP classifier built-in fungal classifiers",
-          //   value: "standard code",
-          //   type: "select",
-          // },
-          // {
-          //   name: "start_codon",
-          //   items: [
-          //     "ATG only",
-          //     "ATG and atlter. init. codon",
-          //     "any sense codon",
-          //   ],
-          //   disabled: "never",
-          //   tooltip: "ORF start codon to use",
-          //   value: "ATG and atlter. init. codon",
-          //   type: "select",
-          // },
-          // {
-          //   name: "min_length",
-          //   value: 30,
-          //   disabled: "never",
-          //   tooltip: "minimum length (ORFfinder default 75, min 30 nt)",
-          //   type: "numeric",
-          //   rules: [(v) => v >= 1 || "ERROR: specify values >= 1"],
-          // },
-          // {
-          //   name: "ignore_nested",
-          //   value: true,
-          //   disabled: "never",
-          //   tooltip: "ignore nested ORFs",
-          //   type: "bool",
-          // },
-          // {
-          //   name: "strand",
-          //   items: ["both", "plus", "minus"],
-          //   disabled: "never",
-          //   tooltip: "ORF start codon to use",
-          //   value: "plus",
-          //   type: "select",
-          // },
         ],
       },
     ],
