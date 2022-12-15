@@ -1003,10 +1003,10 @@ export default new Vuex.Store({
           },
           {
             tooltip:
-              "tick the checkbox to filter chimeras with vsearch --uchime_denovo3 [for denoised sequences]",
+              "tick the checkbox to filter chimeras with vsearch --uchime3_denovo [for denoised sequences]",
             scriptName: "chimera_filtering_vsearch_uchime3.sh",
             imageName: "pipecraft/vsearch_dada2:1",
-            serviceName: "uchime_denovo3",
+            serviceName: "uchime3_denovo",
             selected: false,
             showExtra: false,
             extraInputs: [
@@ -1608,7 +1608,7 @@ export default new Vuex.Store({
                 btnName: "select rds",
                 disabled: "never",
                 tooltip:
-                  "select the RDS file (ASV table), output from DADA2 workflow; usually in denoised_assembled.dada2/ASVs_table.denoised-merged.rds",
+                  "select the RDS file (ASV table), output from DADA2 workflow; usually in ASVs_out.dada2/ASVs_table.denoised-merged.rds",
                 type: "file",
               },
               {
@@ -3410,14 +3410,14 @@ export default new Vuex.Store({
             value: true,
             disabled: "never",
             tooltip:
-              "collapses ASVs in an ASV table that are identical up to shifts or length variation, i.e. that have no mismatches or internal indels",
+              "collapses ASVs that are identical up to shifts or length variation, i.e. that have no mismatches or internal indels",
             type: "bool",
           },
           {
             name: "by_length",
             value: 250,
             disabled: "never",
-            tooltip: "discard ASVs from the ASV table that are shorter than specified value (in base pairs). Value 0 means OFF, no filtering by length.",
+            tooltip: "discard ASVs from the ASV table that are shorter than specified value (in base pairs). Value 0 means OFF, no filtering by length",
             type: "numeric",
             rules: [(v) => v >= 0 || "ERROR: specify values >= 0"],
           },
