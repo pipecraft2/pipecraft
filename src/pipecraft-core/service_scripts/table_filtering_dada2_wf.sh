@@ -61,6 +61,15 @@ if [[ -f $output_dir/R_run.log ]]; then
     rm -f $output_dir/R_run.log
 fi
 
+# Add "ASV" as a 1st col name
+if [[ -s $output_dir/ASV_table_lenFilt.txt ]]; then
+    sed -i "1 s|^|ASV|" $output_dir/ASV_table_lenFilt.txt
+fi
+if [[ -s $output_dir/ASVs_table_collapsed.txt ]]; then
+    sed -i "1 s|^|ASV|" $output_dir/ASVs_table_collapsed.txt
+fi
+
+
 #Make README.txt file
 end=$(date +%s)
 runtime=$((end-start))

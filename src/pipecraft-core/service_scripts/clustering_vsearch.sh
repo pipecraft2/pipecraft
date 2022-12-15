@@ -193,10 +193,10 @@ if [[ $check_compress == "gz" ]] || [[ $check_compress == "zip" ]]; then
 fi
 
 #Delete tempdirs
-if [ -d tempdir ]; then
+if [[ -d tempdir ]]; then
     rm -rf tempdir
 fi
-if [ -d tempdir2 ]; then
+if [[ -d tempdir2 ]]; then
     rm -rf tempdir2
 fi
 rm $output_dir/Glob_derep.fasta

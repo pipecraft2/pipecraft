@@ -38,7 +38,10 @@ wait
 printf "\n DADA2 removeBimeraDenovo completed \n"
 
 # Add "ASV" as a 1st col name
-sed -i "1 s|^|ASV|" ASVs_table.txt
+if [[ -s $output_dir2/ASVs_table.txt ]]; then
+    sed -i "1 s|^|ASV|" $output_dir2/ASVs_table.txt
+fi
+
 
 ###Compare 'chimera filtered fasta files per sample' and 'NOT chimera filtered fasta files per sample' to paste out only chimeric sequences per sample
 echo "pasting chimeric seqs"

@@ -12,7 +12,7 @@
     #Distributed under the GNU LESSER GENERAL PUBLIC LICENSE
     #https://github.com/benjjneb/dada2
 ##########################################################
-
+set -e
 #load variables
 collapseNoMismatch=${collapseNoMismatch}
 minOverlap=${minOverlap}
@@ -65,6 +65,13 @@ elif [[ $ASVs_lenFilt != "" ]]; then
     ASVs_lenFilt_result_fasta=$"ASV sequences after discarding < $by_length bp ASVs. Contains $ASVs_lenFilt ASVs"
 fi
 
+# Add "ASV" as a 1st col name
+if [[ -s $output_dir/ASV_table_lenFilt.txt ]]; then
+    sed -i "1 s|^|ASV|" $output_dir/ASV_table_lenFilt.txt
+fi
+if [[ -s $output_dir/ASVs_table_collapsed.txt ]]; then
+    sed -i "1 s|^|ASV|" $output_dir/ASVs_table_collapsed.txt
+fi
 
 #rm 
 if [[ -f $output_dir/R_run.log ]]; then

@@ -1578,7 +1578,7 @@ export default new Vuex.Store({
           {
             tooltip: "applies to DADA2 output ASV table (rds). Collaplse identical ASVs or/and filter ASVs by length [SELECT WORKDIR (data format, extension and read types are irrelevant here)]",
             scriptName: "table_filtering_dada2.sh",
-            imageName: "pipecraft/dada2:1.20",
+            imageName: "pipecraft/vsearch_dada2:1",
             serviceName: "DADA2 collapse ASVs",
             disabled: "never",
             selected: false,
@@ -1737,7 +1737,7 @@ export default new Vuex.Store({
             tooltip:
               "assign taxonomy with DADA2 'assignTaxonomy' function [SELECT WORKDIR that contains only ONE fasta file for the process]",
             scriptName: "taxonomy_dada2.sh",
-            imageName: "pipecraft/dada2:1.20",
+            imageName: "pipecraft/vsearch_dada2:1",
             serviceName: "DADA2 classifier",
             disabled: "never",
             selected: false,
@@ -2457,7 +2457,7 @@ export default new Vuex.Store({
       },
       {
         tooltip:
-          "if data set consists of ITS sequences; identify and extract the ITS regions using ITSx. NOTE THAT 'CLUSTERING' AND 'ASSIGN TAXONOMY' WILL BE DISABLED AT THIS STAGE if 'ITS EXTRACTOR' IS SELECTED; because ITSx outputs multiple directories for different ITS sub-regions; select appropriate ITSx output folder for CLUSTERING after the process is finished",
+          "if data set consists of ITS sequences; identify and extract the ITS regions using ITSx. Select appropriate ITSx output region for CLUSTERING after the process is finished",
         scriptName: "ITS_extractor.sh",
         imageName: "pipecraft/itsx:1.1.3",
         serviceName: "itsx",
@@ -3157,7 +3157,7 @@ export default new Vuex.Store({
       {
         tooltip: "quality filtering with DADA2 'filterAndTrim' function",
         scriptName: "quality_filtering_paired_end_dada2.sh",
-        imageName: "pipecraft/dada2:1.20",
+        imageName: "pipecraft/vsearch_dada2:1",
         serviceName: "quality filtering",
         disabled: "never",
         selected: "always",
@@ -3276,7 +3276,7 @@ export default new Vuex.Store({
       {
         tooltip: "select the denoising options for DADA2 'dada' function",
         scriptName: "assemble_paired_end_data_dada2_wf.sh",
-        imageName: "pipecraft/dada2:1.20",
+        imageName: "pipecraft/vsearch_dada2:1",
         serviceName: "denoise",
         selected: "always",
         disabled: "never",
@@ -3315,7 +3315,7 @@ export default new Vuex.Store({
         tooltip:
           "assemble paired-end reads (R1 and R2) with DADA2 'mergePairs' function",
         scriptName: "assemble_paired_end_data_dada2_wf.sh",
-        imageName: "pipecraft/dada2:1.20",
+        imageName: "pipecraft/vsearch_dada2:1",
         serviceName: "merge Pairs",
         selected: "always",
         disabled: "never",
@@ -3360,7 +3360,7 @@ export default new Vuex.Store({
       {
         tooltip: "remove chimeras with DADA2 'removeBimeraDenovo' function",
         scriptName: "chimera_filtering_dada2_wf.sh",
-        imageName: "pipecraft/dada2:1.20",
+        imageName: "pipecraft/vsearch_dada2:1",
         serviceName: "chimera filtering",
         disabled: "never",
         selected: "always",
@@ -3381,7 +3381,7 @@ export default new Vuex.Store({
       {
         tooltip: "Collaplse identical ASVs or/and filter ASVs by length",
         scriptName: "table_filtering_dada2_wf.sh",
-        imageName: "pipecraft/dada2:1.20",
+        imageName: "pipecraft/vsearch_dada2:1",
         serviceName: "filter ASV table",
         disabled: "never",
         selected: false,
@@ -3417,7 +3417,7 @@ export default new Vuex.Store({
             name: "by_length",
             value: 250,
             disabled: "never",
-            tooltip: "discard ASVs from the ASV table that are shorter than specified value (in base pairs). Value 0 means OFF; no filtering by length.",
+            tooltip: "discard ASVs from the ASV table that are shorter than specified value (in base pairs). Value 0 means OFF, no filtering by length.",
             type: "numeric",
             rules: [(v) => v >= 0 || "ERROR: specify values >= 0"],
           },
@@ -3428,7 +3428,7 @@ export default new Vuex.Store({
         tooltip:
           "assign taxonomy with DADA2 'assignTaxonomy' function against the selected database. Untick the checkbox to skip this step",
         scriptName: "taxonomy_dada2.sh",
-        imageName: "pipecraft/dada2:1.20",
+        imageName: "pipecraft/vsearch_dada2:1",
         serviceName: "assign Taxonomy",
         disabled: "never",
         selected: false,

@@ -482,6 +482,9 @@ fi
 if [[ -d tempdir ]]; then
     rm -rf tempdir
 fi
+if [[ -d tempdir2 ]]; then
+    rm -rf tempdir2
+fi
 }
 
 ########################################################################################
