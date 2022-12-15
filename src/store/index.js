@@ -1099,7 +1099,7 @@ export default new Vuex.Store({
             tooltip:
               "tick the checkbox to filter chimeras with vsearch --uchime_denovo3 [for denoised sequences]",
             scriptName: "chimera_filtering_vsearch_uchime3.sh",
-            imageName: "pipecraft/vsearch_dada2:1",
+            imageName: "pipecraft/vsearch:2.22.1",
             serviceName: "uchime_denovo3",
             selected: false,
             showExtra: false,
@@ -1128,7 +1128,7 @@ export default new Vuex.Store({
                 value: 0.98,
                 disabled: "never",
                 tooltip:
-                  "Identity percentage when performing 'pre-clustering' with --cluster_size for denovo chimera filtering with --uchime_denovo",
+                  "Identity percentage when performing 'pre-clustering' with --cluster_size for denovo chimera filtering with --uchime3_denovo",
                 max: 1,
                 min: 0,
                 step: 0.01,

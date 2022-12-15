@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# Chimera filtering
+# Chimera filtering with --uchime3_denovo for denoizsed amplicons.
 # Input = single-end fasta/fastq files. FASTQ files will be converted to FASTA files; output is only FASTA.
 
 ##########################################################
