@@ -56,7 +56,7 @@
               </v-list-item-content>
             </template>
             <v-list style="padding: 0">
-              <v-subheader style="height: 40px">CUSTOM WORKFLOWS</v-subheader>
+              <v-subheader style="height: 40px">FULL PIPELINES</v-subheader>
               <v-divider></v-divider>
               <v-list-item
                 ripple
@@ -73,134 +73,8 @@
           </v-menu>
         </v-list-item>
       </template>
-      <span>custom workflows</span>
+      <span>Full pipelines</span>
     </v-tooltip>
-    <!--     <v-list-item style="padding: 0" class="mt-5" ripple link>
-      <v-tooltip left nudge-left="10">
-        <template v-slot:activator="{ on }">
-          <v-list-item-content v-on="on" @click="push2premade('ASVs_workflow')">
-            <div>
-              <v-icon
-                style="margin-right: -11px; margin-left: 11px"
-                :style="
-                  `/premade/ASVs_workflow` == $route.path
-                    ? { color: '#1DE9B6' }
-                    : { color: 'white' }
-                "
-                >mdi-alpha-a-box</v-icon
-              >
-              <v-icon
-                style="margin-right: -11px"
-                :style="
-                  `/premade/ASVs_workflow` == $route.path
-                    ? { color: '#1DE9B6' }
-                    : { color: 'white' }
-                "
-                >mdi-alpha-s-box</v-icon
-              >
-              <v-icon
-                style="margin-right: -11px"
-                :style="
-                  `/premade/ASVs_workflow` == $route.path
-                    ? { color: '#1DE9B6' }
-                    : { color: 'white' }
-                "
-                >mdi-alpha-v-box</v-icon
-              >
-            </div>
-          </v-list-item-content>
-        </template>
-        <span>DADA2 workflow</span>
-      </v-tooltip>
-    </v-list-item> -->
-    <!--     <v-list-item style="padding: 0" class="mt-5" ripple link>
-      <v-tooltip left nudge-left="10">
-        <template v-slot:activator="{ on }">
-          <v-list-item-content
-            v-on="on"
-            @click="push2premade('Metaworks_workflow')"
-          >
-            <div>
-              <v-icon
-                style="margin-right: -10px; margin-left: 5px"
-                :style="
-                  `/premade/Metaworks_workflow` == $route.path
-                    ? { color: '#1DE9B6' }
-                    : { color: 'white' }
-                "
-                >mdi-alpha-m-box</v-icon
-              >
-              <v-icon
-                style="margin-right: -11px"
-                :style="
-                  `/premade/Metaworks_workflow` == $route.path
-                    ? { color: '#1DE9B6' }
-                    : { color: 'white' }
-                "
-                >mdi-alpha-e-box</v-icon
-              >
-              <v-icon
-                style="margin-right: -11px"
-                :style="
-                  `/premade/Metaworks_workflow` == $route.path
-                    ? { color: '#1DE9B6' }
-                    : { color: 'white' }
-                "
-                >mdi-alpha-t-box</v-icon
-              >
-              <v-icon
-                style="margin-right: -11px"
-                :style="
-                  `/premade/Metaworks_workflow` == $route.path
-                    ? { color: '#1DE9B6' }
-                    : { color: 'white' }
-                "
-                >mdi-alpha-a-box</v-icon
-              >
-            </div>
-          </v-list-item-content>
-        </template>
-        <span>DADA2 workflow</span>
-      </v-tooltip>
-    </v-list-item> -->
-    <!--     <v-list-item style="padding: 0" class="mt-5" ripple link>
-      <v-tooltip left nudge-left="10">
-        <template v-slot:activator="{ on }">
-          <v-list-item-content v-on="on" @click="push2premade('OTUs_workflow')">
-            <div>
-              <v-icon
-                style="margin-right: -11px; margin-left: 11px"
-                :style="
-                  `/premade/OTUs_workflow` == $route.path
-                    ? { color: '#1DE9B6' }
-                    : { color: 'white' }
-                "
-                >mdi-alpha-o-box</v-icon
-              >
-              <v-icon
-                style="margin-right: -11px"
-                :style="
-                  `/premade/OTUs_workflow` == $route.path
-                    ? { color: '#1DE9B6' }
-                    : { color: 'white' }
-                "
-                >mdi-alpha-t-box</v-icon
-              >
-              <v-icon
-                style="margin-right: -11px"
-                :style="
-                  `/premade/OTUs_workflow` == $route.path
-                    ? { color: '#1DE9B6' }
-                    : { color: 'white' }
-                "
-                >mdi-alpha-u-box</v-icon
-              >
-            </div>
-          </v-list-item-content>
-        </template>
-        <span>OTU workflow</span>
-      </v-tooltip>
-    </v-list-item> -->
   </v-list>
 </template>
 
