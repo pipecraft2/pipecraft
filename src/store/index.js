@@ -1005,7 +1005,7 @@ export default new Vuex.Store({
             tooltip:
               "tick the checkbox to filter chimeras with vsearch --uchime_denovo3 [for denoised sequences]",
             scriptName: "chimera_filtering_vsearch_uchime3.sh",
-            imageName: "pipecraft/vsearch:2.22.1",
+            imageName: "pipecraft/vsearch_dada2:1",
             serviceName: "uchime_denovo3",
             selected: false,
             showExtra: false,
@@ -1034,7 +1034,7 @@ export default new Vuex.Store({
                 value: 0.98,
                 disabled: "never",
                 tooltip:
-                  "Identity percentage when performing 'pre-clustering' with --cluster_size for denovo chimera filtering with --uchime3_denovo",
+                  "Identity percentage when performing 'pre-clustering' with --cluster_size for denovo chimera filtering with --uchime_denovo",
                 max: 1,
                 min: 0,
                 step: 0.01,
@@ -1205,7 +1205,7 @@ export default new Vuex.Store({
           {
             scriptName: "clustering_vsearch.sh",
             tooltip: "tick the checkbox to cluster reads with vsearch",
-            imageName: "pipecraft/vsearch:2.22.1",
+            imageName: "pipecraft/vsearch_dada2:1",
             serviceName: "vsearch",
             selected: false,
             showExtra: false,
@@ -1307,7 +1307,7 @@ export default new Vuex.Store({
           {
             scriptName: "clustering_unoise.sh",
             tooltip: "tick the checkbox to cluster reads with vsearch --cluster_unoise (and optionally remove chimeras with --uchime3_denovo)",
-            imageName: "pipecraft/vsearch:2.18",
+            imageName: "pipecraft/vsearch_dada2:1",
             serviceName: "unoise3",
             selected: false,
             showExtra: false,
@@ -2176,7 +2176,7 @@ export default new Vuex.Store({
       {
         tooltip: "assemble paired-end reads with vsearch",
         scriptName: "assemble_paired_end_data_vsearch.sh",
-        imageName: "pipecraft/vsearch:2.22.1",
+        imageName: "pipecraft/vsearch_dada2:1",
         serviceName: "merge reads",
         selected: "always",
         disabled: "single_end",
@@ -2273,7 +2273,7 @@ export default new Vuex.Store({
       {
         tooltip: "quality filtering with vsearch",
         scriptName: "quality_filtering_paired_end_vsearch.sh",
-        imageName: "pipecraft/vsearch:2.22.1",
+        imageName: "pipecraft/vsearch_dada2:1",
         serviceName: "quality filtering",
         disabled: "never",
         selected: "always",
@@ -2379,7 +2379,7 @@ export default new Vuex.Store({
         tooltip:
           "chimera filtering with vsearch. Untick the checkbox to skip this step",
         scriptName: "chimera_filtering_vsearch.sh",
-        imageName: "pipecraft/vsearch:2.22.1",
+        imageName: "pipecraft/vsearch_dada2:1",
         serviceName: "chimera filtering",
         disabled: "never",
         selected: "always",
@@ -2597,7 +2597,7 @@ export default new Vuex.Store({
       {
         tooltip: "cluster reads to OTUs with vsearch",
         scriptName: "clustering_vsearch.sh",
-        imageName: "pipecraft/vsearch:2.22.1",
+        imageName: "pipecraft/vsearch_dada2:1",
         serviceName: "clustering",
         disabled: "never",
         selected: "always",
