@@ -154,7 +154,7 @@ export default {
           Binds: Binds,
         },
         Env: envVariables,
-        // User: `${os.userInfo().uid > 0 ? os.userInfo().uid : 0}`,
+        User: `${os.userInfo().uid > 0 ? os.userInfo().uid : 0}`,
       };
       return dockerProps;
     },
