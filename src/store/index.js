@@ -935,7 +935,8 @@ export default new Vuex.Store({
                 name: "cores",
                 value: 4,
                 disabled: "never",
-                tooltip: "Number of cores to use (only for reference based chimera filtering)",
+                tooltip:
+                  "Number of cores to use (only for reference based chimera filtering)",
                 type: "numeric",
                 rules: [(v) => v >= 1 || "ERROR: specify values >= 1"],
               },
@@ -1014,7 +1015,8 @@ export default new Vuex.Store({
                 name: "cores",
                 value: 4,
                 disabled: "never",
-                tooltip: "Number of cores to use (only for reference based chimera filtering)",
+                tooltip:
+                  "Number of cores to use (only for reference based chimera filtering)",
                 type: "numeric",
                 rules: [(v) => v >= 1 || "ERROR: specify values >= 1"],
               },
@@ -1258,8 +1260,7 @@ export default new Vuex.Store({
                 name: "cores",
                 value: 4,
                 disabled: "never",
-                tooltip:
-                  "number of cores to use",
+                tooltip: "number of cores to use",
                 type: "numeric",
                 rules: [(v) => v >= 1 || "ERROR: specify values >= 1"],
               },
@@ -1306,7 +1307,8 @@ export default new Vuex.Store({
           },
           {
             scriptName: "clustering_unoise.sh",
-            tooltip: "tick the checkbox to cluster reads with vsearch --cluster_unoise (and optionally remove chimeras with --uchime3_denovo)",
+            tooltip:
+              "tick the checkbox to cluster reads with vsearch --cluster_unoise (and optionally remove chimeras with --uchime3_denovo)",
             imageName: "pipecraft/vsearch_dada2:1",
             serviceName: "unoise3",
             selected: false,
@@ -1327,7 +1329,7 @@ export default new Vuex.Store({
                 value: "global",
                 disabled: "never",
                 tooltip:
-                  'at which level to perform denoising; global = by pooling samples, individual = independently for each sample (if samples are denoised individually, reducing minsize to 4 may be more reasonable for higher sensitivity)',
+                  "at which level to perform denoising; global = by pooling samples, individual = independently for each sample (if samples are denoised individually, reducing minsize to 4 may be more reasonable for higher sensitivity)",
                 type: "select",
               },
               {
@@ -1386,8 +1388,7 @@ export default new Vuex.Store({
                 name: "cores",
                 value: 4,
                 disabled: "never",
-                tooltip:
-                  "number of cores to use",
+                tooltip: "number of cores to use",
                 type: "numeric",
                 rules: [(v) => v >= 1 || "ERROR: specify values >= 1"],
               },
@@ -1428,8 +1429,7 @@ export default new Vuex.Store({
                 name: "minsize",
                 value: 8,
                 disabled: "never",
-                tooltip:
-                  "minimum abundance of sequences for denoising",
+                tooltip: "minimum abundance of sequences for denoising",
                 type: "numeric",
                 rules: [(v) => v >= 1 || "ERROR: specify values >= 1"],
               },
@@ -1576,7 +1576,8 @@ export default new Vuex.Store({
           },
 
           {
-            tooltip: "applies to DADA2 output ASV table (rds). Collaplse identical ASVs or/and filter ASVs by length [SELECT WORKDIR (data format, extension and read types are irrelevant here)]",
+            tooltip:
+              "applies to DADA2 output ASV table (rds). Collaplse identical ASVs or/and filter ASVs by length [SELECT WORKDIR (data format, extension and read types are irrelevant here)]",
             scriptName: "table_filtering_dada2.sh",
             imageName: "pipecraft/vsearch_dada2:1",
             serviceName: "DADA2 collapse ASVs",
@@ -1588,7 +1589,8 @@ export default new Vuex.Store({
                 name: "minOverlap",
                 value: 20,
                 disabled: "never",
-                tooltip: "collapseNoMismatch setting. Default = 20. The minimum overlap of base pairs between ASV sequences required to collapse them together",
+                tooltip:
+                  "collapseNoMismatch setting. Default = 20. The minimum overlap of base pairs between ASV sequences required to collapse them together",
                 type: "numeric",
                 rules: [(v) => v >= 1 || "ERROR: specify values >= 1"],
               },
@@ -1623,7 +1625,8 @@ export default new Vuex.Store({
                 name: "by_length",
                 value: 250,
                 disabled: "never",
-                tooltip: "discard ASVs from the ASV table that are shorter than specified value (in base pairs). Value 0 means OFF; no filtering by length.",
+                tooltip:
+                  "discard ASVs from the ASV table that are shorter than specified value (in base pairs). Value 0 means OFF; no filtering by length.",
                 type: "numeric",
                 rules: [(v) => v >= 0 || "ERROR: specify values >= 0"],
               },
@@ -1637,7 +1640,8 @@ export default new Vuex.Store({
         disabled: "never",
         services: [
           {
-            tooltip: "assign taxonomy with BLAST against selected database [SELECT WORKDIR that contains only ONE fasta file for the process]",
+            tooltip:
+              "assign taxonomy with BLAST against selected database [SELECT WORKDIR that contains only ONE fasta file for the process]",
             scriptName: "taxonomy_BLAST_xml.sh",
             imageName: "pipecraft/blast:2.12",
             serviceName: "BLAST",
@@ -2389,7 +2393,8 @@ export default new Vuex.Store({
             name: "cores",
             value: 4,
             disabled: "never",
-            tooltip: "Number of cores to use (only for reference based chimera filtering)",
+            tooltip:
+              "Number of cores to use (only for reference based chimera filtering)",
             type: "numeric",
             rules: [(v) => v >= 1 || "ERROR: specify values >= 1"],
           },
@@ -2651,8 +2656,7 @@ export default new Vuex.Store({
             name: "cores",
             value: 4,
             disabled: "never",
-            tooltip:
-              "number of cores to use",
+            tooltip: "number of cores to use",
             type: "numeric",
             rules: [(v) => v >= 1 || "ERROR: specify values >= 1"],
           },
@@ -2797,8 +2801,8 @@ export default new Vuex.Store({
     ],
     Metaworks_workflow: [
       {
-        tooltip: "MetaWorks v1.11.1, ESV paired-end reads",
-        scriptName: "metaworks_paired_end_ESV.sh",
+        tooltip: "MetaWorks v1.11.2, ESV paired-end reads",
+        scriptName: "metaworks_paired_end_ESV2.sh",
         imageName: "pipecraft/metaworks:1.11.2",
         serviceName: "metaworks_ESV",
         disabled: "never",
@@ -3391,7 +3395,8 @@ export default new Vuex.Store({
             name: "minOverlap",
             value: 20,
             disabled: "never",
-            tooltip: "collapseNoMismatch setting. Default = 20. The minimum overlap of base pairs between ASV sequences required to collapse them together",
+            tooltip:
+              "collapseNoMismatch setting. Default = 20. The minimum overlap of base pairs between ASV sequences required to collapse them together",
             type: "numeric",
             rules: [(v) => v >= 1 || "ERROR: specify values >= 1"],
           },
@@ -3417,7 +3422,8 @@ export default new Vuex.Store({
             name: "by_length",
             value: 250,
             disabled: "never",
-            tooltip: "discard ASVs from the ASV table that are shorter than specified value (in base pairs). Value 0 means OFF, no filtering by length",
+            tooltip:
+              "discard ASVs from the ASV table that are shorter than specified value (in base pairs). Value 0 means OFF, no filtering by length",
             type: "numeric",
             rules: [(v) => v >= 0 || "ERROR: specify values >= 0"],
           },
@@ -3482,11 +3488,11 @@ export default new Vuex.Store({
         link: "https://benjjneb.github.io/dada2/tutorial.html",
         title: "DADA2 ASVs workflow for PAIRED-END reads",
       },
-      // Metaworks_workflow: {
-      //   info: "This workflow is based on Metaworks workflow quickstarts",
-      //   link: "https://terrimporter.github.io/MetaWorksSite/quickstart/",
-      //   title: "MetaWorks ESVs workflow for demultiplexed PAIRED-END reads",
-      // },
+      Metaworks_workflow: {
+        info: "This workflow is based on Metaworks workflow quickstarts",
+        link: "https://terrimporter.github.io/MetaWorksSite/quickstart/",
+        title: "MetaWorks ESVs workflow for demultiplexed PAIRED-END reads",
+      },
     },
   },
   getters: {
@@ -3813,15 +3819,7 @@ export default new Vuex.Store({
       }
     },
     checkCustomService(state, payload) {
-      if (
-        state[payload.name][payload.serviceIndex].serviceName == "itsx" &&
-        payload.selected == true
-      ) {
-        state[payload.name][7].selected = !payload.selected;
-        state[payload.name][8].selected = !payload.selected;
-      } else {
-        state[payload.name][payload.serviceIndex].selected = payload.selected;
-      }
+      state[payload.name][payload.serviceIndex].selected = payload.selected;
     },
   },
   actions: {},

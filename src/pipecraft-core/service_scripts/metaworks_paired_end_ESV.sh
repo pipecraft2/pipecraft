@@ -31,8 +31,9 @@ echo "wd ="
 pwd
 
 echo "activate CONDA"
+exec $SHELL
 eval "$(conda shell.bash hook)"
-conda activate MetaWorks_v1.11.1
+conda activate MetaWorks_v1.11.2
 
 #mkdir -p /.cache && chmod a+rwX /.cache
 chmod 777 / 
