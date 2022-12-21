@@ -1,12 +1,12 @@
 <a href="url"><img src="https://user-images.githubusercontent.com/18046232/145723441-51c3cbd0-7caf-485c-92d3-dbe253f6a73f.png" align="center" height="210" width="210" ></a>
 
-## Release 0.1.3
+## Release 0.1.4
 
-Download: https://github.com/pipecraft2/pipecraft/releases/tag/v0.1.3
+Download: https://github.com/pipecraft2/pipecraft/releases/tag/v0.1.4
 
 ---
 
-**USER GUIDE**: https://pipecraft2-manual.readthedocs.io/en/stable/
+**USER GUIDE**: https://pipecraft2-manual.readthedocs.io
 
 ---
 
