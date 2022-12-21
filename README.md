@@ -22,7 +22,7 @@ https://docs.docker.com/engine/install/linux-postinstall/
 Git (https://git-scm.com/downloads)
 
 ```bash
-git clone https://github.com/SuvalineVana/pipecraft
+git clone https://github.com/pipecraft2/pipecraft
 cd pipecraft
 yarn run install_pipe
 yarn electron:serve
