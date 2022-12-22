@@ -10,9 +10,9 @@
     #citation: Froslev, T.G., Kjoller, R., Bruun, H.H. et al. (2017) Algorithm for post-clustering curation of DNA amplicon data yields reliable biodiversity estimates. Nat Commun 8, 1188.
     #Distributed under the GNU LESSER GENERAL PUBLIC LICENSE
     #https://github.com/tobiasgf/lulu
-#BLAST 2.11.0+
+#BLAST 2.12.0+
     #citation: Camacho C., Coulouris G., Avagyan V., Ma N., Papadopoulos J., Bealer K., & Madden T.L. (2008) BLAST+: architecture and applications. BMC Bioinformatics 10:421. 
-#vsearch v2.18.0
+#vsearch v2.22.1
     #citation: Rognes T, Flouri T, Nichols B, Quince C, Mahé F (2016) VSEARCH: a versatile open source tool for metagenomics PeerJ 4:e2584
     #Copyright (C) 2014-2021, Torbjorn Rognes, Frederic Mahe and Tomas Flouri
     #Distributed under the GNU General Public License version 3 by the Free Software Foundation
