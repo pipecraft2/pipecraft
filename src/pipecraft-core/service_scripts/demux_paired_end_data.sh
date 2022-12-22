@@ -263,7 +263,7 @@ runtime=$((end-start))
 #Make README.txt file for demultiplexed reads
 printf "Files in 'demultiplex_out' directory represent per sample sequence files, 
 that were generated based on the specified indexes file ($oligos_file).
-[$output_dir/index_*fasta files(s) is $oligos_file but with added search window size for cutadapt].
+[demultiplex_out/index_*fasta files(s) is $oligos_file but with added search window size for cutadapt].
 
 Paired-end data, has been demultiplexed taken into account that some sequences
 may be also in reverse complementary orientation.\n
