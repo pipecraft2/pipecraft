@@ -204,27 +204,6 @@ while read LINE; do
     cd ..
 done < tempdir2/paired_end_files.txt
 
-# #merge unknowns
-# unknowns_R1=$(ls $output_dir | grep -E "round1-|round2-" | grep ".R1")
-# unknowns_R2=$(ls $output_dir | grep -E "round1-|round2-" | grep ".R2")
-
-# if [[ -z "$unknowns_R1" ]]; then
-#     :
-# else
-#     cd $output_dir
-#     cat $unknowns_R1 > unknown.R1.$newextension
-#     rm $unknowns_R1
-#     cd ..
-# fi
-# if [[ -z "$unknowns_R2" ]]; then
-#     :
-# else
-#     cd $output_dir
-#     cat $unknowns_R2 > unknown.R2.$newextension
-#     rm $unknowns_R2
-#     cd ..
-# fi
-
 # Make patterns file for assigning sample names to files if using DUAL indexes
 if [[ $tag = "dual" ]]; then
     ls $output_dir | grep ".R1.$newextension" | \
