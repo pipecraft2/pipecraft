@@ -324,20 +324,27 @@ while read LINE; do
     count1=$(echo $LINE | awk '{print $2}')
     printf "$file1\t$count1\n" >> $output_dir/seq_count_summary.txt    
 done < tempdir2/seq_count.txt
-printf "\nPROCESSED files:\n" >> $output_dir/seq_count_summary.txt
+printf "\nSAMPLES:\n" >> $output_dir/seq_count_summary.txt
 while read LINE; do
     file1=$(echo $LINE | awk '{print $1}')
     count1=$(echo $LINE | awk '{print $2}')
     printf "$file1\t$count1\n" >> $output_dir/seq_count_summary.txt    
-done < tempdir2/seq_count_after.txt && rm -rf tempdir2
+done < tempdir2/seq_count_after.txt
+
+#remove "/input/" from $output_dir/seq_count_summary.txt
+sed -i 's/\/input\///' $output_dir/seq_count_summary.txt
 
 if [[ -f tempdir2/paired_end_files.txt ]]; then
-    printf "\n[paired R2 file has the same number of sequencs as R1 file]\n" >> $output_dir/seq_count_summary.txt  
+    printf "\n[paired R2 file has the same number of sequencs as corresponding R1 file]\n" >> $output_dir/seq_count_summary.txt
 fi 
 
 #Delete decompressed files if original set of files were compressed
 if [[ $check_compress == "gz" ]] || [[ $check_compress == "zip" ]]; then
     rm *.$newextension
+fi
+#remove tempdir2
+if [[ -d tempdir2 ]]; then
+    rm -rf tempdir2
 fi
 }
 

@@ -3,7 +3,6 @@
 # Demultiplex SINGLE-END reads.
 # Demultiplexing of single-end reads in mixed orientation using paired-end or single-end indexes is supported.
 # Input = a directory with fastq/fasta files; and indexes file in fasta format (header as a sample name).
-# Examples of indexes format in "indexes_file_example.txt"
 
 ##########################################################
 ###Third-party applications:
@@ -11,7 +10,7 @@
     #citation: Martin, Marcel (2011) Cutadapt removes adapter sequences from high-throughput sequencing reads. EMBnet.journal, 17(1), 10-12.
     #Distributed under the MIT license
     #https://cutadapt.readthedocs.io/en/stable/index.html
-#seqkit v2.0.0
+#seqkit v2.3.0
     #citation: Shen W, Le S, Li Y, Hu F (2016) SeqKit: A Cross-Platform and Ultrafast Toolkit for FASTA/Q File Manipulation. PLOS ONE 11(10): e0163962. https://doi.org/10.1371/journal.pone.0163962
     #Distributed under the MIT License
     #Copyright © 2016-2019 Wei Shen, 2019 Oxford Nanopore Technologies.
@@ -34,6 +33,7 @@ fi
 minlen=$"--minimum-length ${min_seq_length}"
 cores=$"--cores ${cores}"
 overlap=$"--overlap ${overlap}"
+search_window=${search_window}
 ###############################
 ###############################
 
@@ -71,44 +71,53 @@ for file in *.$extension; do
         #dual indexes
         #make rev indexes file
         seqkit seq --quiet -n tempdir2/ValidatedBarcodesFileForDemux.fasta.temp | \
-        sed -e 's/^/>/' > tempdir2/paired_barcodes_headers.temp
+        sed -e 's/^/>/' > tempdir2/sample_names.txt
         grep "\..." tempdir2/ValidatedBarcodesFileForDemux.fasta.temp | \
-        awk 'BEGIN{FS="."}{print $4}' > tempdir2/paired_barcodes_seq.temp
-        touch tempdir2/barcodes_rev.fasta
+        awk 'BEGIN{FS="."}{print $4}' > tempdir2/index_rev.temp
+        touch tempdir2/index_rev.fasta
         i=1
         p=$"p"
         while read HEADER; do
-            echo $HEADER >> tempdir2/barcodes_rev.fasta
-            sed --quiet $i$p tempdir2/paired_barcodes_seq.temp >> tempdir2/barcodes_rev.fasta
+            echo $HEADER >> tempdir2/index_rev.fasta
+            sed --quiet $i$p tempdir2/index_rev.temp >> tempdir2/index_rev.fasta
             i=$(($i + 1))
-        done < tempdir2/paired_barcodes_headers.temp
+        done < tempdir2/sample_names.txt
+        rm tempdir2/index_rev.temp
         #make fwd indexes file
-        sed -e 's/\.\.\..*//' < tempdir2/ValidatedBarcodesFileForDemux.fasta.temp > tempdir2/barcodes_fwd.fasta
+        sed -e 's/\.\.\..*//' < tempdir2/ValidatedBarcodesFileForDemux.fasta.temp > tempdir2/index_fwd.fasta
         #reverse complementary REV indexes
-        checkerror=$(seqkit seq --quiet -t dna -r -p tempdir2/barcodes_rev.fasta > tempdir2/barcodes_rev_RC.fasta 2>&1)
+        checkerror=$(seqkit seq --quiet -t dna -r -p tempdir2/index_rev.fasta > tempdir2/index_revRC.fasta 2>&1)
         check_app_error
         #Make linked indexes files where REV indexes are in RC orientation
-        tr "\n" "\t" < tempdir2/barcodes_fwd.fasta | sed -e 's/>/\n>/g' | sed '/^\n*$/d' > tempdir2/barcodes_fwd.temp
-        tr "\n" "\t" < tempdir2/barcodes_rev_RC.fasta | sed -e 's/>/\n>/g' | sed '/^\n*$/d' > tempdir2/barcodes_rev_RC.temp
-        awk 'BEGIN {FS=OFS="\t"} FNR==NR{a[$1]=$2;next} ($1 in a) {print $1,a[$1],$2}' tempdir2/barcodes_fwd.temp tempdir2/barcodes_rev_RC.temp > tempdir2/linked_barcodes_revRC.temp
-        sed -e 's/\t/\n/' < tempdir2/linked_barcodes_revRC.temp | sed -e 's/\t/\.\.\./' > tempdir2/linked_barcodes_revRC.fasta
+        tr "\n" "\t" < tempdir2/index_fwd.fasta | sed -e 's/>/\n>/g' | sed '/^\n*$/d' > tempdir2/index_fwd.temp
+        tr "\n" "\t" < tempdir2/index_revRC.fasta | sed -e 's/>/\n>/g' | sed '/^\n*$/d' > tempdir2/index_revRC.temp
+        sed -i "s/\t/\tXN{$search_window}/" tempdir2/index_fwd.temp #add search window size to indexes
+        sed -i "s/\t$/XN{$search_window}/" tempdir2/index_revRC.temp #add search window size to indexes
+        awk 'BEGIN {FS=OFS="\t"} FNR==NR{a[$1]=$2;next} ($1 in a) {print $1,a[$1],$2}' tempdir2/index_fwd.temp tempdir2/index_revRC.temp > tempdir2/paired_index.temp
+        sed -e 's/\t/\n/' < tempdir2/paired_index.temp | sed -e 's/\t/\.\.\./' > tempdir2/index_file.fasta
 
         #assign demux variables
-        #REV indexes as 5'-3' orientation for cutadapt search 
-        indexes_file_in=$"-g file:tempdir2/linked_barcodes_revRC.fasta"
+        #REV indexes are 5'-3' orientation for cutadapt search 
+        mv tempdir2/index_file.fasta $output_dir #move edited indexes file with window size into output_dir 
+        indexes_file_in=$"-g file:$output_dir/index_file.fasta"
         out=$"-o $output_dir/{name}.$newextension"
     else
         #single indexes
+        # Add search window size to indexes 
+        sed -i '/^>/!s/^/search_window/' tempdir2/ValidatedBarcodesFileForDemux.fasta.temp 
+        sed -i "s/search_window/XN{$search_window}/" tempdir2/ValidatedBarcodesFileForDemux.fasta.temp 
+        #Move edited indexes file with window size into output_dir 
+        mv tempdir2/ValidatedBarcodesFileForDemux.fasta.temp tempdir2/index_file.fasta
+        mv tempdir2/index_file.fasta $output_dir
         #assign demux variables
-        indexes_file_in=$"-g file:tempdir2/ValidatedBarcodesFileForDemux.fasta.temp"
+        indexes_file_in=$"-g file:$output_dir/index_file.fasta" 
         out=$"-o $output_dir/{name}.$newextension"
     fi
 
     ############################
     ### Start demultiplexing ###
     ############################
-    printf "\n# Demultiplexing ...  \n"
-    printf "   (this may take some time for large files)\n"
+    printf "\n# Demultiplexing with $tag indexes ... \n"
     ### Demultiplex with cutadapt
     checkerror=$(cutadapt --quiet \
     $indexes_file_in \
@@ -139,7 +148,9 @@ runtime=$((end-start))
 
 #Make README.txt file for demultiplexed reads
 printf "Files in 'demultiplex_out' directory represent per sample sequence files, 
-that were generated based on the specified indexes file ($indexes_file).
+that were generated based on the specified indexes file ($output_dir/index_file.fasta).
+[$output_dir/index_file.fasta is $indexes_file but with added search window size for cutadapt].
+
 Data, has been demultiplexed taken into account that some sequences
 may be also in reverse complementary orientation.
 Sequences where reverse complementary indexes have been found 
@@ -155,25 +166,27 @@ then sequence orientation is 5'-3'.\n
 
 IF SEQUENCE YIELD PER SAMPLE IS LOW (OR ZERO), DOUBLE-CHECK THE INDEXES FORMATTING.\n
 RUNNING THE PROCESS SEVERAL TIMES IN THE SAME DIRECTORY WILL OVERWRITE ALL THE OUTPUTS!
-\nSummary of sequence counts in 'seq_count_summary.txt'\n
-\n\nTotal run time was $runtime sec.\n\n\n
+
+Summary of sequence counts in 'seq_count_summary.txt'
+
+Total run time was $runtime sec.
+
 ##################################################################
 ###Third-party applications for this process [PLEASE CITE]:
 #cutadapt v3.5 for demultiplexing
     #citation: Martin, Marcel (2011) Cutadapt removes adapter sequences from high-throughput sequencing reads. EMBnet.journal, 17(1), 10-12.
     #https://cutadapt.readthedocs.io/en/stable/index.html
-#seqkit v2.0.0 for validating indexes file
+#seqkit v2.3.0 for validating indexes file
     #citation: Shen W, Le S, Li Y, Hu F (2016) SeqKit: A Cross-Platform and Ultrafast Toolkit for FASTA/Q File Manipulation. PLOS ONE 11(10): e0163962. https://doi.org/10.1371/journal.pone.0163962
     #https://bioinf.shenwei.me/seqkit/
 ##################################################################" > $output_dir/README.txt
 
-
-###Done, files in $output_dir folder
-printf "\nDONE\n"
+#Done
+printf "\nDemultiplexing DONE"
 printf "Data in directory $output_dir\n"
 printf "Summary of sequence counts in '$output_dir/seq_count_summary.txt'\n"
-printf "Check README.txt file in $output_dir for further information about the process.\n\n"
-printf "Total time: $runtime sec.\n\n"
+printf "Check README.txt file in $output_dir for further information about the process.\n"
+printf "Total time: $runtime sec.\n"
 
 #variables for all services
 echo "workingDir=/$output_dir"
