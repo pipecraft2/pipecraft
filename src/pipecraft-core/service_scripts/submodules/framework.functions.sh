@@ -735,7 +735,7 @@ fi
 function check_indexes_file () {
 printf "\nValidating indexes file ...\n"
     #is fasta format?
-cat $indexes_file | seqkit seq -v > tempdir2/ValidatedBarcodesFileForDemux.fasta.temp
+cat $indexes_file | seqkit seq -v -w 0 > tempdir2/ValidatedBarcodesFileForDemux.fasta.temp
 if [[ "$?" != "0" ]]; then
     printf '%s\n' "ERROR]: 'indexes file' not in correct fasta format. 
 Please check the indexes file and format according to the 'indexes_file_example.txt'
