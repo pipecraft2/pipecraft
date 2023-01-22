@@ -24,13 +24,13 @@ for line in demux_files:
 	#el[1] reverse index name
 
 	#open fwd index file and seach index seq for matching index name
-	with open("tempdir2/barcodes_fwd.uniq.renamed.fasta") as indexes_fwd:
+	with open("tempdir2/index_fwd.uniq.renamed.fasta") as indexes_fwd:
 		for fwdrecord in SeqIO.parse(indexes_fwd, "fasta"):
 			#print(el[0])
 			if el[0] == fwdrecord.id:
 
 				#open rev index file and seach index seq for matching index name
-				with open("tempdir2/barcodes_rev.uniq.renamed.fasta") as indexes_rev:
+				with open("tempdir2/index_rev.uniq.renamed.fasta") as indexes_rev:
 					for revrecord in SeqIO.parse(indexes_rev, "fasta"):
 						#print(el[1])
 						if el[1] == revrecord.id:

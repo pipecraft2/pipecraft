@@ -92,7 +92,7 @@ export default new Vuex.Store({
                   "https://pipecraft2-manual.readthedocs.io/en/stable/user_guide.html#indexes-file-example-fasta-formatted",
                 disabled: "never",
                 type: "link",
-                tooltip: "link to PipeCraft manual page, index file examples",
+                tooltip: "link to PipeCraft2 manual page, index file examples",
               },
               {
                 name: "index_mismatch",
@@ -111,6 +111,16 @@ export default new Vuex.Store({
                 type: "numeric",
                 rules: [(v) => v >= 1 || "ERROR: specify values >= 1"],
               },
+              {
+                name: "search_window",
+                value: 35,
+                disabled: "never",
+                tooltip:
+                  "the index search window size. The default 35 means that the forward index is searched among the first 35 bp and the reverse index among the last 35 bp. This search restriction prevents random index matches in the middle of the sequence",
+                type: "numeric",
+                rules: [(v) => v >= 1 || "ERROR: specify values >= 1"],
+              },
+
             ],
           },
         ],
@@ -2028,7 +2038,7 @@ export default new Vuex.Store({
               "https://pipecraft2-manual.readthedocs.io/en/stable/user_guide.html#indexes-file-example-fasta-formatted",
             disabled: "never",
             type: "link",
-            tooltip: "link to PipeCraft manual page, index file examples",
+            tooltip: "link to PipeCraft2 manual page, index file examples",
           },
           {
             name: "index_mismatch",
@@ -2044,6 +2054,15 @@ export default new Vuex.Store({
             disabled: "never",
             tooltip:
               "number of overlap bases with the index. Recommended overlap is the max length of the index for confident sequence assignments to samples in the indexes file",
+            type: "numeric",
+            rules: [(v) => v >= 1 || "ERROR: specify values >= 1"],
+          },
+          {
+            name: "search_window",
+            value: 35,
+            disabled: "never",
+            tooltip:
+              "the index search window size. The default 35 means that the forward index is searched among the first 35 bp and the reverse index among the last 35 bp. This search restriction prevents random index matches in the middle of the sequence",
             type: "numeric",
             rules: [(v) => v >= 1 || "ERROR: specify values >= 1"],
           },
@@ -3017,7 +3036,7 @@ export default new Vuex.Store({
               "https://pipecraft2-manual.readthedocs.io/en/stable/user_guide.html#indexes-file-example-fasta-formatted",
             disabled: "never",
             type: "link",
-            tooltip: "link to PipeCraft manual page, index file examples",
+            tooltip: "link to PipeCraft2 manual page, index file examples",
           },
           {
             name: "index_mismatch",
@@ -3033,6 +3052,15 @@ export default new Vuex.Store({
             disabled: "never",
             tooltip:
               "number of overlap bases with the index. Recommended overlap is the max length of the index for confident sequence assignments to samples in the indexes file",
+            type: "numeric",
+            rules: [(v) => v >= 1 || "ERROR: specify values >= 1"],
+          },
+          {
+            name: "search_window",
+            value: 35,
+            disabled: "never",
+            tooltip:
+              "the index search window size. The default 35 means that the forward index is searched among the first 35 bp and the reverse index among the last 35 bp. This search restriction prevents random index matches in the middle of the sequence",
             type: "numeric",
             rules: [(v) => v >= 1 || "ERROR: specify values >= 1"],
           },
