@@ -1933,6 +1933,78 @@ export default new Vuex.Store({
             ],
           },
           {
+            tooltip: "pseudogene fintering with ORFfinder (search open reading frames)",
+            scriptName: "ORFfinder.sh",
+            imageName: "pipecraft/metaworks:1.11.2",
+            serviceName: "pseudogene filtering",
+            selected: false,
+            showExtra: false,
+            extraInputs: [
+              {
+                name: "ignore_nested",
+                value: true,
+                disabled: "never",
+                tooltip:
+                  "ignore nested ORFs (completely placed within another)",
+                type: "bool",
+              },
+              {
+                name: "strand",
+                items: ["plus", "minus", "both"],
+                value: "plus",
+                disabled: "never",
+                tooltip:
+                  "output ORFs on specified strand only",
+                type: "select",
+              },
+            ],
+            Inputs: [
+              {
+                name: "rep_seqs_file",
+                active: false,
+                btnName: "select file",
+                value: "undefined",
+                disabled: "never",
+                tooltip:
+                  "select fasta formatted sequence file containing your OTU/ASV reads",
+                type: "boolfile",
+              },
+              {
+                name: "min_len",
+                value: 300,
+                disabled: "never",
+                tooltip:
+                  "minimum length of an output sequence",
+                type: "numeric",
+                rules: [(v) => v >= 1 || "ERROR: specify values >= 1"],
+              },
+              {
+                name: "genetic_code",
+                value: 5,
+                disabled: "never",
+                tooltip:
+                  "5 = invertebrate mitochondrial code. Specify values from 1 to 33; see https://www.ncbi.nlm.nih.gov/Taxonomy/Utils/wprintgc.cgi",
+                type: "numeric",
+                rules: [
+                  (v) => v >= 1 || "ERROR: specify values >= 1",
+                  (v) => v <= 34 || "ERROR: specify values <= 34",
+                ],
+              },
+              {
+                name: "start_codon",
+                value: 2,
+                disabled: "never",
+                tooltip:
+                  "0 = ATG only; 1 = ATG and alternative initation codons; 2 = any sense codon",
+                type: "numeric",
+                rules: [
+                  (v) => v >= 1 || "ERROR: specify values >= 1",
+                  (v) => v <= 34 || "ERROR: specify values <= 34",
+                ],
+              },
+            ],
+          },
+          {
             tooltip:
               "DEICODE (Robust Aitchison PCA on sparse compositional metabarcoding data)",
             scriptName: "DEICODE.sh",

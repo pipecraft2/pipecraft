@@ -87,7 +87,7 @@ if [ -d tempdir ]; then
 fi
 mkdir -p tempdir
 
-### Rename sequences to md5 or sha1
+### Rename sequences to md5
     # and dereplication of individual samples, add sample ID to the header
 derep_rename () {
   samp_name=$(basename $1 | awk 'BEGIN{FS="."} {$NF=""; print $0}' | sed 's/ //g')

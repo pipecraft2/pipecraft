@@ -134,38 +134,66 @@ printf "# Configuration file for MetaWorks v1.11.2
 
 # Author: Teresita M. Porter
 # Date: August 30, 2022
-# This is slightly modified version for PipeCraft2, by Sten Anslan (September 2022). Core processes of MetaWorks are not edited.
+
+############################################################################
+# How to use MetaWorks v1
+############################################################################
+
+# 1. CREATE the MetaWorks_v1 environment, run this step one time only
+# conda env create -f environment.yml
+
+# 2. ACTIVATE the MetaWorks_v1 environment, always do this before running the pipeline
+# conda activate MetaWorks_v1.11.2
+
+# 3. EDIT the config.yaml file so customize directory names, paths, and choose your options for your MetaWorks run (below)
+
+# 4. RUN snakemake
+# snakemake --jobs 8 --snakefile snakefile_ESV --configfile config_ESV.yaml
+
+# 5. DEACTIVATE the conda environment after the run is finished
+# conda deactivate
+
+# For instructions on installing conda, ORFfinder, or custom reference sets please refer to the MetaWorks website at https://terrimporter.github.io/MetaWorksSite/tutorial
+
 ############################################################################
 # Identify raw read files
 
 # This directory should contain the compressed paired-end Illumina reads, ex. *.fastq.gz
-raw: '/input/'
+raw: "/home/sten/Desktop/test/metaworks_test"
 
 # Indicate 'sample' and 'read' wildcards from the raw filenames in the data folder (above):
-raw_sample_read_wildcards: '/input/$filename_structure.$extension'
+# Ex. Sample filename structure:
+# 	SITE-CONDITION-REPLICATE_S1_L001_R1_001.fastq.gz
+# 	{sample}_L001_R{read}_001.fastq.gz
+raw_sample_read_wildcards: "/home/sten/Desktop/test/metaworks_test/{sample}_R{read}.fq.gz"
 
 # SEQPREP sample wildcard and parameters
-raw_sample_forward_wildcard: '/input/$R1.$extension'
-raw_sample_reverse_wildcard: '/input/$R2.$extension'
+# These files should be in a data folder (above)
+# Ex.
+#	{sample}_L001_R1_001.fastq.gz
+raw_sample_forward_wildcard: "/home/sten/Desktop/test/metaworks_test/{sample}_R1.fq.gz"
+raw_sample_reverse_wildcard: "/home/sten/Desktop/test/metaworks_test/{sample}_R2.fq.gz"
 
 ############################################################################
 # Directory for the output
 
-# This directory will be created to contain pipeline results
-dir: '/input/metaworks_out'
+# This directory will be created to contain pipeline results for a marker
+# ex. COI, ITS, SSU
+# keep the name short and simple with no spaces or weird punctuation, underscores are okay
+dir: "/home/sten/Desktop/test/metaworks_test/metaworks1.11.2_out"
 
 ############################################################################
 # Raw read pairing
 
 SEQPREP:
 # Phred score quality cutoff (default 13):
-    q: $quality_cutoff
+    q: 13
 # Minimum overlap (bp) length between forward and reverse reads:
-    o: $min_overlap
+    o: 25
 # Maximum fraction of mismatches allowed in overlap (default 0.02):
-    m: $mismatch_fraction
+    m: 0.02
 # Minimum fraction of matching overlap (default 0.90):
-    n: $match_fraction
+    n: 0.90
 
 ############################################################################
 # Primer trimming
@@ -176,43 +204,42 @@ SEQPREP:
 # >AmpliconName;
 # ^FwdPrimerSeq...ReverseComplementedRevPrimerSeq$
 CUTADAPT:
-    fasta: '$primers'
+    fasta: "/home/sten/Desktop/test/metaworks_test/primers.fasta"
 
 # Minimum sequence length (bp) to retain after trimming primers:
-    m: $minlen
+    m: 150
 # Phred quality score cutoffs at the ends:
-    q: '$qual_cutoff_5end,$qual_cutoff_3end'
+    q: "20,20"
 # Error rate (default 0.1)
-    e: $error_rate
-# Minimum adapter overlap
-    O: $primer_overlap
+    e: 0.1
+# Minimum adapter overlap (default 3)
+    O: 24
 # Maximum number of N's:
-    mn: $maxNs
+    mn: 0
 
 ############################################################################
 # Denoising
 
-# Indicate minimum number of reads per cluster to retain
-# Default here is to remove all singletons and doubletons and retain clusters with 3+ reads
+# Indicate minimum number of reads per cluster to retain (default 8)
 VSEARCH_DENOISE:
-    minsize: $minsize
+    minsize: 4
 
 ############################################################################
 # ESV x sample table
 
 VSEARCH_TABLE:
 # Indicate number of threads to use
-    t: 4
+    t: 1
 
 # Which marker classifier will you be using?
 # Choose from ['16S', '18S_eukaryota', '18S_diatom', '12S_fish', '12S_vertebrate', 'ITS_fungi', '28S_fungi', 'rbcL_eukaryota', 'rbcL_diatom', 'rbcL_landPlant', 'ITS_plants', or 'COI']
-marker: '$marker'
+marker: 'COI'
 
 ############################################################################
 # ITSx extractor (edit if needed otherwise skip over this section)
 
 # Indicate which spacer region to focus on:
-# Choose from ['ITS1', 'ITS2']
+# Choose from ['ITS1' or 'ITS2']
 ITSpart: 'ITS2'
 
 ############################################################################
@@ -220,7 +247,7 @@ ITSpart: 'ITS2'
 
 RDP:
 # enter the amount of memory to allocate to the RDP classifier here (default 8g):
-    memory: '-Xmx8g'
+    memory: "-Xmx100g"
 
 # Do you want to use a custom-trained dataset?
 # Set to 'yes' if using the following classifiers:
@@ -228,18 +255,17 @@ RDP:
 # Set to 'no' if using RDP built-in classifiers:
 # 16S or ITS_fungi (lsu or warcup)
 # Choose from ['yes' or 'no']
-    custom: 'no'
+    custom: 'yes'
 
 # If you are using a custom-trained reference set 
 # enter the path to the trained RDP classifier rRNAClassifier.properties file here:
-    t: ''
-
+    t: "/home/sten/Desktop/DATABASES/CO1v4_trained/rRNAClassifier.properties"
 # If you are using the 16S RDP classifier built-in reference set, the pipeline will use these params:
     c: 0
-    f: 'fixrank'
+    f: "fixrank"
 
 # Otherwise you are using one of the RDP classifier built-in fungal classifiers:
-# Choose from: ['fungallsu', 'fungalits_warcup']
+# Choose from: ['fungallsu', 'fungalits_unite', 'fungalits_warcup']
     g: 'fungallsu'
 
 ###########################################################################
@@ -249,22 +275,34 @@ RDP:
 # Set to 'no' for an rRNA gene/spacer region) or if working with protein coding gene but don't want to screen out putative pseudogenes then skip over the rest of this section
 # Set to 'yes' if working with a protein coding gene and you want to screen out putative pseudogenes
 # Choose from: ['yes' or 'no']
-pseudogene_filtering: '$pseudogene_filtering'
+pseudogene_filtering: 'yes'
 
 # Grep is used to refine the output to a single broad taxonomic group according to expected primer specificity 
 # MetaWorks uses NCBI taxonomy, whole ranks only, see https://www.ncbi.nlm.nih.gov/taxonomy
-# To keep one taxon do '-e Chordata' with genetic code 2 to target vertebrates
-# To keep more than one taxon do '-e taxon1 -e taxon2' etc.
-# To exclude a taxon use '-v taxon3'
-# To keep one taxon and exlude a sub-taxon
-# ex. To target invertebrates with genetic code 5
-## '-e Metazoa rdp.out.tmp | grep -v Chordata'
-taxon: '-e Arthropoda'
 
-# If pseudogene_filtering was set to 'yes' then select pseudogene removal_type here
+# Simple grep search example:
+# Ex. To target vertebrates do
+## grep '-e Chordata'
+# run this command with genetic code 2 below
+
+# Compound grep search example:
+# Ex. To target invertebrates do
+## grep '-e Metazoa' to target Metazoa
+## grep '-v Chordata' to exclude vertebrates
+# run this with genetic code 5 below
+
+# Grep search type [1 or 2] 
+# (1) simple grep search (only taxon1 filter will be used) or 
+# (2) a compound grep search (taxon1 and taxon2 filters will be used
+grep_type: 1
+
+taxon1: '-e Metazoa'
+taxon2: '-v Chordata'
+
+# If pseudogene_filtering was set to 'yes' then select pseudogene removal_type here [1|2]
 # There are two pseudogene filtering methods available:
-# (1) removal of sequences with unusually short/long open reading frames (ex. rbcL)
-# (2) HMM profile analysis and removal of sequences with unusually low HMM scores
+# (1) removal of sequences with unusually short/long open reading frames (ex. COI, rbcL)
+# (2) HMM profile analysis and removal of sequences with unusually low HMM scores (ex. COI arthropoda)
 
 removal_type: 1
 
@@ -289,12 +327,12 @@ ORFFINDER:
     s: 2
 
 # minimum length (ORFfinder default 75, min 30 nt)
-    ml: 30
+    ml: 300
 
-# ignore nested ORFs (true|false)
+# ignore nested ORFs [true or false]
     n: 'true'
 
-# strand (both|plus|minus)
+# strand [both, plus, minus]
     strand: 'plus'
 
 ###########################################################################
@@ -308,7 +346,7 @@ ORFFINDER:
 # it is more memory- and time-efficient to work with the component files separately
 # The separate ESV.table, taxonomy.csv, and sequence/extracted ITS/ORF FASTA files are all indexed by the same ESV id (Zotu #) and can be combined later in R for integrated analyses.  These files will be listed in results.csv .
 
-# report_type (1|2)
+# report_type [1 or 2]
 report_type: 1
 " > /input/config_ESV.pipecraft.yaml
 
