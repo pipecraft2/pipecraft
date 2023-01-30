@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/bin/sh
 
 # MetaWorks EVS pipeline for paired-end data
 
@@ -17,10 +17,13 @@
 ################################################################
 
 #Source for functions
-source /scripts/submodules/framework.functions.sh
+exec $SHELL
+eval "$(conda shell.bash hook)"
+. /scripts/submodules/framework.functions.sh
 #output dir
-output_dir=$"/input/metaworks_out"
+output_dir="/input/metaworks_out"
 mkdir -p $output_dir
+
 
 #samples
 extension=$fileFormat # must be gz files -> check with pigz at first
@@ -28,8 +31,7 @@ filename_structure=${filename_structure}
 R1=$(echo $filename_structure | sed 's/R{read}/R1/')
 R2=$(echo $filename_structure | sed 's/R{read}/R2/')
 
-exec $SHELL
-eval "$(conda shell.bash hook)"
+
 conda activate MetaWorks_v1.11.2
 
 #ITSpart=$"ITS2" #or ITS1
@@ -54,22 +56,22 @@ error_rate=${error_rate}
 #novaseq=${}
 primer_overlap=${primer_overlap}
 
-printf "quality_cutoff=${quality_cutoff}
-min_overlap=${min_overlap}
-mismatch_fraction=${mismatch_fraction}
-match_fraction=${match_fraction}
-
-
-#cut primers and quality filtering
-fwd_tempprimer=${forward_primers}
-rev_tempprimer=${reverse_primers}
-minlen=${minlen}
-qual_cutoff_5end=${qual_cutoff_5end}
-qual_cutoff_3end=${qual_cutoff_3end}
-maxNs=${maxNs}
-error_rate=${error_rate}
-#novaseq=${}
-primer_overlap=${primer_overlap}"
+#printf "quality_cutoff=${quality_cutoff}
+#min_overlap=${min_overlap}
+#mismatch_fraction=${mismatch_fraction}
+#match_fraction=${match_fraction}
+#
+#
+##cut primers and quality filtering
+#fwd_tempprimer=${forward_primers}
+#rev_tempprimer=${reverse_primers}
+#minlen=${minlen}
+#qual_cutoff_5end=${qual_cutoff_5end}
+#qual_cutoff_3end=${qual_cutoff_3end}
+#maxNs=${maxNs}
+#error_rate=${error_rate}
+##novaseq=${}
+#primer_overlap=${primer_overlap}"
 
 #novaseq=$"yes" #when data is from NextSeq or Nova
 # if [[ $novaseq == "yes" ]]; then
