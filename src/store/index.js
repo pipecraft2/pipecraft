@@ -1651,7 +1651,7 @@ export default new Vuex.Store({
         services: [
           {
             tooltip:
-              "assign taxonomy with BLAST against selected database [SELECT WORKDIR that contains only ONE fasta file for the process]",
+              "assign taxonomy with BLAST against a selected database [SELECT WORKDIR that contains only ONE fasta file for the process]",
             scriptName: "taxonomy_BLAST_xml.sh",
             imageName: "pipecraft/blast:2.12",
             serviceName: "BLAST",
@@ -2801,7 +2801,7 @@ export default new Vuex.Store({
         ],
       },
       {
-        tooltip: "assign taxonomy with BLAST against selected database",
+        tooltip: "assign taxonomy with BLAST against a selected database",
         scriptName: "taxonomy_BLAST_xml.sh",
         imageName: "pipecraft/blast:2.12",
         serviceName: "assign taxonomy",
@@ -3590,7 +3590,7 @@ export default new Vuex.Store({
         ],
       },
       {
-        tooltip: "assign taxonomy with BLAST against selected database",
+        tooltip: "assign taxonomy to zOTUs with BLAST against a selected database",
         scriptName: "taxonomy_BLAST_xml.sh",
         imageName: "pipecraft/blast:2.12",
         serviceName: "assign taxonomy",
@@ -3707,6 +3707,15 @@ export default new Vuex.Store({
               "specify sample filename structure. mysample1.R1.fastq and mysample1.R2.fastq = {sample}.R{read}; mysample1_L001_R1_001.fastq = {sample}_L001_R{read}_001",
             type: "chip",
             rules: [(v) => v.length <= 1 || "ADD ONLY ONE IDENTIFIER"],
+          },
+          {
+            name: "database",
+            btnName: "select RDP db",
+            value: "undefined",
+            disabled: "never",
+            tooltip:
+              "select a compatible reference database for RDP classifier",
+            type: "file",
           },
           {
             name: "quality_cutoff",
@@ -4344,7 +4353,7 @@ export default new Vuex.Store({
 
       {
         tooltip:
-          "assign taxonomy with DADA2 'assignTaxonomy' function against the selected database. Untick the checkbox to skip this step",
+          "assign taxonomy with DADA2 'assignTaxonomy' function against a selected database. Untick the checkbox to skip this step",
         scriptName: "taxonomy_dada2.sh",
         imageName: "pipecraft/vsearch_dada2:1",
         serviceName: "assign Taxonomy",
