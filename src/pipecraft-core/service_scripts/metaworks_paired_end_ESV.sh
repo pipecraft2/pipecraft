@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/bash
 
 # MetaWorks EVS pipeline for paired-end data
 
@@ -17,16 +17,16 @@
 ################################################################
 
 #Source for functions
-exec $SHELL
+#exec $SHELL
 eval "$(conda shell.bash hook)"
-. /scripts/submodules/framework.functions.sh
+source /scripts/submodules/framework.functions.sh
 #output dir
 output_dir="/input/metaworks_out"
 mkdir -p $output_dir
 
 
 #samples
-extension=$fileFormat # must be gz files -> check with pigz at first
+extension=$fileFormat # must be gz files -> check with pigz at first !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 filename_structure=${filename_structure}
 R1=$(echo $filename_structure | sed 's/R{read}/R1/')
 R2=$(echo $filename_structure | sed 's/R{read}/R2/')
@@ -35,8 +35,11 @@ R2=$(echo $filename_structure | sed 's/R{read}/R2/')
 conda activate MetaWorks_v1.11.2
 
 #ITSpart=$"ITS2" #or ITS1
-#db=$"/files/CO1v4_trained/rRNAClassifier.properties" #path to RDP database -> make this as default in the container?
 
+#database for RDP
+regex='[^/]*$'
+db1_temp=$(echo $database | grep -oP "$regex")
+db=$(printf "/extraFiles/$db1_temp")
 
 #merge
 quality_cutoff=${quality_cutoff}
@@ -95,11 +98,72 @@ cores=$"2"
 #############################
 start=$(date +%s)
 ### Check if files with specified extension exist in the dir
+first_file_check () {
+count=$(ls -1 *.$extension 2>/dev/null | wc -l)
+if [[ $count != 0 ]]; then 
+    :
+else
+    printf '%s\n' "ERROR]: cannot find files with specified extension '$extension'
+Please check the extension of your files and specify again.
+>Quitting" >&2
+    end_process
+fi 
+}
 first_file_check
 ### Prepare working env and check paired-end data
+prepare_PE_env () {
+#Remove 'old' output_dir if exist and make new empty one
+if [[ -d $output_dir ]]; then
+    rm -rf $output_dir
+fi
+mkdir $output_dir
+#Make tempdir2, for seq count statistics
+if [[ -d tempdir2 ]]; then
+    rm -rf tempdir2
+fi
+mkdir -p tempdir2
+#Make a file where to read R1 and R2 file names for paired-end read processing.
+touch tempdir2/files_in_folder.txt
+for file in *.$extension; do
+    echo $file >> tempdir2/files_in_folder.txt
+done
+#Check for empty spaces in the files names. Replace with _
+while read file; do
+    if [[ $file == *" "* ]]; then
+        printf '%s\n' "WARNING]: File $file name contains empty spaces, replaced 'space' with '_'" >&2
+        rename 's/ /_/g' "$file"
+    fi
+done < tempdir2/files_in_folder.txt
+#Fix also names in files_in_folder file if they contained space
+sed -i 's/ /_/g' tempdir2/files_in_folder.txt
+#Check if R1 string is in the file name (if so, then assume that then reverse file has R2 in the file name)
+grep "R1" < tempdir2/files_in_folder.txt > tempdir2/paired_end_files.txt || true
+    #Check if everything is ok considering file names
+if [[ -s tempdir2/paired_end_files.txt ]]; then
+    :
+else
+    printf '%s\n' "ERROR]: no paired-end read files found.
+File names must contain 'R1' and 'R2' strings! (e.g. s01_R1.fastq and s01_R2.fastq)
+>Quitting" >&2
+    end_process
+fi
+#Check multiple occurrences of R1 and R2 strings (e.g. R123.R1.fq). 
+while read file; do
+    x=$(echo $file | grep -o -E '(R1|R2)' | wc -l)
+    if [[ $x == "1" ]]; then
+        :
+    elif [[ $x == "0" ]]; then
+        printf '%s\n' "ERROR]: $file name does not contain R1 or R2 strings to identify paired-end reads. Remove file from folder or fix the name.
+>Quitting" >&2
+        end_process
+    else    
+        printf '%s\n' "ERROR]: $file name contains multiple R1 or R2 strings -> change names (e.g. R123.R1.fastq to S123.R1.fastq)
+>Quitting" >&2
+        end_process
+    fi
+done < tempdir2/files_in_folder.txt
+}
 prepare_PE_env
-
-mkdir /input/tempdir2
 
 ### Make primers.fasta
 fwd_primer_array=$(echo $fwd_tempprimer | sed 's/,/ /g' | sed 's/I/N/g')
@@ -125,7 +189,7 @@ done
 primers=$"/input/tempdir2/primers.fasta"
 
 ## ENTER THE MetaWorks
-cd MetaWorks1.11.2
+cd /MetaWorks1.11.2
 
 if [[ -f config_ESV.pipecraft.yaml ]]; then
     rm config_ESV.pipecraft.yaml
@@ -136,6 +200,7 @@ printf "# Configuration file for MetaWorks v1.11.2
 
 # Author: Teresita M. Porter
 # Date: August 30, 2022
+# Slightly modified for PipeCraft2, by Sten Anslan 03.02.2023
 
 ############################################################################
 # How to use MetaWorks v1
@@ -161,20 +226,20 @@ printf "# Configuration file for MetaWorks v1.11.2
 # Identify raw read files
 
 # This directory should contain the compressed paired-end Illumina reads, ex. *.fastq.gz
-raw: "/home/sten/Desktop/test/metaworks_test"
+raw: "/input"
 
 # Indicate 'sample' and 'read' wildcards from the raw filenames in the data folder (above):
 # Ex. Sample filename structure:
 # 	SITE-CONDITION-REPLICATE_S1_L001_R1_001.fastq.gz
 # 	{sample}_L001_R{read}_001.fastq.gz
-raw_sample_read_wildcards: "/home/sten/Desktop/test/metaworks_test/{sample}_R{read}.fq.gz"
+raw_sample_read_wildcards: "/input/$filename_structure"
 
 # SEQPREP sample wildcard and parameters
 # These files should be in a data folder (above)
 # Ex.
 #	{sample}_L001_R1_001.fastq.gz
-raw_sample_forward_wildcard: "/home/sten/Desktop/test/metaworks_test/{sample}_R1.fq.gz"
-raw_sample_reverse_wildcard: "/home/sten/Desktop/test/metaworks_test/{sample}_R2.fq.gz"
+raw_sample_forward_wildcard: "/input/$R1"
+raw_sample_reverse_wildcard: "/input/$R2"
 
 ############################################################################
 # Directory for the output
@@ -182,7 +247,7 @@ raw_sample_reverse_wildcard: "/home/sten/Desktop/test/metaworks_test/{sample}_R2
 # This directory will be created to contain pipeline results for a marker
 # ex. COI, ITS, SSU
 # keep the name short and simple with no spaces or weird punctuation, underscores are okay
-dir: "/home/sten/Desktop/test/metaworks_test/metaworks1.11.2_out"
+dir: "/input/metaworks1.11.2_out"
 
 ############################################################################
 # Raw read pairing
@@ -261,7 +326,7 @@ RDP:
 
 # If you are using a custom-trained reference set 
 # enter the path to the trained RDP classifier rRNAClassifier.properties file here:
-    t: "/home/sten/Desktop/DATABASES/CO1v4_trained/rRNAClassifier.properties"
+    t: "$db"
 # If you are using the 16S RDP classifier built-in reference set, the pipeline will use these params:
     c: 0
     f: "fixrank"

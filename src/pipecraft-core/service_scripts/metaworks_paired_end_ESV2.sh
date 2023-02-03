@@ -1,10 +1,12 @@
-#!/bin/sh
+#!/bin/bash
 
-exec $SHELL
+echo '1'
+#exec $BASH
 eval "$(conda shell.bash hook)"
 conda activate MetaWorks_v1.11.2
-snakemake -h
-snakemake --jobs 1 --snakefile /scripts/hello_world.txt
+echo "2"
+snakemake --jobs 1 --snakefile hello_world.txt
+echo "3"
 echo "workingDir=metaworks_output"
 echo "fileFormat=fastq"
 echo "dataFormat=demultiplexed"

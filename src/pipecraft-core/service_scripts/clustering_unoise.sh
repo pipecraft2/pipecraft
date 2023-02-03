@@ -71,8 +71,22 @@ for file in *.$extension; do
         #$extension will be $newextension
     check_gz_zip_SE
     ### Check input formats (only fasta, fa, fas supported)
-    check_extension_fasta
+    check_extension_fastx
 done
+
+#If input is FASTQ then convert to FASTA
+if [[ $newextension == "fastq" ]] || [[ $newextension == "fq" ]]; then
+    for file in *.$newextension; do
+        samp_name=$(basename $file | awk 'BEGIN{FS="."} {$NF=""; print $0}' | sed 's/ //g')
+        checkerror=$(seqkit fq2fa -t dna --line-width 0 $file -o $samp_name.fasta 2>&1)
+        check_app_error
+    done
+
+    was_fastq=$"TRUE"
+    export was_fastq
+    newextension=$"fasta"
+    export newextension
+fi
 
 #tempdir
 if [ -d tempdir ]; then
@@ -146,9 +160,11 @@ if [[ $denoise_level == "global" ]]; then
 
     ## Replace zOTUs with chimera-filtered zOTUs
     rm $output_dir/zOTUs.fasta
-    mv $output_dir/zOTUs_noChim.temp.fasta $output_dir/zOTUs.fasta
+    checkerror=$(vsearch --fastx_filter $output_dir/zOTUs_noChim.temp.fasta \
+    --fasta_width 0 --fastaout $output_dir/zOTUs.fasta 2>&1)
+    check_app_error
+    rm $output_dir/zOTUs_noChim.temp.fasta
   fi
-
 fi  # end of global denoising
 
 
@@ -304,6 +320,13 @@ fi
 ### COMPILE FINAL STATISTICS AND README FILES ###
 #################################################
 printf "\nCleaning up and compiling final stats files ... \n"
+
+#If input = FASTQ, then mkdir for converted fasta files
+if [[ $was_fastq == "TRUE" ]]; then
+    mkdir -p FASTA
+    mv *.fasta FASTA
+fi
+
 rm $output_dir/Glob_derep.fasta
 rm $output_dir/Dereplicated_samples.fasta
 
@@ -329,7 +352,6 @@ fi
 if [[ -f $output_dir/R_run.log ]]; then
     rm -f $output_dir/R_run.log
 fi
-
 
 #Make README.txt file
 size_zotu=$(grep -c "^>" $output_dir/zOTUs.fasta)
@@ -357,11 +379,9 @@ if [[ $chimerarm == "true" ]]; then
     printf "Chimera removal step eliminated $chimeras sequences\n" >> $output_dir/README.txt
 fi
 
-## ////  maybe add minsize validation here ???
 printf "\nIf samples are denoised individually rather by pooling all samples together, 
 reducing minsize to 4 is more reasonable for higher sensitivity.
 \n" >> $output_dir/README.txt
-
 
 #Done
 printf "\nDONE\n"

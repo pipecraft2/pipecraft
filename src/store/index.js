@@ -120,7 +120,6 @@ export default new Vuex.Store({
                 type: "numeric",
                 rules: [(v) => v >= 1 || "ERROR: specify values >= 1"],
               },
-
             ],
           },
         ],
@@ -1651,7 +1650,7 @@ export default new Vuex.Store({
         services: [
           {
             tooltip:
-              "assign taxonomy with BLAST against selected database [SELECT WORKDIR that contains only ONE fasta file for the process]",
+              "assign taxonomy with BLAST against a selected database [SELECT WORKDIR that contains only ONE fasta file for the process]",
             scriptName: "taxonomy_BLAST_xml.sh",
             imageName: "pipecraft/blast:2.12",
             serviceName: "BLAST",
@@ -1933,7 +1932,8 @@ export default new Vuex.Store({
             ],
           },
           {
-            tooltip: "pseudogene fintering with ORFfinder (search open reading frames)",
+            tooltip:
+              "pseudogene fintering with ORFfinder (search open reading frames)",
             scriptName: "ORFfinder.sh",
             imageName: "pipecraft/metaworks:1.11.2",
             serviceName: "pseudogene filtering",
@@ -1953,8 +1953,7 @@ export default new Vuex.Store({
                 items: ["plus", "minus", "both"],
                 value: "plus",
                 disabled: "never",
-                tooltip:
-                  "output ORFs on specified strand only",
+                tooltip: "output ORFs on specified strand only",
                 type: "select",
               },
             ],
@@ -1973,8 +1972,7 @@ export default new Vuex.Store({
                 name: "min_len",
                 value: 300,
                 disabled: "never",
-                tooltip:
-                  "minimum length of an output sequence",
+                tooltip: "minimum length of an output sequence",
                 type: "numeric",
                 rules: [(v) => v >= 1 || "ERROR: specify values >= 1"],
               },
@@ -2064,7 +2062,8 @@ export default new Vuex.Store({
         scriptName: "demux_paired_end_data.sh",
         imageName: "pipecraft/cutadapt:3.5",
         serviceName: "demultiplex",
-        manualLink: "https://pipecraft2-manual.readthedocs.io/en/stable/user_guide.html#demux",
+        manualLink:
+          "https://pipecraft2-manual.readthedocs.io/en/stable/user_guide.html#demux",
         disabled: "demultiplexed",
         selected: false,
         showExtra: false,
@@ -2145,7 +2144,8 @@ export default new Vuex.Store({
         scriptName: "reorient_paired_end_reads.sh",
         imageName: "pipecraft/reorient:1",
         serviceName: "reorient",
-        manualLink: "https://pipecraft2-manual.readthedocs.io/en/stable/user_guide.html#reorient",
+        manualLink:
+          "https://pipecraft2-manual.readthedocs.io/en/stable/user_guide.html#reorient",
         disabled: "never",
         selected: false,
         showExtra: false,
@@ -2184,7 +2184,8 @@ export default new Vuex.Store({
         scriptName: "cut_primers_paired_end_reads.sh",
         imageName: "pipecraft/cutadapt:3.5",
         serviceName: "cut primers",
-        manualLink: "https://pipecraft2-manual.readthedocs.io/en/stable/user_guide.html#cut-primers",
+        manualLink:
+          "https://pipecraft2-manual.readthedocs.io/en/stable/user_guide.html#cut-primers",
         disabled: "never",
         selected: false,
         showExtra: false,
@@ -2276,7 +2277,8 @@ export default new Vuex.Store({
         scriptName: "assemble_paired_end_data_vsearch.sh",
         imageName: "pipecraft/vsearch_dada2:1",
         serviceName: "merge reads",
-        manualLink: "https://pipecraft2-manual.readthedocs.io/en/stable/user_guide.html#merge-vsearch",
+        manualLink:
+          "https://pipecraft2-manual.readthedocs.io/en/stable/user_guide.html#merge-vsearch",
         selected: "always",
         disabled: "single_end",
         showExtra: false,
@@ -2374,7 +2376,8 @@ export default new Vuex.Store({
         scriptName: "quality_filtering_paired_end_vsearch.sh",
         imageName: "pipecraft/vsearch_dada2:1",
         serviceName: "quality filtering",
-        manualLink: "https://pipecraft2-manual.readthedocs.io/en/stable/user_guide.html#qfilt-vsearch",
+        manualLink:
+          "https://pipecraft2-manual.readthedocs.io/en/stable/user_guide.html#qfilt-vsearch",
         disabled: "never",
         selected: "always",
         showExtra: false,
@@ -2481,7 +2484,8 @@ export default new Vuex.Store({
         scriptName: "chimera_filtering_vsearch.sh",
         imageName: "pipecraft/vsearch_dada2:1",
         serviceName: "chimera filtering",
-        manualLink: "https://pipecraft2-manual.readthedocs.io/en/stable/user_guide.html#chimera-filtering",
+        manualLink:
+          "https://pipecraft2-manual.readthedocs.io/en/stable/user_guide.html#chimera-filtering",
         disabled: "never",
         selected: "always",
         showExtra: false,
@@ -2563,7 +2567,8 @@ export default new Vuex.Store({
         scriptName: "ITS_extractor.sh",
         imageName: "pipecraft/itsx:1.1.3",
         serviceName: "itsx",
-        manualLink: "https://pipecraft2-manual.readthedocs.io/en/stable/user_guide.html#id17",
+        manualLink:
+          "https://pipecraft2-manual.readthedocs.io/en/stable/user_guide.html#id17",
         disabled: "never",
         selected: false,
         showExtra: false,
@@ -2702,7 +2707,8 @@ export default new Vuex.Store({
         scriptName: "clustering_vsearch.sh",
         imageName: "pipecraft/vsearch_dada2:1",
         serviceName: "clustering",
-        manualLink: "https://pipecraft2-manual.readthedocs.io/en/stable/user_guide.html#clustering-vsearch",
+        manualLink:
+          "https://pipecraft2-manual.readthedocs.io/en/stable/user_guide.html#clustering-vsearch",
         disabled: "never",
         selected: "always",
         showExtra: false,
@@ -2801,11 +2807,809 @@ export default new Vuex.Store({
         ],
       },
       {
-        tooltip: "assign taxonomy with BLAST against selected database",
+        tooltip: "assign taxonomy with BLAST against a selected database",
         scriptName: "taxonomy_BLAST_xml.sh",
         imageName: "pipecraft/blast:2.12",
         serviceName: "assign taxonomy",
-        manualLink: "https://pipecraft2-manual.readthedocs.io/en/stable/user_guide.html#blast-camacho-et-al-2009",
+        manualLink:
+          "https://pipecraft2-manual.readthedocs.io/en/stable/user_guide.html#blast-camacho-et-al-2009",
+        selected: false,
+        showExtra: false,
+        extraInputs: [
+          {
+            name: "e_value",
+            value: 10,
+            disabled: "never",
+            tooltip:
+              "a parameter that describes the number of hits one can expect to see by chance when searching a database of a particular size. The lower the e-value the more 'significant' the match is",
+            type: "numeric",
+            default: 10,
+            rules: [(v) => v >= 0 || "ERROR: specify values >= 0"],
+          },
+          {
+            name: "word_size",
+            value: 11,
+            disabled: "never",
+            tooltip:
+              "the size of the initial word that must be matched between the database and the query sequence",
+            type: "numeric",
+            rules: [(v) => v >= 1 || "ERROR: specify values >= 1"],
+          },
+          {
+            name: "reward",
+            value: 2,
+            disabled: "never",
+            tooltip: "reward for a match",
+            type: "numeric",
+            rules: [(v) => v >= 0 || "ERROR: specify values >= 0"],
+          },
+          {
+            name: "penalty",
+            value: -3,
+            disabled: "never",
+            tooltip: "penalty for a mismatch",
+            type: "numeric",
+            rules: [(v) => v <= 0 || "ERROR: specify values <= 0"],
+          },
+          {
+            name: "gap_open",
+            value: 5,
+            disabled: "never",
+            tooltip: "cost to open a gap",
+            type: "numeric",
+            rules: [(v) => v >= 0 || "ERROR: specify values >= 0"],
+          },
+          {
+            name: "gap_extend",
+            value: 2,
+            disabled: "never",
+            tooltip: "cost to extend a gap",
+            type: "numeric",
+            // rules: [(v) => v >= 0 || "ERROR: specify values >= 0"],
+          },
+          {
+            name: "cores",
+            value: 4,
+            disabled: "never",
+            tooltip: "number of cores to use",
+            type: "numeric",
+            rules: [(v) => v >= 1 || "ERROR: specify values >= 1"],
+          },
+        ],
+        Inputs: [
+          {
+            name: "database_file",
+            btnName: "select file",
+            value: "undefined",
+            disabled: "never",
+            tooltip:
+              "database file (may be fasta formated - automatically will convert to BLAST database format)",
+            type: "file",
+          },
+          {
+            name: "task",
+            items: ["blastn", "megablast"],
+            value: "blastn",
+            disabled: "never",
+            tooltip: "task (blastn or megablast)",
+            type: "select",
+          },
+          {
+            name: "strands",
+            items: ["plus", "both"],
+            value: "both",
+            disabled: "never",
+            tooltip:
+              "query strand to search against database. Both = search also reverse complement",
+            type: "select",
+          },
+        ],
+      },
+    ],
+    UNOISE_workflow: [
+      {
+        tooltip:
+          "demultiplex data to per-sample files based on specified index file",
+        scriptName: "demux_paired_end_data.sh",
+        imageName: "pipecraft/cutadapt:3.5",
+        serviceName: "demultiplex",
+        manualLink:
+          "https://pipecraft2-manual.readthedocs.io/en/stable/user_guide.html#demux",
+        disabled: "demultiplexed",
+        selected: false,
+        showExtra: false,
+        extraInputs: [
+          {
+            name: "cores",
+            value: 1,
+            disabled: "never",
+            tooltip: "number of cores to use",
+            type: "numeric",
+            rules: [(v) => v >= 0 || "ERROR: specify values >= 0"],
+          },
+          {
+            name: "min_seq_length",
+            value: 32,
+            disabled: "never",
+            tooltip: "minimum length of the output sequence",
+            type: "numeric",
+            rules: [(v) => v >= 1 || "ERROR: specify values >= 1"],
+          },
+          {
+            name: "no_indels",
+            value: true,
+            disabled: "never",
+            tooltip:
+              "do not allow insertions or deletions in the index sequence",
+            type: "bool",
+          },
+        ],
+        Inputs: [
+          {
+            name: "index_file",
+            value: "undefined",
+            btnName: "select fasta",
+            disabled: "never",
+            tooltip:
+              "select your fasta formatted indexes file for demultiplexing, where fasta headers are sample names, and sequences are sample specific index or index combination",
+            type: "file",
+          },
+          {
+            name: "index_file_example",
+            value:
+              "https://pipecraft2-manual.readthedocs.io/en/stable/user_guide.html#indexes-file-example-fasta-formatted",
+            disabled: "never",
+            type: "link",
+            tooltip: "link to PipeCraft2 manual page, index file examples",
+          },
+          {
+            name: "index_mismatch",
+            value: 0,
+            disabled: "never",
+            tooltip: "allowed mismatches during the index search",
+            type: "numeric",
+            rules: [(v) => v >= 0 || "ERROR: specify values >= 0"],
+          },
+          {
+            name: "overlap",
+            value: 8,
+            disabled: "never",
+            tooltip:
+              "number of overlap bases with the index. Recommended overlap is the max length of the index for confident sequence assignments to samples in the indexes file",
+            type: "numeric",
+            rules: [(v) => v >= 1 || "ERROR: specify values >= 1"],
+          },
+          {
+            name: "search_window",
+            value: 35,
+            disabled: "never",
+            tooltip:
+              "the index search window size. The default 35 means that the forward index is searched among the first 35 bp and the reverse index among the last 35 bp. This search restriction prevents random index matches in the middle of the sequence",
+            type: "numeric",
+            rules: [(v) => v >= 1 || "ERROR: specify values >= 1"],
+          },
+        ],
+      },
+      {
+        tooltip: "reorient reads based on specified primer sequences",
+        scriptName: "reorient_paired_end_reads.sh",
+        imageName: "pipecraft/reorient:1",
+        serviceName: "reorient",
+        manualLink:
+          "https://pipecraft2-manual.readthedocs.io/en/stable/user_guide.html#reorient",
+        disabled: "never",
+        selected: false,
+        showExtra: false,
+        extraInputs: [],
+        Inputs: [
+          {
+            name: "mismatches",
+            value: 1,
+            disabled: "never",
+            tooltip: "allowed mismatches in the primer search",
+            type: "numeric",
+            rules: [(v) => v >= 0 || "ERROR: specify values >= 0"],
+          },
+          {
+            name: "forward_primers",
+            value: [],
+            disabled: "never",
+            tooltip: "specify forward primer (5'-3'); add up to 13 primers",
+            type: "chip",
+            iupac: true,
+            rules: [(v) => v.length <= 13 || "TOO MANY PRIMERS"],
+          },
+          {
+            name: "reverse_primers",
+            value: [],
+            disabled: "never",
+            tooltip: "specify reverse primer (3'-5'); add up to 13 primers",
+            type: "chip",
+            iupac: true,
+            rules: [(v) => v.length <= 13 || "TOO MANY PRIMERS"],
+          },
+        ],
+      },
+      {
+        tooltip: "remove primers sequences from the reads",
+        scriptName: "cut_primers_paired_end_reads.sh",
+        imageName: "pipecraft/cutadapt:3.5",
+        serviceName: "cut primers",
+        manualLink:
+          "https://pipecraft2-manual.readthedocs.io/en/stable/user_guide.html#cut-primers",
+        disabled: "never",
+        selected: false,
+        showExtra: false,
+        extraInputs: [
+          {
+            name: "cores",
+            value: 1,
+            disabled: "never",
+            tooltip:
+              "number of cores to use. For paired-end data in fasta format, set to 1 [default]. For fastq formats you may set the value to 0 to use all cores",
+            type: "numeric",
+            rules: [(v) => v >= 1 || "ERROR: specify values >= 1"],
+          },
+          {
+            name: "min_seq_length",
+            value: 32,
+            disabled: "never",
+            tooltip: "minimum length of the output sequence",
+            type: "numeric",
+            rules: [(v) => v >= 1 || "ERROR: specify values >= 1"],
+          },
+          {
+            name: "no_indels",
+            value: true,
+            disabled: "never",
+            tooltip:
+              "do not allow insertions or deletions is primer search. Mismatches are the only type of errors accounted in the error rate parameter",
+            type: "bool",
+          },
+        ],
+        Inputs: [
+          {
+            name: "forward_primers",
+            value: [],
+            disabled: "never",
+            tooltip: "specify forward primer (5'-3'); add up to 13 primers",
+            type: "chip",
+            iupac: true,
+            rules: [(v) => v.length <= 13 || "TOO MANY PRIMERS"],
+          },
+          {
+            name: "reverse_primers",
+            value: [],
+            disabled: "never",
+            tooltip: "specify reverse primer (3'-5'); add up to 13 primers",
+            type: "chip",
+            iupac: true,
+            rules: [(v) => v.length <= 13 || "TOO MANY PRIMERS"],
+          },
+          {
+            name: "mismatches",
+            value: 1,
+            disabled: "never",
+            tooltip: "allowed mismatches in the primer search",
+            type: "numeric",
+            rules: [(v) => v >= 0 || "ERROR: specify values >= 0"],
+          },
+          {
+            name: "min_overlap",
+            value: 21,
+            disabled: "never",
+            tooltip:
+              "number of overlap bases with the primer sequence. Partial matches are allowed, but short matches may occur by chance, leading to erroneously clipped bases. Specifying higher overlap than the length of primer sequnce will still clip the primer (e.g. primer length is 22 bp, but overlap is specified as 25 - this does not affect the identification and clipping of the primer as long as the match is in the specified mismatch error range)",
+            type: "numeric",
+            rules: [(v) => v >= 1 || "ERROR: specify values >= 1"],
+          },
+          {
+            name: "seqs_to_keep",
+            items: ["keep_all", "keep_only_linked"],
+            value: "keep_all",
+            disabled: "never",
+            tooltip:
+              "'keep_all' keeps the sequences where at least one primer was found (fwd or rev); recommended when cutting primers from paired-end data (unassembled), where individual R1 or R2 read lenghts are shorther than the expected amplicon length. 'keep_only_linked' = keep sequences if primers are found in both ends (fwd…rev); discards the read if both primers were not found in this read; maybe useful for single-end data",
+            type: "select",
+          },
+          {
+            name: "pair_filter",
+            items: ["both", "any"],
+            value: "both",
+            disabled: "never",
+            tooltip:
+              "applies only for paired-end data. 'both', means that a read is discarded only if both, corresponding R1 and R2, reads  do not contain primer strings (i.e. a read is kept if R1 contains primer string, but no primer string found in R2 read). Option 'any' discards the read if primers are not found in both, R1 and R2 reads",
+            type: "select",
+          },
+        ],
+      },
+      {
+        tooltip: "assemble paired-end reads with vsearch",
+        scriptName: "assemble_paired_end_data_vsearch.sh",
+        imageName: "pipecraft/vsearch_dada2:1",
+        serviceName: "merge reads",
+        manualLink:
+          "https://pipecraft2-manual.readthedocs.io/en/stable/user_guide.html#merge-vsearch",
+        selected: "always",
+        disabled: "single_end",
+        showExtra: false,
+        extraInputs: [
+          {
+            name: "max_diffs",
+            value: 20,
+            disabled: "never",
+            tooltip:
+              "the maximum number of non-matching nucleotides allowed in the overlap region",
+            type: "numeric",
+            rules: [(v) => v >= 0 || "ERROR: specify values >= 0"],
+          },
+          {
+            name: "max_Ns",
+            value: 0,
+            disabled: "never",
+            tooltip:
+              "discard sequences with more than the specified number of Ns",
+            type: "numeric",
+            rules: [(v) => v >= 0 || "ERROR: specify values >= 0"],
+          },
+          {
+            name: "max_len",
+            value: 600,
+            disabled: "never",
+            tooltip: "maximum length of the merged sequence",
+            type: "numeric",
+            rules: [(v) => v >= 1 || "ERROR: specify values >= 1"],
+          },
+          {
+            name: "keep_disjointed",
+            value: false,
+            disabled: "never",
+            tooltip:
+              "output reads that were not merged into separate FASTQ files",
+            type: "bool",
+          },
+          {
+            name: "fastq_qmax",
+            value: 41,
+            disabled: "never",
+            tooltip:
+              "maximum quality score accepted when reading FASTQ files. The default is 41, which is usual for recent Sanger/Illumina 1.8+ files",
+            type: "numeric",
+            rules: [(v) => v >= 1 || "ERROR: specify values >= 1"],
+          },
+        ],
+        Inputs: [
+          {
+            name: "read_R1",
+            value: ["\\.R1"],
+            disabled: "single_end",
+            tooltip:
+              "identifyer string that is common for all R1 reads (e.g. when all R1 files have '.R1' string, then enter '\\.R1'. Note that backslash is only needed to escape dot regex; e.g. when all R1 files have '_R1' string, then enter '_R1'.)",
+            type: "chip",
+            rules: [(v) => v.length <= 1 || "ADD ONLY ONE IDENTIFIER"],
+          },
+          {
+            name: "min_overlap",
+            value: 12,
+            disabled: "never",
+            tooltip: "minimum overlap between the merged reads",
+            type: "numeric",
+            rules: [(v) => v >= 1 || "ERROR: specify values >= 1"],
+          },
+          {
+            name: "min_lenght",
+            value: 32,
+            disabled: "never",
+            tooltip: "minimum length of the merged sequence",
+            type: "numeric",
+            rules: [(v) => v >= 1 || "ERROR: specify values >= 1"],
+          },
+          {
+            name: "allow_merge_stagger",
+            value: true,
+            disabled: "never",
+            tooltip:
+              "allow to merge staggered read pairs. Staggered pairs are pairs where the 3' end of the reverse read has an overhang to the left of the 5' end of the forward read. This situation can occur when a very short fragment is sequenced",
+            type: "bool",
+          },
+          {
+            name: "include_only_R1",
+            value: false,
+            disabled: "never",
+            tooltip:
+              "include unassembled R1 reads to the set of assembled reads per sample. This may be relevant when working with e.g. ITS2 sequences, because the ITS2 region in some taxa is too long for assembly, therefore discarded completely after assembly process. Thus, including also unassembled R1 reads, partial ITS2 sequences for these taxa will be represented in the final output",
+            type: "bool",
+          },
+        ],
+      },
+      {
+        tooltip: "quality filtering with vsearch",
+        scriptName: "quality_filtering_paired_end_vsearch.sh",
+        imageName: "pipecraft/vsearch_dada2:1",
+        serviceName: "quality filtering",
+        manualLink:
+          "https://pipecraft2-manual.readthedocs.io/en/stable/user_guide.html#qfilt-vsearch",
+        disabled: "never",
+        selected: "always",
+        showExtra: false,
+        extraInputs: [
+          {
+            name: "cores",
+            value: 1,
+            disabled: "never",
+            tooltip: "number of cores to use",
+            type: "numeric",
+            rules: [(v) => v >= 1 || "ERROR: specify values >= 1"],
+          },
+          {
+            name: "max_length",
+            value: null,
+            disabled: "never",
+            tooltip:
+              "discard sequences with more than the specified number of bases. Note that if 'trunc length' setting is specified, then 'max length' SHOULD NOT be lower than 'trunc lenght' (otherwise all reads are discared)",
+            type: "numeric",
+            rules: [
+              (v) =>
+                (v >= 1) | (v == "") ||
+                "ERROR: specify values >= 1 or leave it empty (=no action taken)",
+            ],
+          },
+          {
+            name: "qmax",
+            value: 41,
+            disabled: "never",
+            tooltip:
+              "specify the maximum quality score accepted when reading FASTQ files. The default is 41, which is usual for recent Sanger/Illumina 1.8+ files. For PacBio data use 93",
+            type: "numeric",
+            rules: [(v) => v >= 1 || "ERROR: specify values >= 1"],
+          },
+          {
+            name: "qmin",
+            value: 0,
+            disabled: "never",
+            tooltip:
+              "the minimum quality score accepted for FASTQ files. The default is 0, which is usual for recent Sanger/Illumina 1.8+ files. Older formats may use scores between -5 and 2",
+            type: "numeric",
+            rules: [(v) => v >= -5 || "ERROR: specify values >= -5"],
+          },
+          {
+            name: "maxee_rate",
+            value: null,
+            disabled: "never",
+            tooltip:
+              "discard sequences with more than the specified number of expected errors per base",
+            type: "numeric",
+            rules: [
+              (v) =>
+                (v >= 0.1) | (v == "") ||
+                "ERROR: specify values >= 0.1 or leave it empty (=no action taken)",
+            ],
+          },
+        ],
+        Inputs: [
+          {
+            name: "maxee",
+            value: 1,
+            disabled: "never",
+            tooltip:
+              "maximum number of expected errors per sequence. Sequences with higher error rates will be discarded",
+            type: "numeric",
+            rules: [(v) => v >= 0.1 || "ERROR: specify values >= 0.1"],
+          },
+          {
+            name: "maxNs",
+            value: 0,
+            disabled: "never",
+            tooltip:
+              "discard sequences with more than the specified number of Ns",
+            type: "numeric",
+            rules: [(v) => v >= 0 || "ERROR: specify values >= 0"],
+          },
+          {
+            name: "min_length",
+            value: 32,
+            disabled: "never",
+            tooltip:
+              "minimum length of the filtered output sequence. Note that if 'trunc length' setting is specified, then 'min length' SHOULD BE lower than 'trunc lenght' (otherwise all reads are discared)",
+            type: "numeric",
+            rules: [(v) => v >= 1 || "ERROR: specify values >= 1"],
+          },
+          {
+            name: "trunc_length",
+            value: null,
+            disabled: "never",
+            tooltip:
+              "truncate sequences to the specified length. Shorter sequences are discarded; thus if specified, check that 'min length' setting is lower than 'trunc length' ('min lenght' therefore has basically no effect)",
+            type: "numeric",
+            rules: [
+              (v) =>
+                (v >= 5) | (v == "") ||
+                "ERROR: specify values >= 5 or leave it empty (=no action taken)",
+            ],
+          },
+        ],
+      },
+      {
+        tooltip:
+          "if data set consists of ITS sequences; identify and extract the ITS regions using ITSx. Select appropriate ITSx output region for UNOISE after the process is finished",
+        scriptName: "ITS_extractor.sh",
+        imageName: "pipecraft/itsx:1.1.3",
+        serviceName: "itsx",
+        manualLink:
+          "https://pipecraft2-manual.readthedocs.io/en/stable/user_guide.html#id17",
+        disabled: "never",
+        selected: false,
+        showExtra: false,
+        extraInputs: [
+          {
+            name: "cores",
+            value: 4,
+            disabled: "never",
+            tooltip: "number of cores to use",
+            type: "numeric",
+            rules: [(v) => v >= 1 || "ERROR: specify values >= 1"],
+          },
+          {
+            name: "e_value",
+            value: (0.01).toExponential(),
+            disabled: "never",
+            tooltip:
+              "domain E-value cutoff a sequence must obtain in the HMMER-based step to be included in the output. Here, the defaul 1e-2 = 0.01 (more relaxed compared with the default ITSx [1e-5])",
+            type: "numeric",
+            rules: [(v) => v >= 0 || "ERROR: specify values >= 0"],
+          },
+          {
+            name: "scores",
+            value: 0,
+            disabled: "never",
+            tooltip:
+              "domain score cutoff that a sequence must obtain in the HMMER-based step to be included in the output",
+            type: "numeric",
+            rules: [(v) => v >= 0 || "ERROR: specify values >= 0"],
+          },
+          {
+            name: "domains",
+            value: 2,
+            disabled: "never",
+            tooltip:
+              "the minimum number of domains (different HMM gene profiles) that must match a sequence for it to be included in the output (detected as an ITS sequence). Setting the value lower than two will increase the number of false positives, while increasing it above two will decrease ITSx detection abilities on fragmentary data",
+            type: "numeric",
+            rules: [(v) => v >= 0 || "ERROR: specify values >= 0"],
+          },
+          {
+            name: "complement",
+            value: true,
+            disabled: "never",
+            tooltip:
+              "if TRUE, ITSx checks both DNA strands for matches to HMM-profiles",
+            type: "bool",
+          },
+          {
+            name: "only_full",
+            value: false,
+            disabled: "never",
+            tooltip:
+              "If TRUE, the output is limited to full-length ITS1 and ITS2 regions only",
+            type: "bool",
+          },
+          {
+            name: "truncate",
+            value: true,
+            disabled: "never",
+            tooltip:
+              "if TRUE, ITSx removes ends of ITS sequences if they are outside of the ITS region. If off, the whole input sequence is saved when ITS region is detected",
+            type: "bool",
+          },
+        ],
+        Inputs: [
+          {
+            name: "organisms",
+            items: [
+              "all",
+              "alveolata",
+              "bryophyta",
+              "bacillariophyta",
+              "amoebozoa",
+              "euglenozoa",
+              "fungi",
+              "chlorophyta",
+              "rhodophyta",
+              "phaeophyceae",
+              "marchantiophyta",
+              "metazoa",
+              "oomycota",
+              "haptophyceae",
+              "raphidophyceae",
+              "rhizaria",
+              "synurophyceae",
+              "tracheophyta",
+              "eustigmatophyceae",
+              "apusozoa",
+              "parabasalia",
+            ],
+            value: ["fungi"],
+            disabled: "never",
+            tooltip:
+              "set of profiles to use for the search. Can be used to restrict the search to only a few organism groups types to save time, if one or more of the origins are not relevant to the dataset under study",
+            type: "combobox",
+          },
+          {
+            name: "regions",
+            items: ["all", "SSU", "ITS1", "5.8S", "ITS2", "LSU"],
+            value: ["all"],
+            disabled: "never",
+            tooltip:
+              "ITS regions to output (note that 'all' will output also full ITS region [ITS1-5.8S-ITS2])",
+            type: "combobox",
+          },
+          {
+            name: "partial",
+            value: 50,
+            disabled: "never",
+            tooltip:
+              "if larger than 0, ITSx will save additional FASTA-files for full and partial ITS sequences longer than the specified cutoff value. If his setting is left to 0 (zero), it means OFF",
+            type: "numeric",
+            rules: [(v) => v >= 0 || "ERROR: specify values >= 0"],
+          },
+          {
+            name: "region_for_clustering",
+            items: ["full_ITS", "SSU", "ITS1", "5.8S", "ITS2", "LSU"],
+            value: "ITS2",
+            disabled: "never",
+            tooltip:
+              "specify region for next step, UNOISE (because multiple output folders are generated during this process)",
+            type: "select",
+          },
+          {
+            name: "cluster_full_and_partial",
+            value: true,
+            disabled: "never",
+            tooltip:
+              "if setting 'partial' is not 0, then at the NEXT STEP cluster 'full and partial' (e.g.) ITS2 reads (dir /ITS2/full_and_partial). If OFF, then cluster only full ITS2 reads",
+            type: "bool",
+          },
+        ],
+      },
+      {
+        scriptName: "clustering_unoise.sh",
+        tooltip:
+          "make zOTUs with vsearch --cluster_unoise (and optionally remove chimeras with --uchime3_denovo)",
+        imageName: "pipecraft/vsearch_dada2:1",
+        serviceName: "unoise3",
+        manualLink:
+          "https://pipecraft2-manual.readthedocs.io/en/stable/user_guide.html#id22",
+        disabled: "never",
+        selected: "always",
+        showExtra: false,
+        extraInputs: [
+          {
+            name: "unoise_alpha",
+            value: 2.0,
+            disabled: "never",
+            tooltip:
+              "default = 2.0. alpha parameter to the vsearch --cluster_unoise command",
+            type: "numeric",
+            rules: [(v) => v >= 1 || "ERROR: specify values >= 1"],
+          },
+          {
+            name: "denoise_level",
+            items: ["global", "individual"],
+            value: "global",
+            disabled: "never",
+            tooltip:
+              "at which level to perform denoising; global = by pooling samples, individual = independently for each sample (if samples are denoised individually, reducing minsize to 4 may be more reasonable for higher sensitivity)",
+            type: "select",
+          },
+          {
+            name: "remove_chimeras",
+            value: true,
+            disabled: "never",
+            tooltip: "perform chimera removal with UCHIME3 de novo algoritm",
+            type: "bool",
+          },
+          {
+            name: "abskew",
+            value: 16,
+            disabled: "never",
+            tooltip:
+              "the abundance skew of chimeric sequences in comparsion with parental sequences (by default, parents should be at least 16 times more abundant than their chimera)",
+            type: "numeric",
+            rules: [(v) => v >= 1 || "ERROR: specify values >= 1"],
+          },
+          {
+            name: "similarity_type",
+            items: ["0", "1", "2", "3", "4"],
+            value: "2",
+            disabled: "never",
+            tooltip: "pairwise sequence identity definition (--iddef)",
+            type: "select",
+          },
+          {
+            name: "maxaccepts",
+            value: 1,
+            disabled: "never",
+            tooltip:
+              "maximum number of hits to accept before stopping the search",
+            type: "numeric",
+            rules: [(v) => v >= 1 || "ERROR: specify values >= 1"],
+          },
+          {
+            name: "maxrejects",
+            value: 32,
+            disabled: "never",
+            tooltip:
+              "maximum number of non-matching target sequences to consider before stopping the search",
+            type: "numeric",
+            rules: [(v) => v >= 1 || "ERROR: specify values >= 1"],
+          },
+          {
+            name: "mask",
+            items: ["dust", "none"],
+            value: "dust",
+            disabled: "never",
+            tooltip:
+              'mask regions in sequences using the "dust" method, or do not mask ("none").',
+            type: "select",
+          },
+          {
+            name: "cores",
+            value: 4,
+            disabled: "never",
+            tooltip: "number of cores to use",
+            type: "numeric",
+            rules: [(v) => v >= 1 || "ERROR: specify values >= 1"],
+          },
+        ],
+        Inputs: [
+          {
+            name: "zOTUs_thresh",
+            value: 1,
+            disabled: "never",
+            tooltip:
+              "sequence similarity threshold for zOTU table creation; 1 = 100% similarity threshold for zOTUs",
+            max: 1,
+            min: 0,
+            step: 0.01,
+            type: "slide",
+          },
+          {
+            name: "similarity_threshold",
+            value: 1,
+            disabled: "never",
+            tooltip:
+              "cluster zOTUs to OTUs based on the sequence similarity threshold; if id = 1, no OTU clustering will be performed",
+            max: 1,
+            min: 0,
+            step: 0.01,
+            type: "slide",
+          },
+          {
+            name: "strands",
+            items: ["both", "plus"],
+            disabled: "never",
+            tooltip:
+              "when comparing sequences with the cluster seed, check both strands (forward and reverse complementary) or the plus strand only",
+            value: "both",
+            type: "select",
+          },
+          {
+            name: "minsize",
+            value: 8,
+            disabled: "never",
+            tooltip: "minimum abundance of sequences for denoising",
+            type: "numeric",
+            rules: [(v) => v >= 1 || "ERROR: specify values >= 1"],
+          },
+        ],
+      },
+      {
+        tooltip:
+          "assign taxonomy to zOTUs with BLAST against a selected database",
+        scriptName: "taxonomy_BLAST_xml.sh",
+        imageName: "pipecraft/blast:2.12",
+        serviceName: "assign taxonomy",
+        manualLink:
+          "https://pipecraft2-manual.readthedocs.io/en/stable/user_guide.html#blast-camacho-et-al-2009",
         selected: false,
         showExtra: false,
         extraInputs: [
@@ -2918,6 +3722,15 @@ export default new Vuex.Store({
               "specify sample filename structure. mysample1.R1.fastq and mysample1.R2.fastq = {sample}.R{read}; mysample1_L001_R1_001.fastq = {sample}_L001_R{read}_001",
             type: "chip",
             rules: [(v) => v.length <= 1 || "ADD ONLY ONE IDENTIFIER"],
+          },
+          {
+            name: "database",
+            btnName: "select RDP db",
+            value: "undefined",
+            disabled: "never",
+            tooltip:
+              "select a compatible reference database for RDP classifier",
+            type: "file",
           },
           {
             name: "quality_cutoff",
@@ -3555,7 +4368,7 @@ export default new Vuex.Store({
 
       {
         tooltip:
-          "assign taxonomy with DADA2 'assignTaxonomy' function against the selected database. Untick the checkbox to skip this step",
+          "assign taxonomy with DADA2 'assignTaxonomy' function against a selected database. Untick the checkbox to skip this step",
         scriptName: "taxonomy_dada2.sh",
         imageName: "pipecraft/vsearch_dada2:1",
         serviceName: "assign Taxonomy",
@@ -3612,6 +4425,11 @@ export default new Vuex.Store({
         info: "This workflow is based on DADA2 pipeline tutorial (except parts with tickboxes)",
         link: "https://benjjneb.github.io/dada2/tutorial.html",
         title: "DADA2 ASVs workflow for PAIRED-END reads",
+      },
+      UNOISE_workflow: {
+        info: "UNOISE workflow with vsearch",
+        link: "https://github.com/torognes/vsearch",
+        title: "vsearch UNOISE3 workflow",
       },
       Metaworks_workflow: {
         info: "This workflow is based on Metaworks workflow quickstarts",
