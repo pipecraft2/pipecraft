@@ -54,6 +54,7 @@ seqkit rmdup -n sort.temp -w 0 > ORFs.fasta
 #write putative pseudogenes to a file
 grep "^>" ORFs.fasta | sed -e 's/>//' > headers.temp
 seqkit grep -w 0 -v -f headers.temp $rep_seqs_file > NUMTs.fasta
+seqkit seq -n NUMTs.fasta > NUMTs_names.txt
 
 input_seqs=$(grep -c "^>" $rep_seqs_file)
 numts=$(grep -c "^>" NUMTs.fasta)
@@ -76,7 +77,8 @@ runtime=$((end-start))
 printf "ORFfinder run for identifying open reading frames.
 
 # ORFs.fasta = representative sequences from the input file with ORFs (open reading frames); contains $orfs reads.
-# NUMTs.fasta = putative pseudogenes; contains $numts reads.
+# NUMTs.fasta = putative pseudogenes/off-target ORFs; contains $numts reads.
+# NUMTs_names.txt = list of OTU/ASV identifiers of putative pseudogenes/off-target ORFs.
 
 Total run time was $runtime sec.
 
