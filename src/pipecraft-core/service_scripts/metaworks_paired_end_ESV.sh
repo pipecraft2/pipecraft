@@ -232,14 +232,14 @@ raw: "/input"
 # Ex. Sample filename structure:
 # 	SITE-CONDITION-REPLICATE_S1_L001_R1_001.fastq.gz
 # 	{sample}_L001_R{read}_001.fastq.gz
-raw_sample_read_wildcards: "/input/$filename_structure"
+raw_sample_read_wildcards: "/input/{sample}_R{read}.fq.gz"
 
 # SEQPREP sample wildcard and parameters
 # These files should be in a data folder (above)
 # Ex.
 #	{sample}_L001_R1_001.fastq.gz
-raw_sample_forward_wildcard: "/input/$R1"
-raw_sample_reverse_wildcard: "/input/$R2"
+raw_sample_forward_wildcard: "/input/{sample}_R1.fq.gz"
+raw_sample_reverse_wildcard: "/input/{sample}_R2.fq.gz"
 
 ############################################################################
 # Directory for the output
@@ -271,7 +271,7 @@ SEQPREP:
 # >AmpliconName;
 # ^FwdPrimerSeq...ReverseComplementedRevPrimerSeq$
 CUTADAPT:
-    fasta: "/home/sten/Desktop/test/metaworks_test/primers.fasta"
+    fasta: "/input/primers.fasta"
 
 # Minimum sequence length (bp) to retain after trimming primers:
     m: 150
@@ -326,7 +326,7 @@ RDP:
 
 # If you are using a custom-trained reference set 
 # enter the path to the trained RDP classifier rRNAClassifier.properties file here:
-    t: "$db"
+    t: "/extraFiles2/rRNAClassifier.properties"
 # If you are using the 16S RDP classifier built-in reference set, the pipeline will use these params:
     c: 0
     f: "fixrank"
@@ -431,11 +431,11 @@ cp /MetaWorks1.11.2/snakefile_ESV snakefile_ESV.pipecraft
 sed -i 's/Read in vars from config_ESV.yaml/Read in vars from config_ESV.pipecraft.yaml/' snakefile_ESV.pipecraft
 sed -i '6 i\configfile: "config_ESV.pipecraft.yaml"' snakefile_ESV.pipecraft
 
-
+cd /MetaWorks1.11.2
 # Run MetaWorks
 echo "Running snakemake"
 #checkerror=$(
-    snakemake --jobs 2 --snakefile snakefile_ESV.pipecraft --configfile config_ESV.pipecraft.yaml
+    snakemake --jobs 2 --snakefile /input/snakefile_ESV.pipecraft --configfile /input/config_ESV.pipecraft.yaml
     # 2>&1) 
 #check_app_error
 
