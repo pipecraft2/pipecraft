@@ -226,7 +226,7 @@ export default {
   },
   computed: {
     services() {
-      return this.$store.state.selectedSteps[this.$route.params.order].services;
+      return this.$store.state.steps[this.$route.params.order].services;
     },
   },
   methods: {

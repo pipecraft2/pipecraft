@@ -56,17 +56,17 @@
               </v-list-item-content>
             </template>
             <v-list style="padding: 0">
-              <v-subheader style="height: 40px">FULL PIPELINES</v-subheader>
+              <v-subheader style="height: 40px">QUICK TOOLS</v-subheader>
               <v-divider></v-divider>
               <v-list-item
                 ripple
                 link
-                v-for="(item, index) in $store.state.customWorkflowInfo"
+                v-for="(item, index) in $store.state.steps"
                 :key="index"
-                @click="push2premade(index)"
+                @click="push2route(item.stepName, index)"
               >
                 <v-list-item-title>{{
-                  index.replace("_", " ")
+                  item.stepName
                 }}</v-list-item-title>
               </v-list-item>
             </v-list>
@@ -198,6 +198,12 @@ export default {
     push2expert() {
       if (this.$route.path != "/ExpertMode") {
         this.$router.push("/ExpertMode");
+      }
+    },
+        push2route(stepName, index) {
+      let route = `/step/${stepName}/${index}`;
+      if (this.$route.path != route) {
+        this.$router.push(route);
       }
     },
   },

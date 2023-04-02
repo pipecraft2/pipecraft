@@ -54,29 +54,51 @@
         </v-tooltip>
       </v-list-item-content>
     </v-list-item>
-    <!-- <v-list-item>
-      <v-list-item-content>
-        <v-btn
-          block
-          :loading="loading"
-          :disabled="loading"
-          color="grey"
-          @click="loader = 'loading'"
-        >
-          Run and load
-          <template v-slot:loader>
-            <span class="custom-loader">
-              <v-icon light>mdi-cached</v-icon>
-            </span>
-          </template>
-        </v-btn>
-      </v-list-item-content>
-    </v-list-item> -->
-    <v-list-item>
-      <v-list-item-content>
-        <AddMenu />
-      </v-list-item-content>
-    </v-list-item>
+        <v-list-item ripple >
+          <v-menu tile dark left >
+            <template v-slot:activator="{ on, attrs }">
+              <v-list-item-content v-on="on" v-bind="attrs">
+                <v-btn
+
+                :style="
+                    $route.path.includes('premade')
+                                          ? {
+                        borderBottom: 'thin #1DE9B6 solid',
+                        borderTop: 'thin white solid',
+                        borderLeft: 'thin white solid',
+                        borderRight: 'thin white solid',
+                      }
+                    : {
+                        borderBottom: 'thin #E57373 solid',
+                        borderTop: 'thin white solid',
+                        borderRight: 'thin white solid',
+                        borderLeft: 'thin white solid',
+                      }
+                  "
+                block
+              >
+                Select workflow
+              </v-btn>
+                
+              </v-list-item-content>
+            </template>
+            <v-list style="padding: 0">
+              <v-subheader style="height: 40px">SELECT WORKFLOW</v-subheader>
+              <v-divider></v-divider>
+              <v-list-item
+                ripple
+                link
+                v-for="(item, index) in $store.state.customWorkflowInfo"
+                :key="index"
+                @click="push2premade(index)"
+              >
+                <v-list-item-title>{{
+                  index.replace("_", " ")
+                }}</v-list-item-title>
+              </v-list-item>
+            </v-list>
+          </v-menu>
+        </v-list-item>
     <v-list-item>
       <v-list-item-content v-if="$store.state.runInfo.active == true">
         <v-btn
@@ -106,7 +128,7 @@ const Swal = require("sweetalert2");
 const slash = require("slash");
 const { dialog } = require("@electron/remote");
 // const { dialog } = require("electron").remote;
-import AddMenu from "./AddMenu.vue";
+
 import RunButton from "./RunButton";
 import SelectedRoutes from "./SelectedRoutes";
 import * as Dockerode from "dockerode";
@@ -117,7 +139,7 @@ var dockerode = new Dockerode({ socketPath: socketPath });
 
 export default {
   name: "leftNav",
-  components: { AddMenu, RunButton, SelectedRoutes },
+  components: { RunButton, SelectedRoutes },
   data() {
     return {
       loader: null,
@@ -135,6 +157,11 @@ export default {
     },
   },
   methods: {
+        push2premade(name) {
+      if (this.$route.path != `/premade/${name}`) {
+        this.$router.push(`/premade/${name}`);
+      }
+    },
     async stopWorkflow() {
       var container = dockerode.getContainer(
         this.$store.state.runInfo.containerID

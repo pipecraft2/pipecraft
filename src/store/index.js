@@ -3867,6 +3867,39 @@ export default new Vuex.Store({
         ],
       },
     ],
+    NextFlow_test: [{
+      tooltip:
+          "cut them primers",
+        scriptName: "basicPipeline.nf",
+        imageName: "pipecraft/nextflow:22.10.7",
+        serviceName: "Cut primers",
+        manualLink:
+          "https://pipecraft2-manual.readthedocs.io/en/stable/user_guide.html#demultiplex",
+        disabled: "never",
+        selected: 'always',
+        showExtra: false,
+        extraInputs: [],
+        Inputs: [
+          {
+            name: "forward_primers",
+            value: [],
+            disabled: "never",
+            tooltip: "specify forward primer (5'-3'); add up to 13 primers",
+            type: "chip",
+            iupac: true,
+            rules: [(v) => v.length <= 13 || "TOO MANY PRIMERS"],
+          },
+          {
+            name: "reverse_primers",
+            value: [],
+            disabled: "never",
+            tooltip: "specify reverse primer (3'-5'); add up to 13 primers",
+            type: "chip",
+            iupac: true,
+            rules: [(v) => v.length <= 13 || "TOO MANY PRIMERS"],
+          },
+        ],
+    }],
     ASVs_workflow: [
       {
         tooltip:
@@ -4436,6 +4469,11 @@ export default new Vuex.Store({
         link: "https://terrimporter.github.io/MetaWorksSite/quickstart/",
         title: "MetaWorks ESVs workflow for demultiplexed PAIRED-END reads",
       },
+      NextFlow_test: {
+        info: "nextflow",
+        link: "https://www.nextflow.io/index.html",
+        title: "Nextflow",
+      },
     },
   },
   getters: {
@@ -4483,7 +4521,7 @@ export default new Vuex.Store({
         state[state.route.params.workflowName].forEach((step) => {
           if (step.selected == true || step.selected == "always") {
             step.Inputs.forEach((input) => {
-              if (input.type == "file" || input.type == "chip") {
+              if (input.type == "file" || input.type == "chip" || (input.type == "boolfile" && input.active == true)) {
                 if (input.value == "undefined" || input.value.length < 1) {
                   Ready.push(false);
                 }
