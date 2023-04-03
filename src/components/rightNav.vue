@@ -73,7 +73,7 @@
           </v-menu>
         </v-list-item>
       </template>
-      <span>Full pipelines</span>
+      <span>Select and use individual tools</span>
     </v-tooltip>
   </v-list>
 </template>
