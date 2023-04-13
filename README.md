@@ -12,6 +12,8 @@ Download: https://github.com/pipecraft2/pipecraft/releases/tag/v0.1.4
 
 ## For developers
 
+Dockerhub: https://hub.docker.com/u/pipecraft
+
 ### Prerequisites:
 
 NodeJS https://nodejs.org/en/download/ (make sure you lets node install build tools on windows and build-essential on ubuntu)
