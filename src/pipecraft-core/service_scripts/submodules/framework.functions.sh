@@ -83,7 +83,7 @@ if [[ $count != 0 ]]; then
     :
 else
     printf '%s\n' "ERROR]: cannot find input.
-Please check and specify again; or NOTE THAT automated CLUSTERING is disabled after ITSx; because ITSx outputs multiple directories for different ITS sub-regions; select appropriate ITSx output folder for CLUSTERING after the process is finished
+Please check and specify again.
 >Quitting" >&2
     end_process
 fi 
