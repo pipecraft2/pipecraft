@@ -49,7 +49,7 @@
               : runWorkFlow()
           "
         >
-          Run workflow
+          Start
         </v-btn>
       </div>
     </template>

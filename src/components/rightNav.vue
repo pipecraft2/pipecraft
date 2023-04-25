@@ -47,7 +47,7 @@
               <v-list-item-content v-on="on" v-bind="attrs">
                 <v-icon
                   :style="
-                    $route.path.includes('premade')
+                  $store.getters.singleStepNames.some(v => $route.path.includes(v))
                       ? { color: '#1DE9B6' }
                       : { color: 'white' }
                   "
@@ -63,7 +63,7 @@
                 link
                 v-for="(item, index) in $store.state.steps"
                 :key="index"
-                @click="push2route(item.stepName, index)"
+                @click="push2route(item.stepName, index), addStep(item, nrOfSelectedSteps)"
               >
                 <v-list-item-title>{{
                   item.stepName
@@ -93,6 +93,7 @@ export default {
   name: "rightNav",
   data() {
     return {
+      nrOfSelectedSteps: (state) => state.selectedSteps.length + 1,
       dockerActive: "pending",
       items: [
         {
@@ -140,6 +141,11 @@ export default {
     }, 1000);
   },
   methods: {
+    addStep(item) {
+      this.$store.commit("addStep", {
+        step: item,
+      });
+    },
     saveWorkFlow() {
       dialog
         .showSaveDialog({
@@ -200,8 +206,8 @@ export default {
         this.$router.push("/ExpertMode");
       }
     },
-        push2route(stepName, index) {
-      let route = `/step/${stepName}/${index}`;
+    push2route(stepName) {
+      let route = `/step/${stepName}/0`;
       if (this.$route.path != route) {
         this.$router.push(route);
       }

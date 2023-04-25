@@ -1,9 +1,45 @@
 FROM ubuntu:22.04
+RUN apt-get update \
+&& apt install default-jre  -y \
+&& apt install wget -y \
+&& wget -qO- get.nextflow.io | bash \
+&& chmod 777 nextflow \
+&& mv nextflow /usr/local/bin/ \
+&& wget https://github.com/shenwei356/seqkit/releases/download/v2.3.0/seqkit_linux_amd64.tar.gz -O /tmp/seqkit.tar.gz  \
+&& tar zxvf /tmp/seqkit.tar.gz -C /usr/bin/ && rm /tmp/seqkit.tar.gz 
+# Install miniconda
+ENV CONDA_DIR /opt/conda
+RUN wget --quiet https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86_64.sh -O ~/miniconda.sh && \
+     /bin/bash ~/miniconda.sh -b -p /opt/conda
+
+# Put conda in path so we can use conda activate
+ENV PATH=$CONDA_DIR/bin:$PATH
+RUN conda config --add channels defaults && conda config --add channels bioconda && conda config --add channels conda-forge
+RUN conda install -c bioconda lima
+RUN conda install -c bioconda fqgrep
+RUN conda install -c bioconda vsearch
+RUN conda install -c bioconda seqkit
+RUN conda install -c bioconda cutadapt
+RUN conda install -c bioconda itsx
+RUN conda install -c bioconda blast
+RUN wget http://opengene.org/fastp/fastp.0.23.2 && mv fastp.0.23.2 fastp && chmod a+x ./fastp && mv fastp /usr/bin/
+ENV TZ=Europe/Tallinn
+RUN ln -snf /usr/share/zoneinfo/$TZ /etc/localtime && echo $TZ > /etc/timezone
+RUN apt-get install r-base -y
+RUN Rscript -e 'install.packages(c("data.table", "BiocManager",  "plyr", "R.utils", "ggplot2", "openxlsx", "optparse"), repos="https://cloud.r-project.org" , dependencies=TRUE )'
+RUN apt-get install parallel -y
+RUN conda install -c bioconda bioawk
+RUN conda install -c bioconda miller
+RUN conda install -c bioconda bedtools
+RUN conda install -c dnachun rush
+RUN conda install -c bioconda csvtk
+RUN apt-get install curl
+RUN curl https://sh.rustup.rs -sSf | sh -s -- -y
+RUN . $HOME/.cargo/env
+SHELL ["bash", "-lc"]
+RUN cargo install runiq
 RUN apt-get update
-RUN apt install default-jre  -y
-RUN apt install wget -y
-RUN wget -qO- get.nextflow.io | bash
-RUN chmod 777 nextflow
-RUN mv nextflow /usr/local/bin/
-RUN wget https://github.com/shenwei356/seqkit/releases/download/v2.3.0/seqkit_linux_amd64.tar.gz -O /tmp/seqkit.tar.gz  \
-    && tar zxvf /tmp/seqkit.tar.gz -C /usr/bin/ && rm /tmp/seqkit.tar.gz
+RUN apt-get install rename
+RUN Rscript -e 'BiocManager::install(c("DECIPHER", "Biostrings") ,quiet = TRUE, ask = FALSE)'
+
+

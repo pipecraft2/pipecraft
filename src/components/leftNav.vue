@@ -77,7 +77,7 @@
                   "
                 block
               >
-                Select workflow
+                Select pipeline
               </v-btn>
                 
               </v-list-item-content>
@@ -110,7 +110,7 @@
           "
           @click="stopWorkflow"
         >
-          Stop workflow
+          Stop
         </v-btn>
       </v-list-item-content>
       <v-list-item-content v-else>

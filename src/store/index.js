@@ -4477,6 +4477,7 @@ export default new Vuex.Store({
     },
   },
   getters: {
+    singleStepNames: (state) => state.steps.map(({ stepName }) => stepName),
     steps2Run: (state) => (id) => {
       let steps = state[id].filter(
         (el) => el.selected == true || el.selected == "always"
@@ -4693,6 +4694,7 @@ export default new Vuex.Store({
       state.selectedSteps.splice(index, 1);
     },
     addStep(state, payload) {
+      state.selectedSteps = []
       let step = _.cloneDeep(payload.step);
       state.selectedSteps.push(step);
     },
