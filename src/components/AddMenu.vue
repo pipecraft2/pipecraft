@@ -11,7 +11,7 @@
           v-bind="attrs"
           v-on="on"
         >
-          add step
+          SINGLE STEP
         </v-btn>
       </template>
       <v-list dark>

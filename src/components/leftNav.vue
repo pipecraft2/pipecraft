@@ -99,6 +99,11 @@
             </v-list>
           </v-menu>
         </v-list-item>
+            <v-list-item>
+      <v-list-item-content>
+        <AddMenu />
+      </v-list-item-content>
+    </v-list-item>
     <v-list-item>
       <v-list-item-content v-if="$store.state.runInfo.active == true">
         <v-btn
@@ -128,7 +133,7 @@ const Swal = require("sweetalert2");
 const slash = require("slash");
 const { dialog } = require("@electron/remote");
 // const { dialog } = require("electron").remote;
-
+import AddMenu from "./AddMenu.vue";
 import RunButton from "./RunButton";
 import SelectedRoutes from "./SelectedRoutes";
 import * as Dockerode from "dockerode";
@@ -139,7 +144,7 @@ var dockerode = new Dockerode({ socketPath: socketPath });
 
 export default {
   name: "leftNav",
-  components: { RunButton, SelectedRoutes },
+  components: { RunButton, SelectedRoutes, AddMenu},
   data() {
     return {
       loader: null,
