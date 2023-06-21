@@ -47,7 +47,9 @@
               <v-list-item-content v-on="on" v-bind="attrs">
                 <v-icon
                   :style="
-                  $store.getters.singleStepNames.some(v => $route.path.includes(v))
+                    $store.getters.singleStepNames.some((v) =>
+                      $route.path.includes(v)
+                    )
                       ? { color: '#1DE9B6' }
                       : { color: 'white' }
                   "
@@ -63,11 +65,12 @@
                 link
                 v-for="(item, index) in $store.state.steps"
                 :key="index"
-                @click="push2route(item.stepName, index), addStep(item, nrOfSelectedSteps)"
+                @click="
+                  push2route(item.stepName, index),
+                    addStep(item, nrOfSelectedSteps)
+                "
               >
-                <v-list-item-title>{{
-                  item.stepName
-                }}</v-list-item-title>
+                <v-list-item-title>{{ item.stepName }}</v-list-item-title>
               </v-list-item>
             </v-list>
           </v-menu>

@@ -39,7 +39,17 @@
         ></v-card-text
       >
     </v-card>
-    <v-expansion-panels dark multiple popout>
+    <v-expansion-panels
+      dark
+      multiple
+      popout
+      style
+      :value="
+        this.$store.state[this.$route.params.workflowName].length == 1
+          ? panel_single
+          : panel
+      "
+    >
       <v-expansion-panel
         v-for="(service, index) in services"
         :key="index"
@@ -302,6 +312,10 @@ export default {
     InputSlide,
     InputCombo,
   },
+  data: () => ({
+    panel: [],
+    panel_single: [0],
+  }),
   computed: {
     hide() {
       return "display_none";

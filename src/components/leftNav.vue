@@ -114,7 +114,7 @@
         </v-btn>
       </v-list-item-content>
       <v-list-item-content v-else>
-        <RunButton />
+        <Run />
       </v-list-item-content>
     </v-list-item>
     <v-divider></v-divider>
@@ -129,7 +129,7 @@ const slash = require("slash");
 const { dialog } = require("@electron/remote");
 // const { dialog } = require("electron").remote;
 
-import RunButton from "./RunButton";
+import Run from "./Run";
 import SelectedRoutes from "./SelectedRoutes";
 import * as Dockerode from "dockerode";
 import os from "os";
@@ -139,7 +139,7 @@ var dockerode = new Dockerode({ socketPath: socketPath });
 
 export default {
   name: "leftNav",
-  components: { RunButton, SelectedRoutes },
+  components: { Run, SelectedRoutes },
   data() {
     return {
       loader: null,

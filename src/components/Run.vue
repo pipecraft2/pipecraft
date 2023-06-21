@@ -43,9 +43,10 @@
                 }
           "
           @click="
-            $route.params.workflowName.includes('nextflow') 
-              ? runNextFlow($route.params.workflowName)
-              :  $route.params.workflowName ? runCustomWorkFlow($route.params.workflowName)
+            $route.params.workflowName.includes('nextITS')
+              ? runNextITS($route.params.workflowName)
+              : $route.params.workflowName
+              ? runCustomWorkFlow($route.params.workflowName)
               : runWorkFlow()
           "
         >
@@ -421,7 +422,7 @@ export default {
     },
     createCustomVariableObj(element) {
       let envVariables = [];
-      let nextFlowParams = {}
+      let nextFlowParams = {};
       let inputs = element.Inputs.concat(element.extraInputs);
       inputs.forEach((input) => {
         let varObj = {};
@@ -442,11 +443,17 @@ export default {
       });
       let NextFlowConfigPath =
         isDevelopment == true
-          ? `${slash(process.cwd())}/src/pipecraft-core/service_scripts/NextFlowConfig.json`
+          ? `${slash(
+              process.cwd()
+            )}/src/pipecraft-core/service_scripts/NextFlowConfig.json`
           : `${process.resourcesPath}/src/pipecraft-core/service_scripts/NextFlowConfig.json`;
-      fs.writeFile(NextFlowConfigPath, JSON.stringify(nextFlowParams), (error) => {
-    if (error) throw error;
-  });
+      fs.writeFile(
+        NextFlowConfigPath,
+        JSON.stringify(nextFlowParams),
+        (error) => {
+          if (error) throw error;
+        }
+      );
       return envVariables;
     },
     getBinds_c(element, Input) {
@@ -539,7 +546,7 @@ export default {
       }
       fs.writeFileSync(`${this.$store.state.inputDir}/config.json`, confJson);
     },
-      async runNextFlow(name) {
+    async runNextFlow(name) {
       this.confirmRun(name).then(async (result) => {
         if (result.isConfirmed) {
           this.$store.commit("addWorkingDir", "/input");
@@ -561,7 +568,11 @@ export default {
               let result = await dockerode
                 .run(
                   step.imageName,
-                  ['sh', '-c', 'nextflow /scripts/main.nf -params-file /scripts/params.json'],
+                  [
+                    "sh",
+                    "-c",
+                    "nextflow /scripts/main.nf -params-file /scripts/params.json",
+                  ],
                   [stdout, stderr],
                   dockerProps
                 )
@@ -654,6 +665,46 @@ export default {
           console.log(totalTime);
         }
       });
+    },
+    async runNextITS() {
+      let log = fs.createWriteStream("nextITS_log.txt");
+      let stdout = new streams.WritableStream();
+      await this.clearContainerConflicts("nextits");
+      await this.imageCheck("vmikk/nextits:0.0.3");
+      let promise = new Promise((resolve, reject) => {
+        dockerode
+          .run(
+            "vmikk/nextits:0.0.3",
+            ["sh", "-c", `nextflow run /opt/NextITS/main.nf --helpMsg`],
+            {
+              HostConfig: {
+                Binds: ["C:\\Users\\martin\\Desktop\\NextITS:/opt/NextITS"],
+              },
+            },
+            false,
+            (err, data, container) => {
+              console.log(container);
+              console.log(data);
+              console.log(stdout.toString());
+              if (err) {
+                console.log(err);
+                reject(err);
+              } else {
+                resolve(data);
+              }
+            }
+          )
+          .on("stream", (stream) => {
+            stream.on("data", function (data) {
+              console.log(data.toString().replace(/[\n\r]/g, ""));
+              log.write(data.toString().replace(/[\n\r]/g, ""));
+              // term.write(data.toString().replace(/[\n\r]/g, "") + "\n");
+              stdout.write(data.toString().replace(/[\n\r]/g, "") + "\n");
+            });
+          });
+      });
+      let result = await promise;
+      console.log(result);
     },
   },
 };

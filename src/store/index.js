@@ -3867,38 +3867,66 @@ export default new Vuex.Store({
         ],
       },
     ],
-    NextFlow_test: [{
+    NextITS: [{
       tooltip:
-          "cut them primers",
-        scriptName: "basicPipeline.nf",
-        imageName: "pipecraft/nextflow:22.10.7",
-        serviceName: "Cut primers",
-        manualLink:
-          "https://pipecraft2-manual.readthedocs.io/en/stable/user_guide.html#demultiplex",
-        disabled: "never",
-        selected: 'always',
-        showExtra: false,
-        extraInputs: [],
-        Inputs: [
-          {
-            name: "forward_primers",
-            value: [],
-            disabled: "never",
-            tooltip: "specify forward primer (5'-3'); add up to 13 primers",
-            type: "chip",
-            iupac: true,
-            rules: [(v) => v.length <= 13 || "TOO MANY PRIMERS"],
-          },
-          {
-            name: "reverse_primers",
-            value: [],
-            disabled: "never",
-            tooltip: "specify reverse primer (3'-5'); add up to 13 primers",
-            type: "chip",
-            iupac: true,
-            rules: [(v) => v.length <= 13 || "TOO MANY PRIMERS"],
-          },
-        ],
+        "cut them primers",
+      scriptName: "basicPipeline.nf",
+      imageName: " vmikk/nextits:0.0.3",
+      serviceName: "Cut primers",
+      manualLink:
+        "https://pipecraft2-manual.readthedocs.io/en/stable/user_guide.html#demultiplex",
+      disabled: "never",
+      selected: 'always',
+      showExtra: false,
+      extraInputs: [],
+      Inputs: [
+        {
+          name: "forward_primers",
+          value: [],
+          disabled: "never",
+          tooltip: "specify forward primer (5'-3'); add up to 13 primers",
+          type: "chip",
+          iupac: true,
+          rules: [(v) => v.length <= 13 || "TOO MANY PRIMERS"],
+        },
+        {
+          name: "reverse_primers",
+          value: [],
+          disabled: "never",
+          tooltip: "specify reverse primer (3'-5'); add up to 13 primers",
+          type: "chip",
+          iupac: true,
+          rules: [(v) => v.length <= 13 || "TOO MANY PRIMERS"],
+        },
+        {
+          name: "barcodes_file",
+          value: "undefined",
+          btnName: "select fasta",
+          disabled: "never",
+          tooltip:
+            "For demultiplexing, sample barcodes (a.k.a. tags or indices) should be provided in a FASTA file",
+          type: "file",
+        },
+        {
+          name: "ITS_region",
+          items: ["1", "2", "full"],
+          value: "1",
+          disabled: "never",
+          tooltip:
+            "sub-regions of the internal transcribed spacer",
+          type: "select",
+        },
+        {
+          name: "blast_taxDB",
+          active: false,
+          btnName: "select file",
+          value: "undefined",
+          disabled: "never",
+          tooltip:
+            "",
+          type: "boolfile",
+        },
+      ],
     }],
     ASVs_workflow: [
       {
@@ -4469,10 +4497,10 @@ export default new Vuex.Store({
         link: "https://terrimporter.github.io/MetaWorksSite/quickstart/",
         title: "MetaWorks ESVs workflow for demultiplexed PAIRED-END reads",
       },
-      NextFlow_test: {
-        info: "nextflow",
-        link: "https://www.nextflow.io/index.html",
-        title: "Nextflow",
+      NextITS: {
+        info: "NextITS",
+        link: "https://github.com/vmikk/NextITS",
+        title: "NextITS",
       },
     },
   },
