@@ -1,0 +1,5 @@
+{
+    "forward_primer": "TGCAGGNTGGCAG",
+    "reverse_primer": "GACGGTNGGACGT",
+    "outdir": "$projectDir/results"
+  }

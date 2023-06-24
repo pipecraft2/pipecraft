@@ -12,7 +12,7 @@
                 v-model="service.selected"
                 style="max-width: 34px; padding-right: 10px"
               ></v-checkbox
-              >{{ service.serviceName.toUpperCase() }}
+              >{{ service.serviceName.toUpperCase().replaceAll('_', ' ') }}
               <div
                 v-if="
                   $store.state.runInfo.active == true &&

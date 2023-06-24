@@ -18,20 +18,16 @@
 </template>
 
 <script>
-// import HelloWorld from "./components/HelloWorld";
 import leftNav from "./components/leftNav";
 import rightNav from "./components/rightNav";
-// import SelectedRoutes from "./components/SelectedRoutes";
 
 export default {
   theme: { dark: true },
   name: "App",
 
   components: {
-    // HelloWorld,
     leftNav,
     rightNav,
-    // SelectedRoutes,
   },
 
   data: () => ({

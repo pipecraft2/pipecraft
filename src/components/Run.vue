@@ -43,12 +43,14 @@
                 }
           "
           @click="
-            $route.params.workflowName
+            $route.params.workflowName.includes('nextITS')
+              ? runNextITS($route.params.workflowName)
+              : $route.params.workflowName
               ? runCustomWorkFlow($route.params.workflowName)
               : runWorkFlow()
           "
         >
-          Run workflow
+          Start
         </v-btn>
       </div>
     </template>
@@ -154,7 +156,6 @@ export default {
           Binds: Binds,
         },
         Env: envVariables,
-        User: `${os.userInfo().uid > 0 ? os.userInfo().uid : 0}`,
       };
       return dockerProps;
     },
@@ -421,9 +422,11 @@ export default {
     },
     createCustomVariableObj(element) {
       let envVariables = [];
+      let nextFlowParams = {};
       let inputs = element.Inputs.concat(element.extraInputs);
       inputs.forEach((input) => {
         let varObj = {};
+        nextFlowParams[input.name] = input.value;
         varObj[input.name] = input.value;
         envVariables.push(stringify(varObj).replace(/(\r\n|\n|\r)/gm, ""));
       });
@@ -438,6 +441,19 @@ export default {
         varObj[key] = value;
         envVariables.push(stringify(varObj).replace(/(\r\n|\n|\r)/gm, ""));
       });
+      let NextFlowConfigPath =
+        isDevelopment == true
+          ? `${slash(
+              process.cwd()
+            )}/src/pipecraft-core/service_scripts/NextFlowConfig.json`
+          : `${process.resourcesPath}/src/pipecraft-core/service_scripts/NextFlowConfig.json`;
+      fs.writeFile(
+        NextFlowConfigPath,
+        JSON.stringify(nextFlowParams),
+        (error) => {
+          if (error) throw error;
+        }
+      );
       return envVariables;
     },
     getBinds_c(element, Input) {
@@ -529,6 +545,166 @@ export default {
         confJson = JSONfn.stringify(this.$store.state.selectedSteps);
       }
       fs.writeFileSync(`${this.$store.state.inputDir}/config.json`, confJson);
+    },
+    async runNextFlow(name) {
+      this.confirmRun(name).then(async (result) => {
+        if (result.isConfirmed) {
+          this.$store.commit("addWorkingDir", "/input");
+          let startTime = Date.now();
+          let steps2Run = this.$store.getters.steps2Run(name);
+          this.autoSaveConfig();
+          let log = fs.createWriteStream(
+            `${this.$store.state.inputDir}/${name}_${new Date()
+              .toJSON()
+              .slice(0, 10)}.txt`
+          );
+          for (let [i, step] of this.$store.state[name].entries()) {
+            if (step.selected == true || step.selected == "always") {
+              let dockerProps = await this.getDockerProps(step);
+              this.updateRunInfo(i, steps2Run, dockerProps.name, name);
+              await this.imageCheck(step.imageName);
+              await this.clearContainerConflicts(dockerProps.name);
+              console.log(dockerProps);
+              let result = await dockerode
+                .run(
+                  step.imageName,
+                  [
+                    "sh",
+                    "-c",
+                    "nextflow /scripts/main.nf -params-file /scripts/params.json",
+                  ],
+                  [stdout, stderr],
+                  dockerProps
+                )
+                .then(async ([res, container]) => {
+                  console.log(stderr.toString());
+                  console.log(stdout.toString());
+                  res.stdout = stdout.toString();
+                  res.stderr = stderr.toString();
+                  if (res.StatusCode != 137) {
+                    container.remove({ v: true, force: true });
+                  }
+                  console.log(res);
+                  return res;
+                })
+                .catch((err) => {
+                  console.log(err);
+                  this.$store.commit("resetRunInfo");
+                  return err;
+                });
+              console.log(result);
+              if (result.StatusCode == 0) {
+                log.write(result.stdout.toString().replace(/[\n\r]/g, ""));
+                let newWorkingDir = this.getVariableFromLog(
+                  result.stdout,
+                  "workingDir"
+                );
+                let newDataInfo = {
+                  dataFormat: this.getVariableFromLog(
+                    result.stdout,
+                    "dataFormat"
+                  ),
+                  fileFormat: this.getVariableFromLog(
+                    result.stdout,
+                    "fileFormat"
+                  ),
+                  readType: this.getVariableFromLog(result.stdout, "readType"),
+                };
+                this.$store.commit(
+                  "toggle_PE_SE_scripts",
+                  newDataInfo.readType
+                );
+                this.$store.commit("addInputInfo", newDataInfo);
+                this.$store.commit("addWorkingDir", newWorkingDir);
+              } else {
+                if (result.StatusCode == 137) {
+                  log.write(result.stderr.toString().replace(/[\n\r]/g, ""));
+                  Swal.fire("Workflow stopped");
+                } else {
+                  let err;
+                  if (!result.stderr) {
+                    log.write(result.stdout.toString().replace(/[\n\r]/g, ""));
+                    err = result;
+                  } else {
+                    log.write(result.stderr.toString().replace(/[\n\r]/g, ""));
+                    err = result.stderr;
+                  }
+                  Swal.fire({
+                    title: "An error has occured while processing your data",
+                    text: err,
+                    showCancelButton: true,
+                    cancelButtonText: "Quit",
+                    confirmButtonText: "Report a bug",
+                  }).then((result) => {
+                    // let log = await function('need to gather a log for each step ran and a snapshot of the state')
+                    if (result.isConfirmed) {
+                      Swal.fire("Report sent");
+                    }
+                  });
+                }
+                this.$store.commit("resetRunInfo");
+                stdout = new streams.WritableStream();
+                stderr = new streams.WritableStream();
+                break;
+              }
+              stdout = new streams.WritableStream();
+              stderr = new streams.WritableStream();
+              console.log(`Finished step ${i + 1}: ${step.serviceName}`);
+              this.$store.commit("resetRunInfo");
+              if (result.StatusCode == 0) {
+                steps2Run -= 1;
+                if (steps2Run == 0) {
+                  Swal.fire("Workflow finished");
+                }
+              }
+            }
+          }
+          let totalTime = this.toMinsAndSecs(Date.now() - startTime);
+          this.$store.commit("addWorkingDir", "/input");
+          this.$store.commit("resetRunInfo");
+          console.log(totalTime);
+        }
+      });
+    },
+    async runNextITS() {
+      let log = fs.createWriteStream("nextITS_log.txt");
+      let stdout = new streams.WritableStream();
+      await this.clearContainerConflicts("nextits");
+      await this.imageCheck("vmikk/nextits:0.0.3");
+      let promise = new Promise((resolve, reject) => {
+        dockerode
+          .run(
+            "vmikk/nextits:0.0.3",
+            ["sh", "-c", `nextflow run /opt/NextITS/main.nf --helpMsg`],
+            {
+              HostConfig: {
+                Binds: ["C:\\Users\\martin\\Desktop\\NextITS:/opt/NextITS"],
+              },
+            },
+            false,
+            (err, data, container) => {
+              console.log(container);
+              console.log(data);
+              console.log(stdout.toString());
+              if (err) {
+                console.log(err);
+                reject(err);
+              } else {
+                resolve(data);
+              }
+            }
+          )
+          .on("stream", (stream) => {
+            stream.on("data", function (data) {
+              console.log(data.toString().replace(/[\n\r]/g, ""));
+              log.write(data.toString().replace(/[\n\r]/g, ""));
+              // term.write(data.toString().replace(/[\n\r]/g, "") + "\n");
+              stdout.write(data.toString().replace(/[\n\r]/g, "") + "\n");
+            });
+          });
+      });
+      let result = await promise;
+      console.log(result);
     },
   },
 };
