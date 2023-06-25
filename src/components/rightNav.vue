@@ -4,7 +4,7 @@
       <v-tooltip left nudge-left="10">
         <template v-slot:activator="{ on }">
           <v-list-item-content v-on="on">
-            <v-icon large :color="dockerActive"> mdi-docker </v-icon>
+            <v-icon :size="50" :color="dockerActive"> mdi-docker </v-icon>
           </v-list-item-content>
         </template>
         <span v-if="dockerActive === '#1DE9B6'">docker desktop is running</span>
@@ -13,39 +13,14 @@
         >
       </v-tooltip>
     </v-list-item>
-
     <v-divider class="mt-2 mb-2"></v-divider>
-
-    <v-list-item
-      class="mt-5"
-      ripple
-      link
-      v-for="item in this.items"
-      :key="item.title"
-    >
-      <v-tooltip left nudge-left="10">
-        <template v-slot:activator="{ on }">
-          <v-list-item-content v-on="on" @click="item.action">
-            <v-icon
-              :style="
-                `/${item.title}` == $route.path
-                  ? { color: '#1DE9B6' }
-                  : { color: 'white' }
-              "
-              >{{ item.icon }}</v-icon
-            >
-          </v-list-item-content>
-        </template>
-        <span>{{ item.tooltip }}</span>
-      </v-tooltip>
-    </v-list-item>
     <v-tooltip left nudge-left="10">
       <template v-slot:activator="{ on }">
         <v-list-item v-on="on" class="mt-5" ripple link>
           <v-menu tile dark left nudge-left="15" offset-x>
             <template v-slot:activator="{ on, attrs }">
               <v-list-item-content v-on="on" v-bind="attrs">
-                <v-icon
+                <v-icon large
                   :style="
                     $store.getters.singleStepNames.some((v) =>
                       $route.path.includes(v)
@@ -53,7 +28,7 @@
                       ? { color: '#1DE9B6' }
                       : { color: 'white' }
                   "
-                  >mdi-more</v-icon
+                  >mdi-tools</v-icon
                 >
               </v-list-item-content>
             </template>
@@ -78,6 +53,30 @@
       </template>
       <span>Select and use individual tools</span>
     </v-tooltip>
+    <v-divider class="mt-2 mb-2"></v-divider>
+    <v-list-item
+      class="mt-5"
+      ripple
+      link
+      v-for="item in this.items"
+      :key="item.title"
+    >
+      <v-tooltip left nudge-left="10">
+        <template v-slot:activator="{ on }">
+          <v-list-item-content v-on="on" @click="item.action">
+            <v-icon
+              :style="
+                `/${item.title}` == $route.path
+                  ? { color: '#1DE9B6' }
+                  : { color: 'white' }
+              "
+              >{{ item.icon }}</v-icon
+            >
+          </v-list-item-content>
+        </template>
+        <span>{{ item.tooltip }}</span>
+      </v-tooltip>
+    </v-list-item>
   </v-list>
 </template>
 
