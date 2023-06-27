@@ -1,5 +1,6 @@
 {
-    "forward_primer": "TGCAGGNTGGCAG",
-    "reverse_primer": "GACGGTNGGACGT",
-    "outdir": "$projectDir/results"
+    "primer_forward": "GTACACACCGCCCGTCG",
+    "primer_reverse": "CCTSCSCTTANTDATATGC",
+    "ITSx_tax": "F",
+    "chimera_db": "/input/UN95_chimera.udb"
   }

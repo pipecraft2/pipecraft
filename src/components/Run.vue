@@ -43,8 +43,8 @@
                 }
           "
           @click="
-            $route.params.workflowName.includes('nextITS')
-              ? runNextITS($route.params.workflowName)
+            $route.params.workflowName.includes('NextITS')
+              ? runNextITS()
               : $route.params.workflowName
               ? runCustomWorkFlow($route.params.workflowName)
               : runWorkFlow()
@@ -666,22 +666,48 @@ export default {
         }
       });
     },
+    createParamsFile(step) {
+      let Hostname = step.serviceName.replaceAll(" ", "_");
+      let WorkingDir = "/input";
+      let envVariables = this.createCustomVariableObj(step);
+      let Binds = this.getBinds_c(step, this.$store.state.inputDir);
+      let dockerProps = {
+        Tty: false,
+        WorkingDir: WorkingDir,
+        name: Hostname,
+        Volumes: {},
+        HostConfig: {
+          Binds: Binds,
+        },
+        Env: envVariables,
+      };
+      return dockerProps;
+    },
     async runNextITS() {
-      let log = fs.createWriteStream("nextITS_log.txt");
+      let log = fs.createWriteStream("NextITS_log.txt");
       let stdout = new streams.WritableStream();
-      await this.clearContainerConflicts("nextits");
+      let props = this.createParamsFile(this.$store.state.NextITS[0]);
+      console.log(props);
+      await this.clearContainerConflicts("NextITS");
       await this.imageCheck("vmikk/nextits:0.0.3");
       let promise = new Promise((resolve, reject) => {
         dockerode
           .run(
             "vmikk/nextits:0.0.3",
-            ["sh", "-c", `nextflow run /opt/NextITS/main.nf --helpMsg`],
-            {
-              HostConfig: {
-                Binds: ["C:\\Users\\martin\\Desktop\\NextITS:/opt/NextITS"],
-              },
-            },
+            [
+              "sh",
+              "-c",
+              `nextflow run /scripts/NextITS/main.nf \
+              -resume \
+              -params-file /scripts/params.json \
+              --input      /input/Input/Run_01/Run_01.fastq.gz \
+              --barcodes   /input/Input/Run_01/Run_01_barcodes.fasta \
+              --outdir     /input/Step1_Results \
+              -work-dir    /input/Step1_Results_wd \
+              -qs          6`,
+            ],
             false,
+            props,
             (err, data, container) => {
               console.log(container);
               console.log(data);

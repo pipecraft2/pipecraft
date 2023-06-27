@@ -3917,10 +3917,10 @@ export default new Vuex.Store({
     ],
     NextITS: [{
       tooltip:
-        "cut them primers",
-      scriptName: "basicPipeline.nf",
-      imageName: " vmikk/nextits:0.0.3",
-      serviceName: "Cut primers",
+        "NextITS is an automated pipeline for metabarcoding fungi and other eukaryotes with full-length ITS sequenced with PacBio. Amplicons obtained with Illumina are also supported.",
+      scriptName: "",
+      imageName: "vmikk/nextits:0.0.3",
+      serviceName: "NextITS",
       manualLink:
         "https://pipecraft2-manual.readthedocs.io/en/stable/user_guide.html#demultiplex",
       disabled: "never",
@@ -3932,19 +3932,19 @@ export default new Vuex.Store({
           name: "forward_primers",
           value: [],
           disabled: "never",
-          tooltip: "specify forward primer (5'-3'); add up to 13 primers",
+          tooltip: "specify forward primer",
           type: "chip",
           iupac: true,
-          rules: [(v) => v.length <= 13 || "TOO MANY PRIMERS"],
+          rules: [(v) => v.length <= 1 || "TOO MANY PRIMERS"],
         },
         {
           name: "reverse_primers",
           value: [],
           disabled: "never",
-          tooltip: "specify reverse primer (3'-5'); add up to 13 primers",
+          tooltip: "specify reverse primer",
           type: "chip",
           iupac: true,
-          rules: [(v) => v.length <= 13 || "TOO MANY PRIMERS"],
+          rules: [(v) => v.length <= 1 || "TOO MANY PRIMERS"],
         },
         {
           name: "barcodes_file",
@@ -3957,7 +3957,7 @@ export default new Vuex.Store({
         },
         {
           name: "ITS_region",
-          items: ["1", "2", "full"],
+          items: ["1", "2", "F"],
           value: "1",
           disabled: "never",
           tooltip:
