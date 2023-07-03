@@ -3703,7 +3703,7 @@ export default new Vuex.Store({
         ],
       },
     ],
-    Metaworks_workflow: [
+    metaworks_coi: [
       {
         tooltip: "MetaWorks v1.12.0, ESV paired-end reads",
         scriptName: "metaworks_paired_end_ESV2.sh",
@@ -3957,7 +3957,7 @@ export default new Vuex.Store({
         },
         {
           name: "ITS_region",
-          items: ["1", "2", "F"],
+          items: ["1", "2", "full"],
           value: "1",
           disabled: "never",
           tooltip:
@@ -3965,7 +3965,7 @@ export default new Vuex.Store({
           type: "select",
         },
         {
-          name: "blast_taxDB",
+          name: "chimera_database",
           active: false,
           btnName: "select file",
           value: "undefined",
@@ -4540,7 +4540,7 @@ export default new Vuex.Store({
         link: "https://github.com/torognes/vsearch",
         title: "vsearch UNOISE3 workflow",
       },
-      Metaworks_workflow: {
+      metaworks_coi: {
         info: "This workflow is based on Metaworks workflow quickstarts",
         link: "https://terrimporter.github.io/MetaWorksSite/quickstart/",
         title: "MetaWorks ESVs workflow for demultiplexed PAIRED-END reads",
