@@ -138,7 +138,7 @@
               :xl="input.type === 'combobox' ? 4 : 2"
               :lg="input.type === 'combobox' ? 6 : 3"
               :md="input.type === 'combobox' ? 8 : 4"
-              :sm="input.type === 'combobox' ? 12 : 3"
+              :sm="input.type === 'combobox' ? 12 : 6"
               style="height: fit-content; width: fit-content"
             >
               <v-container v-if="input.type === 'numeric'"

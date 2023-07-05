@@ -3930,7 +3930,7 @@ export default new Vuex.Store({
         extraInputs: [],
         Inputs: [
           {
-            name: "forward_primers",
+            name: "primer_forward",
             value: [],
             disabled: "never",
             tooltip: "specify forward primer",
@@ -3939,7 +3939,7 @@ export default new Vuex.Store({
             rules: [(v) => v.length <= 1 || "TOO MANY PRIMERS"],
           },
           {
-            name: "reverse_primers",
+            name: "primer_reverse",
             value: [],
             disabled: "never",
             tooltip: "specify reverse primer",
@@ -3948,17 +3948,8 @@ export default new Vuex.Store({
             rules: [(v) => v.length <= 1 || "TOO MANY PRIMERS"],
           },
           {
-            name: "barcodes_file",
-            value: "undefined",
-            btnName: "select fasta",
-            disabled: "never",
-            tooltip:
-              "For demultiplexing, sample barcodes (a.k.a. tags or indices) should be provided in a FASTA file",
-            type: "file",
-          },
-          {
-            name: "ITS_region",
-            items: ["1", "2", "full"],
+            name: "its_region",
+            items: ["full", "ITS1", "ITS2"],
             value: "1",
             disabled: "never",
             tooltip: "sub-regions of the internal transcribed spacer",

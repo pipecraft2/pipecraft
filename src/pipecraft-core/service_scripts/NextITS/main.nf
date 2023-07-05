@@ -48,6 +48,16 @@
 //  - UDB for chimera identification
 //  - BlastDB for taxonomy annotation
 
+// extract Filename
+public static String extractFilename(String path)  {  
+    java.util.regex.Pattern p       = java.util.regex.Pattern.compile('^[/\\\\]?(?:.+[/\\\\]+?)?(.+?)[/\\\\]?$');
+    java.util.regex.Matcher matcher = p.matcher(path);
+
+    if ( matcher.find() ) {
+        return matcher.group(1);
+    }
+    return null;
+}
 
 // Enable DSL2 syntax
 nextflow.enable.dsl = 2
@@ -132,8 +142,8 @@ params.primer_reverse = "CCTSCSCTTANTDATATGC"  // ITS4ngsUni
 params.primer_mismatches = 2
 // params.primer_mismatches_insertions = 1
 // params.primer_mismatches_deletions = 1
-params.primer_foverlap = params.primer_forward.length() - 2
-params.primer_roverlap = params.primer_reverse.length() - 2
+params.primer_foverlap = params.primer_forward[0].length() - 2
+params.primer_roverlap = params.primer_reverse[0].length() - 2
 
 // ITSx
 params.ITSx_evalue = 1e-1
@@ -150,7 +160,8 @@ params.hp_similarity = 0.999
 params.hp_iddef = 2
 
 // Reference-based chimera removal
-params.chimera_db = "/mnt/Dat2/DB/UNITE/Leho_Subset/UN95_chimera.udb"
+chimera_name = "${chimera_database}"
+params.chimera_db = '/extraFiles4/' + extractFilename(chimera_name)
 params.chimera_rescueoccurrence = 2
 
 // De novo chimera identification (UCHIME1)
@@ -472,7 +483,7 @@ process demux {
 
     label "main_container"
 
-    publishDir "${out_1_demux}", mode: 'symlink'  // , saveAs: { filename -> "foo_$filename" }
+    publishDir "${out_1_demux}", mode: 'copy'  // , saveAs: { filename -> "foo_$filename" }
     // cpus 10
 
     input:
@@ -533,7 +544,7 @@ process merge_pe {
 
     label "main_container"
 
-    // publishDir "${out_1_demux}", mode: 'symlink'
+    // publishDir "${out_1_demux}", mode: 'copy'
     // cpus 10
 
     input:
@@ -592,7 +603,7 @@ process prep_barcodes {
 
     label "main_container"
 
-    // publishDir "${out_1_demux}", mode: 'symlink'
+    // publishDir "${out_1_demux}", mode: 'copy'
     // cpus 1
 
     input:
@@ -622,7 +633,7 @@ process demux_illumina {
 
     label "main_container"
 
-    publishDir "${out_1_demux}", mode: 'symlink'
+    publishDir "${out_1_demux}", mode: 'copy'
     // cpus 10
 
     input:
@@ -671,7 +682,7 @@ process disambiguate {
 
     label "main_container"
 
-    // publishDir "${out_2_primer}", mode: 'symlink'
+    // publishDir "${out_2_primer}", mode: 'copy'
     // cpus 1
 
     output:
@@ -687,13 +698,13 @@ process disambiguate {
     ## Disambiguate forward primer
     echo -e "Disambiguating forward primer"
     disambiguate_primers.R \
-      ${params.primer_forward} \
+      ${params.primer_forward[0]} \
       primer_F.fasta
 
     ## Disambiguate reverse primer
     echo -e "\nDisambiguating reverse primer"
     disambiguate_primers.R \
-      ${params.primer_reverse} \
+      ${params.primer_reverse[0]} \
       primer_R.fasta
 
     ## Reverse-complement primers
@@ -713,7 +724,7 @@ process primer_check {
 
     label "main_container"
 
-    publishDir "${out_2_primer}", mode: 'symlink'
+    publishDir "${out_2_primer}", mode: 'copy'
 
     // cpus 1
 
@@ -734,8 +745,8 @@ process primer_check {
     script:
     """
     echo -e "Input file: " ${input}
-    echo -e "Forward primer: " ${params.primer_forward}
-    echo -e "Reverse primer: " ${params.primer_reverse}
+    echo -e "Forward primer: " ${params.primer_forward[0]}
+    echo -e "Reverse primer: " ${params.primer_reverse[0]}
 
     ### Count number of pattern occurrences for each sequence
     count_primers (){
@@ -844,11 +855,11 @@ process primer_check {
     echo -e "\nReorienting sequences"
 
     ## Reverse-complement rev primer
-    RR=\$(rc.sh ${params.primer_reverse})
+    RR=\$(rc.sh ${params.primer_reverse[0]})
 
     ## Reorient sequences, discard sequences without both primers
     cutadapt \
-      -a ${params.primer_forward}";required;min_overlap=${params.primer_foverlap}"..."\$RR"";required;min_overlap=${params.primer_roverlap}" \
+      -a ${params.primer_forward[0]}";required;min_overlap=${params.primer_foverlap}"..."\$RR"";required;min_overlap=${params.primer_roverlap}" \
       --errors ${params.primer_mismatches} \
       --revcomp --rename "{header}" \
       --discard-untrimmed \
@@ -877,7 +888,7 @@ process itsx {
 
     label "main_container"
 
-    publishDir "${out_3_itsx}", mode: 'symlink'
+    publishDir "${out_3_itsx}", mode: 'copy'
     // cpus 2
 
     // Add sample ID to the log file
@@ -1017,7 +1028,7 @@ process trim_primers {
 
     label "main_container"
 
-    publishDir "${out_3_trim}", mode: 'symlink'
+    publishDir "${out_3_trim}", mode: 'copy'
     // cpus 2
 
     // Add sample ID to the log file
@@ -1037,16 +1048,16 @@ process trim_primers {
 
     """
     echo -e "Input sample: "   ${sampID}
-    echo -e "Forward primer: " ${params.primer_forward}
-    echo -e "Reverse primer: " ${params.primer_reverse}
+    echo -e "Forward primer: " ${params.primer_forward[0]}
+    echo -e "Reverse primer: " ${params.primer_reverse[0]}
 
     ## Reverse-complement rev priver
-    RR=\$(rc.sh ${params.primer_reverse})
+    RR=\$(rc.sh ${params.primer_reverse[0]})
     echo -e "Reverse primer RC: " "\$RR"
 
     echo -e "\nTrimming primers"
     cutadapt \
-      -a ${params.primer_forward}";required;min_overlap=${params.primer_foverlap}"..."\$RR"";required;min_overlap=${params.primer_roverlap}" \
+      -a ${params.primer_forward[0]}";required;min_overlap=${params.primer_foverlap}"..."\$RR"";required;min_overlap=${params.primer_roverlap}" \
       --errors ${params.primer_mismatches} \
       --revcomp --rename "{header}" \
       --cores ${task.cpus} \
@@ -1134,7 +1145,7 @@ process assemble_its {
 
     label "main_container"
 
-    publishDir "${out_3_itsx}", mode: 'symlink'
+    publishDir "${out_3_itsx}", mode: 'copy'
     // cpus 1
 
     // Add sample ID to the log file
@@ -1221,7 +1232,7 @@ process homopolymer {
 
     label "main_container"
 
-    publishDir "${out_4_homop}", mode: 'symlink'
+    publishDir "${out_4_homop}", mode: 'copy'
     // cpus 1
 
     // Add sample ID to the log file
@@ -1302,7 +1313,7 @@ process just_derep {
 
     label "main_container"
 
-    // publishDir "${out_4_homop}", mode: 'symlink'
+    // publishDir "${out_4_homop}", mode: 'copy'
     // cpus 1
 
     // Add sample ID to the log file
@@ -1343,7 +1354,7 @@ process chimera_ref {
 
     label "main_container"
 
-    publishDir "${out_5_chim}", mode: 'symlink'
+    publishDir "${out_5_chim}", mode: 'copy'
     // cpus 1
 
     // Add sample ID to the log file
@@ -1421,7 +1432,7 @@ process chimera_rescue {
 
     label "main_container"
 
-    publishDir "${out_5_chim}", mode: 'symlink'
+    publishDir "${out_5_chim}", mode: 'copy'
     // cpus 1
 
     input:
@@ -1489,7 +1500,7 @@ process chimera_denovo {
 
     label "main_container"
 
-    publishDir "${out_5_chim}", mode: 'symlink'
+    publishDir "${out_5_chim}", mode: 'copy'
     // cpus 1
 
     // Add sample ID to the log file
@@ -1631,7 +1642,7 @@ process otu_clust {
 
     label "main_container"
 
-    publishDir "${out_6_tj}", mode: 'symlink'
+    publishDir "${out_6_tj}", mode: 'copy'
     // cpus 10
 
     input:
@@ -1672,7 +1683,7 @@ process pool_seqs {
 
     label "main_container"
     
-    publishDir "${out_6_tj}", mode: 'symlink'
+    publishDir "${out_6_tj}", mode: 'copy'
     // cpus 3
 
     input:
@@ -1717,7 +1728,7 @@ process otu_tab {
 
     label "main_container"
 
-    publishDir "${out_6_tj}", mode: 'symlink'
+    publishDir "${out_6_tj}", mode: 'copy'
     // cpus 10
 
     input:
@@ -1761,7 +1772,7 @@ process tj {
 
     label "main_container"
 
-    publishDir "${out_6_tj}", mode: 'symlink'
+    publishDir "${out_6_tj}", mode: 'copy'
     // cpus 1
 
     input:
@@ -1795,7 +1806,7 @@ process prep_seqtab {
 
     label "main_container"
 
-    publishDir "${out_7_seq}", mode: 'symlink'
+    publishDir "${out_7_seq}", mode: 'copy'
     // cpus 1
 
     input:
@@ -1839,7 +1850,7 @@ process blastn {
 
     label "main_container"
 
-    // publishDir "${out_9_blast}", mode: 'symlink'
+    // publishDir "${out_9_blast}", mode: 'copy'
     // cpus 1
 
     input:
@@ -1883,7 +1894,7 @@ process blast_merge {
 
     label "main_container"
 
-    publishDir "${out_9_blast}", mode: 'symlink'
+    publishDir "${out_9_blast}", mode: 'copy'
     // cpus 1
 
     input:
@@ -1914,7 +1925,7 @@ process demux_illumina_notmerged {
 
     label "main_container"
 
-    publishDir "${out_1_demux}", mode: 'symlink'
+    publishDir "${out_1_demux}", mode: 'copy'
     // cpus 20
 
     input:
@@ -2014,7 +2025,7 @@ process trim_primers_pe {
 
     label "main_container"
 
-    publishDir "${out_3_trimPE}", mode: 'symlink'
+    publishDir "${out_3_trimPE}", mode: 'copy'
     // cpus 2
 
     // Add sample ID to the log file
@@ -2034,12 +2045,12 @@ process trim_primers_pe {
     
     """
     echo -e "Input sample: " ${sampID}
-    echo -e "Forward primer: " ${params.primer_forward}
-    echo -e "Reverse primer: " ${params.primer_reverse}
+    echo -e "Forward primer: " ${params.primer_forward[0]}
+    echo -e "Reverse primer: " ${params.primer_reverse[0]}
 
     ## Reverse-complement primers
-    FR=\$(rc.sh ${params.primer_forward})
-    RR=\$(rc.sh ${params.primer_reverse})
+    FR=\$(rc.sh ${params.primer_forward[0]})
+    RR=\$(rc.sh ${params.primer_reverse[0]})
     
     echo -e "Forward primer RC: " "\$FR"
     echo -e "Reverse primer RC: " "\$RR"
@@ -2050,7 +2061,7 @@ process trim_primers_pe {
     echo -e "..Forward strain"
 
     cutadapt \
-      -a ${params.primer_forward}";required;min_overlap=${params.primer_foverlap}"..."\$RR"";required;min_overlap=${params.primer_roverlap}" \
+      -a ${params.primer_forward[0]}";required;min_overlap=${params.primer_foverlap}"..."\$RR"";required;min_overlap=${params.primer_roverlap}" \
       --errors ${params.primer_mismatches} \
       --cores ${task.cpus} \
       --action=none \
@@ -2063,7 +2074,7 @@ process trim_primers_pe {
     echo -e "..Reverse strain"
 
     cutadapt \
-      -a ${params.primer_reverse}";required;min_overlap=${params.primer_roverlap}"..."\$FR"";required;min_overlap=${params.primer_foverlap}" \
+      -a ${params.primer_reverse[0]}";required;min_overlap=${params.primer_roverlap}"..."\$FR"";required;min_overlap=${params.primer_foverlap}" \
       --errors ${params.primer_mismatches} \
       --cores ${task.cpus} \
       --action=none \
@@ -2101,7 +2112,7 @@ process trim_primers_pe {
     if [ -s OK_R1.fastq.gz]; then
 
       cutadapt \
-        -a ${params.primer_forward}";required;min_overlap=${params.primer_foverlap}"..."\$RR"";required;min_overlap=${params.primer_roverlap}" \
+        -a ${params.primer_forward[0]}";required;min_overlap=${params.primer_foverlap}"..."\$RR"";required;min_overlap=${params.primer_roverlap}" \
         --errors ${params.primer_mismatches} \
         --cores ${task.cpus} \
         --action=trim \
@@ -2240,7 +2251,7 @@ process join_pe {
 
     label "main_container"
 
-    // publishDir "${out_1_joinPE}", mode: 'symlink'
+    // publishDir "${out_1_joinPE}", mode: 'copy'
     // cpus 2
 
     // Add sample ID to the log file
@@ -2333,7 +2344,7 @@ process join_pe {
       echo -e "\nIt looks like there are no joined reads"
     fi
 
-    ## Remove redundant symlinks
+    ## Remove redundant copys
     find -L . -name "*.fastq.gz" | grep -v ${input} | parallel -j1 "rm {}"
 
     """
@@ -2348,8 +2359,8 @@ process read_counts {
 
     label "main_container"
 
-    publishDir "${out_8_smr}",                 mode: 'symlink', pattern: "*.xlsx"
-    publishDir "${out_8_smr}/PerProcessStats", mode: 'symlink', pattern: "*.txt"
+    publishDir "${out_8_smr}",                 mode: 'copy', pattern: "*.xlsx"
+    publishDir "${out_8_smr}/PerProcessStats", mode: 'copy', pattern: "*.txt"
     // cpus 5
 
     input:
