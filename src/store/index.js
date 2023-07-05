@@ -3703,7 +3703,7 @@ export default new Vuex.Store({
         ],
       },
     ],
-    Metaworks_workflow: [
+    Metaworks_COI: [
       {
         tooltip: "MetaWorks v1.12.0, ESV paired-end reads",
         scriptName: "metaworks_paired_end_ESV2.sh",
@@ -4540,7 +4540,7 @@ export default new Vuex.Store({
         link: "https://github.com/torognes/vsearch",
         title: "vsearch UNOISE3 workflow",
       },
-      Metaworks_workflow: {
+      Metaworks_COI: {
         info: "This workflow is based on Metaworks workflow quickstarts",
         link: "https://terrimporter.github.io/MetaWorksSite/quickstart/",
         title: "MetaWorks ESVs workflow for demultiplexed PAIRED-END reads",
