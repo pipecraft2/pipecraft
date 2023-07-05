@@ -2055,7 +2055,7 @@ export default new Vuex.Store({
         ],
       },
     ],
-    OTUs_workflow: [
+    Vsearch_OTUs: [
       {
         tooltip:
           "demultiplex data to per-sample files based on specified index file",
@@ -2906,7 +2906,7 @@ export default new Vuex.Store({
         ],
       },
     ],
-    UNOISE_workflow: [
+    UNOISE_ASVs: [
       {
         tooltip:
           "demultiplex data to per-sample files based on specified index file",
@@ -3717,7 +3717,8 @@ export default new Vuex.Store({
             name: "min_overlap",
             value: 25,
             disabled: "never",
-            tooltip: "minimum overlap (bp) length between R1 and R2 reads when merging reads",
+            tooltip:
+              "minimum overlap (bp) length between R1 and R2 reads when merging reads",
             type: "numeric",
             rules: [(v) => v >= 0 || "ERROR: specify values >= 0"],
           },
@@ -3725,7 +3726,8 @@ export default new Vuex.Store({
             name: "match_fraction",
             value: 0.9,
             disabled: "never",
-            tooltip: "minimum fraction of matching overlap (default 0.90) when merging reads",
+            tooltip:
+              "minimum fraction of matching overlap (default 0.90) when merging reads",
             type: "numeric",
             rules: [(v) => v >= 0 || "ERROR: specify values >= 0"],
           },
@@ -3742,7 +3744,8 @@ export default new Vuex.Store({
             name: "qual_cutoff_3end",
             value: 20,
             disabled: "never",
-            tooltip: "phred quality score cutoffs at the 3' end during quality filtering",
+            tooltip:
+              "phred quality score cutoffs at the 3' end during quality filtering",
             type: "numeric",
             rules: [(v) => v >= 1 || "ERROR: specify values >= 1"],
           },
@@ -3750,7 +3753,8 @@ export default new Vuex.Store({
             name: "qual_cutoff_5end",
             value: 20,
             disabled: "never",
-            tooltip: "phred quality score cutoffs at the 5' end during quality filtering",
+            tooltip:
+              "phred quality score cutoffs at the 5' end during quality filtering",
             type: "numeric",
             rules: [(v) => v >= 1 || "ERROR: specify values >= 1"],
           },
@@ -3766,7 +3770,8 @@ export default new Vuex.Store({
             name: "primer_overlap",
             value: 15,
             disabled: "never",
-            tooltip: "minimum overlap to primer sequence when searching for primers",
+            tooltip:
+              "minimum overlap to primer sequence when searching for primers",
             type: "numeric",
             rules: [(v) => v >= 1 || "ERROR: specify values >= 1"],
           },
@@ -3838,13 +3843,11 @@ export default new Vuex.Store({
           },
           {
             name: "ITS_region",
-            items: [
-              "ITS1",
-              "ITS2"
-            ],
+            items: ["ITS1", "ITS2"],
             value: "ITS2",
             disabled: "never",
-            tooltip: "when marker = ITS, specify which region to extract with ITSx (if using other marker, then this setting is ignored)",
+            tooltip:
+              "when marker = ITS, specify which region to extract with ITSx (if using other marker, then this setting is ignored)",
             type: "select",
           },
           {
@@ -3902,81 +3905,78 @@ export default new Vuex.Store({
           },
           {
             name: "genetic_code",
-            items: [
-              "1",
-              "2",
-              "5"
-            ],
+            items: ["1", "2", "5"],
             value: "5",
             disabled: "never",
-            tooltip: "genetic code translation table: 1 = standard code (use for rbcL); 2 = vertebrate mitochondrial (use for COI if targeting vertebrates); 5 = invertebrate mitochondrial (use for COI if targeting invertebrates)",
+            tooltip:
+              "genetic code translation table: 1 = standard code (use for rbcL); 2 = vertebrate mitochondrial (use for COI if targeting vertebrates); 5 = invertebrate mitochondrial (use for COI if targeting invertebrates)",
             type: "select",
           },
         ],
       },
     ],
-    NextITS: [{
-      tooltip:
-        "NextITS is an automated pipeline for metabarcoding fungi and other eukaryotes with full-length ITS sequenced with PacBio. Amplicons obtained with Illumina are also supported.",
-      scriptName: "",
-      imageName: "vmikk/nextits:0.0.3",
-      serviceName: "NextITS",
-      manualLink:
-        "https://pipecraft2-manual.readthedocs.io/en/stable/user_guide.html#demultiplex",
-      disabled: "never",
-      selected: 'always',
-      showExtra: false,
-      extraInputs: [],
-      Inputs: [
-        {
-          name: "forward_primers",
-          value: [],
-          disabled: "never",
-          tooltip: "specify forward primer",
-          type: "chip",
-          iupac: true,
-          rules: [(v) => v.length <= 1 || "TOO MANY PRIMERS"],
-        },
-        {
-          name: "reverse_primers",
-          value: [],
-          disabled: "never",
-          tooltip: "specify reverse primer",
-          type: "chip",
-          iupac: true,
-          rules: [(v) => v.length <= 1 || "TOO MANY PRIMERS"],
-        },
-        {
-          name: "barcodes_file",
-          value: "undefined",
-          btnName: "select fasta",
-          disabled: "never",
-          tooltip:
-            "For demultiplexing, sample barcodes (a.k.a. tags or indices) should be provided in a FASTA file",
-          type: "file",
-        },
-        {
-          name: "ITS_region",
-          items: ["1", "2", "F"],
-          value: "1",
-          disabled: "never",
-          tooltip:
-            "sub-regions of the internal transcribed spacer",
-          type: "select",
-        },
-        {
-          name: "blast_taxDB",
-          active: false,
-          btnName: "select file",
-          value: "undefined",
-          disabled: "never",
-          tooltip:
-            "",
-          type: "boolfile",
-        },
-      ],
-    }],
-    ASVs_workflow: [
+    NextITS: [
+      {
+        tooltip:
+          "NextITS is an automated pipeline for metabarcoding fungi and other eukaryotes with full-length ITS sequenced with PacBio. Amplicons obtained with Illumina are also supported.",
+        scriptName: "",
+        imageName: "vmikk/nextits:0.0.3",
+        serviceName: "NextITS",
+        manualLink:
+          "https://pipecraft2-manual.readthedocs.io/en/stable/user_guide.html#demultiplex",
+        disabled: "never",
+        selected: "always",
+        showExtra: false,
+        extraInputs: [],
+        Inputs: [
+          {
+            name: "forward_primers",
+            value: [],
+            disabled: "never",
+            tooltip: "specify forward primer",
+            type: "chip",
+            iupac: true,
+            rules: [(v) => v.length <= 1 || "TOO MANY PRIMERS"],
+          },
+          {
+            name: "reverse_primers",
+            value: [],
+            disabled: "never",
+            tooltip: "specify reverse primer",
+            type: "chip",
+            iupac: true,
+            rules: [(v) => v.length <= 1 || "TOO MANY PRIMERS"],
+          },
+          {
+            name: "barcodes_file",
+            value: "undefined",
+            btnName: "select fasta",
+            disabled: "never",
+            tooltip:
+              "For demultiplexing, sample barcodes (a.k.a. tags or indices) should be provided in a FASTA file",
+            type: "file",
+          },
+          {
+            name: "ITS_region",
+            items: ["1", "2", "full"],
+            value: "1",
+            disabled: "never",
+            tooltip: "sub-regions of the internal transcribed spacer",
+            type: "select",
+          },
+          {
+            name: "chimera_database",
+            active: false,
+            btnName: "select file",
+            value: "undefined",
+            disabled: "never",
+            tooltip: "",
+            type: "boolfile",
+          },
+        ],
+      },
+    ],
+    DADA2_ASVs: [
       {
         tooltip:
           "demultiplex data to per-sample files based on specified index file. Note that for read1 and read2 will get .R1 and .R2 identifiers when demultiplexing paired-end data",
@@ -4363,7 +4363,7 @@ export default new Vuex.Store({
         manualLink:
           "https://pipecraft2-manual.readthedocs.io/en/stable/user_guide.html#assemble-paired-end-reads",
         selected: "always",
-        disabled: "never",
+        disabled: "single_end",
         showExtra: false,
         extraInputs: [],
         Inputs: [
@@ -4525,17 +4525,17 @@ export default new Vuex.Store({
       },
     ],
     customWorkflowInfo: {
-      OTUs_workflow: {
+      Vsearch_OTUs: {
         info: "OTUs workflow with vsearch",
         link: "https://github.com/torognes/vsearch",
         title: "vsearch OTUs workflow",
       },
-      ASVs_workflow: {
+      DADA2_ASVs: {
         info: "This workflow is based on DADA2 pipeline tutorial (except parts with tickboxes)",
         link: "https://benjjneb.github.io/dada2/tutorial.html",
         title: "DADA2 ASVs workflow for PAIRED-END reads",
       },
-      UNOISE_workflow: {
+      UNOISE_ASVs: {
         info: "UNOISE workflow with vsearch",
         link: "https://github.com/torognes/vsearch",
         title: "vsearch UNOISE3 workflow",
@@ -4598,7 +4598,11 @@ export default new Vuex.Store({
         state[state.route.params.workflowName].forEach((step) => {
           if (step.selected == true || step.selected == "always") {
             step.Inputs.forEach((input) => {
-              if (input.type == "file" || input.type == "chip" || (input.type == "boolfile" && input.active == true)) {
+              if (
+                input.type == "file" ||
+                input.type == "chip" ||
+                (input.type == "boolfile" && input.active == true)
+              ) {
                 if (input.value == "undefined" || input.value.length < 1) {
                   Ready.push(false);
                 }
@@ -4770,7 +4774,7 @@ export default new Vuex.Store({
       state.selectedSteps.splice(index, 1);
     },
     addStep(state, payload) {
-      state.selectedSteps = []
+      state.selectedSteps = [];
       let step = _.cloneDeep(payload.step);
       state.selectedSteps.push(step);
     },
@@ -4779,17 +4783,17 @@ export default new Vuex.Store({
     },
     blastSwitch(state, value) {
       if (value == "blastn") {
-        state.OTUs_workflow[8].extraInputs[1].value = 11;
-        state.OTUs_workflow[8].extraInputs[2].value = 2;
-        state.OTUs_workflow[8].extraInputs[3].value = -3;
-        state.OTUs_workflow[8].extraInputs[4].value = 5;
-        state.OTUs_workflow[8].extraInputs[5].value = 2;
+        state.Vsearch_OTUs[8].extraInputs[1].value = 11;
+        state.Vsearch_OTUs[8].extraInputs[2].value = 2;
+        state.Vsearch_OTUs[8].extraInputs[3].value = -3;
+        state.Vsearch_OTUs[8].extraInputs[4].value = 5;
+        state.Vsearch_OTUs[8].extraInputs[5].value = 2;
       } else if (value == "megablast") {
-        state.OTUs_workflow[8].extraInputs[1].value = 28;
-        state.OTUs_workflow[8].extraInputs[2].value = 1;
-        state.OTUs_workflow[8].extraInputs[3].value = -2;
-        state.OTUs_workflow[8].extraInputs[4].value = 0;
-        state.OTUs_workflow[8].extraInputs[5].value = undefined;
+        state.Vsearch_OTUs[8].extraInputs[1].value = 28;
+        state.Vsearch_OTUs[8].extraInputs[2].value = 1;
+        state.Vsearch_OTUs[8].extraInputs[3].value = -2;
+        state.Vsearch_OTUs[8].extraInputs[4].value = 0;
+        state.Vsearch_OTUs[8].extraInputs[5].value = undefined;
       }
     },
     blastSwitch2(state, payload) {

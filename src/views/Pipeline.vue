@@ -38,6 +38,13 @@
           }}</a
         ></v-card-text
       >
+      <v-card-actions v-if="$route.params.workflowName.includes('DADA2')">
+        <v-tabs>
+          <v-tab @click="$router.push(`/premade/Vsearch_OTUs`)">Forward</v-tab>
+          <v-tab>Mixed</v-tab>
+          <v-tab>Single-end data</v-tab>
+        </v-tabs>
+      </v-card-actions>
     </v-card>
     <v-expansion-panels
       dark
