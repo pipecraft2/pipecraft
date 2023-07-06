@@ -101,7 +101,7 @@ process dereplication {
 
     label "main_container"
 
-    publishDir "${params.outdir}/01.Dereplicated", mode: 'symlink'
+    publishDir "${params.outdir}/01.Dereplicated", mode: 'copy'
     // cpus 1
 
     input:
@@ -145,7 +145,7 @@ process dereplication_unite {
 
     label "main_container"
 
-    publishDir "${params.outdir}/01.Dereplicated", mode: 'symlink'
+    publishDir "${params.outdir}/01.Dereplicated", mode: 'copy'
     // cpus 8
 
     input:
@@ -193,7 +193,7 @@ process unoise {
 
     label "main_container"
 
-    publishDir "${params.outdir}/02.UNOISE", mode: 'symlink'
+    publishDir "${params.outdir}/02.UNOISE", mode: 'copy'
     // cpus 8
 
     input:
@@ -238,7 +238,7 @@ process cluster_vsearch {
 
     label "main_container"
 
-    publishDir "${params.outdir}/03.Clustered_VSEARCH", mode: 'symlink'
+    publishDir "${params.outdir}/03.Clustered_VSEARCH", mode: 'copy'
     // cpus 8
 
     input:
@@ -283,7 +283,7 @@ process cluster_swarm {
 
     label "main_container"
 
-    publishDir "${params.outdir}/03.Clustered_SWARM", mode: 'symlink'
+    publishDir "${params.outdir}/03.Clustered_SWARM", mode: 'copy'
     // cpus 8
 
     input:
@@ -346,7 +346,7 @@ process summarize {
 
     label "main_container"
 
-    publishDir "${params.outdir}/04.PooledResults", mode: 'symlink'
+    publishDir "${params.outdir}/04.PooledResults", mode: 'copy'
     // cpus 4
 
     input:
@@ -385,7 +385,7 @@ process lulu {
 
     label "main_container"
 
-    publishDir "${params.outdir}/05.LULU", mode: 'symlink'
+    publishDir "${params.outdir}/05.LULU", mode: 'copy'
     // cpus 8
 
     input:
