@@ -2075,7 +2075,7 @@ export default new Vuex.Store({
         ],
       },
     ],
-    Vsearch_OTUs: [
+    vsearch_OTUs: [
       {
         tooltip:
           "demultiplex data to per-sample files based on specified index file",
@@ -4536,28 +4536,28 @@ export default new Vuex.Store({
       },
     ],
     customWorkflowInfo: {
-      Vsearch_OTUs: {
-        info: "OTUs workflow with vsearch",
+      vsearch_OTUs: {
+        info: "vsearch OTUs workflow",
         link: "https://github.com/torognes/vsearch",
         title: "vsearch OTUs workflow",
       },
       DADA2_ASVs: {
-        info: "This workflow is based on DADA2 pipeline tutorial (except parts with tickboxes)",
-        link: "https://benjjneb.github.io/dada2/tutorial.html",
-        title: "DADA2 ASVs workflow for PAIRED-END reads",
+        info: "FORWARD: select this when all reads of interest are expected to be in 5-3 orient. MIXED: select this when reads of interest are expected to be in both 5-3 and 3-5 orient SINGE-END DATA: select this when working with single-end data (such as PacBio)",
+        // link: "https://benjjneb.github.io/dada2/tutorial.html",
+        title: "DADA2 ASVs workflow",
       },
       UNOISE_ASVs: {
-        info: "UNOISE workflow with vsearch",
+        info: "vsearch workflow for forming ASVs (zOTUs) with UNOISE3",
         link: "https://github.com/torognes/vsearch",
-        title: "vsearch UNOISE3 workflow",
+        title: "UNOISE3 ASVs workflow",
       },
       Metaworks_COI: {
         info: "This workflow is based on Metaworks workflow quickstarts",
         link: "https://terrimporter.github.io/MetaWorksSite/quickstart/",
-        title: "MetaWorks ESVs workflow for demultiplexed PAIRED-END reads",
+        title: "MetaWorks ASVs workflow for demultiplexed PAIRED-END reads",
       },
       NextITS: {
-        info: "NextITS",
+        info: "NextITS pipeline for PacBio ITS amplicons",
         link: "https://github.com/vmikk/NextITS",
         title: "NextITS",
       },
@@ -4794,17 +4794,17 @@ export default new Vuex.Store({
     },
     blastSwitch(state, value) {
       if (value == "blastn") {
-        state.Vsearch_OTUs[8].extraInputs[1].value = 11;
-        state.Vsearch_OTUs[8].extraInputs[2].value = 2;
-        state.Vsearch_OTUs[8].extraInputs[3].value = -3;
-        state.Vsearch_OTUs[8].extraInputs[4].value = 5;
-        state.Vsearch_OTUs[8].extraInputs[5].value = 2;
+        state.vsearch_OTUs[8].extraInputs[1].value = 11;
+        state.vsearch_OTUs[8].extraInputs[2].value = 2;
+        state.vsearch_OTUs[8].extraInputs[3].value = -3;
+        state.vsearch_OTUs[8].extraInputs[4].value = 5;
+        state.vsearch_OTUs[8].extraInputs[5].value = 2;
       } else if (value == "megablast") {
-        state.Vsearch_OTUs[8].extraInputs[1].value = 28;
-        state.Vsearch_OTUs[8].extraInputs[2].value = 1;
-        state.Vsearch_OTUs[8].extraInputs[3].value = -2;
-        state.Vsearch_OTUs[8].extraInputs[4].value = 0;
-        state.Vsearch_OTUs[8].extraInputs[5].value = undefined;
+        state.vsearch_OTUs[8].extraInputs[1].value = 28;
+        state.vsearch_OTUs[8].extraInputs[2].value = 1;
+        state.vsearch_OTUs[8].extraInputs[3].value = -2;
+        state.vsearch_OTUs[8].extraInputs[4].value = 0;
+        state.vsearch_OTUs[8].extraInputs[5].value = undefined;
       }
     },
     blastSwitch2(state, payload) {
