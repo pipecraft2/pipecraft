@@ -4552,9 +4552,9 @@ export default new Vuex.Store({
         title: "UNOISE3 ASVs workflow",
       },
       Metaworks_COI: {
-        info: "This workflow is based on Metaworks workflow quickstarts",
+        info: "MetaWorks ASVs workflow for demultiplexed PAIRED-END COI amplicons",
         link: "https://terrimporter.github.io/MetaWorksSite/quickstart/",
-        title: "MetaWorks ASVs workflow for demultiplexed PAIRED-END reads",
+        title: "MetaWorks COI ASVs",
       },
       NextITS: {
         info: "NextITS pipeline for PacBio ITS amplicons",
