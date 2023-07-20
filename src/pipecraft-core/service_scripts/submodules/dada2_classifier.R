@@ -1,6 +1,7 @@
 #!/usr/bin/env Rscript
 
 #DADA2 sequence classifier (module for taxonomy_dada2.sh).
+ #input is fasta file
 
 #load dada2
 library("dada2")
