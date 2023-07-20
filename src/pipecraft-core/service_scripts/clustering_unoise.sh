@@ -356,7 +356,7 @@ fi
 #Make README.txt file
 size_zotu=$(grep -c "^>" $output_dir/zOTUs.fasta)
 
-printf "Sequence denoizing formed $size_zotu zOTUs (zero-radius OTUs).
+printf "Sequence denoising formed $size_zotu zOTUs (zero-radius OTUs).
 
 Files in 'clustering_out' directory:
 # zOTUs.fasta    = FASTA formated denoized sequences (zOTUs.fasta)
