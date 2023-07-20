@@ -276,14 +276,6 @@ export default new Vuex.Store({
             showExtra: false,
             extraInputs: [
               {
-                name: "cores",
-                value: 1,
-                disabled: "never",
-                tooltip: "number of cores to use",
-                type: "numeric",
-                rules: [(v) => v >= 1 || "ERROR: specify values >= 1"],
-              },
-              {
                 name: "max_length",
                 value: null,
                 disabled: "never",
@@ -295,15 +287,6 @@ export default new Vuex.Store({
                     (v >= 1) | (v == "") ||
                     "ERROR: specify values >= 1 or leave it empty (=no action taken)",
                 ],
-              },
-              {
-                name: "qmax",
-                value: 41,
-                disabled: "never",
-                tooltip:
-                  "specify the maximum quality score accepted when reading FASTQ files. The default is 41, which is usual for recent Sanger/Illumina 1.8+ files. For PacBio data use 93",
-                type: "numeric",
-                rules: [(v) => v >= 1 || "ERROR: specify values >= 1"],
               },
               {
                 name: "qmin",
@@ -322,8 +305,38 @@ export default new Vuex.Store({
                   "discard sequences with more than the specified number of expected errors per base (empty field = no action taken)",
                 type: "numeric",
                 rules: [(v) => (v >= 0.001) | (v == "") ||
-                    "ERROR: specify values 0.001 or leave it empty (= no action taken)",
+                    "ERROR: specify values >=0.001 or leave it empty (= no action taken)",
                 ],
+              },
+              {
+                name: "truncqual",
+                value: null,
+                disabled: "never",
+                tooltip:
+                  "tuncate sequences starting from the first base with the specified base quality score value or lower (empty field = no action taken)",
+                type: "numeric",
+                rules: [(v) => (v >= 1) | (v == "") ||
+                    "ERROR: specify values >=1 or leave it empty (= no action taken)",
+                ],
+              },
+              {
+                name: "truncee",
+                value: null,
+                disabled: "never",
+                tooltip:
+                  "runcate sequences so that their total expected error is not higher than the specified value (empty field = no action taken)",
+                type: "numeric",
+                rules: [(v) => (v >= 0.001) | (v == "") ||
+                    "ERROR: specify values >=0.001 or leave it empty (= no action taken)",
+                ],
+              },
+              {
+                name: "cores",
+                value: 1,
+                disabled: "never",
+                tooltip: "number of cores to use",
+                type: "numeric",
+                rules: [(v) => v >= 1 || "ERROR: specify values >= 1"],
               },
             ],
             Inputs: [
@@ -334,7 +347,7 @@ export default new Vuex.Store({
                 tooltip:
                   "maximum number of expected errors per sequence. Sequences with higher error rates will be discarded",
                 type: "numeric",
-                rules: [(v) => v >= 0.001 || "ERROR: specify values >= 0.001"],
+                rules: [(v) => v >= 0.001 || "ERROR: specify values >=0.001"],
               },
               {
                 name: "maxNs",
@@ -366,6 +379,15 @@ export default new Vuex.Store({
                     (v >= 5) | (v == "") ||
                     "ERROR: specify values >= 5 or leave it empty (=no action taken)",
                 ],
+              },
+              {
+                name: "qmax",
+                value: 41,
+                disabled: "never",
+                tooltip:
+                  "specify the maximum quality score accepted when reading FASTQ files. The default is 41, which is usual for recent Sanger/Illumina 1.8+ files. For PacBio data use 93",
+                type: "numeric",
+                rules: [(v) => v >= 1 || "ERROR: specify values >= 1"],
               },
             ],
           },
@@ -698,7 +720,7 @@ export default new Vuex.Store({
                 tooltip:
                   "discard sequences with more than the specified number of expected errors",
                 type: "numeric",
-                rules: [(v) => v >= 0.1 || "ERROR: specify values >= 0.1"],
+                rules: [(v) => v >= 0.001 || "ERROR: specify values >=0.001"],
               },
               {
                 name: "maxN",
@@ -2429,7 +2451,7 @@ export default new Vuex.Store({
             rules: [
               (v) =>
                 (v >= 0.001) | (v == "") ||
-                "ERROR: specify values 0.001 or leave it empty (= no action taken)",
+                "ERROR: specify values >=0.001 or leave it empty (= no action taken)",
             ],
           },
         ],
@@ -3280,7 +3302,7 @@ export default new Vuex.Store({
             rules: [
               (v) =>
                 (v >= 0.001) | (v == "") ||
-                "ERROR: specify values 0.001 or leave it empty (= no action taken)",
+                "ERROR: specify values >=0.001 or leave it empty (= no action taken)",
             ],
           },
         ],

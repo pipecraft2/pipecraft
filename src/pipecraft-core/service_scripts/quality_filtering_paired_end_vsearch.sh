@@ -29,6 +29,8 @@ qmin=$"--fastq_qmin ${qmin}"
 trunc_length=${trunc_length}
 max_length=${max_length}
 maxee_rate=${maxee_rate}
+truncqual=${truncqual}
+truncee=${truncee}
 
 #Source for functions
 source /scripts/submodules/framework.functions.sh
@@ -50,6 +52,16 @@ if [[ $trunc_length == null ]] || [[ -z $trunc_length ]]; then
     trunc_length=$""
 else
     trunc_length=$"--fastq_trunclen $trunc_length"
+fi
+if [[ $truncqual == null ]] || [[ -z $truncqual ]]; then
+    truncqual=$""
+else
+    truncqual=$"--fastq_truncqual $truncqual"
+fi
+if [[ $truncee == null ]] || [[ -z $truncee ]]; then
+    truncee=$""
+else
+    truncee=$"--fastq_truncee $truncee"
 fi
 
 #############################
@@ -90,6 +102,8 @@ while read LINE; do
     $qmin \
     $max_length \
     $maxee_rate \
+    $truncqual \
+    $truncee \
     --fastqout tempdir/$inputR1.$newextension"
 
     #R1
@@ -104,6 +118,8 @@ while read LINE; do
     $qmin \
     $max_length \
     $maxee_rate \
+    $truncqual \
+    $truncee \
     --fastqout tempdir/$inputR1.$newextension 2>&1)
     check_app_error
 
@@ -119,6 +135,8 @@ while read LINE; do
     $qmin \
     $max_length \
     $maxee_rate \
+    $truncqual \
+    $truncee \
     --fastqout tempdir/$inputR2.$newextension 2>&1)
     check_app_error
 
@@ -174,7 +192,7 @@ Files in 'qualFiltered_out':
 # seq_count_summary.txt     = summary of sequence counts per sample.
 
 Core commands -> 
-quality filtering: vsearch --fastq_filter input_file $maxee $maxns $trunc_length $minlen $cores $qmax $qmin $max_length $maxee_rate --fastqout output_file
+quality filtering: vsearch --fastq_filter input_file $maxee $maxns $trunc_length $minlen $cores $qmax $qmin $max_length $maxee_rate $truncqual $truncee --fastqout output_file
 Synchronizing R1 and R2 reads: seqkit pair -1 inputR1 -2 inputR2
 
 Total run time was $runtime sec.
