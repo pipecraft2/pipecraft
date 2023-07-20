@@ -321,10 +321,8 @@ export default new Vuex.Store({
                 tooltip:
                   "discard sequences with more than the specified number of expected errors per base (empty field = no action taken)",
                 type: "numeric",
-                rules: [
-                  (v) =>
-                    (v >= 0.1) | (v == "") ||
-                    "ERROR: specify values >= 0.1 or leave it empty (=no action taken)",
+                rules: [(v) => (v >= 0.001) | (v == "") ||
+                    "ERROR: specify values 0.001 or leave it empty (= no action taken)",
                 ],
               },
             ],
@@ -336,7 +334,7 @@ export default new Vuex.Store({
                 tooltip:
                   "maximum number of expected errors per sequence. Sequences with higher error rates will be discarded",
                 type: "numeric",
-                rules: [(v) => v >= 0.1 || "ERROR: specify values >= 0.1"],
+                rules: [(v) => v >= 0.001 || "ERROR: specify values >= 0.001"],
               },
               {
                 name: "maxNs",
@@ -2430,8 +2428,8 @@ export default new Vuex.Store({
             type: "numeric",
             rules: [
               (v) =>
-                (v >= 0.1) | (v == "") ||
-                "ERROR: specify values >= 0.1 or leave it empty (=no action taken)",
+                (v >= 0.001) | (v == "") ||
+                "ERROR: specify values 0.001 or leave it empty (= no action taken)",
             ],
           },
         ],
@@ -2443,7 +2441,7 @@ export default new Vuex.Store({
             tooltip:
               "maximum number of expected errors per sequence. Sequences with higher error rates will be discarded",
             type: "numeric",
-            rules: [(v) => v >= 0.1 || "ERROR: specify values >= 0.1"],
+            rules: [(v) => v >= 0.001 || "ERROR: specify values >= 0.001"],
           },
           {
             name: "maxNs",
@@ -3281,8 +3279,8 @@ export default new Vuex.Store({
             type: "numeric",
             rules: [
               (v) =>
-                (v >= 0.1) | (v == "") ||
-                "ERROR: specify values >= 0.1 or leave it empty (=no action taken)",
+                (v >= 0.001) | (v == "") ||
+                "ERROR: specify values 0.001 or leave it empty (= no action taken)",
             ],
           },
         ],
@@ -3294,7 +3292,7 @@ export default new Vuex.Store({
             tooltip:
               "maximum number of expected errors per sequence. Sequences with higher error rates will be discarded",
             type: "numeric",
-            rules: [(v) => v >= 0.1 || "ERROR: specify values >= 0.1"],
+            rules: [(v) => v >= 0.001 || "ERROR: specify values >= 0.001"],
           },
           {
             name: "maxNs",
