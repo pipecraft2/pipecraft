@@ -1952,6 +1952,127 @@ export default new Vuex.Store({
             ],
           },
           {
+            scriptName: "clustering_vsearch_ASVs2OTUs.sh",
+            tooltip: "clustering ASVs to OTUs with vsearch",
+            imageName: "pipecraft/vsearch_dada2:1",
+            serviceName: "ASV_to_OTU",
+            selected: false,
+            showExtra: false,
+            extraInputs: [
+              {
+                name: "OTU_type",
+                items: ["centroid", "consout"],
+                disabled: "never",
+                tooltip:
+                  '"centroid" = output centroid sequences; "consout" = output consensus sequences',
+                value: "centroid",
+                type: "select",
+              },
+              {
+                name: "strands",
+                items: ["both", "plus"],
+                disabled: "never",
+                tooltip:
+                  "when comparing sequences with the cluster seed, check both strands (forward and reverse complementary) or the plus strand only",
+                value: "both",
+                type: "select",
+              },
+              {
+                name: "remove_singletons",
+                value: false,
+                disabled: "never",
+                tooltip:
+                  "remove singleton OTUs (e.g., if TRUE, then OTUs with only one sequence will be discarded)",
+                type: "bool",
+              },
+              {
+                name: "similarity_type",
+                items: ["0", "1", "2", "3", "4"],
+                value: "2",
+                disabled: "never",
+                tooltip: "pairwise sequence identity definition (--iddef)",
+                type: "select",
+              },
+              {
+                name: "sequence_sorting",
+                items: ["size", "length", "no"],
+                value: "size",
+                disabled: "never",
+                tooltip:
+                  'size = sort the sequences by decreasing abundance; "length" = sort the sequences by decreasing length (--cluster_fast); "no" = do not sort sequences (--cluster_smallmem --usersort)',
+                type: "select",
+              },
+              {
+                name: "centroid_type",
+                items: ["similarity", "abundance"],
+                value: "similarity",
+                disabled: "never",
+                tooltip:
+                  '"similarity" = assign representative sequence to the closest (most similar) centroid (distance-based greedy clustering); "abundance" = assign representative sequence to the most abundant centroid (abundance-based greedy clustering; --sizeorder), --maxaccepts should be > 1',
+                type: "select",
+              },
+              {
+                name: "maxaccepts",
+                value: 1,
+                disabled: "never",
+                tooltip:
+                  "maximum number of hits to accept before stopping the search (should be > 1 for abundance-based selection of centroids [centroid type])",
+                type: "numeric",
+                rules: [(v) => v >= 1 || "ERROR: specify values >= 1"],
+              },
+              {
+                name: "mask",
+                items: ["dust", "none"],
+                value: "dust",
+                disabled: "never",
+                tooltip:
+                  'mask regions in sequences using the "dust" method, or do not mask ("none").',
+                type: "select",
+              },
+              {
+                name: "cores",
+                value: 4,
+                disabled: "never",
+                tooltip: "number of cores to use",
+                type: "numeric",
+                rules: [(v) => v >= 1 || "ERROR: specify values >= 1"],
+              },
+            ],
+            Inputs: [
+              {
+                name: "ASV_fasta",
+                active: false,
+                btnName: "select file",
+                value: "undefined",
+                disabled: "never",
+                tooltip:
+                  "select fasta formatted ASVs sequence file",
+                type: "file",
+              },
+              {
+                name: "ASV_table",
+                active: true,
+                btnName: "select file",
+                value: "undefined",
+                disabled: "never",
+                tooltip:
+                  "select fasta formatted ASVs sequence file",
+                type: "file",
+              },
+              {
+                name: "similarity_threshold",
+                value: 0.97,
+                disabled: "never",
+                tooltip:
+                  "define OTUs based on the sequence similarity threshold; 0.97 = 97% similarity threshold",
+                max: 1,
+                min: 0,
+                step: 0.01,
+                type: "slide",
+              },
+            ],
+          },
+          {
             tooltip:
               "pseudogene fintering with ORFfinder (search open reading frames)",
             scriptName: "ORFfinder.sh",

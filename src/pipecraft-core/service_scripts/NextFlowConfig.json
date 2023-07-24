@@ -1,1 +1,1 @@
-{"zOTUs_thresh":1,"similarity_threshold":1,"strands":"both","minsize":8,"unoise_alpha":2,"denoise_level":"global","remove_chimeras":true,"abskew":16,"similarity_type":"2","maxaccepts":1,"maxrejects":32,"mask":"dust","cores":4}
+{"OTU_type":"centroid","similarity_threshold":0.97,"strands":"both","remove_singletons":false,"similarity_type":"2","sequence_sorting":"size","centroid_type":"similarity","maxaccepts":1,"mask":"dust","cores":4}
