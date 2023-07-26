@@ -582,7 +582,7 @@ export default {
                 [
                   "sh",
                   "-c",
-                  `nextflow run /scripts/NextITS/main.nf -resume -params-file /scripts/NextFlowConfig.json --input /input/Input/Run_01/Run_01.fastq.gz --barcodes /input/Input/Run_01/Run_01_barcodes.fasta --outdir /input/Results -work-dir /input/Results_wd -qs 8`,
+                  `nextflow run /scripts/NextITS/main.nf -resume -params-file /scripts/NextFlowConfig.json --input /input/"$1"/*.fastq.gz --barcodes /input/"$1"/*.fasta --outdir /input/Results -work-dir /input/Results_wd -qs 8`,
                 ],
                 false,
                 props,
