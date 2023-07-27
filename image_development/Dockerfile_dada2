@@ -19,3 +19,4 @@ RUN Rscript -e 'library("devtools"); devtools::install_github("benjjneb/dada2", 
 RUN wget https://github.com/tobiasgf/lulu/archive/refs/heads/master.zip \ 
 && Rscript  -e 'devtools::install_local("/master.zip")' \
 && rm /master.zip
+RUN Rscript -e 'install.packages("seqinr")'

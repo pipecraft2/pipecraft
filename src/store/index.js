@@ -276,14 +276,6 @@ export default new Vuex.Store({
             showExtra: false,
             extraInputs: [
               {
-                name: "cores",
-                value: 1,
-                disabled: "never",
-                tooltip: "number of cores to use",
-                type: "numeric",
-                rules: [(v) => v >= 1 || "ERROR: specify values >= 1"],
-              },
-              {
                 name: "max_length",
                 value: null,
                 disabled: "never",
@@ -295,15 +287,6 @@ export default new Vuex.Store({
                     (v >= 1) | (v == "") ||
                     "ERROR: specify values >= 1 or leave it empty (=no action taken)",
                 ],
-              },
-              {
-                name: "qmax",
-                value: 41,
-                disabled: "never",
-                tooltip:
-                  "specify the maximum quality score accepted when reading FASTQ files. The default is 41, which is usual for recent Sanger/Illumina 1.8+ files. For PacBio data use 93",
-                type: "numeric",
-                rules: [(v) => v >= 1 || "ERROR: specify values >= 1"],
               },
               {
                 name: "qmin",
@@ -321,11 +304,39 @@ export default new Vuex.Store({
                 tooltip:
                   "discard sequences with more than the specified number of expected errors per base (empty field = no action taken)",
                 type: "numeric",
-                rules: [
-                  (v) =>
-                    (v >= 0.1) | (v == "") ||
-                    "ERROR: specify values >= 0.1 or leave it empty (=no action taken)",
+                rules: [(v) => (v >= 0.001) | (v == "") ||
+                    "ERROR: specify values >=0.001 or leave it empty (= no action taken)",
                 ],
+              },
+              {
+                name: "truncqual",
+                value: null,
+                disabled: "never",
+                tooltip:
+                  "tuncate sequences starting from the first base with the specified base quality score value or lower (empty field = no action taken)",
+                type: "numeric",
+                rules: [(v) => (v >= 1) | (v == "") ||
+                    "ERROR: specify values >=1 or leave it empty (= no action taken)",
+                ],
+              },
+              {
+                name: "truncee",
+                value: null,
+                disabled: "never",
+                tooltip:
+                  "runcate sequences so that their total expected error is not higher than the specified value (empty field = no action taken)",
+                type: "numeric",
+                rules: [(v) => (v >= 0.001) | (v == "") ||
+                    "ERROR: specify values >=0.001 or leave it empty (= no action taken)",
+                ],
+              },
+              {
+                name: "cores",
+                value: 1,
+                disabled: "never",
+                tooltip: "number of cores to use",
+                type: "numeric",
+                rules: [(v) => v >= 1 || "ERROR: specify values >= 1"],
               },
             ],
             Inputs: [
@@ -336,7 +347,7 @@ export default new Vuex.Store({
                 tooltip:
                   "maximum number of expected errors per sequence. Sequences with higher error rates will be discarded",
                 type: "numeric",
-                rules: [(v) => v >= 0.1 || "ERROR: specify values >= 0.1"],
+                rules: [(v) => v >= 0.001 || "ERROR: specify values >=0.001"],
               },
               {
                 name: "maxNs",
@@ -368,6 +379,15 @@ export default new Vuex.Store({
                     (v >= 5) | (v == "") ||
                     "ERROR: specify values >= 5 or leave it empty (=no action taken)",
                 ],
+              },
+              {
+                name: "qmax",
+                value: 41,
+                disabled: "never",
+                tooltip:
+                  "specify the maximum quality score accepted when reading FASTQ files. The default is 41, which is usual for recent Sanger/Illumina 1.8+ files. For PacBio data use 93",
+                type: "numeric",
+                rules: [(v) => v >= 1 || "ERROR: specify values >= 1"],
               },
             ],
           },
@@ -700,7 +720,7 @@ export default new Vuex.Store({
                 tooltip:
                   "discard sequences with more than the specified number of expected errors",
                 type: "numeric",
-                rules: [(v) => v >= 0.1 || "ERROR: specify values >= 0.1"],
+                rules: [(v) => v >= 0.001 || "ERROR: specify values >=0.001"],
               },
               {
                 name: "maxN",
@@ -1932,6 +1952,127 @@ export default new Vuex.Store({
             ],
           },
           {
+            scriptName: "clustering_vsearch_ASVs2OTUs.sh",
+            tooltip: "clustering ASVs to OTUs with vsearch",
+            imageName: "pipecraft/vsearch_dada2:1",
+            serviceName: "ASV_to_OTU",
+            selected: false,
+            showExtra: false,
+            extraInputs: [
+              {
+                name: "OTU_type",
+                items: ["centroid", "consout"],
+                disabled: "never",
+                tooltip:
+                  '"centroid" = output centroid sequences; "consout" = output consensus sequences',
+                value: "centroid",
+                type: "select",
+              },
+              {
+                name: "strands",
+                items: ["both", "plus"],
+                disabled: "never",
+                tooltip:
+                  "when comparing sequences with the cluster seed, check both strands (forward and reverse complementary) or the plus strand only",
+                value: "both",
+                type: "select",
+              },
+              {
+                name: "remove_singletons",
+                value: false,
+                disabled: "never",
+                tooltip:
+                  "remove singleton OTUs (e.g., if TRUE, then OTUs with only one sequence will be discarded)",
+                type: "bool",
+              },
+              {
+                name: "similarity_type",
+                items: ["0", "1", "2", "3", "4"],
+                value: "2",
+                disabled: "never",
+                tooltip: "pairwise sequence identity definition (--iddef)",
+                type: "select",
+              },
+              {
+                name: "sequence_sorting",
+                items: ["size", "length", "no"],
+                value: "size",
+                disabled: "never",
+                tooltip:
+                  'size = sort the sequences by decreasing abundance; "length" = sort the sequences by decreasing length (--cluster_fast); "no" = do not sort sequences (--cluster_smallmem --usersort)',
+                type: "select",
+              },
+              {
+                name: "centroid_type",
+                items: ["similarity", "abundance"],
+                value: "similarity",
+                disabled: "never",
+                tooltip:
+                  '"similarity" = assign representative sequence to the closest (most similar) centroid (distance-based greedy clustering); "abundance" = assign representative sequence to the most abundant centroid (abundance-based greedy clustering; --sizeorder), --maxaccepts should be > 1',
+                type: "select",
+              },
+              {
+                name: "maxaccepts",
+                value: 1,
+                disabled: "never",
+                tooltip:
+                  "maximum number of hits to accept before stopping the search (should be > 1 for abundance-based selection of centroids [centroid type])",
+                type: "numeric",
+                rules: [(v) => v >= 1 || "ERROR: specify values >= 1"],
+              },
+              {
+                name: "mask",
+                items: ["dust", "none"],
+                value: "dust",
+                disabled: "never",
+                tooltip:
+                  'mask regions in sequences using the "dust" method, or do not mask ("none").',
+                type: "select",
+              },
+              {
+                name: "cores",
+                value: 4,
+                disabled: "never",
+                tooltip: "number of cores to use",
+                type: "numeric",
+                rules: [(v) => v >= 1 || "ERROR: specify values >= 1"],
+              },
+            ],
+            Inputs: [
+              {
+                name: "ASV_fasta",
+                active: false,
+                btnName: "select file",
+                value: "undefined",
+                disabled: "never",
+                tooltip:
+                  "select fasta formatted ASVs sequence file",
+                type: "file",
+              },
+              {
+                name: "ASV_table",
+                active: true,
+                btnName: "select file",
+                value: "undefined",
+                disabled: "never",
+                tooltip:
+                  "select fasta formatted ASVs sequence file",
+                type: "file",
+              },
+              {
+                name: "similarity_threshold",
+                value: 0.97,
+                disabled: "never",
+                tooltip:
+                  "define OTUs based on the sequence similarity threshold; 0.97 = 97% similarity threshold",
+                max: 1,
+                min: 0,
+                step: 0.01,
+                type: "slide",
+              },
+            ],
+          },
+          {
             tooltip:
               "pseudogene fintering with ORFfinder (search open reading frames)",
             scriptName: "ORFfinder.sh",
@@ -2055,7 +2196,7 @@ export default new Vuex.Store({
         ],
       },
     ],
-    Vsearch_OTUs: [
+    vsearch_OTUs: [
       {
         tooltip:
           "demultiplex data to per-sample files based on specified index file",
@@ -2430,8 +2571,8 @@ export default new Vuex.Store({
             type: "numeric",
             rules: [
               (v) =>
-                (v >= 0.1) | (v == "") ||
-                "ERROR: specify values >= 0.1 or leave it empty (=no action taken)",
+                (v >= 0.001) | (v == "") ||
+                "ERROR: specify values >=0.001 or leave it empty (= no action taken)",
             ],
           },
         ],
@@ -2443,7 +2584,7 @@ export default new Vuex.Store({
             tooltip:
               "maximum number of expected errors per sequence. Sequences with higher error rates will be discarded",
             type: "numeric",
-            rules: [(v) => v >= 0.1 || "ERROR: specify values >= 0.1"],
+            rules: [(v) => v >= 0.001 || "ERROR: specify values >= 0.001"],
           },
           {
             name: "maxNs",
@@ -3281,8 +3422,8 @@ export default new Vuex.Store({
             type: "numeric",
             rules: [
               (v) =>
-                (v >= 0.1) | (v == "") ||
-                "ERROR: specify values >= 0.1 or leave it empty (=no action taken)",
+                (v >= 0.001) | (v == "") ||
+                "ERROR: specify values >=0.001 or leave it empty (= no action taken)",
             ],
           },
         ],
@@ -3294,7 +3435,7 @@ export default new Vuex.Store({
             tooltip:
               "maximum number of expected errors per sequence. Sequences with higher error rates will be discarded",
             type: "numeric",
-            rules: [(v) => v >= 0.1 || "ERROR: specify values >= 0.1"],
+            rules: [(v) => v >= 0.001 || "ERROR: specify values >= 0.001"],
           },
           {
             name: "maxNs",
@@ -3964,133 +4105,33 @@ export default new Vuex.Store({
             tooltip: "",
             type: "boolfile",
           },
+          {
+            name: "primer_mismatches",
+            value: 2,
+            disabled: "never",
+            tooltip: "Maximum number of mismatches when searching for primers",
+            type: "numeric",
+            rules: [(v) => v >= 1 || "ERROR: specify values >= 1"],
+          },
+          {
+            name: "lima_minscore",
+            value: 93,
+            disabled: "never",
+            tooltip: "Threshold for the average barcode score of the leading and trailing ends.",
+            type: "numeric",
+            rules: [(v) => v >= 1 || "ERROR: specify values >= 1"],
+          },
+          {
+            name: "lima_dualbarcode",
+            value: false,
+            disabled: "never",
+            tooltip: "A read can have up to two barcode regions, leading and trailing",
+            type: "bool",
+          },
         ],
       },
     ],
     DADA2_ASVs: [
-      {
-        tooltip:
-          "demultiplex data to per-sample files based on specified index file. Note that for read1 and read2 will get .R1 and .R2 identifiers when demultiplexing paired-end data",
-        scriptName: "demux_paired_end_data.sh",
-        imageName: "pipecraft/cutadapt:3.5",
-        serviceName: "demultiplex",
-        manualLink:
-          "https://pipecraft2-manual.readthedocs.io/en/stable/user_guide.html#demultiplex",
-        disabled: "demultiplexed",
-        selected: false,
-        showExtra: false,
-        extraInputs: [
-          {
-            name: "cores",
-            value: 1,
-            disabled: "never",
-            tooltip: "number of cores to use",
-            type: "numeric",
-            rules: [(v) => v >= 1 || "ERROR: specify values >= 1"],
-          },
-          {
-            name: "min_seq_length",
-            value: 32,
-            disabled: "never",
-            tooltip: "minimum length of the output sequence",
-            type: "numeric",
-            rules: [(v) => v >= 1 || "ERROR: specify values >= 1"],
-          },
-          {
-            name: "no_indels",
-            value: true,
-            disabled: "never",
-            tooltip:
-              "do not allow insertions or deletions in the index sequence",
-            type: "bool",
-          },
-        ],
-        Inputs: [
-          {
-            name: "index_file",
-            value: "undefined",
-            btnName: "select fasta",
-            disabled: "never",
-            tooltip:
-              "select your fasta formatted indexes file for demultiplexing, where fasta headers are sample names, and sequences are sample specific index or index combination",
-            type: "file",
-          },
-          {
-            name: "index_file_example",
-            value:
-              "https://pipecraft2-manual.readthedocs.io/en/stable/user_guide.html#indexes-file-example-fasta-formatted",
-            disabled: "never",
-            type: "link",
-            tooltip: "link to PipeCraft2 manual page, index file examples",
-          },
-          {
-            name: "index_mismatch",
-            value: 0,
-            disabled: "never",
-            tooltip: "allowed mismatches during the index search",
-            type: "numeric",
-            rules: [(v) => v >= 0 || "ERROR: specify values >= 0"],
-          },
-          {
-            name: "overlap",
-            value: 8,
-            disabled: "never",
-            tooltip:
-              "number of overlap bases with the index. Recommended overlap is the max length of the index for confident sequence assignments to samples in the indexes file",
-            type: "numeric",
-            rules: [(v) => v >= 1 || "ERROR: specify values >= 1"],
-          },
-          {
-            name: "search_window",
-            value: 35,
-            disabled: "never",
-            tooltip:
-              "the index search window size. The default 35 means that the forward index is searched among the first 35 bp and the reverse index among the last 35 bp. This search restriction prevents random index matches in the middle of the sequence",
-            type: "numeric",
-            rules: [(v) => v >= 1 || "ERROR: specify values >= 1"],
-          },
-        ],
-      },
-      {
-        tooltip: "reorient reads based on specified primer sequences",
-        scriptName: "reorient_paired_end_reads.sh",
-        imageName: "pipecraft/reorient:1",
-        serviceName: "reorient",
-        manualLink:
-          "https://pipecraft2-manual.readthedocs.io/en/stable/user_guide.html#reorient",
-        disabled: "never",
-        selected: false,
-        showExtra: false,
-        extraInputs: [],
-        Inputs: [
-          {
-            name: "mismatches",
-            value: 1,
-            disabled: "never",
-            tooltip: "allowed mismatches in the primer search",
-            type: "numeric",
-            rules: [(v) => v >= 0 || "ERROR: specify values >= 0"],
-          },
-          {
-            name: "forward_primers",
-            value: [],
-            disabled: "never",
-            tooltip: "specify forward primer (5'-3'); add up to 13 primers",
-            type: "chip",
-            iupac: true,
-            rules: [(v) => v.length <= 13 || "TOO MANY PRIMERS"],
-          },
-          {
-            name: "reverse_primers",
-            value: [],
-            disabled: "never",
-            tooltip: "specify reverse primer (3'-5'); add up to 13 primers",
-            type: "chip",
-            iupac: true,
-            rules: [(v) => v.length <= 13 || "TOO MANY PRIMERS"],
-          },
-        ],
-      },
       {
         tooltip: "remove primers sequences from the reads",
         scriptName: "cut_primers_paired_end_reads.sh",
@@ -4516,28 +4557,28 @@ export default new Vuex.Store({
       },
     ],
     customWorkflowInfo: {
-      Vsearch_OTUs: {
-        info: "OTUs workflow with vsearch",
+      vsearch_OTUs: {
+        info: "vsearch OTUs workflow",
         link: "https://github.com/torognes/vsearch",
         title: "vsearch OTUs workflow",
       },
       DADA2_ASVs: {
-        info: "This workflow is based on DADA2 pipeline tutorial (except parts with tickboxes)",
-        link: "https://benjjneb.github.io/dada2/tutorial.html",
-        title: "DADA2 ASVs workflow for PAIRED-END reads",
+        info: "FORWARD: select this when all reads of interest are expected to be in 5-3 orient. MIXED: select this when reads of interest are expected to be in both 5-3 and 3-5 orient SINGE-END DATA: select this when working with single-end data (such as PacBio)",
+        // link: "https://benjjneb.github.io/dada2/tutorial.html",
+        title: "DADA2 ASVs workflow",
       },
       UNOISE_ASVs: {
-        info: "UNOISE workflow with vsearch",
+        info: "vsearch workflow for forming ASVs (zOTUs) with UNOISE3",
         link: "https://github.com/torognes/vsearch",
-        title: "vsearch UNOISE3 workflow",
+        title: "UNOISE3 ASVs workflow",
       },
       Metaworks_COI: {
-        info: "This workflow is based on Metaworks workflow quickstarts",
+        info: "MetaWorks ASVs workflow for demultiplexed PAIRED-END COI amplicons",
         link: "https://terrimporter.github.io/MetaWorksSite/quickstart/",
-        title: "MetaWorks ESVs workflow for demultiplexed PAIRED-END reads",
+        title: "MetaWorks COI ASVs",
       },
       NextITS: {
-        info: "NextITS",
+        info: "NextITS pipeline for PacBio ITS amplicons",
         link: "https://github.com/vmikk/NextITS",
         title: "NextITS",
       },
@@ -4774,17 +4815,17 @@ export default new Vuex.Store({
     },
     blastSwitch(state, value) {
       if (value == "blastn") {
-        state.Vsearch_OTUs[8].extraInputs[1].value = 11;
-        state.Vsearch_OTUs[8].extraInputs[2].value = 2;
-        state.Vsearch_OTUs[8].extraInputs[3].value = -3;
-        state.Vsearch_OTUs[8].extraInputs[4].value = 5;
-        state.Vsearch_OTUs[8].extraInputs[5].value = 2;
+        state.vsearch_OTUs[8].extraInputs[1].value = 11;
+        state.vsearch_OTUs[8].extraInputs[2].value = 2;
+        state.vsearch_OTUs[8].extraInputs[3].value = -3;
+        state.vsearch_OTUs[8].extraInputs[4].value = 5;
+        state.vsearch_OTUs[8].extraInputs[5].value = 2;
       } else if (value == "megablast") {
-        state.Vsearch_OTUs[8].extraInputs[1].value = 28;
-        state.Vsearch_OTUs[8].extraInputs[2].value = 1;
-        state.Vsearch_OTUs[8].extraInputs[3].value = -2;
-        state.Vsearch_OTUs[8].extraInputs[4].value = 0;
-        state.Vsearch_OTUs[8].extraInputs[5].value = undefined;
+        state.vsearch_OTUs[8].extraInputs[1].value = 28;
+        state.vsearch_OTUs[8].extraInputs[2].value = 1;
+        state.vsearch_OTUs[8].extraInputs[3].value = -2;
+        state.vsearch_OTUs[8].extraInputs[4].value = 0;
+        state.vsearch_OTUs[8].extraInputs[5].value = undefined;
       }
     },
     blastSwitch2(state, payload) {

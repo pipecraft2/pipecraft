@@ -1,9 +1,11 @@
 #!/usr/bin/env Rscript
 
 #DADA2 sequence classifier (module for taxonomy_dada2.sh).
+ #input is fasta file
 
 #load dada2
 library("dada2")
+library("seqinr")
 
 #load env variables
 readType = Sys.getenv('readType')
@@ -44,8 +46,17 @@ if (file.exists("ASVs_lenFilt.fasta") == TRUE && file.exists("ASVs_collapsed.fas
 
 print(seqs_file)
 
+
+fasta = read.fasta(seqs_file, seqtype = "DNA", as.string = TRUE, forceDNAtolower = FALSE, seqonly = FALSE)
+seq_names = getName(fasta)
+seqs = unlist(getSequence(fasta, as.string = TRUE))
+#Print no of ASVs
+paste("Number of sequences = ", length(seq_names))
+
+
 #assign taxonomy
-tax = assignTaxonomy(seqs_file, database, multithread = FALSE, minBoot = minBoot, tryRC = tryRC, outputBootstraps = TRUE)
+set.seed(100)
+tax = assignTaxonomy(fasta, database, multithread = TRUE, minBoot = minBoot, tryRC = tryRC, outputBootstraps = TRUE)
 #add sequence names to tax table
 tax2 = cbind(row.names(tax$tax), tax$tax, tax$boot)
 colnames(tax2)[1] = "Sequence"

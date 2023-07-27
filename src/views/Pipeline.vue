@@ -40,7 +40,7 @@
       >
       <v-card-actions v-if="$route.params.workflowName.includes('DADA2')">
         <v-tabs>
-          <v-tab @click="$router.push(`/premade/Vsearch_OTUs`)">Forward</v-tab>
+          <v-tab>Forward</v-tab>
           <v-tab>Mixed</v-tab>
           <v-tab>Single-end data</v-tab>
         </v-tabs>
@@ -84,6 +84,20 @@
                 style="max-width: 34px; padding-top: 0; margin: 0"
               ></v-checkbox>
               {{ service.serviceName.toUpperCase() }}
+
+              <div
+                v-if="
+                  $store.state.runInfo.active == true &&
+                  $store.state.runInfo.type == $route.params.workflowName &&
+                  index == $store.state.runInfo.step
+                "
+              >
+                <span
+                  v-if="$store.state.pullLoader.active == true"
+                  style="padding-left: 25px"
+                  >Pulling image ...</span
+                >
+              </div>
               <div v-if="service.manualLink">
                 <v-tooltip left>
                   <template v-slot:activator="{ on }">
@@ -102,19 +116,6 @@
                   </template>
                   <span>Check out the documentation for more info</span>
                 </v-tooltip>
-              </div>
-              <div
-                v-if="
-                  $store.state.runInfo.active == true &&
-                  $store.state.runInfo.type == $route.params.workflowName &&
-                  index == $store.state.runInfo.step
-                "
-              >
-                <span
-                  v-if="$store.state.pullLoader.active == true"
-                  style="padding-left: 25px"
-                  >Pulling image ...</span
-                >
               </div>
             </v-expansion-panel-header>
           </template>
