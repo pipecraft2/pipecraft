@@ -68,15 +68,15 @@ for file in *.$extension; do
     #Read file name; without extension
     input=$(echo $file | sed -e "s/.$extension//")
     #If input is compressed, then decompress (keeping the compressed file, but overwriting if filename exists!)
-        #$extension will be $newextension
+        
     check_gz_zip_SE
     ### Check input formats (only fasta, fa, fas supported)
     check_extension_fastx
 done
 
 #If input is FASTQ then convert to FASTA
-if [[ $newextension == "fastq" ]] || [[ $newextension == "fq" ]]; then
-    for file in *.$newextension; do
+if [[ $extension == "fastq" ]] || [[ $extension == "fq" ]]; then
+    for file in *.$extension; do
         samp_name=$(basename $file | awk 'BEGIN{FS="."} {$NF=""; print $0}' | sed 's/ //g')
         checkerror=$(seqkit fq2fa -t dna --line-width 0 $file -o $samp_name.fasta 2>&1)
         check_app_error
@@ -84,8 +84,8 @@ if [[ $newextension == "fastq" ]] || [[ $newextension == "fq" ]]; then
 
     was_fastq=$"TRUE"
     export was_fastq
-    newextension=$"fasta"
-    export newextension
+    extension=$"fasta"
+    export extension
 fi
 
 #tempdir
@@ -107,7 +107,7 @@ derep_rename () {
   | sed 's/>.*/&;sample='"$samp_name"'/' > tempdir/"$samp_name".fasta
 }
 export -f derep_rename
-find . -maxdepth 1 -name "*.$newextension" | parallel -j 1 "derep_rename {}"
+find . -maxdepth 1 -name "*.$extension" | parallel -j 1 "derep_rename {}"
 
 ### Global dereplication
 printf "Dereplicating globally ... \n"
@@ -332,7 +332,7 @@ rm $output_dir/Dereplicated_samples.fasta
 
 #Delete decompressed files if original set of files were compressed
 if [[ $check_compress == "gz" ]] || [[ $check_compress == "zip" ]]; then
-    rm *.$newextension
+    rm *.$extension
 fi
 
 #Delete tempdirs
@@ -394,6 +394,6 @@ printf "Total time: $runtime sec.\n\n"
 
 #variables for all services
 echo "workingDir=/$output_dir"
-echo "fileFormat=$newextension"
+echo "fileFormat=$extension"
 echo "dataFormat=$dataFormat"
 echo "readType=single-end"

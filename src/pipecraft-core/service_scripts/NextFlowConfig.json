@@ -1,1 +1,1 @@
-{"OTU_type":"centroid","similarity_threshold":0.97,"strands":"both","remove_singletons":false,"similarity_type":"2","sequence_sorting":"size","centroid_type":"similarity","maxaccepts":1,"mask":"dust","cores":4}
+{"forward_primers":["GGWACWGGWTGAACWGTWTAYCCYCC"],"reverse_primers":["TANACYTCNGGRTGNCCRAARAAYCA"],"mismatches":1,"min_overlap":21,"seqs_to_keep":"keep_all","pair_filter":"both","cores":1,"min_seq_length":32,"no_indels":true}

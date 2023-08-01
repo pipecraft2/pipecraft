@@ -65,19 +65,19 @@ for file in *.$extension; do
     printf "\n____________________________________\n"
     printf "Processing $input ...\n"
     #If input is compressed, then decompress (keeping the compressed file, but overwriting if filename exists!)
-        #$extension will be $newextension
+        
     check_gz_zip_SE
     ### Check input formats (fastq/fasta supported)
     check_extension_fastx
 
     #If input is FASTQ then convert to FASTA
-    if [[ $newextension == "fastq" ]] || [[ $newextension == "fq" ]]; then
-        checkerror=$(seqkit fq2fa -t dna --line-width 0 $input.$newextension -o $input.fasta 2>&1)
+    if [[ $extension == "fastq" ]] || [[ $extension == "fq" ]]; then
+        checkerror=$(seqkit fq2fa -t dna --line-width 0 $input.$extension -o $input.fasta 2>&1)
         check_app_error
-        printf "Note: converted $newextension to FASTA \n"
+        printf "Note: converted $extension to FASTA \n"
 
-        newextension=$"fasta"
-        export newextension
+        extension=$"fasta"
+        export extension
         was_fastq=$"TRUE"
         export was_fastq
     fi
@@ -87,7 +87,7 @@ for file in *.$extension; do
     ###############################
     #dereplicate sequences
     if [[ $denovo == "true" ]]; then
-        checkerror=$(vsearch --derep_fulllength $input.$newextension \
+        checkerror=$(vsearch --derep_fulllength $input.$extension \
         $minuniquesize \
         --sizein --sizeout \
         --fasta_width 0 \
@@ -234,6 +234,6 @@ printf "Total time: $runtime sec.\n\n"
 
 #variables for all services
 echo "workingDir=$output_dir"
-echo "fileFormat=$newextension"
+echo "fileFormat=$extension"
 echo "dataFormat=$dataFormat"
 echo "readType=single_end"

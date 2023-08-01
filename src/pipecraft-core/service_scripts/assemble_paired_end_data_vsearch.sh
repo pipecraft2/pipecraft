@@ -60,7 +60,6 @@ while read LINE; do
     printf "\n____________________________________\n"
     printf "Checking $inputR1 and $inputR2 ...\n"
     #If input is compressed, then decompress (keeping the compressed file, but overwriting if filename exists!)
-        #$extension will be $newextension
     check_gz_zip_PE
     ### Check input formats (fastq supported)
     check_extension_fastq
@@ -73,8 +72,8 @@ while read LINE; do
     #variables for not_merged output files
     if [[ $notmerged_files == "TRUE" ]]; then
     	mkdir -p $output_dir/not_assembled_paired_end_reads
-    	fastqout_notmerged_fwd="--fastqout_notmerged_fwd $output_dir/not_assembled_paired_end_reads/$inputR1.notAssembled.$newextension"
-    	fastqout_notmerged_rev="--fastqout_notmerged_rev $output_dir/not_assembled_paired_end_reads/$inputR2.notAssembled.$newextension"
+    	fastqout_notmerged_fwd="--fastqout_notmerged_fwd $output_dir/not_assembled_paired_end_reads/$inputR1.notAssembled.$extension"
+    	fastqout_notmerged_rev="--fastqout_notmerged_rev $output_dir/not_assembled_paired_end_reads/$inputR2.notAssembled.$extension"
     fi
     if [[ $fastq_allowmergestagger == "TRUE" ]]; then
         allowmergestagger=$"--fastq_allowmergestagger"
@@ -82,11 +81,11 @@ while read LINE; do
     #When including R1 to the assembled output, then include fastqout_notmerged_fwd (in case notmerged_files=FALSE)
     if [[ $include_R1 == "TRUE" ]]; then
         mkdir -p $output_dir/not_assembled_paired_end_reads
-    	fastqout_notmerged_fwd="--fastqout_notmerged_fwd $output_dir/not_assembled_paired_end_reads/$inputR1.notAssembled.$newextension"
+    	fastqout_notmerged_fwd="--fastqout_notmerged_fwd $output_dir/not_assembled_paired_end_reads/$inputR1.notAssembled.$extension"
     fi
 
-	checkerror=$(vsearch --quiet --fastq_mergepairs $inputR1.$newextension \
-	--reverse $inputR2.$newextension \
+	checkerror=$(vsearch --quiet --fastq_mergepairs $inputR1.$extension \
+	--reverse $inputR2.$extension \
 	$fastq_minoverlen \
 	$fastq_minmergelen \
 	$allowmergestagger \
@@ -97,19 +96,19 @@ while read LINE; do
 	$fastqout_notmerged_rev \
 	--fastq_qmax $fastq_qmax \
 	--fastq_qmaxout $fastq_qmax \
-	--fastqout $output_dir/$fastqout.$newextension 2>&1)
+	--fastqout $output_dir/$fastqout.$extension 2>&1)
     check_app_error
 
     #Include R1 reads to assembled data set if include_R1 = TRUE
     if [[ $include_R1 == "TRUE" ]]; then
     	printf '%s\n' "include only R1 = TRUE, including also unmerged R1 reads to the assembled output"
-    	cat $output_dir/not_assembled_paired_end_reads/$inputR1.notAssembled.$newextension >> $output_dir/$fastqout.$newextension
+    	cat $output_dir/not_assembled_paired_end_reads/$inputR1.notAssembled.$extension >> $output_dir/$fastqout.$extension
     fi
     ### Check if assembled output is empty; if yes, then report WARNING
-    if [ -s $output_dir/$fastqout.$newextension ]; then
+    if [ -s $output_dir/$fastqout.$extension ]; then
         :
     else
-        printf '%s\n' "WARNING]: after assembling, $fastqout.$newextension has 0 seqs (no output)" >&2
+        printf '%s\n' "WARNING]: after assembling, $fastqout.$extension has 0 seqs (no output)" >&2
     fi
 done < tempdir2/paired_end_files.txt
 
@@ -153,6 +152,6 @@ printf "Total time: $runtime sec.\n\n"
 
 #variables for all services
 echo "workingDir=$output_dir"
-echo "fileFormat=$newextension"
+echo "fileFormat=$extension"
 echo "dataFormat=$dataFormat"
 echo "readType=single_end"

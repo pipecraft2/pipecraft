@@ -60,7 +60,7 @@ for file in *.$extension; do
     printf "\n____________________________________\n"
     printf "Processing $input ...\n"
     #If input is compressed, then decompress (keeping the compressed file, but overwriting if filename exists!)
-        #$extension will be $newextension
+        
     check_gz_zip_SE
     ### Check input formats (fastq supported)
     check_extension_fastq
@@ -69,8 +69,8 @@ for file in *.$extension; do
     ### Start quality filtering ###
     ###############################
     checkerror=$(java -jar /Trimmomatic-0.39/trimmomatic-0.39.jar SE \
-    $input.$newextension \
-    $output_dir/$input.$newextension \
+    $input.$extension \
+    $output_dir/$input.$extension \
     -phred$phred \
     $LEADING \
     $TRAILING \
@@ -81,7 +81,7 @@ for file in *.$extension; do
 
     #Convert output fastq files to FASTA
     mkdir -p $output_dir/FASTA
-    checkerror=$(seqkit fq2fa -t dna --line-width 0 $output_dir/$input.$newextension -o $output_dir/FASTA/$input.fasta 2>&1)
+    checkerror=$(seqkit fq2fa -t dna --line-width 0 $output_dir/$input.$extension -o $output_dir/FASTA/$input.fasta 2>&1)
     check_app_error
 done
 
@@ -97,7 +97,7 @@ runtime=$((end-start))
 printf "# Quality filtering with trimmomatic.
 
 Files in 'qualFiltered_out':
-# *.$newextension           = quality filtered sequences in FASTQ format.
+# *.$extension           = quality filtered sequences in FASTQ format.
 # seq_count_summary.txt     = summary of sequence counts per sample.
 Files in 'qualFiltered_out/FASTA':
 # *.fasta                   = quality filtered sequences in FASTA format.
@@ -127,6 +127,6 @@ printf "Total time: $runtime sec.\n\n"
 
 #variables for all services
 echo "workingDir=$output_dir"
-echo "fileFormat=$newextension"
+echo "fileFormat=$extension"
 echo "dataFormat=$dataFormat"
 echo "readType=single_end"

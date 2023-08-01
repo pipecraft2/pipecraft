@@ -75,7 +75,7 @@ for file in *.$extension; do
     #Read file name; without extension
     input=$(echo $file | sed -e "s/.$extension//")
     #If input is compressed, then decompress (keeping the compressed file, but overwriting if filename exists!)
-        #$extension will be $newextension
+        
     check_gz_zip_SE
     ### Check input formats (only fasta, fa, fas supported)
     check_extension_fasta
@@ -102,7 +102,7 @@ derep_rename () {
 }
 export -f derep_rename
 printf "Dereplication of individual samples ... \n"
-find . -maxdepth 1 -name "*.$newextension" | parallel -j 1 "derep_rename {}"
+find . -maxdepth 1 -name "*.$extension" | parallel -j 1 "derep_rename {}"
 
 ### Global dereplication
 printf "Dereplicating globally ... \n"
@@ -189,7 +189,7 @@ printf "\nCleaning up and compiling final stats files ... \n"
 
 #Delete decompressed files if original set of files were compressed
 if [[ $check_compress == "gz" ]] || [[ $check_compress == "zip" ]]; then
-    rm *.$newextension
+    rm *.$extension
 fi
 
 #Delete tempdirs
@@ -240,6 +240,6 @@ printf "Total time: $runtime sec.\n\n"
 
 #variables for all services
 echo "workingDir=$output_dir"
-echo "fileFormat=$newextension"
+echo "fileFormat=$extension"
 echo "dataFormat=$dataFormat"
 echo "readType=single_end"

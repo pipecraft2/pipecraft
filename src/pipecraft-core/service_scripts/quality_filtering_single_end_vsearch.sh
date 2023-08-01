@@ -80,7 +80,7 @@ for file in *.$extension; do
     printf "\n____________________________________\n"
     printf "Processing $input ...\n"
     #If input is compressed, then decompress (keeping the compressed file, but overwriting if filename exists!)
-        #$extension will be $newextension
+        
     check_gz_zip_SE
     ### Check input formats (fastq supported)
     check_extension_fastq
@@ -89,7 +89,7 @@ for file in *.$extension; do
     ### Start quality filtering ###
     ###############################
     checkerror=$(vsearch --fastq_filter \
-    $input.$newextension \
+    $input.$extension \
     $maxee \
     $maxns \
     $trunc_length \
@@ -101,7 +101,7 @@ for file in *.$extension; do
     $maxee_rate \
     $truncqual \
     $truncee \
-    --fastqout $output_dir/$input.$newextension 2>&1)
+    --fastqout $output_dir/$input.$extension 2>&1)
     check_app_error
 done
 
@@ -117,7 +117,7 @@ runtime=$((end-start))
 printf "# Quality filtering with vsearch.
 
 Files in 'qualFiltered_out':
-# *.$newextension           = quality filtered sequences in FASTQ format.
+# *.$extension           = quality filtered sequences in FASTQ format.
 # seq_count_summary.txt     = summary of sequence counts per sample.
 
 Core command -> 
@@ -141,6 +141,6 @@ printf "Total time: $runtime sec.\n\n"
 
 #variables for all services
 echo "workingDir=$output_dir"
-echo "fileFormat=$newextension"
+echo "fileFormat=$extension"
 echo "dataFormat=$dataFormat"
 echo "readType=single_end"
