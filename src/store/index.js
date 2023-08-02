@@ -4073,7 +4073,25 @@ export default new Vuex.Store({
         disabled: "never",
         selected: "always",
         showExtra: false,
-        extraInputs: [],
+        extraInputs: [
+          {
+            name: "lima_minscore",
+            value: 93,
+            disabled: "never",
+            tooltip:
+              "Threshold for the average barcode score of the leading and trailing ends.",
+            type: "numeric",
+            rules: [(v) => v >= 1 || "ERROR: specify values >= 1"],
+          },
+          {
+            name: "lima_dualbarcode",
+            value: false,
+            disabled: "never",
+            tooltip:
+              "A read can have up to two barcode regions, leading and trailing",
+            type: "bool",
+          },
+        ],
         Inputs: [
           {
             name: "primer_forward",
@@ -4115,8 +4133,10 @@ export default new Vuex.Store({
             disabled: "never",
             tooltip:
               "Maximum number of expected errors per base (default, 0.01)",
-            type: "numeric",
-            rules: [(v) => v <= 1 || "ERROR: specify values <= 1"],
+            max: 1,
+            min: 0,
+            step: 0.01,
+            type: "slide",
           },
           {
             name: "qc_maxn",
@@ -4145,20 +4165,11 @@ export default new Vuex.Store({
             type: "boolfile",
           },
           {
-            name: "lima_minscore",
-            value: 93,
-            disabled: "never",
-            tooltip:
-              "Threshold for the average barcode score of the leading and trailing ends.",
-            type: "numeric",
-            rules: [(v) => v >= 1 || "ERROR: specify values >= 1"],
-          },
-          {
-            name: "lima_dualbarcode",
+            name: "keep_temp_files",
             value: false,
             disabled: "never",
             tooltip:
-              "A read can have up to two barcode regions, leading and trailing",
+              "Keep temporary files, this option is useful for debugging (by deafult all temporary files are discarded)",
             type: "bool",
           },
         ],

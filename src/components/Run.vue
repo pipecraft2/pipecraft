@@ -242,14 +242,7 @@ export default {
                   Swal.fire({
                     title: "An error has occured while processing your data",
                     text: err,
-                    showCancelButton: true,
-                    cancelButtonText: "Quit",
-                    confirmButtonText: "Report a bug",
-                  }).then((result) => {
-                    // let log = await function('need to gather a log for each step ran and a snapshot of the state')
-                    if (result.isConfirmed) {
-                      Swal.fire("Report sent");
-                    }
+                    confirmButtonText: "Quit",
                   });
                 }
                 this.$store.commit("resetRunInfo");
@@ -354,14 +347,7 @@ export default {
                 Swal.fire({
                   title: "An error has occured while processing your data",
                   text: err,
-                  showCancelButton: true,
-                  cancelButtonText: "Quit",
-                  confirmButtonText: "Report a bug",
-                }).then((result) => {
-                  // let log = await function('need to gather a log for each step ran and a snapshot of the state')
-                  if (result.isConfirmed) {
-                    Swal.fire("Report sent");
-                  }
+                  confirmButtonText: "Quit",
                 });
               }
               this.$store.commit("resetRunInfo");
@@ -616,14 +602,7 @@ export default {
             Swal.fire({
               title: "An error has occured while processing your data",
               text: "unknows error, check result/pipeline_info/execution_report for more info",
-              showCancelButton: true,
-              cancelButtonText: "Quit",
-              confirmButtonText: "Report a bug",
-            }).then((result) => {
-              // let log = await function('need to gather a log for each step ran and a snapshot of the state')
-              if (result.isConfirmed) {
-                Swal.fire("Report sent");
-              }
+              confirmButtonText: "Quit",
             });
           }
         }
