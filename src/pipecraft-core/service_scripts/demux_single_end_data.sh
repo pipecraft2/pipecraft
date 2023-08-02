@@ -61,7 +61,7 @@ for file in *.$extension; do
     input=$(echo $file | sed -e "s/.$extension//")
 
     #If input is compressed, then decompress (keeping the compressed file, but overwriting if filename exists!)
-        #$extension will be $newextension
+        
     check_gz_zip_SE
     ### Check input formats (fastq/fasta supported)
     check_extension_fastx
@@ -100,7 +100,7 @@ for file in *.$extension; do
         #REV indexes are 5'-3' orientation for cutadapt search 
         mv tempdir2/index_file.fasta $output_dir #move edited indexes file with window size into output_dir 
         indexes_file_in=$"-g file:$output_dir/index_file.fasta"
-        out=$"-o $output_dir/{name}.$newextension"
+        out=$"-o $output_dir/{name}.$extension"
     else
         #single indexes
         # Add search window size to indexes 
@@ -111,7 +111,7 @@ for file in *.$extension; do
         mv tempdir2/index_file.fasta $output_dir
         #assign demux variables
         indexes_file_in=$"-g file:$output_dir/index_file.fasta" 
-        out=$"-o $output_dir/{name}.$newextension"
+        out=$"-o $output_dir/{name}.$extension"
     fi
 
     ############################
@@ -124,17 +124,17 @@ for file in *.$extension; do
     $error_rate \
     $no_indels \
     --revcomp \
-    --untrimmed-output $output_dir/unknown.$newextension \
+    --untrimmed-output $output_dir/unknown.$extension \
     $overlap \
     $minlen \
     $cores \
     $out \
-    $input.$newextension 2>&1)
+    $input.$extension 2>&1)
     check_app_error
 done
 
 #Remove 'rc' string from seq if the indexes were found on reverse complementary strand
-for file in $output_dir/*.$newextension; do
+for file in $output_dir/*.$extension; do
     awk -i inplace '{ gsub(/ rc$/, "") }; { print }' $file
 done
 
@@ -190,6 +190,6 @@ printf "Total time: $runtime sec.\n"
 
 #variables for all services
 echo "workingDir=/$output_dir"
-echo "fileFormat=$newextension"
+echo "fileFormat=$extension"
 echo "dataFormat=demultiplexed"
 echo "readType=single_end"

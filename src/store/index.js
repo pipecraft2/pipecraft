@@ -257,7 +257,7 @@ export default new Vuex.Store({
                 value: "both",
                 disabled: "never",
                 tooltip:
-                  "applies only for paired-end data. 'both', means that a read is discarded only if both, corresponding R1 and R2, reads  do not contain primer strings (i.e. a read is kept if R1 contains primer string, but no primer string found in R2 read). Option 'any' discards the read if primers are not found in both, R1 and R2 reads",
+                  "applies only for paired-end data. Option 'both' discards a read-pair when both reads do not contain a primer sequence. Option 'any' discards the read-pair when one of the reads does not contain a primer sequence",
                 type: "select",
               },
             ],
@@ -2413,7 +2413,7 @@ export default new Vuex.Store({
             value: "both",
             disabled: "never",
             tooltip:
-              "applies only for paired-end data. 'both', means that a read is discarded only if both, corresponding R1 and R2, reads  do not contain primer strings (i.e. a read is kept if R1 contains primer string, but no primer string found in R2 read). Option 'any' discards the read if primers are not found in both, R1 and R2 reads",
+              "applies only for paired-end data. Option 'both' discards a read-pair when both reads do not contain a primer sequence. Option 'any' discards the read-pair when one of the reads does not contain a primer sequence",
             type: "select",
           },
         ],
@@ -3264,7 +3264,7 @@ export default new Vuex.Store({
             value: "both",
             disabled: "never",
             tooltip:
-              "applies only for paired-end data. 'both', means that a read is discarded only if both, corresponding R1 and R2, reads  do not contain primer strings (i.e. a read is kept if R1 contains primer string, but no primer string found in R2 read). Option 'any' discards the read if primers are not found in both, R1 and R2 reads",
+              "applies only for paired-end data. Option 'both' discards a read-pair when both reads do not contain a primer sequence. Option 'any' discards the read-pair when one of the reads does not contain a primer sequence",
             type: "select",
           },
         ],
@@ -4253,7 +4253,7 @@ export default new Vuex.Store({
             value: "both",
             disabled: "never",
             tooltip:
-              "applies only for paired-end data. 'both', means that a read is discarded only if both, corresponding R1 and R2, reads  do not contain primer strings (i.e. a read is kept if R1 contains primer string, but no primer string found in R2 read). Option 'any' discards the read if primers are not found in both, R1 and R2 reads",
+              "applies only for paired-end data. Option 'both' discards a read-pair when both reads do not contain a primer sequence. Option 'any' discards the read-pair when one of the reads does not contain a primer sequence",
             type: "select",
           },
         ],

@@ -59,6 +59,14 @@ output_dir=$"/input/qualFiltered_out"
 ### Start of the workflow ###
 #############################
 start=$(date +%s)
+
+### Check if MIXED orientation input (primersCut_out dir)
+if [[ -d "fwd_orient" ]]; then 
+    echo "ok"
+else
+    echo "no folder"
+fi
+
 ### Check if files with specified extension exist in the dir
 first_file_check
 ### Prepare working env and check paired-end data
