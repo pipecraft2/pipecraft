@@ -1,1 +1,0 @@
-{"OTU_type":"centroid","similarity_threshold":0.97,"strands":"both","remove_singletons":false,"similarity_type":"2","sequence_sorting":"size","centroid_type":"similarity","maxaccepts":1,"mask":"dust","cores":4}
