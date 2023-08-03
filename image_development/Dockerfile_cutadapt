@@ -2,19 +2,19 @@ FROM ubuntu:22.04
 # ARG DEBIAN_FRONTEND=noninteractive
 
 RUN apt-get update -y \
-&& apt-get install bc -y \ 
-&& apt-get install build-essential -y \
-&& apt-get install python3-dev -y \
-&& apt-get update -y \
-&& apt-get install python3-pip -y \
-&& python3 -m pip install biopython \
-&& apt-get install curl -y \
-&& apt-get install pigz -y \
-&& apt-get install wget -y \
-&& wget https://github.com/shenwei356/seqkit/releases/download/v2.3.0/seqkit_linux_amd64.tar.gz -O /tmp/seqkit.tar.gz \
-&& tar zxvf /tmp/seqkit.tar.gz -C /usr/bin/ \
-&& rm /tmp/seqkit.tar.gz \
-&& curl https://bootstrap.pypa.io/get-pip.py -o get-pip.py \
-&& python3 get-pip.py \
-&& python3 -m pip install cutadapt==3.5 \
-&& apt-get remove wget -y curl -y
+    && apt-get install bc -y \ 
+    && apt-get install build-essential -y \
+    && apt-get install python3-dev -y \
+    && apt-get update -y \
+    && apt-get install python3-pip -y \
+    && python3 -m pip install biopython \
+    && apt-get install curl -y \
+    && apt-get install pigz -y \
+    && apt-get install wget -y \
+    && wget https://github.com/shenwei356/seqkit/releases/download/v2.3.0/seqkit_linux_amd64.tar.gz -O /tmp/seqkit.tar.gz \
+    && tar zxvf /tmp/seqkit.tar.gz -C /usr/bin/ \
+    && rm /tmp/seqkit.tar.gz \
+    && curl https://bootstrap.pypa.io/get-pip.py -o get-pip.py \
+    && python3 get-pip.py \
+    && python3 -m pip install cutadapt==4.4 \
+    && apt-get remove wget -y curl -y

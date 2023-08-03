@@ -16,11 +16,18 @@
     <v-divider class="mt-2 mb-2"></v-divider>
     <v-tooltip left nudge-left="10">
       <template v-slot:activator="{ on }">
-        <v-list-item v-on="on" class="mt-5" ripple link>
+        <v-list-item
+          :disabled="$store.state.runInfo.active"
+          v-on="on"
+          class="mt-5"
+          ripple
+          link
+        >
           <v-menu tile dark left nudge-left="15" offset-x>
             <template v-slot:activator="{ on, attrs }">
               <v-list-item-content v-on="on" v-bind="attrs">
-                <v-icon large
+                <v-icon
+                  large
                   :style="
                     $store.getters.singleStepNames.some((v) =>
                       $route.path.includes(v)
@@ -66,7 +73,8 @@
           <v-list-item-content v-on="on" @click="item.action">
             <v-icon
               :style="
-                `/${item.title}` == $route.path
+                `/${item.title}` == $route.path ||
+                (item.title == 'Debug' && $store.state.data.debugger == true)
                   ? { color: '#1DE9B6' }
                   : { color: 'white' }
               "
@@ -121,6 +129,13 @@ export default {
           icon: "mdi-puzzle-edit",
           tooltip: "Expert mode",
           action: this.push2expert,
+        },
+        {
+          title: "Debug",
+          icon: "mdi-bug",
+          tooltip:
+            "Debugging mode, Pipecraft will retain all temporary files while debugger is active",
+          action: this.debug,
         },
       ],
     };
@@ -192,6 +207,9 @@ export default {
             }
           }
         });
+    },
+    debug() {
+      this.$store.commit("toggleDebugger");
     },
     push2premade(name) {
       if (this.$route.path != `/premade/${name}`) {
