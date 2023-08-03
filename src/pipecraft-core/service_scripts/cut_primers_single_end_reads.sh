@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # REMOVE PRIMERS from single-end reads
-# Degenerate primers are allowed using IUPAC codes. Reverse complementary stings will be also searched.
+# Degenerate primers are allowed using IUPAC codes. Reverse complementary strings will be also searched.
 # Input = single-end fastq or fasta files. If using fasta, then cores must = 1
 
 ##########################################################
@@ -101,11 +101,8 @@ for file in *.$extension; do
     printf "\n____________________________________\n"
     printf "Checking $input ...\n"
 
-    #If input is compressed, then decompress (keeping the compressed file, but overwriting if filename exists!)
-        #$extension will be $newextension
-    check_gz_zip_SE
     ### Check input formats (only fastq/fasta supported)
-    check_extension_fastx
+    check_extension_fastxgz
 
     ##############################
     ### Start clipping primers ###
@@ -117,7 +114,7 @@ for file in *.$extension; do
     #If discard_untrimmed = TRUE, then assigns outputs and make outdir
     if [[ $discard_untrimmed == "TRUE" ]]; then
         mkdir -p $output_dir/untrimmed
-        untrimmed_output=$"--untrimmed-output $output_dir/untrimmed/$input.untrimmed.$newextension"
+        untrimmed_output=$"--untrimmed-output $output_dir/untrimmed/$input.untrimmed.$extension"
     fi
 
     ### Clip primers with cutadapt
@@ -133,8 +130,8 @@ for file in *.$extension; do
         -g file:tempdir2/liked_fwd_revRC.fasta \
         -g file:tempdir2/fwd_primer.fasta \
         -a file:tempdir2/rev_primer_RC.fasta \
-        -o $output_dir/$input.$newextension \
-        $input.$newextension 2>&1)
+        -o $output_dir/$input.$extension \
+        $input.$extension 2>&1)
         check_app_error
 
     elif [[ $seqs_to_keep == "keep_only_linked" ]]; then
@@ -146,8 +143,8 @@ for file in *.$extension; do
         $cores \
         $untrimmed_output \
         -g file:tempdir2/liked_fwd_revRC.fasta \
-        -o $output_dir/$input.$newextension \
-        $input.$newextension 2>&1)
+        -o $output_dir/$input.$extension \
+        $input.$extension 2>&1)
         check_app_error
     fi
 done
@@ -179,7 +176,7 @@ Note that REVERSE COMPLEMENTARY search was also performed for sequences when no 
 If a match was found on a reverse complementary strand, then this reverse complementary sequence is outputted instead of 'original' read where no primer matches were found.
 If forward primer(s) were specified in 5'-3' orientation, then all output seqs are in 5'-3' orientation.
 Therefore, for single-end data, NO ADDITIONAL 'reorient reads' process is needed (and also impossible, because primers are now clipped).\n
-If no outputs were generated into /$output_dir, check your specified primer stings and adjust settings.
+If no outputs were generated into /$output_dir, check your specified primer strings and adjust settings.
 \nSummary of sequence counts in 'seq_count_summary.txt'\n
 \n\nTotal run time was $runtime sec.\n\n\n
 ##########################################################
@@ -187,7 +184,7 @@ If no outputs were generated into /$output_dir, check your specified primer stin
 #cutadapt v3.5 for cutting the primers
     #citation: Martin, Marcel (2011) Cutadapt removes adapter sequences from high-throughput sequencing reads. EMBnet.journal, 17(1), 10-12.
     #https://cutadapt.readthedocs.io/en/stable/index.html
-#seqkit v2.0.0 for generating reverse complementary primer stings
+#seqkit v2.0.0 for generating reverse complementary primer strings
     #citation: Shen W, Le S, Li Y, Hu F (2016) SeqKit: A Cross-Platform and Ultrafast Toolkit for FASTA/Q File Manipulation. PLOS ONE 11(10): e0163962. https://doi.org/10.1371/journal.pone.0163962
     #https://bioinf.shenwei.me/seqkit/
 ##################################################################" > $output_dir/README.txt
@@ -201,6 +198,6 @@ printf "Total time: $runtime sec.\n\n"
 
 #variables for all services
 echo "workingDir=/$output_dir"
-echo "fileFormat=$newextension"
+echo "fileFormat=$extension"
 echo "dataFormat=$dataFormat"
 echo "readType=single_end"

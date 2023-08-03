@@ -34,7 +34,7 @@ check_gz_zip_SE
 
 ### Get input fasta
 i=$"0"
-for file in *.$newextension; do
+for file in *.$extension; do
     input_fasta=$(echo $file)
     i=$((i + 1))
 done
@@ -42,7 +42,7 @@ if [[ $i > 1 ]]; then
     if [[ -s $workingDir/ASVs_lenFilt.fasta ]] && [[ -s $workingDir/ASVs_collapsed.fasta ]]; then #if table filtering was performed by collapsing identical ASVs and by length
         input_fasta=$"/input/ASVs_lenFilt.fasta"
     else 
-        printf '%s\n' "ERROR]: more than one representative sequence file ($newextension file) in the working folder" >&2
+        printf '%s\n' "ERROR]: more than one representative sequence file ($extension file) in the working folder" >&2
         end_process
     fi
     printf "\n input fasta = $input_fasta \n"
@@ -102,6 +102,6 @@ printf "Total time: $runtime sec.\n\n"
 
 #variables for all services
 echo "workingDir=$output_dir"
-echo "fileFormat=$newextension"
+echo "fileFormat=$extension"
 echo "dataFormat=$dataFormat"
 echo "readType=single_end"

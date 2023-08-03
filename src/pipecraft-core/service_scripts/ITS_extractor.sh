@@ -94,19 +94,19 @@ for file in *.$extension; do
     printf "\n____________________________________\n"
     printf "Processing $input ...\n"
     #If input is compressed, then decompress (keeping the compressed file, but overwriting if filename exists!)
-        #$extension will be $newextension
+        
     check_gz_zip_SE
     ### Check input formats (fastq supported)
     check_extension_fastx
 
     #If input is FASTQ then convert to FASTA
-    if [[ $newextension == "fastq" ]] || [[ $newextension == "fq" ]]; then
-        checkerror=$(seqkit fq2fa -t dna --line-width 0 $input.$newextension -o $input.fasta 2>&1)
+    if [[ $extension == "fastq" ]] || [[ $extension == "fq" ]]; then
+        checkerror=$(seqkit fq2fa -t dna --line-width 0 $input.$extension -o $input.fasta 2>&1)
         check_app_error
-        printf "Note: converted $newextension to FASTA \n"
+        printf "Note: converted $extension to FASTA \n"
 
-        newextension=$"fasta"
-        export newextension
+        extension=$"fasta"
+        export extension
         was_fastq=$"TRUE"
     fi
 
@@ -114,15 +114,15 @@ for file in *.$extension; do
     ### Start ITSx ###
     ##################
     #dereplicate sequences
-    checkerror=$(mothur "#unique.seqs(fasta=$input.$newextension)" 2>&1)
+    checkerror=$(mothur "#unique.seqs(fasta=$input.$extension)" 2>&1)
     check_app_error
-    mv $input.unique.$newextension tempdir
+    mv $input.unique.$extension tempdir
     mv $input.names tempdir
 
     #Run ITSx
-    echo "ITSx -i tempdir/$input.unique.$newextension -o tempdir/$input. --preserve T --graphical F $organisms  $partial $regions $cores $eval  $score $domains  $complement_in $only_full_in $truncate_in"
+    echo "ITSx -i tempdir/$input.unique.$extension -o tempdir/$input. --preserve T --graphical F $organisms  $partial $regions $cores $eval  $score $domains  $complement_in $only_full_in $truncate_in"
 
-    checkerror=$(ITSx -i tempdir/$input.unique.$newextension \
+    checkerror=$(ITSx -i tempdir/$input.unique.$extension \
     -o tempdir/$input. \
     --preserve T \
     --graphical F \
@@ -347,6 +347,6 @@ if [[ $region_for_clustering != "" ]]; then
 else
     echo "workingDir=$output_dir"
 fi
-echo "fileFormat=$newextension"
+echo "fileFormat=$extension"
 echo "dataFormat=$dataFormat"
 echo "readType=single_end"

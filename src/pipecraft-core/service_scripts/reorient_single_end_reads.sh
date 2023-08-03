@@ -57,7 +57,7 @@ for file in *.$extension; do
     printf "Processing $file ...\n"
 
     #If input is compressed, then decompress (keeping the compressed file, but overwriting if filename exists!)
-        #$extension will be $newextension
+        
     check_gz_zip_SE
     ### Check input formats (fastx supported)
     check_extension_fastx
@@ -81,20 +81,20 @@ for file in *.$extension; do
 
     # Move final output to $output_dir
     mkdir -p $output_dir
-    mv tempdir/$outfile.$newextension $output_dir/$outfile.$newextension
+    mv tempdir/$outfile.$extension $output_dir/$outfile.$extension
 
     ### Move multiprimer chimeras to '$output_dir/multiprimer_chimeras' dir
     mkdir -p $output_dir/multiprimer_chimeras
-    if [ -s tempdir/$input.multiprimer.$newextension ]; then
-        mv tempdir/$input.multiprimer.$newextension $output_dir/multiprimer_chimeras
+    if [ -s tempdir/$input.multiprimer.$extension ]; then
+        mv tempdir/$input.multiprimer.$extension $output_dir/multiprimer_chimeras
     fi
 
     ### Check if reoriented output is empty; if yes, then report WARNING
-    if [ -s $output_dir/$outfile.$newextension ]; then
+    if [ -s $output_dir/$outfile.$extension ]; then
         :
     else
         printf '%s\n' "WARNING]: primers not found in file $outfile (no output)"
-        rm $output_dir/$outfile.$newextension
+        rm $output_dir/$outfile.$extension
     fi
 done
 
@@ -146,6 +146,6 @@ printf "Total time: $runtime sec.\n\n"
 
 #variables for all services
 echo "workingDir=/$output_dir"
-echo "fileFormat=$newextension"
+echo "fileFormat=$extension"
 echo "dataFormat=demultiplexed"
 echo "readType=single_end"

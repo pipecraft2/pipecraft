@@ -12,7 +12,7 @@ print("python module running")
 script, indexes_file = argv
 
 #read file extension from bash variable
-extension = os.environ["newextension"]
+extension = os.environ["extension"]
 
 #read demultiplexed file names
 demux_files = open("tempdir2/demux_files.txt", 'r')

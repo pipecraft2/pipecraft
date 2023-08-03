@@ -60,18 +60,18 @@ fi
 ### Check if input fq files are compressed. If not, then gz compress.
 check_compress=$(echo $extension | (awk 'BEGIN{FS=OFS="."} {print $NF}';))
     if [[ $check_compress == "gz" ]]; then
-        newextension=$(echo $extension | (awk 'BEGIN{FS=OFS="."} {print $(NF-1), $NF}';))
-        export newextension
+        extension=$(echo $extension | (awk 'BEGIN{FS=OFS="."} {print $(NF-1), $NF}';))
+        export extension
     elif [[ $check_compress == "fastq" ]]; then
         printf '%s\n' "WARNING]: Compressing fastq files for MetaWorks"
         pigz *.fastq
-        newextension=$"fastq.gz"
-        export newextension
+        extension=$"fastq.gz"
+        export extension
     elif [[ $check_compress == "fq" ]]; then
         printf '%s\n' "WARNING]: Compressing fq files for MetaWorks"
         pigz *.fq
-        newextension=$"fq.gz"
-        export newextension
+        extension=$"fq.gz"
+        export extension
     else 
         printf '%s\n' "ERROR]: Please input fastq, fq (or .gz comressed) files for MetaWorks.
         >Quitting" >&2 
@@ -111,9 +111,9 @@ done
 sed -e 's/raw: "testing\/COI_data"/raw: "\/input"/' config_ESV.yaml > in.config_ESV.yaml
 
 #input file structure (filename_structure)
-sed -i "s/raw_sample_read_wildcards:.*/raw_sample_read_wildcards: \"\/input\/$filename_structure.$newextension\"/" in.config_ESV.yaml
-sed -i "s/raw_sample_forward_wildcard:.*/raw_sample_forward_wildcard: \"\/input\/$R1.$newextension\"/" in.config_ESV.yaml
-sed -i "s/raw_sample_reverse_wildcard:.*/raw_sample_reverse_wildcard: \"\/input\/$R2.$newextension\"/" in.config_ESV.yaml
+sed -i "s/raw_sample_read_wildcards:.*/raw_sample_read_wildcards: \"\/input\/$filename_structure.$extension\"/" in.config_ESV.yaml
+sed -i "s/raw_sample_forward_wildcard:.*/raw_sample_forward_wildcard: \"\/input\/$R1.$extension\"/" in.config_ESV.yaml
+sed -i "s/raw_sample_reverse_wildcard:.*/raw_sample_reverse_wildcard: \"\/input\/$R2.$extension\"/" in.config_ESV.yaml
 #output dir (keep the name short and simple with no spaces or weird punctuation, underscores are okay)
 sed -i 's/dir:.*/dir: "\/input\/metaworks_out"/' in.config_ESV.yaml
 # Phred score quality cutoff (default 19):

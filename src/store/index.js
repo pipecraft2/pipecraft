@@ -7,6 +7,7 @@ Vue.use(Vuex);
 
 export default new Vuex.Store({
   state: {
+    DADAmode: "",
     dockerStatus: "",
     Qcheck: {
       fileExtension: "",
@@ -256,7 +257,7 @@ export default new Vuex.Store({
                 value: "both",
                 disabled: "never",
                 tooltip:
-                  "applies only for paired-end data. 'both', means that a read is discarded only if both, corresponding R1 and R2, reads  do not contain primer strings (i.e. a read is kept if R1 contains primer string, but no primer string found in R2 read). Option 'any' discards the read if primers are not found in both, R1 and R2 reads",
+                  "applies only for paired-end data. Option 'both' discards a read-pair when both reads do not contain a primer sequence. Option 'any' discards the read-pair when one of the reads does not contain a primer sequence",
                 type: "select",
               },
             ],
@@ -304,7 +305,9 @@ export default new Vuex.Store({
                 tooltip:
                   "discard sequences with more than the specified number of expected errors per base (empty field = no action taken)",
                 type: "numeric",
-                rules: [(v) => (v >= 0.001) | (v == "") ||
+                rules: [
+                  (v) =>
+                    (v >= 0.001) | (v == "") ||
                     "ERROR: specify values >=0.001 or leave it empty (= no action taken)",
                 ],
               },
@@ -315,7 +318,9 @@ export default new Vuex.Store({
                 tooltip:
                   "tuncate sequences starting from the first base with the specified base quality score value or lower (empty field = no action taken)",
                 type: "numeric",
-                rules: [(v) => (v >= 1) | (v == "") ||
+                rules: [
+                  (v) =>
+                    (v >= 1) | (v == "") ||
                     "ERROR: specify values >=1 or leave it empty (= no action taken)",
                 ],
               },
@@ -326,7 +331,9 @@ export default new Vuex.Store({
                 tooltip:
                   "runcate sequences so that their total expected error is not higher than the specified value (empty field = no action taken)",
                 type: "numeric",
-                rules: [(v) => (v >= 0.001) | (v == "") ||
+                rules: [
+                  (v) =>
+                    (v >= 0.001) | (v == "") ||
                     "ERROR: specify values >=0.001 or leave it empty (= no action taken)",
                 ],
               },
@@ -2045,8 +2052,7 @@ export default new Vuex.Store({
                 btnName: "select file",
                 value: "undefined",
                 disabled: "never",
-                tooltip:
-                  "select fasta formatted ASVs sequence file",
+                tooltip: "select fasta formatted ASVs sequence file",
                 type: "file",
               },
               {
@@ -2055,8 +2061,7 @@ export default new Vuex.Store({
                 btnName: "select file",
                 value: "undefined",
                 disabled: "never",
-                tooltip:
-                  "select fasta formatted ASVs sequence file",
+                tooltip: "select fasta formatted ASVs sequence file",
                 type: "file",
               },
               {
@@ -2408,7 +2413,7 @@ export default new Vuex.Store({
             value: "both",
             disabled: "never",
             tooltip:
-              "applies only for paired-end data. 'both', means that a read is discarded only if both, corresponding R1 and R2, reads  do not contain primer strings (i.e. a read is kept if R1 contains primer string, but no primer string found in R2 read). Option 'any' discards the read if primers are not found in both, R1 and R2 reads",
+              "applies only for paired-end data. Option 'both' discards a read-pair when both reads do not contain a primer sequence. Option 'any' discards the read-pair when one of the reads does not contain a primer sequence",
             type: "select",
           },
         ],
@@ -3259,7 +3264,7 @@ export default new Vuex.Store({
             value: "both",
             disabled: "never",
             tooltip:
-              "applies only for paired-end data. 'both', means that a read is discarded only if both, corresponding R1 and R2, reads  do not contain primer strings (i.e. a read is kept if R1 contains primer string, but no primer string found in R2 read). Option 'any' discards the read if primers are not found in both, R1 and R2 reads",
+              "applies only for paired-end data. Option 'both' discards a read-pair when both reads do not contain a primer sequence. Option 'any' discards the read-pair when one of the reads does not contain a primer sequence",
             type: "select",
           },
         ],
@@ -3430,7 +3435,7 @@ export default new Vuex.Store({
         Inputs: [
           {
             name: "maxee",
-            value: 1,
+            value: null,
             disabled: "never",
             tooltip:
               "maximum number of expected errors per sequence. Sequences with higher error rates will be discarded",
@@ -4068,7 +4073,25 @@ export default new Vuex.Store({
         disabled: "never",
         selected: "always",
         showExtra: false,
-        extraInputs: [],
+        extraInputs: [
+          {
+            name: "lima_minscore",
+            value: 93,
+            disabled: "never",
+            tooltip:
+              "Threshold for the average barcode score of the leading and trailing ends.",
+            type: "numeric",
+            rules: [(v) => v >= 1 || "ERROR: specify values >= 1"],
+          },
+          {
+            name: "lima_dualbarcode",
+            value: false,
+            disabled: "never",
+            tooltip:
+              "A read can have up to two barcode regions, leading and trailing",
+            type: "bool",
+          },
+        ],
         Inputs: [
           {
             name: "primer_forward",
@@ -4089,6 +4112,42 @@ export default new Vuex.Store({
             rules: [(v) => v.length <= 1 || "TOO MANY PRIMERS"],
           },
           {
+            name: "primer_mismatches",
+            value: 2,
+            disabled: "never",
+            tooltip: "Maximum number of mismatches when searching for primers",
+            type: "numeric",
+            rules: [(v) => v >= 1 || "ERROR: specify values >= 1"],
+          },
+          {
+            name: "qc_maxee",
+            value: 1,
+            disabled: "never",
+            tooltip: "Maximum number of expected errors",
+            type: "numeric",
+            rules: [(v) => v >= 1 || "ERROR: specify values >= 1"],
+          },
+          {
+            name: "qc_maxeerate",
+            value: 0.01,
+            disabled: "never",
+            tooltip:
+              "Maximum number of expected errors per base (default, 0.01)",
+            max: 1,
+            min: 0,
+            step: 0.01,
+            type: "slide",
+          },
+          {
+            name: "qc_maxn",
+            value: 4,
+            disabled: "never",
+            tooltip:
+              "Discard sequences with more than the specified number of N’s",
+            type: "numeric",
+            rules: [(v) => v >= 1 || "ERROR: specify values >= 1"],
+          },
+          {
             name: "its_region",
             items: ["full", "ITS1", "ITS2"],
             value: "1",
@@ -4106,26 +4165,11 @@ export default new Vuex.Store({
             type: "boolfile",
           },
           {
-            name: "primer_mismatches",
-            value: 2,
-            disabled: "never",
-            tooltip: "Maximum number of mismatches when searching for primers",
-            type: "numeric",
-            rules: [(v) => v >= 1 || "ERROR: specify values >= 1"],
-          },
-          {
-            name: "lima_minscore",
-            value: 93,
-            disabled: "never",
-            tooltip: "Threshold for the average barcode score of the leading and trailing ends.",
-            type: "numeric",
-            rules: [(v) => v >= 1 || "ERROR: specify values >= 1"],
-          },
-          {
-            name: "lima_dualbarcode",
+            name: "keep_temp_files",
             value: false,
             disabled: "never",
-            tooltip: "A read can have up to two barcode regions, leading and trailing",
+            tooltip:
+              "Keep temporary files, this option is useful for debugging (by deafult all temporary files are discarded)",
             type: "bool",
           },
         ],
@@ -4220,7 +4264,7 @@ export default new Vuex.Store({
             value: "both",
             disabled: "never",
             tooltip:
-              "applies only for paired-end data. 'both', means that a read is discarded only if both, corresponding R1 and R2, reads  do not contain primer strings (i.e. a read is kept if R1 contains primer string, but no primer string found in R2 read). Option 'any' discards the read if primers are not found in both, R1 and R2 reads",
+              "applies only for paired-end data. Option 'both' discards a read-pair when both reads do not contain a primer sequence. Option 'any' discards the read-pair when one of the reads does not contain a primer sequence",
             type: "select",
           },
         ],
@@ -4506,7 +4550,6 @@ export default new Vuex.Store({
           },
         ],
       },
-
       {
         tooltip:
           "assign taxonomy with DADA2 'assignTaxonomy' function against a selected database. Untick the checkbox to skip this step",
@@ -4866,6 +4909,10 @@ export default new Vuex.Store({
     serviceInputUpdate(state, payload) {
       state.selectedSteps[payload.stepIndex].services[payload.serviceIndex] =
         payload.value;
+    },
+    setDADAmode(state, payload) {
+      state.DADAmode = payload.target.innerText;
+      console.log(state.DADAmode);
     },
     inputUpdate(state, payload) {
       state.selectedSteps[payload.stepIndex].services[payload.serviceIndex][

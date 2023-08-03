@@ -81,7 +81,7 @@ while read LINE; do
     printf "\n____________________________________\n"
     printf "Processing $inputR1 and $inputR2 ...\n"
     #If input is compressed, then decompress (keeping the compressed file, but overwriting if filename exists!)
-        #$extension will be $newextension
+        
     check_gz_zip_PE
     ### Check input formats (fastq supported)
     check_extension_fastq
@@ -92,7 +92,7 @@ while read LINE; do
     mkdir -p tempdir
  
     printf "vsearch --fastq_filter \
-    $inputR1.$newextension \
+    $inputR1.$extension \
     $maxee \
     $maxns \
     $trunc_length \
@@ -104,11 +104,11 @@ while read LINE; do
     $maxee_rate \
     $truncqual \
     $truncee \
-    --fastqout tempdir/$inputR1.$newextension"
+    --fastqout tempdir/$inputR1.$extension"
 
     #R1
     checkerror=$(vsearch --fastq_filter \
-    $inputR1.$newextension \
+    $inputR1.$extension \
     $maxee \
     $maxns \
     $trunc_length \
@@ -120,12 +120,12 @@ while read LINE; do
     $maxee_rate \
     $truncqual \
     $truncee \
-    --fastqout tempdir/$inputR1.$newextension 2>&1)
+    --fastqout tempdir/$inputR1.$extension 2>&1)
     check_app_error
 
     #R2
     checkerror=$(vsearch --fastq_filter \
-    $inputR2.$newextension \
+    $inputR2.$extension \
     $maxee \
     $maxns \
     $trunc_length \
@@ -137,42 +137,42 @@ while read LINE; do
     $maxee_rate \
     $truncqual \
     $truncee \
-    --fastqout tempdir/$inputR2.$newextension 2>&1)
+    --fastqout tempdir/$inputR2.$extension 2>&1)
     check_app_error
 
     #If outputs are not empty, then synchronize R1 and R2
-    if [ -s tempdir/$inputR1.$newextension ]; then
-        if [ -s tempdir/$inputR2.$newextension ]; then
+    if [ -s tempdir/$inputR1.$extension ]; then
+        if [ -s tempdir/$inputR2.$extension ]; then
             printf "\nSynchronizing R1 and R2 reads (matching order for paired-end reads merging)\n"
             cd tempdir
-            checkerror=$(seqkit pair -1 $inputR1.$newextension -2 $inputR2.$newextension 2>&1)
+            checkerror=$(seqkit pair -1 $inputR1.$extension -2 $inputR2.$extension 2>&1)
             check_app_error
 
-            rm $inputR1.$newextension
-            rm $inputR2.$newextension
-            mv $inputR1.paired.$newextension $inputR1.$newextension
-            mv $inputR2.paired.$newextension $inputR2.$newextension
+            rm $inputR1.$extension
+            rm $inputR2.$extension
+            mv $inputR1.paired.$extension $inputR1.$extension
+            mv $inputR2.paired.$extension $inputR2.$extension
             cd ..
 
             #Move final files to $output_dir
-            mv tempdir/$inputR1.$newextension $output_dir/$inputR1.$newextension
-            mv tempdir/$inputR2.$newextension $output_dir/$inputR2.$newextension
+            mv tempdir/$inputR1.$extension $output_dir/$inputR1.$extension
+            mv tempdir/$inputR2.$extension $output_dir/$inputR2.$extension
 
             # #Convert output fastq files to FASTA
             # mkdir -p $output_dir/FASTA
-            # checkerror=$(seqkit fq2fa -t dna --line-width 0 $output_dir/$inputR1.$newextension -o $output_dir/FASTA/$inputR1.fasta 2>&1)
+            # checkerror=$(seqkit fq2fa -t dna --line-width 0 $output_dir/$inputR1.$extension -o $output_dir/FASTA/$inputR1.fasta 2>&1)
             # check_app_error
-            # checkerror=$(seqkit fq2fa -t dna --line-width 0 $output_dir/$inputR2.$newextension -o $output_dir/FASTA/$inputR2.fasta 2>&1)
+            # checkerror=$(seqkit fq2fa -t dna --line-width 0 $output_dir/$inputR2.$extension -o $output_dir/FASTA/$inputR2.fasta 2>&1)
             # check_app_error
         else
             printf '%s\n' "WARNING]: $inputR2 has 0 seqs after filtering (no output for that sample)"
-            rm tempdir/$inputR1.$newextension
-            rm tempdir/$inputR2.$newextension
+            rm tempdir/$inputR1.$extension
+            rm tempdir/$inputR2.$extension
         fi
     else
         printf '%s\n' "WARNING]: $inputR1 has 0 seqs after filtering (no output for that sample)"
-        rm tempdir/$inputR1.$newextension
-        rm tempdir/$inputR2.$newextension
+        rm tempdir/$inputR1.$extension
+        rm tempdir/$inputR2.$extension
     fi
 done < tempdir2/paired_end_files.txt
 
@@ -188,7 +188,7 @@ runtime=$((end-start))
 printf "# Quality filtering with vsearch.
 
 Files in 'qualFiltered_out':
-# *.$newextension           = quality filtered sequences in FASTQ format.
+# *.$extension           = quality filtered sequences in FASTQ format.
 # seq_count_summary.txt     = summary of sequence counts per sample.
 
 Core commands -> 
@@ -216,6 +216,6 @@ printf "Total time: $runtime sec.\n\n"
 
 #variables for all services
 echo "workingDir=$output_dir"
-echo "fileFormat=$newextension"
+echo "fileFormat=$extension"
 echo "dataFormat=$dataFormat"
 echo "readType=paired_end"

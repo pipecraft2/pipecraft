@@ -62,7 +62,7 @@ while read LINE; do
     printf "\n____________________________________\n"
     printf "Processing $inputR1 and $inputR2 ...\n"
     #If input is compressed, then decompress (keeping the compressed file, but overwriting if filename exists!)
-        #$extension will be $newextension
+        
     check_gz_zip_PE
     ### Check input formats (fastq supported)
     check_extension_fastq
@@ -74,9 +74,9 @@ while read LINE; do
     mkdir -p $output_dir/discarded
 
     checkerror=$(java -jar /Trimmomatic-0.39/trimmomatic-0.39.jar PE \
-    $inputR1.$newextension $inputR2.$newextension \
-    $output_dir/$inputR1.$newextension $output_dir/discarded/$inputR1.discarded.$newextension \
-    $output_dir/$inputR2.$newextension $output_dir/discarded/$inputR2.discarded.$newextension \
+    $inputR1.$extension $inputR2.$extension \
+    $output_dir/$inputR1.$extension $output_dir/discarded/$inputR1.discarded.$extension \
+    $output_dir/$inputR2.$extension $output_dir/discarded/$inputR2.discarded.$extension \
     $LEADING \
     $TRAILING \
     -phred$phred \
@@ -87,9 +87,9 @@ while read LINE; do
 
     #Convert output fastq files to FASTA
     mkdir -p $output_dir/FASTA
-    checkerror=$(seqkit fq2fa -t dna --line-width 0 $output_dir/$inputR1.$newextension -o $output_dir/FASTA/$inputR1.fasta 2>&1)
+    checkerror=$(seqkit fq2fa -t dna --line-width 0 $output_dir/$inputR1.$extension -o $output_dir/FASTA/$inputR1.fasta 2>&1)
     check_app_error
-    checkerror=$(seqkit fq2fa -t dna --line-width 0 $output_dir/$inputR2.$newextension -o $output_dir/FASTA/$inputR2.fasta 2>&1)
+    checkerror=$(seqkit fq2fa -t dna --line-width 0 $output_dir/$inputR2.$extension -o $output_dir/FASTA/$inputR2.fasta 2>&1)
     check_app_error
 done < tempdir2/paired_end_files.txt
 
@@ -109,12 +109,12 @@ If no files in this folder, then all sequences were passed to files in $output_d
 printf "# Quality filtering with trimmomatic.
 
 Files in 'qualFiltered_out':
-# *.$newextension           = quality filtered sequences in FASTQ format.
+# *.$extension           = quality filtered sequences in FASTQ format.
 # seq_count_summary.txt     = summary of sequence counts per sample.
 Files in 'qualFiltered_out/FASTA':
 # *.fasta                   = quality filtered sequences in FASTA format.
 Files in 'qualFiltered_out/discarded':
-# *.discarded.$newextension = discarded sequences.
+# *.discarded.$extension = discarded sequences.
 
 Core commands -> 
 quality filtering: trimmomatic-0.39.jar PE inputR1 inputR2 outputR1 discarded/outputR1.discarded outputR2 discarded/outputR2.discarded $LEADING $TRAILING -phred$phred SLIDINGWINDOW:$window_size:$required_qual MINLEN:$min_length -threads $threads
@@ -141,6 +141,6 @@ printf "Total time: $runtime sec.\n\n"
 
 #variables for all services
 echo "workingDir=$output_dir"
-echo "fileFormat=$newextension"
+echo "fileFormat=$extension"
 echo "dataFormat=$dataFormat"
 echo "readType=paired_end"
