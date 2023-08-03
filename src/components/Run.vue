@@ -179,10 +179,17 @@ export default {
               await this.imageCheck(step.imageName);
               await this.clearContainerConflicts(dockerProps.name);
               console.log(dockerProps);
+              let scriptName;
+              if (typeof step.scriptName === "object") {
+                scriptName = step.scriptName[this.$store.state.data.dada2mode];
+              } else {
+                scriptName = step.scriptName;
+              }
+              console.log(scriptName);
               let result = await dockerode
                 .run(
                   step.imageName,
-                  ["sh", "-c", `/scripts/${step.scriptName}`],
+                  ["sh", "-c", `/scripts/${scriptName}`],
                   [stdout, stderr],
                   dockerProps
                 )
@@ -210,10 +217,6 @@ export default {
                   "workingDir"
                 );
                 let newDataInfo = {
-                  dataFormat: this.getVariableFromLog(
-                    result.stdout,
-                    "dataFormat"
-                  ),
                   fileFormat: this.getVariableFromLog(
                     result.stdout,
                     "fileFormat"
@@ -318,10 +321,6 @@ export default {
                 "workingDir"
               );
               let newDataInfo = {
-                dataFormat: this.getVariableFromLog(
-                  result.stdout,
-                  "dataFormat"
-                ),
                 fileFormat: this.getVariableFromLog(
                   result.stdout,
                   "fileFormat"
@@ -397,8 +396,9 @@ export default {
       let dataInfo = {
         workingDir: this.$store.state.workingDir,
         fileFormat: this.$store.state.data.fileFormat,
-        dataFormat: this.$store.state.data.dataFormat,
         readType: this.$store.state.data.readType,
+        debugger: this.$store.sate.data.debugger,
+        dada2mode: this.$store.state.data.dada2mode,
       };
       Object.entries(dataInfo).forEach(([key, value]) => {
         let varObj = {};
@@ -420,8 +420,9 @@ export default {
       let dataInfo = {
         workingDir: this.$store.state.workingDir,
         fileFormat: this.$store.state.data.fileFormat,
-        dataFormat: this.$store.state.data.dataFormat,
         readType: this.$store.state.data.readType,
+        debugger: this.$store.state.data.debugger,
+        dada2mode: this.$store.state.data.dada2mode,
       };
       Object.entries(dataInfo).forEach(([key, value]) => {
         let varObj = {};

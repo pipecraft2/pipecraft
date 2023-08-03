@@ -24,4 +24,4 @@ RUN Rscript -e 'remotes::install_github("tobiasgf/lulu")'
 RUN apt-get install libcurl4-gnutls-dev libxml2-dev libssl-dev -y
 RUN Rscript -e 'remotes::install_github("benjjneb/dada2", ref="v1.26")'
 RUN Rscript -e 'install.packages("data.table", dependencies=TRUE , repos="https://cloud.r-project.org")'
-
+RUN Rscript -e 'install.packages("seqinr")'
