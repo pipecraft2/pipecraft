@@ -173,7 +173,6 @@ while read LINE; do
         -p $output_dir/rev_orient/$inputR2.$extension \
         $output_dir/fwd_untrimmed/$inputR1.$extension $output_dir/fwd_untrimmed/$inputR2.$extension 2>&1)
         check_app_error
-        #rm -r $output_dir/fwd_untrimmed
 
     elif [[ $seqs_to_keep == "keep_only_linked" ]]; then
         # when R1 starts with FWD primer
@@ -321,15 +320,10 @@ if [[ $outfile_check != 0 ]]; then
     rm seq_count_after.txt
 fi
 
-# #Delete decompressed files if original set of files were compressed
-# if [[ $check_compress == "gz" ]] || [[ $check_compress == "zip" ]]; then
-#     rm *.$extension
-# fi
 #Delete tempdir
-if [[ -d "input/tempdir2" ]]; then
-    rm -rf input/tempdir2
+if [[ -d "/input/tempdir2" ]]; then
+    rm -rf /input/tempdir2
 fi
-
 
 end=$(date +%s)
 runtime=$((end-start))

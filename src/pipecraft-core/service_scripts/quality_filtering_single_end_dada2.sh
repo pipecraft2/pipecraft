@@ -67,7 +67,7 @@ printf "# Quality filtering with dada2.
 Files in 'qualFiltered_out':
 # *_filt.fastq          = quality filtered sequences per sample.
 # seq_count_summary.txt = summary of sequence counts per sample.
-# (*.rds = R objects for dada2, you may delete these files if present).
+# (*.rds = R objects for dada2).
 
 Core command -> 
 filterAndTrim(inputR1, outputR1, maxN = $maxN, maxEE = $maxEE, truncQ = $truncQ, truncLen = $truncLen_R1, maxLen = $maxLen, minLen = $minLen, minQ=$minQ, rm.phix = TRUE, compress = FALSE, multithread = TRUE)

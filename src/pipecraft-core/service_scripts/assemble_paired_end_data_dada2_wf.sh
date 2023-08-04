@@ -32,7 +32,7 @@ source /scripts/submodules/framework.functions.sh
 output_dir=$"/input/denoised_assembled.dada2"
 
 ### Check that at least 2 samples are provided
-files=$(ls /input/qualFiltered_out | grep -c "_filt.fastq")
+files=$(ls /input/qualFiltered_out | grep -c ".$extension")
 if (( $files < 4 )); then
     printf '%s\n' "ERROR]: please provide at least 2 samples for the ASVs workflow
 >Quitting" >&2
@@ -46,7 +46,7 @@ start=$(date +%s)
 ### Process samples with dada2 removeBimeraDenovo function in R
 printf "# Running DADA2 denoising and assembling \n"
 Rlog=$(Rscript /scripts/submodules/dada2_denoise_assemble_wf.R 2>&1)
-echo $Rlog >> $output_dir/R_run.log 
+echo $Rlog >> $output_dir/denoise_assemble.log 
 wait
 printf "\n DADA2 completed \n"
 
@@ -55,9 +55,6 @@ printf "\n DADA2 completed \n"
 #################################################
 if [[ -d tempdir2 ]]; then
     rm -rf tempdir2
-fi
-if [[ -f $output_dir/R_run.log ]]; then
-    rm -f $output_dir/R_run.log
 fi
 
 end=$(date +%s)
@@ -71,10 +68,11 @@ Input sequences must be made up only of A/C/G/T for denoising (i.e maxN must = 0
 #############
 
 Files in 'denoised_assembled.dada2':
-# *.merged_ASVs.fasta   = denoised and assembled ASVs per sample. 'Size' denotes the abundance of the ASV sequence.  
+# *.ASVs.fasta   = denoised and assembled ASVs per sample. 'Size' denotes the abundance of the ASV sequence.  
 # Error_rates_R1.pdf    = plots for estimated R1 error rates
 # Error_rates_R2.pdf    = plots for estimated R2 error rates
 # seq_count_summary.txt = summary of sequence and ASV counts per sample
+# *.rds = R objects for dada2.
 
 Core commands -> 
 learn errors: err = learnErrors(input)
@@ -96,7 +94,11 @@ printf "Total time: $runtime sec.\n\n"
 
 #variables for all services
 echo "workingDir=$output_dir"
-echo "fileFormat=fasta"
+if [[ -z $pool ]]; then
+    echo "fileFormat=fasta"
+else
+    echo "fileFormat=$extension"
+fi
 echo "dataFormat=$dataFormat"
 if [[ -z $pool ]]; then
     echo "readType=single_end"

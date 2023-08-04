@@ -56,6 +56,8 @@ fnRs = sort(list.files(pattern = read_R2, full.names = TRUE))
 sample_names = sapply(strsplit(basename(fnFs), samp_ID), `[`, 1)
 print(sample_names)
 
+cat("#Performing DADA2 denoising;")
+
 #Learn the error rates
 errF = learnErrors(fnFs, multithread = FALSE)
 errR = learnErrors(fnRs, multithread = FALSE)
@@ -79,12 +81,12 @@ dadaRs = dada(derepRs, err = errR, pool = pool, selfConsist = selfConsist, multi
 print("denoising DONE")
 
 #merge paired-end reads
+cat("#Merging data with mergePairs;")
 merge = mergePairs(dadaFs, derepFs, dadaRs, derepRs, 
                             maxMismatch = maxMismatch,
                             minOverlap = minOverlap,
                             justConcatenate = justConcatenate,
                             trimOverhang = trimOverhang)
-print("mergePairs DONE")
 
 ### WRITE temporary PER-SAMPLE DENOISED and MERGED ASV FASTA FILES
 #make sequence table
@@ -94,17 +96,15 @@ ASV_tab = makeSequenceTable(merge)
 
 #sequence headers
 asv_seqs = colnames(ASV_tab)
-asv_headers = vector(dim(ASV_tab)[2], mode="character")
-for (i in 1:dim(ASV_tab)[2]) {
-    asv_headers[i] = paste(">ASV", i, sep="_")
-}
+asv_headers = openssl::sha1(asv_seqs) #header as sha1
+
 #transpose sequence table
 ASV_tab = t(ASV_tab)
 #add sequences to 1st column
 ASV_tab = cbind(row.names(ASV_tab), ASV_tab)
 colnames(ASV_tab)[1] = "Sequence"
 #row names as sequence headers
-row.names(ASV_tab) = sub(">", "", asv_headers)
+row.names(ASV_tab) = asv_headers
 
 #write ASVs table
 #write.table(ASV_tab, file.path(path_results, "ASVs_table.txt"), sep = "\t", col.names = NA, row.names = TRUE, quote = FALSE)
@@ -112,7 +112,7 @@ row.names(ASV_tab) = sub(">", "", asv_headers)
 #Loop through each sample in the table and write per-sample fasta files
 for (i in 2:length(colnames(ASV_tab))){
     sample_name = colnames(ASV_tab)[i]
-    sample_file = paste(sample_name, "merged_ASVs.fasta", sep = ".") 
+    sample_file = paste(sample_name, "ASVs.fasta", sep = ".") 
     j = 0
     for (abundance in ASV_tab[,i]){
         j = j + 1
@@ -133,5 +133,5 @@ seq_count <- cbind(sapply(derepFs, getN), sapply(dadaFs, getN), sapply(dadaRs, g
 colnames(seq_count) <- c("input", "denoised_R1", "denoised_R2", "merged")
 rownames(seq_count) <- sample_names
 write.table(seq_count, file.path(path_results, "seq_count_summary.txt"), sep = "\t", col.names = NA, row.names = TRUE, quote = FALSE)
-
+print("DONE")
 #DONE, proceed with assemble_paired_end_dada2.sh to clean up make readme

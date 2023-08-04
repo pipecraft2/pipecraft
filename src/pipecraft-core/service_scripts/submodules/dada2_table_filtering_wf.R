@@ -37,19 +37,17 @@ if (collapseNoMismatch == "true") {
     #sequence headers
     asv_seqs = colnames(ASV_tab_collapsed)
     asv_size = colSums(ASV_tab_collapsed)
-    asv_headers = vector(dim(ASV_tab_collapsed)[2], mode="character")
-    for (i in 1:dim(ASV_tab_collapsed)[2]) {
-        asv_headers[i] = paste(">ASV", i, ";size=", asv_size[i], sep="")
-    }
+    asv_headers = openssl::sha1(asv_seqs)
+
     #transpose sequence table
     tASV_tab_collapsed = t(ASV_tab_collapsed)
     #add sequences to 1st column
     tASV_tab_collapsed = cbind(row.names(tASV_tab_collapsed), tASV_tab_collapsed)
     colnames(tASV_tab_collapsed)[1] = "Sequence"
     #row names as sequence headers
-    row.names(tASV_tab_collapsed) = sub(">", "", asv_headers)
+    row.names(tASV_tab_collapsed) = asv_headers
     #write ASVs.fasta to path_out
-    asv_fasta <- c(rbind(asv_headers, asv_seqs))
+    asv_fasta <- c(rbind(paste(">", asv_headers, sep=""), asv_seqs))
     write(asv_fasta, file.path(path_out, "ASVs_collapsed.fasta"))
     #write ASVs table to path_out
     write.table(tASV_tab_collapsed, file.path(path_out, "ASVs_table_collapsed.txt"), sep = "\t", col.names = NA, row.names = TRUE, quote = FALSE)
@@ -119,7 +117,7 @@ if (len_filt != 0) {
             row.names(tASV_tab_lenFilt) = sub(">", "", asv_headers)
 
             #write ASVs.fasta to path_out
-            asv_fasta <- c(rbind(asv_headers, asv_seqs))
+            asv_fasta <- c(rbind(paste(">", asv_headers, sep=""), asv_seqs))
             write(asv_fasta, file.path(path_out, "ASVs_lenFilt.fasta"))
             #write ASVs table to path_out
             write.table(tASV_tab_lenFilt, file.path(path_out, "ASV_table_lenFilt.txt"), sep = "\t", col.names = NA, row.names = TRUE, quote = FALSE)

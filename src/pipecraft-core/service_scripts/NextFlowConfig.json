@@ -1,1 +1,1 @@
-{"forward_primers":["GGWACWGGWTGAACWGTWTAYCCYCC"],"reverse_primers":["TANACYTCNGGRTGNCCRAARAAYCA"],"mismatches":1,"min_overlap":21,"seqs_to_keep":"keep_all","pair_filter":"both","cores":1,"min_seq_length":32,"no_indels":true}
+{"collapseNoMismatch":false,"by_length":"150","minOverlap":20,"vec":true}
