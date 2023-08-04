@@ -45,7 +45,7 @@ prepare_SE_env
 ### Process samples with dada2 filterAndTrim function in R
 printf "# Running DADA2 filterAndTrim \n"
 Rlog=$(Rscript /scripts/submodules/dada2_SE_filterAndTrim.R 2>&1)
-echo $Rlog > $output_dir/R_run.log 
+echo $Rlog > $output_dir/qFilt.log 
 wait
 printf "\n DADA2 filterAndTrim completed \n"
 
@@ -55,9 +55,7 @@ printf "\n DADA2 filterAndTrim completed \n"
 if [[ -d tempdir2 ]]; then
     rm -rf tempdir2
 fi
-if [[ -f $output_dir/R_run.log ]]; then
-    rm -f $output_dir/R_run.log
-fi
+
 end=$(date +%s)
 runtime=$((end-start))
 

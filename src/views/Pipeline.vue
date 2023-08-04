@@ -40,9 +40,11 @@
       >
       <v-card-actions v-if="$route.params.workflowName.includes('DADA2')">
         <v-tabs>
-          <v-tab>Forward</v-tab>
-          <v-tab>Mixed</v-tab>
-          <v-tab>Single-end data</v-tab>
+          <v-tab @click="$store.commit('setDADAmode', $event)">FORWARD</v-tab>
+          <v-tab @click="$store.commit('setDADAmode', $event)">MIXED</v-tab>
+          <v-tab @click="$store.commit('setDADAmode', $event)"
+            >SINGLE-END</v-tab
+          >
         </v-tabs>
       </v-card-actions>
     </v-card>

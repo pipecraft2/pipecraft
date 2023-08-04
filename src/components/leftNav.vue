@@ -46,59 +46,54 @@
           <div v-else>
             <div>{{ $store.state.inputDir }}</div>
             <div>
-              {{ $store.state.data.dataFormat }} |
-              {{ $store.state.data.readType }} |
+              {{ $store.state.data.readType }},
               {{ $store.state.data.fileFormat }}
             </div>
           </div>
         </v-tooltip>
       </v-list-item-content>
     </v-list-item>
-        <v-list-item ripple >
-          <v-menu tile dark left >
-            <template v-slot:activator="{ on, attrs }">
-              <v-list-item-content v-on="on" v-bind="attrs">
-                <v-btn
-
-                :style="
-                    $route.path.includes('premade')
-                                          ? {
-                        borderBottom: 'thin #1DE9B6 solid',
-                        borderTop: 'thin white solid',
-                        borderLeft: 'thin white solid',
-                        borderRight: 'thin white solid',
-                      }
-                    : {
-                        borderBottom: 'thin #E57373 solid',
-                        borderTop: 'thin white solid',
-                        borderRight: 'thin white solid',
-                        borderLeft: 'thin white solid',
-                      }
-                  "
-                block
-              >
-                Select pipeline
-              </v-btn>
-                
-              </v-list-item-content>
-            </template>
-            <v-list style="padding: 0">
-              <v-subheader style="height: 40px">SELECT WORKFLOW</v-subheader>
-              <v-divider></v-divider>
-              <v-list-item
-                ripple
-                link
-                v-for="(item, index) in $store.state.customWorkflowInfo"
-                :key="index"
-                @click="push2premade(index)"
-              >
-                <v-list-item-title>{{
-                  index.replace("_", " ")
-                }}</v-list-item-title>
-              </v-list-item>
-            </v-list>
-          </v-menu>
-        </v-list-item>
+    <v-list-item ripple>
+      <v-menu tile dark left>
+        <template v-slot:activator="{ on, attrs }">
+          <v-list-item-content v-on="on" v-bind="attrs">
+            <v-btn
+              :style="
+                $route.path.includes('premade')
+                  ? {
+                      borderBottom: 'thin #1DE9B6 solid',
+                      borderTop: 'thin white solid',
+                      borderLeft: 'thin white solid',
+                      borderRight: 'thin white solid',
+                    }
+                  : {
+                      borderBottom: 'thin #E57373 solid',
+                      borderTop: 'thin white solid',
+                      borderRight: 'thin white solid',
+                      borderLeft: 'thin white solid',
+                    }
+              "
+              block
+            >
+              Select pipeline
+            </v-btn>
+          </v-list-item-content>
+        </template>
+        <v-list style="padding: 0">
+          <v-subheader style="height: 40px">SELECT WORKFLOW</v-subheader>
+          <v-divider></v-divider>
+          <v-list-item
+            ripple
+            link
+            v-for="(item, index) in $store.state.customWorkflowInfo"
+            :key="index"
+            @click="push2premade(index)"
+          >
+            <v-list-item-title>{{ index.replace("_", " ") }}</v-list-item-title>
+          </v-list-item>
+        </v-list>
+      </v-menu>
+    </v-list-item>
     <v-list-item>
       <v-list-item-content v-if="$store.state.runInfo.active == true">
         <v-btn
@@ -124,6 +119,7 @@
 
 <script>
 // var path = require("path");
+const si = require("systeminformation");
 const Swal = require("sweetalert2");
 const slash = require("slash");
 const { dialog } = require("@electron/remote");
@@ -157,7 +153,7 @@ export default {
     },
   },
   methods: {
-        push2premade(name) {
+    push2premade(name) {
       if (this.$route.path != `/premade/${name}`) {
         this.$router.push(`/premade/${name}`);
       }
@@ -170,20 +166,16 @@ export default {
       this.$store.commit("resetRunInfo");
     },
     folderSelect() {
+      si.cpu()
+        .then((data) => console.log(data))
+        .catch((error) => console.error(error));
       Swal.mixin({
         input: "select",
         confirmButtonText: "Next &rarr;",
         showCancelButton: true,
-        progressSteps: ["1", "2", "3"],
+        progressSteps: ["1", "2"],
       })
         .queue([
-          {
-            title: "Sequencing data format",
-            inputOptions: {
-              demultiplexed: "demultiplexed",
-              multiplexed: "multiplexed",
-            },
-          },
           {
             title: "Sequence files extension",
             inputOptions: {
@@ -214,12 +206,10 @@ export default {
         .then(async (result) => {
           if (result.value) {
             this.$store.commit("addInputInfo", {
-              readType: result.value[2],
-              dataFormat: result.value[0],
-              fileFormat: result.value[1].replace("_", "."),
+              readType: result.value[1],
+              fileFormat: result.value[0].replace("_", "."),
             });
             this.$store.commit("toggle_PE_SE_scripts", result.value[2]);
-            this.$store.commit("toggle_demux_mux", result.value[0]);
             dialog
               .showOpenDialog({
                 title: "Select the folder containing your sequnece files",

@@ -179,10 +179,17 @@ export default {
               await this.imageCheck(step.imageName);
               await this.clearContainerConflicts(dockerProps.name);
               console.log(dockerProps);
+              let scriptName;
+              if (typeof step.scriptName === "object") {
+                scriptName = step.scriptName[this.$store.state.data.dada2mode];
+              } else {
+                scriptName = step.scriptName;
+              }
+              console.log(scriptName);
               let result = await dockerode
                 .run(
                   step.imageName,
-                  ["sh", "-c", `/scripts/${step.scriptName}`],
+                  ["sh", "-c", `/scripts/${scriptName}`],
                   [stdout, stderr],
                   dockerProps
                 )
@@ -210,10 +217,6 @@ export default {
                   "workingDir"
                 );
                 let newDataInfo = {
-                  dataFormat: this.getVariableFromLog(
-                    result.stdout,
-                    "dataFormat"
-                  ),
                   fileFormat: this.getVariableFromLog(
                     result.stdout,
                     "fileFormat"
@@ -242,14 +245,7 @@ export default {
                   Swal.fire({
                     title: "An error has occured while processing your data",
                     text: err,
-                    showCancelButton: true,
-                    cancelButtonText: "Quit",
-                    confirmButtonText: "Report a bug",
-                  }).then((result) => {
-                    // let log = await function('need to gather a log for each step ran and a snapshot of the state')
-                    if (result.isConfirmed) {
-                      Swal.fire("Report sent");
-                    }
+                    confirmButtonText: "Quit",
                   });
                 }
                 this.$store.commit("resetRunInfo");
@@ -325,10 +321,6 @@ export default {
                 "workingDir"
               );
               let newDataInfo = {
-                dataFormat: this.getVariableFromLog(
-                  result.stdout,
-                  "dataFormat"
-                ),
                 fileFormat: this.getVariableFromLog(
                   result.stdout,
                   "fileFormat"
@@ -354,14 +346,7 @@ export default {
                 Swal.fire({
                   title: "An error has occured while processing your data",
                   text: err,
-                  showCancelButton: true,
-                  cancelButtonText: "Quit",
-                  confirmButtonText: "Report a bug",
-                }).then((result) => {
-                  // let log = await function('need to gather a log for each step ran and a snapshot of the state')
-                  if (result.isConfirmed) {
-                    Swal.fire("Report sent");
-                  }
+                  confirmButtonText: "Quit",
                 });
               }
               this.$store.commit("resetRunInfo");
@@ -411,8 +396,9 @@ export default {
       let dataInfo = {
         workingDir: this.$store.state.workingDir,
         fileFormat: this.$store.state.data.fileFormat,
-        dataFormat: this.$store.state.data.dataFormat,
         readType: this.$store.state.data.readType,
+        debugger: this.$store.sate.data.debugger,
+        dada2mode: this.$store.state.data.dada2mode,
       };
       Object.entries(dataInfo).forEach(([key, value]) => {
         let varObj = {};
@@ -434,8 +420,9 @@ export default {
       let dataInfo = {
         workingDir: this.$store.state.workingDir,
         fileFormat: this.$store.state.data.fileFormat,
-        dataFormat: this.$store.state.data.dataFormat,
         readType: this.$store.state.data.readType,
+        debugger: this.$store.state.data.debugger,
+        dada2mode: this.$store.state.data.dada2mode,
       };
       Object.entries(dataInfo).forEach(([key, value]) => {
         let varObj = {};
@@ -616,14 +603,7 @@ export default {
             Swal.fire({
               title: "An error has occured while processing your data",
               text: "unknows error, check result/pipeline_info/execution_report for more info",
-              showCancelButton: true,
-              cancelButtonText: "Quit",
-              confirmButtonText: "Report a bug",
-            }).then((result) => {
-              // let log = await function('need to gather a log for each step ran and a snapshot of the state')
-              if (result.isConfirmed) {
-                Swal.fire("Report sent");
-              }
+              confirmButtonText: "Quit",
             });
           }
         }

@@ -1,1 +1,5 @@
+<<<<<<< HEAD
 {"collapseNoMismatch":false,"by_length":"150","minOverlap":20,"vec":true}
+=======
+{"read_R1":["\\.R1"],"read_R2":["\\.R2"],"samp_ID":["\\."],"maxEE":2,"maxN":0,"minLen":20,"truncQ":2,"truncLen":0,"truncLen_R2":0,"maxLen":9999,"minQ":0,"matchIDs":true}
+>>>>>>> c5b8cabd1e9464dfefbe86557b3b5e3ec4ff6248

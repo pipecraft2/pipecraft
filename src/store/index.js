@@ -32,8 +32,9 @@ export default new Vuex.Store({
     inputDir: "",
     data: {
       readType: "",
-      dataFormat: "",
       fileFormat: "",
+      dada2mode: "",
+      debugger: true,
     },
     env_variables: ["FOO=bar", "BAZ=quux"],
     selectedSteps: [],
@@ -304,7 +305,9 @@ export default new Vuex.Store({
                 tooltip:
                   "discard sequences with more than the specified number of expected errors per base (empty field = no action taken)",
                 type: "numeric",
-                rules: [(v) => (v >= 0.001) | (v == "") ||
+                rules: [
+                  (v) =>
+                    (v >= 0.001) | (v == "") ||
                     "ERROR: specify values >=0.001 or leave it empty (= no action taken)",
                 ],
               },
@@ -315,7 +318,9 @@ export default new Vuex.Store({
                 tooltip:
                   "tuncate sequences starting from the first base with the specified base quality score value or lower (empty field = no action taken)",
                 type: "numeric",
-                rules: [(v) => (v >= 1) | (v == "") ||
+                rules: [
+                  (v) =>
+                    (v >= 1) | (v == "") ||
                     "ERROR: specify values >=1 or leave it empty (= no action taken)",
                 ],
               },
@@ -326,7 +331,9 @@ export default new Vuex.Store({
                 tooltip:
                   "runcate sequences so that their total expected error is not higher than the specified value (empty field = no action taken)",
                 type: "numeric",
-                rules: [(v) => (v >= 0.001) | (v == "") ||
+                rules: [
+                  (v) =>
+                    (v >= 0.001) | (v == "") ||
                     "ERROR: specify values >=0.001 or leave it empty (= no action taken)",
                 ],
               },
@@ -2045,8 +2052,7 @@ export default new Vuex.Store({
                 btnName: "select file",
                 value: "undefined",
                 disabled: "never",
-                tooltip:
-                  "select fasta formatted ASVs sequence file",
+                tooltip: "select fasta formatted ASVs sequence file",
                 type: "file",
               },
               {
@@ -2055,8 +2061,7 @@ export default new Vuex.Store({
                 btnName: "select file",
                 value: "undefined",
                 disabled: "never",
-                tooltip:
-                  "select fasta formatted ASVs sequence file",
+                tooltip: "select fasta formatted ASVs sequence file",
                 type: "file",
               },
               {
@@ -3430,7 +3435,7 @@ export default new Vuex.Store({
         Inputs: [
           {
             name: "maxee",
-            value: 1,
+            value: null,
             disabled: "never",
             tooltip:
               "maximum number of expected errors per sequence. Sequences with higher error rates will be discarded",
@@ -4062,13 +4067,133 @@ export default new Vuex.Store({
           "NextITS is an automated pipeline for metabarcoding fungi and other eukaryotes with full-length ITS sequenced with PacBio. Amplicons obtained with Illumina are also supported.",
         scriptName: "",
         imageName: "vmikk/nextits:0.0.3",
-        serviceName: "NextITS",
+        serviceName: "Step 1",
         manualLink:
           "https://pipecraft2-manual.readthedocs.io/en/stable/user_guide.html#demultiplex",
         disabled: "never",
         selected: "always",
         showExtra: false,
-        extraInputs: [],
+        extraInputs: [
+          {
+            name: "qc_maxee",
+            value: 1,
+            disabled: "never",
+            tooltip: "Maximum number of expected errors",
+            type: "numeric",
+            rules: [(v) => v >= 1 || "ERROR: specify values >= 1"],
+          },
+          {
+            name: "qc_maxhomopolymerlen",
+            value: 25,
+            disabled: "never",
+            tooltip:
+              "Threshold for a homopolymer region length in a sequence (default, 25)",
+            type: "numeric",
+            rules: [(v) => v >= 1 || "ERROR: specify values >= 1"],
+          },
+          {
+            name: "qc_maxn",
+            value: 4,
+            disabled: "never",
+            tooltip:
+              "Discard sequences with more than the specified number of N’s",
+            type: "numeric",
+            rules: [(v) => v >= 1 || "ERROR: specify values >= 1"],
+          },
+          {
+            name: "ITSx_evalue ",
+            value: 0.01,
+            disabled: "never",
+            tooltip: "ITSx E-value cutoff threshold (default, 1e-1)",
+            max: 1,
+            min: 0,
+            step: 0.01,
+            type: "slide",
+          },
+          {
+            name: "ITSx_partial",
+            value: 0,
+            disabled: "never",
+            tooltip:
+              "Keep partial ITS sequences (defalt, off), otherwise specify min length cutoff",
+            type: "numeric",
+            rules: [(v) => v >= 1 || "ERROR: specify values >= 1"],
+          },
+          {
+            name: "ITSx_tax",
+            items: [
+              "all",
+              "alveolata",
+              "bryophyta",
+              "bacillariophyta",
+              "amoebozoa",
+              "euglenozoa",
+              "fungi",
+              "chlorophyta",
+              "rhodophyta",
+              "phaeophyceae",
+              "marchantiophyta",
+              "metazoa",
+              "oomycota",
+              "haptophyceae",
+              "raphidophyceae",
+              "rhizaria",
+              "synurophyceae",
+              "tracheophyta",
+              "eustigmatophyceae",
+              "apusozoa",
+              "parabasalia",
+            ],
+            value: ["all"],
+            disabled: "never",
+            tooltip: "ITSx taxonomy profile (default, 'all')",
+            type: "combobox",
+          },
+          {
+            name: "chimera_database",
+            active: false,
+            btnName: "select file",
+            value: "undefined",
+            disabled: "never",
+            tooltip: "Database for reference-based chimera removal",
+            type: "boolfile",
+          },
+          {
+            name: "chimera_rescueoccurrence",
+            value: 2,
+            disabled: "never",
+            tooltip:
+              "Min occurrence of chimeric sequences required to rescue them (default, 2)",
+            type: "numeric",
+            rules: [(v) => v >= 1 || "ERROR: specify values >= 1"],
+          },
+          {
+            name: "tj_f ",
+            value: 0.01,
+            disabled: "never",
+            tooltip:
+              "Tag-jump filtering, UNCROSS parameter `f` (default, 0.01)",
+            max: 1,
+            min: 0,
+            step: 0.01,
+            type: "slide",
+          },
+          {
+            name: "tj_p",
+            value: 1,
+            disabled: "never",
+            tooltip: "Tag-jump filtering parameter `p` (default, 1)",
+            type: "numeric",
+            rules: [(v) => v >= 1 || "ERROR: specify values >= 1"],
+          },
+          {
+            name: "hp",
+            value: true,
+            disabled: "never",
+            tooltip: "Homopolymer compression (default, true)",
+            type: "bool",
+          },
+        ],
         Inputs: [
           {
             name: "primer_forward",
@@ -4089,23 +4214,6 @@ export default new Vuex.Store({
             rules: [(v) => v.length <= 1 || "TOO MANY PRIMERS"],
           },
           {
-            name: "its_region",
-            items: ["full", "ITS1", "ITS2"],
-            value: "1",
-            disabled: "never",
-            tooltip: "sub-regions of the internal transcribed spacer",
-            type: "select",
-          },
-          {
-            name: "chimera_database",
-            active: false,
-            btnName: "select file",
-            value: "undefined",
-            disabled: "never",
-            tooltip: "",
-            type: "boolfile",
-          },
-          {
             name: "primer_mismatches",
             value: 2,
             disabled: "never",
@@ -4114,18 +4222,156 @@ export default new Vuex.Store({
             rules: [(v) => v >= 1 || "ERROR: specify values >= 1"],
           },
           {
-            name: "lima_minscore",
-            value: 93,
+            name: "its_region",
+            items: ["full", "ITS1", "ITS2"],
+            value: "1",
             disabled: "never",
-            tooltip: "Threshold for the average barcode score of the leading and trailing ends.",
+            tooltip: "sub-regions of the internal transcribed spacer",
+            type: "select",
+          },
+        ],
+      },
+      {
+        tooltip:
+          "NextITS is an automated pipeline for metabarcoding fungi and other eukaryotes with full-length ITS sequenced with PacBio. Amplicons obtained with Illumina are also supported.",
+        scriptName: "",
+        imageName: "vmikk/nextits:0.0.3",
+        serviceName: "Step 2",
+        manualLink:
+          "https://pipecraft2-manual.readthedocs.io/en/stable/user_guide.html#demultiplex",
+        disabled: "never",
+        selected: "always",
+        showExtra: false,
+        extraInputs: [
+          {
+            name: "otu_iddef",
+            value: 2,
+            disabled: "never",
+            tooltip:
+              "Sequence similarity definition for tag-jump removal step (default, 2)",
             type: "numeric",
             rules: [(v) => v >= 1 || "ERROR: specify values >= 1"],
           },
           {
-            name: "lima_dualbarcode",
+            name: "otu_qmask",
+            items: ["dust", "none"],
+            value: "dust",
+            disabled: "never",
+            tooltip:
+              'mask regions in sequences using the "dust" method, or do not mask ("none").',
+            type: "select",
+          },
+          {
+            name: "swarm_fastidious",
             value: false,
             disabled: "never",
-            tooltip: "A read can have up to two barcode regions, leading and trailing",
+            tooltip: "",
+            type: "bool",
+          },
+          {
+            name: "unoise_alpha",
+            value: 2,
+            disabled: "never",
+            tooltip: "",
+            type: "numeric",
+            rules: [(v) => v >= 1 || "ERROR: specify values >= 1"],
+          },
+          {
+            name: "unoise_minsize",
+            value: 8,
+            disabled: "never",
+            tooltip: "",
+            type: "numeric",
+            rules: [(v) => v >= 1 || "ERROR: specify values >= 1"],
+          },
+          {
+            name: "max_MEEP",
+            value: 0.5,
+            disabled: "never",
+            tooltip: "",
+            type: "numeric",
+            rules: [(v) => v >= 0 || "ERROR: specify values >= 1"],
+          },
+          {
+            name: "max_ChimeraScore",
+            value: 0.5,
+            disabled: "never",
+            tooltip: "",
+            type: "numeric",
+            rules: [(v) => v >= 0 || "ERROR: specify values >= 1"],
+          },
+          {
+            name: "lulu_match",
+            value: 95,
+            disabled: "never",
+            tooltip: "",
+            type: "numeric",
+            rules: [(v) => v >= 0 || "ERROR: specify values >= 1"],
+          },
+          {
+            name: "lulu_ratio",
+            value: 1,
+            disabled: "never",
+            tooltip: "",
+            type: "numeric",
+            rules: [(v) => v >= 0 || "ERROR: specify values >= 1"],
+          },
+          {
+            name: "lulu_ratiotype",
+            items: ["min", "avg"],
+            value: "min",
+            disabled: "never",
+            tooltip: "",
+            type: "select",
+          },
+          {
+            name: "lulu_relcooc",
+            value: 0.95,
+            disabled: "never",
+            tooltip: "",
+            type: "numeric",
+            rules: [(v) => v >= 0 || "ERROR: specify values >= 1"],
+          },
+          {
+            name: "lulu_maxhits",
+            value: 0,
+            disabled: "never",
+            tooltip: "",
+            type: "numeric",
+            rules: [(v) => v >= 0 || "ERROR: specify values >= 1"],
+          },
+        ],
+        Inputs: [
+          {
+            name: "otu_id",
+            value: 0.98,
+            disabled: "never",
+            tooltip: "Sequence similarity for OTU clustering (default, 0.98)",
+            max: 1,
+            min: 0,
+            step: 0.01,
+            type: "slide",
+          },
+          {
+            name: "swarm_d",
+            value: 2,
+            disabled: "never",
+            tooltip: "",
+            type: "numeric",
+            rules: [(v) => v >= 0 || "ERROR: specify values >= 1"],
+          },
+          {
+            name: "lulu",
+            value: true,
+            disabled: "never",
+            tooltip: "",
+            type: "bool",
+          },
+          {
+            name: "unoise",
+            value: false,
+            disabled: "never",
+            tooltip: "",
             type: "bool",
           },
         ],
@@ -4134,7 +4380,11 @@ export default new Vuex.Store({
     DADA2_ASVs: [
       {
         tooltip: "remove primers sequences from the reads",
-        scriptName: "cut_mixed_primers_paired_end_reads.sh",
+        scriptName: {
+          FORWARD: "cut_primers_paired_end_reads.sh",
+          MIXED: "cut_mixed_primers_paired_end_reads.sh",
+          SINGLE_END: "cut_primers_single_end_reads.sh",
+        },
         imageName: "pipecraft/cutadapt:3.5",
         serviceName: "cut primers",
         manualLink:
@@ -4227,8 +4477,12 @@ export default new Vuex.Store({
       },
       {
         tooltip: "quality filtering with DADA2 'filterAndTrim' function",
-        scriptName: "quality_filtering_paired_end_dada2.sh",
-        imageName: "pipecraft/vsearch_dada2:2",
+        scriptName: {
+          FORWARD: "quality_filtering_paired_end_dada2.sh",
+          MIXED: "quality_filtering_paired_end_dada2.sh",
+          SINGLE_END: "quality_filtering_single_end_dada2.sh",
+        },
+        imageName: "pipecraft/vsearch_dada2:1",
         serviceName: "quality filtering",
         manualLink:
           "https://pipecraft2-manual.readthedocs.io/en/stable/user_guide.html#quality-filtering",
@@ -4506,7 +4760,6 @@ export default new Vuex.Store({
           },
         ],
       },
-
       {
         tooltip:
           "assign taxonomy with DADA2 'assignTaxonomy' function against a selected database. Untick the checkbox to skip this step",
@@ -4563,7 +4816,7 @@ export default new Vuex.Store({
         title: "vsearch OTUs workflow",
       },
       DADA2_ASVs: {
-        info: "FORWARD: select this when all reads of interest are expected to be in 5-3 orient. MIXED: select this when reads of interest are expected to be in both 5-3 and 3-5 orient SINGE-END DATA: select this when working with single-end data (such as PacBio)",
+        info: "FORWARD: select this when all reads of interest are expected to be in 5-3 orient. MIXED: select this when reads of interest are expected to be in both 5-3 and 3-5 orient. SINGE-END DATA: select this when working with single-end data (such as PacBio)",
         // link: "https://benjjneb.github.io/dada2/tutorial.html",
         title: "DADA2 ASVs workflow",
       },
@@ -4679,7 +4932,10 @@ export default new Vuex.Store({
     toggle_PE_SE_scripts(state, payload) {
       for (const [key] of Object.entries(state.customWorkflowInfo)) {
         for (let i = 0; i < state[key].length; i++) {
-          if (payload == "paired_end") {
+          if (
+            payload == "paired_end" &&
+            typeof state[key][i].scriptName !== "object"
+          ) {
             state[key][i].scriptName = state[key][i].scriptName.replace(
               "single_end",
               "paired_end"
@@ -4688,7 +4944,10 @@ export default new Vuex.Store({
               state[key][i].selected = "always";
             }
           }
-          if (payload == "single_end") {
+          if (
+            payload == "single_end" &&
+            typeof state[key][i].scriptName !== "object"
+          ) {
             state[key][i].scriptName = state[key][i].scriptName.replace(
               "paired_end",
               "single_end"
@@ -4867,6 +5126,9 @@ export default new Vuex.Store({
       state.selectedSteps[payload.stepIndex].services[payload.serviceIndex] =
         payload.value;
     },
+    setDADAmode(state, payload) {
+      state.data.dada2mode = payload.target.innerText.replace(/-/g, "_");
+    },
     inputUpdate(state, payload) {
       state.selectedSteps[payload.stepIndex].services[payload.serviceIndex][
         payload.listName
@@ -4915,6 +5177,9 @@ export default new Vuex.Store({
     },
     checkCustomService(state, payload) {
       state[payload.name][payload.serviceIndex].selected = payload.selected;
+    },
+    toggleDebugger(state) {
+      state.data.debugger = !state.data.debugger;
     },
   },
   actions: {},
