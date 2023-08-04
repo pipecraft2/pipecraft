@@ -95,7 +95,7 @@ done < tempdir2/files_in_folder.txt
 ### Process samples with dada2 filterAndTrim function in R
 printf "# Running DADA2 mergePairs \n"
 Rlog=$(Rscript /scripts/submodules/dada2_mergePairs.R 2>&1)
-echo $Rlog > $output_dir/R_run.log 
+echo $Rlog > $output_dir/denoise_assemble.log 
 wait
 printf "\n DADA2 mergePairs completed \n"
 
@@ -113,9 +113,6 @@ done
 if [[ -d tempdir2 ]]; then
     rm -rf tempdir2
 fi
-if [[ -f $output_dir/R_run.log ]]; then
-    rm -f $output_dir/R_run.log
-fi
 end=$(date +%s)
 runtime=$((end-start))
 
@@ -127,10 +124,11 @@ Input sequences must be made up only of A/C/G/T for denoising (i.e maxN must = 0
 #############
 
 Files in 'denoised_assembled.dada2':
-# *.fasta   = denoised and assembled sequences per sample in FASTA format (no fastq output). 'Size' denotes the abundance of the ASV sequence.  
+# *ASVs.fasta   = denoised and assembled sequences per sample in FASTA format (no fastq output). 'Size' denotes the abundance of the ASV sequence.  
 # Error_rates_R1.pdf    = plots for estimated R1 error rates
 # Error_rates_R2.pdf    = plots for estimated R2 error rates
 # seq_count_summary.txt = summary of sequence counts per sample
+# *.rds = R objects for dada2.
 
 Core commands -> 
 learn errors: err = learnErrors(input)

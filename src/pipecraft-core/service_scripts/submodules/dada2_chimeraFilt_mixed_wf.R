@@ -28,28 +28,30 @@ dir.create(path_results)
 path_ASVs = "/input/ASVs_out.dada2"
 dir.create(path_ASVs)
 
-#load data
-ASV_tab = readRDS(file.path(workingDir, "ASVs_table.denoised.rds"))
+
+### combine fwd_orient and rev_orient runs with mergeSequenceTables
+cat("| Combining fwd_orient and rev_orient runs with mergeSequenceTables | ")
+#load fwd and rev tables
+fwd = readRDS("/input/primersCut_out/fwd_orient/denoised_assembled.dada2/ASVs_table.denoised.rds")
+rev = readRDS("/input/primersCut_out/rev_orient/denoised_assembled.dada2/ASVs_table.denoised.rds")
+### RevComp ASV sequences in rev tables 
+colnames(rev) = dada2:::rc(colnames(rev))
+
+# Merge tables
+    # repeats = "sum" -> samples with the same name are summed together in the merged table.
+ASV_tab = mergeSequenceTables(fwd, rev, repeats = "sum") 
+saveRDS(ASV_tab, file.path(path_ASVs, "ASVs_table.denoised.rds"))    
 
 #remove chimeras
-ASV_tab.nochim <- removeBimeraDenovo(ASV_tab, method = method, multithread = FALSE, verbose = FALSE)
+cat("| Removing chimeras with removeBimeraDenovo | ")
+ASV_tab.nochim <- removeBimeraDenovo(ASV_tab, method = method, multithread = FALSE, verbose = TRUE)
 
 #save rds
 saveRDS(ASV_tab.nochim, file.path(path_ASVs, "ASVs_table.denoised.nochim.rds"))
 
 #seq count summary
-sample_names = readRDS("/input/qualFiltered_out/sample_names.rds")
-
-no_of_ASVs_list = list() #add ASVs per sample count
-for (i in 1:nrow(ASV_tab.nochim)){
-    no_of_ASVs = sum(ASV_tab.nochim[i,] > 0)
-    no_of_ASVs_list = append(no_of_ASVs_list, no_of_ASVs, after = length(no_of_ASVs_list))
-}
-ASV_counts = data.frame(no_of_ASVs_list, check.names = FALSE, row.names = "")
-colnames(ASV_counts) = sample_names
-seq_count <- cbind(rowSums(ASV_tab), rowSums(ASV_tab.nochim), t(ASV_counts))
-colnames(seq_count) <- c("input(merged)", "chimeraFiltered", "no.of ASVs")
-rownames(seq_count) <- sample_names
+seq_count <- cbind(rowSums(ASV_tab), rowSums(ASV_tab.nochim))
+colnames(seq_count) <- c("input(merged)", "chimeraFiltered")
 write.table(seq_count, file.path(path_results, "seq_count_summary.txt"), sep = "\t", col.names = NA, row.names = TRUE, quote = FALSE)
 
 ###format and save ASVs_table.txt and ASVs.fasta
@@ -65,13 +67,14 @@ ASV_tab.nochim = cbind(row.names(ASV_tab.nochim), ASV_tab.nochim)
 colnames(ASV_tab.nochim)[1] = "Sequence"
 #row names as sequence headers
 row.names(ASV_tab.nochim) = asv_headers
+
 #write ASVs.fasta to path_ASVs
 asv_fasta <- c(rbind(paste(">", asv_headers, sep=""), asv_seqs))
 write(asv_fasta, file.path(path_ASVs, "ASVs.fasta"))
 #write ASVs table to path_ASVs
 write.table(ASV_tab.nochim, file.path(path_ASVs, "ASVs_table.txt"), sep = "\t", col.names = NA, row.names = TRUE, quote = FALSE)
 
-#Loop through each sample in the table and write per-sample fasta files containin non-chimeric ASVs
+#Loop through each sample in the table and write per-sample fasta files containin non-chimeric ASVs (start with 2nd col [1st is Sequence])
 for (i in 2:length(colnames(ASV_tab.nochim))){
     sample_name = colnames(ASV_tab.nochim)[i]
     sample_file = paste(sample_name, "chimFilt_ASVs.fasta", sep = ".") 
