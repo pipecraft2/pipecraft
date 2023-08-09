@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# Chimera filtering with DADA2 removeBimeraDenovo function for ASVs workflow.
+# Chimera filtering with DADA2 removeBimeraDenovo function for ASVs workflow [MIXED orient amplicons].
 
 ##########################################################
 ###Third-party applications:
@@ -27,30 +27,27 @@ source /scripts/submodules/framework.functions.sh
 output_dir1=$"/input/chimeraFiltered_out.dada2"
 output_dir2=$"/input/ASVs_out.dada2"
 
+### Check the existance of previous steps, and skip if present
+
+
+
 #############################
 ### Start of the workflow ###
 #############################
 start=$(date +%s)
 ### Process samples with dada2 removeBimeraDenovo function in R
-    # different scripts for different dada2 modes (forward, mixed, single-end)
+
 printf "# Running DADA2 removeBimeraDenovo \n"
-if [[ $dada2mode == "mixed" ]]; then
-    Rlog=$(Rscript /scripts/submodules/dada2_chimeraFilt_mixed_wf.R 2>&1)
-    echo $Rlog > $output_dir1/dada2_chimeraFilt.log 
-    wait
-# else if [[ $dada2mode == "forward" ]] || [[ $dada2mode == "single-end" ]]; then; then
-#     Rlog=$(Rscript /scripts/submodules/dada2_chimeraFilt_wf.R 2>&1)
-#     echo $Rlog > $output_dir1/dada2_chimeraFilt.log 
-#     wait
-fi 
+Rlog=$(Rscript /scripts/submodules/dada2_chimeraFilt_mixed_wf.R 2>&1)
+echo $Rlog > $output_dir1/dada2_chimeraFilt.log 
+wait
 
 # Add "ASV" as a 1st col name
 if [[ -s $output_dir2/ASVs_table.txt ]]; then
     sed -i "1 s|^|ASV|" $output_dir2/ASVs_table.txt
 fi
 
-
-### dada2mode = MIXED -> does not paste out chimeric ASVs per-sample
+### NOTE: dada2mode = MIXED -> does not paste out chimeric ASVs per-sample
 
 #################################################
 ### COMPILE FINAL STATISTICS AND README FILES ###
