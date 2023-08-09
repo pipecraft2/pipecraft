@@ -1651,15 +1651,15 @@ export default new Vuex.Store({
               },
               {
                 name: "collapseNoMismatch",
-                value: true,
+                value: false,
                 disabled: "never",
                 tooltip:
-                  "collapses ASVs in an ASV table that are identical up to shifts or length variation, i.e. that have no mismatches or internal indels",
+                  "collapses ASVs in an ASV table that are identical up to shifts or length variation, i.e. that have no mismatches or internal indels (dada2 'collapseNoMismatch')",
                 type: "bool",
               },
               {
                 name: "by_length",
-                value: 250,
+                value: 249,
                 disabled: "never",
                 tooltip:
                   "discard ASVs from the ASV table that are shorter than specified value (in base pairs). Value 0 means OFF; no filtering by length.",
@@ -4755,15 +4755,15 @@ export default new Vuex.Store({
         Inputs: [
           {
             name: "collapseNoMismatch",
-            value: true,
+            value: false,
             disabled: "never",
             tooltip:
-              "collapses ASVs that are identical up to shifts or length variation, i.e. that have no mismatches or internal indels",
+              "collapses ASVs that are identical up to shifts or length variation, i.e. that have no mismatches or internal indels (dada2 'collapseNoMismatch')",
             type: "bool",
           },
           {
             name: "by_length",
-            value: 250,
+            value: 249,
             disabled: "never",
             tooltip:
               "discard ASVs from the ASV table that are shorter than specified value (in base pairs). Value 0 means OFF, no filtering by length",

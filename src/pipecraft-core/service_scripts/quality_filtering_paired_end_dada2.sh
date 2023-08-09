@@ -23,6 +23,8 @@ extension=${fileFormat}
 dataFormat=${dataFormat}
 workingDir=${workingDir}
 
+echo $extension
+
 #load variables
 read_R1=${read_R1}
 read_R2=${read_R2}
@@ -36,19 +38,6 @@ minLen=${minLen}
 maxLen=${maxLen}
 minQ=${minQ}
 matchIDs=${matchIDs}
-
-echo "$read_R1 read_R1"
-echo "$read_R2 read_R2"
-echo "$samp_ID samp_ID"
-echo "$maxEE maxEE"
-echo "$maxN maxN"
-echo "$truncQ truncQ"
-echo "$truncLen_R1 truncLen"
-echo "$truncLen_R2 truncLen_R2"
-echo "$minLen minLen"
-echo "$maxLen maxLen"
-echo "$minQ minQ"
-echo "$matchIDs matchIDs"
 
 #Source for functions
 source /scripts/submodules/framework.functions.sh
@@ -94,36 +83,29 @@ done < tempdir2/paired_end_files.txt
 ### Process samples with dada2 filterAndTrim function in R
 printf "# Running DADA2 filterAndTrim \n"
 Rlog=$(Rscript /scripts/submodules/dada2_PE_filterAndTrim.R 2>&1)
-echo $Rlog > $output_dir/R_run.log 
+echo $Rlog > $output_dir/dada2_PE_filterAndTrim.log 
 wait
 printf "\n DADA2 filterAndTrim completed \n"
 
 
-### Synchronizing R1 and R2 reads if $matchIDs == "true"
+### Synchronizing R1 and R2 reads if $matchIDs == "true" - WORK WITH SEQKIT for matchIDs = TRUE, because sometimes DADA2 CANNOT automatically identify paired-end headers
 if [[ $matchIDs == "true" ]] || [[ $matchIDs == "TRUE" ]]; then
     while read LINE; do
         #Read in R1 and R2 file names; without extension
         samp_name=$(basename $LINE | awk -F\\${samp_ID} '{print$1}')
         #If outputs are not empty, then synchronize R1 and R2
-        if [[ -s $output_dir/$samp_name\_R1_filt.fastq ]]; then
-            if [[ -s $output_dir/$samp_name\_R2_filt.fastq ]]; then
+        if [[ -s $output_dir/$samp_name\_R1.$extension ]]; then
+            if [[ -s $output_dir/$samp_name\_R2.$extension ]]; then
                 printf "\nSynchronizing $samp_name R1 and R2 reads\n"
                 cd $output_dir
-                checkerror=$(seqkit pair -1 $samp_name\_R1_filt.fastq -2 $samp_name\_R2_filt.fastq 2>&1)
+                checkerror=$(seqkit pair -1 $samp_name\_R1.$extension -2 $samp_name\_R2.$extension 2>&1)
                 check_app_error
 
-                rm $samp_name\_R1_filt.fastq
-                rm $samp_name\_R2_filt.fastq
-                mv $samp_name\_R1_filt.paired.fastq $samp_name\_R1_filt.fastq
-                mv $samp_name\_R2_filt.paired.fastq $samp_name\_R2_filt.fastq
+                rm $samp_name\_R1.$extension
+                rm $samp_name\_R2.$extension
+                mv $samp_name\_R1.paired.$extension $samp_name\_R1.$extension
+                mv $samp_name\_R2.paired.$extension $samp_name\_R2.$extension
                 cd ..
-
-                #Convert output fastq files to FASTA
-#                mkdir -p $output_dir/FASTA
-#                checkerror=$(seqkit fq2fa -t dna --line-width 0 $output_dir/$samp_name\_R1_filt.fastq -o $output_dir/FASTA/$samp_name\_R1_filt.fasta 2>&1)
-#                check_app_error
-#                checkerror=$(seqkit fq2fa -t dna --line-width 0 $output_dir/$samp_name\_R2_filt.fastq -o $output_dir/FASTA/$samp_name\_R2_filt.fasta 2>&1)
-#                check_app_error
             fi
         else
             printf "NOTE: all reads descarded from $samp_name\n"
@@ -139,7 +121,7 @@ if [[ -d tempdir2 ]]; then
 fi
 
 ### end pipe if no outputs were generated
-outfile_check=$(ls $output_dir/*.fastq 2>/dev/null | wc -l)
+outfile_check=$(ls $output_dir/*.$extension 2>/dev/null | wc -l)
 if [[ $outfile_check != 0 ]]; then 
     :
 else 
@@ -155,7 +137,7 @@ runtime=$((end-start))
 printf "# Quality filtering with dada2.
 
 Files in 'qualFiltered_out':
-    # *.$extension             = quality filtered sequences per sample in FASTQ format.
+    # *.$extension             = quality filtered sequences per sample.
     # seq_count_summary.txt    = summary of sequence counts per sample.
     # *.rds                    = R objects for dada2.
 

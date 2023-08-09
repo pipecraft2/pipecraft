@@ -144,7 +144,7 @@ for folder in /input/primersCut_out/fwd_orient /input/primersCut_out/rev_orient;
     Detected MIXED orient sequences as input data; note that there were independent runs for fwd_orient and rev_orient inputs.
 
     Files in 'qualFiltered_out':
-    # *.$extension              = quality filtered sequences per sample in FASTQ format.
+    # *.$extension              = quality filtered sequences per sample.
     # seq_count_summary.txt     = summary of sequence counts per sample.
     # *.rds                     = R objects for dada2.
 

@@ -1,1 +1,1 @@
-{"minOverlap":12,"maxMismatch":0,"trimOverhang":false,"justConcatenate":false}
+{"DADA2_table":"/home/sten/Desktop/test/DADA2_wf/ASVs_out.dada2/ASVs_table.denoised.nochim.rds","collapseNoMismatch":false,"by_length":"500","minOverlap":20,"vec":true}
