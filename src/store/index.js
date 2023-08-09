@@ -1651,15 +1651,15 @@ export default new Vuex.Store({
               },
               {
                 name: "collapseNoMismatch",
-                value: true,
+                value: false,
                 disabled: "never",
                 tooltip:
-                  "collapses ASVs in an ASV table that are identical up to shifts or length variation, i.e. that have no mismatches or internal indels",
+                  "collapses ASVs in an ASV table that are identical up to shifts or length variation, i.e. that have no mismatches or internal indels (dada2 'collapseNoMismatch')",
                 type: "bool",
               },
               {
                 name: "by_length",
-                value: 250,
+                value: 249,
                 disabled: "never",
                 tooltip:
                   "discard ASVs from the ASV table that are shorter than specified value (in base pairs). Value 0 means OFF; no filtering by length.",
@@ -4479,10 +4479,10 @@ export default new Vuex.Store({
         tooltip: "quality filtering with DADA2 'filterAndTrim' function",
         scriptName: {
           FORWARD: "quality_filtering_paired_end_dada2.sh",
-          MIXED: "quality_filtering_paired_end_dada2.sh",
+          MIXED: "quality_filtering_paired_end_dada2_mixed.sh",
           SINGLE_END: "quality_filtering_single_end_dada2.sh",
         },
-        imageName: "pipecraft/vsearch_dada2:1",
+        imageName: "pipecraft/vsearch_dada2:2",
         serviceName: "quality filtering",
         manualLink:
           "https://pipecraft2-manual.readthedocs.io/en/stable/user_guide.html#quality-filtering",
@@ -4602,7 +4602,11 @@ export default new Vuex.Store({
       },
       {
         tooltip: "select the denoising options for DADA2 'dada' function",
-        scriptName: "assemble_paired_end_data_dada2_mixed_wf.sh",
+        scriptName: {
+          FORWARD: "assemble_paired_end_data_dada2_wf.sh",
+          MIXED: "assemble_paired_end_data_dada2_mixed_wf.sh",
+          SINGLE_END: "XXX.sh",
+        },
         imageName: "pipecraft/vsearch_dada2:2",
         serviceName: "denoise",
         manualLink:
@@ -4643,7 +4647,11 @@ export default new Vuex.Store({
       {
         tooltip:
           "assemble paired-end reads (R1 and R2) with DADA2 'mergePairs' function",
-        scriptName: "assemble_paired_end_data_dada2_mixed_wf.sh",
+        scriptName: {
+            FORWARD: "assemble_paired_end_data_dada2_wf.sh",
+            MIXED: "assemble_paired_end_data_dada2_mixed_wf.sh",
+            SINGLE_END: "XXX.sh",
+        },
         imageName: "pipecraft/vsearch_dada2:2",
         serviceName: "merge Pairs",
         manualLink:
@@ -4690,7 +4698,11 @@ export default new Vuex.Store({
       },
       {
         tooltip: "remove chimeras with DADA2 'removeBimeraDenovo' function",
-        scriptName: "chimera_filtering_dada2_mixed_wf.sh",
+        scriptName: {
+          FORWARD: "chimera_filtering_dada2_wf.sh",
+          MIXED: "chimera_filtering_dada2_mixed_wf.sh",
+          SINGLE_END: "XXX.sh",
+        },
         imageName: "pipecraft/vsearch_dada2:2",
         serviceName: "chimera filtering",
         manualLink:
@@ -4743,15 +4755,15 @@ export default new Vuex.Store({
         Inputs: [
           {
             name: "collapseNoMismatch",
-            value: true,
+            value: false,
             disabled: "never",
             tooltip:
-              "collapses ASVs that are identical up to shifts or length variation, i.e. that have no mismatches or internal indels",
+              "collapses ASVs that are identical up to shifts or length variation, i.e. that have no mismatches or internal indels (dada2 'collapseNoMismatch')",
             type: "bool",
           },
           {
             name: "by_length",
-            value: 250,
+            value: 249,
             disabled: "never",
             tooltip:
               "discard ASVs from the ASV table that are shorter than specified value (in base pairs). Value 0 means OFF, no filtering by length",
