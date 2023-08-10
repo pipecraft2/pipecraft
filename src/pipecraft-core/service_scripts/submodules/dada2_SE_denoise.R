@@ -1,0 +1,121 @@
+#!/usr/bin/env Rscript
+
+#DADA2 denoising single-end data.
+
+#load dada2
+library('dada2')
+
+#load env variables
+readType = Sys.getenv('readType')
+fileFormat= Sys.getenv('fileFormat')
+dataFormat = Sys.getenv('dataFormat')
+workingDir = Sys.getenv('workingDir')
+
+#load  variables
+errorEstimationFunction = Sys.getenv('errorEstimationFunction')
+BAND_SIZE = Sys.getenv('BAND_SIZE')
+pool = Sys.getenv('pool')
+selfConsist = Sys.getenv('selfConsist')
+qualityType = Sys.getenv('qualityType')
+
+#"FALSE" or "TRUE" to FALSE or TRUE for dada2
+if (pool == "false" || pool == "FALSE"){
+    pool = FALSE
+}
+if (pool == "true" || pool == "TRUE"){
+    pool = TRUE
+}
+if (selfConsist == "false" || selfConsist == "FALSE"){
+    selfConsist = FALSE
+}
+if (selfConsist == "true" || selfConsist == "TRUE"){
+    selfConsist = TRUE
+}
+
+#output_dir
+path_results = Sys.getenv('output_dir')
+
+
+### Denoise
+cat("| Working directory = ", workingDir)
+cat(" | Performing DADA2 denoising | ")
+#check for output dir and delete if needed
+if (dir.exists(path_results)) {
+    unlink(path_results, recursive=TRUE)
+}
+#create output dir
+dir.create(path_results)
+
+#filtered files path
+qFiltered = readRDS(file.path(workingDir, "qFiltered.rds"))
+sample_names = readRDS(file.path(workingDir, "sample_names.rds"))
+
+#Dereplicate
+dereplicated <- derepFastq(qFiltered, verbose = TRUE, qualityType = qualityType)
+saveRDS(dereplicated, (file.path(path_results, "dereplicated.rds")))
+
+#Learn errors
+errors = learnErrors(dereplicated, errorEstimationFunction = errorEstimationFunction, BAND_SIZE = BAND_SIZE, multithread = TRUE, verbose = TRUE)
+saveRDS(errors, file.path(path_results, "errors.rds"))
+
+#Error rate figures
+pdf(file.path(path_results, "Error_rates.pdf"))
+    print( plotErrors(errors) )
+dev.off()
+
+#Denoise
+denoised = dada(dereplicated, err = errors, BAND_SIZE = BAND_SIZE, multithread = TRUE, verbose = TRUE)
+saveRDS(denoised, file.path(path_results, "denoised.rds"))
+
+
+### WRITE PER-SAMPLE DENOISED and MERGED FASTA FILES
+#make sequence table
+ASV_tab = makeSequenceTable(denoised)
+rownames(ASV_tab) = gsub(paste0(".", fileFormat), "", rownames(ASV_tab))
+#write RDS object
+saveRDS(ASV_tab, (file.path(path_results, "ASVs_table.denoised.rds")))
+
+#sequence headers
+asv_seqs = colnames(ASV_tab)
+asv_headers = openssl::sha1(asv_seqs) #header as sha1
+
+#transpose sequence table
+ASV_tab = t(ASV_tab)
+#add sequences to 1st column
+ASV_tab = cbind(row.names(ASV_tab), ASV_tab)
+colnames(ASV_tab)[1] = "Sequence"
+#row names as sequence headers
+row.names(ASV_tab) = asv_headers
+
+#Loop through each sample in the table and write per-sample fasta files
+for (i in 2:length(colnames(ASV_tab))){
+    sample_name = colnames(ASV_tab)[i]
+    sample_file = paste(sample_name, "ASVs.fasta", sep = ".") 
+    j = 0
+    for (abundance in ASV_tab[,i]){
+        j = j + 1
+        if (abundance != 0){
+            #seq header and abundance
+            header = paste(">", row.names(ASV_tab)[j], ";size=", abundance, sep = "")
+            write(header, file.path(path_results, sample_file), append = TRUE)
+            #sequence
+            seq = ASV_tab[j, 1]
+            write(seq, file.path(path_results, sample_file), append = TRUE)
+        }
+    }
+}
+
+#seq count summary
+getN <- function(x) sum(getUniques(x))
+
+    #remove 0 seqs samples from qfilt statistics
+    qfilt = readRDS(file.path(workingDir, "quality_filtered_read_count.rds"))
+    row_sub = apply(qfilt, 1, function(row) all(row !=0 ))
+    qfilt = qfilt[row_sub, ]
+
+seq_count <- cbind(qfilt, sapply(denoised, getN))
+colnames(seq_count) <- c("input", "qualFiltered", "denoised")
+rownames(seq_count) <- sample_names
+write.csv(seq_count, file.path(path_results, "seq_count_summary.csv"), row.names = TRUE, quote = FALSE)
+print("DONE")
+

@@ -19,7 +19,6 @@ justConcatenate = Sys.getenv('justConcatenate')
 pool = Sys.getenv('pool')
 selfConsist = Sys.getenv('selfConsist')
 qualityType = Sys.getenv('qualityType')
-orient = Sys.getenv('orient')
 
 #"FALSE" or "TRUE" to FALSE or TRUE for dada2
 if (pool == "false" || pool == "FALSE"){
@@ -102,9 +101,6 @@ if (pool == ""){
     dadaRs = readRDS(file.path(path_results, "dadaRs.rds"))
     derepFs = readRDS(file.path(path_results, "derepFs.rds"))
     derepRs = readRDS(file.path(path_results, "derepRs.rds"))
-    getwd()
-    sample_names = readRDS("../qualFiltered_out/sample_names.rds")
-    qfilt = readRDS("../qualFiltered_out/quality_filtered.rds")
 
     #merge paired-end reads
     merge = mergePairs(dadaFs, derepFs, dadaRs, derepRs, 
@@ -153,6 +149,8 @@ if (pool == ""){
 
     #seq count summary
     getN <- function(x) sum(getUniques(x))
+    sample_names = readRDS(file.path(workingDir, "sample_names.rds"))
+    qfilt = readRDS(file.path(workingDir, "quality_filtered.rds"))
     
         #remove 0 seqs samples from qfilt statistics
         row_sub = apply(qfilt, 1, function(row) all(row !=0 ))
@@ -161,6 +159,6 @@ if (pool == ""){
     seq_count <- cbind(qfilt, sapply(dadaFs, getN), sapply(dadaRs, getN), sapply(merge, getN))
     colnames(seq_count) <- c("input", "qualFiltered", "denoised_R1", "denoised_R2", "merged")
     rownames(seq_count) <- sample_names
-    write.table(seq_count, file.path(path_results, "seq_count_summary.txt"), sep = "\t", col.names = NA, row.names = TRUE, quote = FALSE)
+    write.csv(seq_count, file.path(path_results, "seq_count_summary.csv"), row.names = TRUE, quote = FALSE)
     print("DONE")
 }

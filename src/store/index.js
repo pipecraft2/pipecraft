@@ -4496,7 +4496,7 @@ export default new Vuex.Store({
             value: ["\\.R1"],
             disabled: "single_end",
             tooltip:
-              "identifyer string that is common for all R1 reads (e.g. when all R1 files have '.R1' string, then enter '\\.R1'. Note that backslash is only needed to escape dot regex; e.g. when all R1 files have '_R1' string, then enter '_R1'.). When demultiplexing data during this workflow, then specify as '\\.R1'",
+              "[only for paired-end data] identifyer string that is common for all R1 reads (e.g. when all R1 files have '.R1' string, then enter '\\.R1'. Note that backslash is only needed to escape dot regex; e.g. when all R1 files have '_R1' string, then enter '_R1'.). When demultiplexing data during this workflow, then specify as '\\.R1'",
             type: "chip",
             rules: [(v) => v.length <= 1 || "ADD ONLY ONE IDENTIFIER"],
           },
@@ -4505,16 +4505,16 @@ export default new Vuex.Store({
             value: ["\\.R2"],
             disabled: "single_end",
             tooltip:
-              "identifyer string that is common for all R2 reads (e.g. when all R2 files have '.R2' string, then enter '\\.R2'. Note that backslash is only needed to escape dot regex; e.g. when all R2 files have '_R1' string, then enter '_R2'.). When demultiplexing data during this workflow, then specify as '\\.R2'",
+              "[only for paired-end data] identifyer string that is common for all R2 reads (e.g. when all R2 files have '.R2' string, then enter '\\.R2'. Note that backslash is only needed to escape dot regex; e.g. when all R2 files have '_R1' string, then enter '_R2'.). When demultiplexing data during this workflow, then specify as '\\.R2'",
             type: "chip",
             rules: [(v) => v.length <= 1 || "ADD ONLY ONE IDENTIFIER"],
           },
           {
             name: "samp_ID",
             value: ["\\."],
-            disabled: "never",
+            disabled: "single_end",
             tooltip:
-              "identifyer string that separates the sample name from redundant charachters (e.g. file name = sample1.R1.fastq, then '\\.' would be the 'identifier string' (sample name = sample1)); note that backslash is only needed to escape dot regex (e.g. when file name = sample1_R1.fastq then specify as '_')",
+              "[only for paired-end data] identifyer string that separates the sample name from redundant charachters (e.g. file name = sample1.R1.fastq, then '\\.' would be the 'identifier string' (sample name = sample1)); note that backslash is only needed to escape dot regex (e.g. when file name = sample1_R1.fastq then specify as '_')",
             type: "chip",
             rules: [(v) => v.length <= 1 || "ADD ONLY ONE IDENTIFIER"],
           },
@@ -4605,7 +4605,7 @@ export default new Vuex.Store({
         scriptName: {
           FORWARD: "assemble_paired_end_data_dada2_wf.sh",
           MIXED: "assemble_paired_end_data_dada2_mixed_wf.sh",
-          SINGLE_END: "XXX.sh",
+          SINGLE_END: "denoise_single_end_data_dada2.sh",
         },
         imageName: "pipecraft/vsearch_dada2:2",
         serviceName: "denoise",
@@ -4616,6 +4616,15 @@ export default new Vuex.Store({
         showExtra: false,
         extraInputs: [],
         Inputs: [
+          {
+            name: "errorEstimationFunction",
+            items: ["PacBioErrfun", "loessErrfun"],
+            value: "PacBioErrfun",
+            disabled: "never",
+            tooltip:
+              "'loessErrfun' for Illumina data; 'PacBioErrfun' for PacBio data",
+            type: "select",
+          },
           {
             name: "pool",
             items: ["FALSE", "TRUE", "psuedo"],
@@ -4828,7 +4837,7 @@ export default new Vuex.Store({
         title: "vsearch OTUs workflow",
       },
       DADA2_ASVs: {
-        info: "FORWARD: select this when all reads of interest are expected to be in 5-3 orient. MIXED: select this when reads of interest are expected to be in both 5-3 and 3-5 orient. SINGE-END DATA: select this when working with single-end data (such as PacBio)",
+        info: "FORWARD: [for Illumina PE data] select this when all reads of interest are expected to be in 5-3 orient. MIXED: [for Illumina PE data] select this when reads of interest are expected to be in both 5-3 and 3-5 orient. SINGE-END DATA: [for PacBio data] select this when working with single-end data (such as PacBio)",
         // link: "https://benjjneb.github.io/dada2/tutorial.html",
         title: "DADA2 ASVs workflow",
       },

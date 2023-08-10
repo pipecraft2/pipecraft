@@ -32,7 +32,7 @@ minQ=${minQ}
 source /scripts/submodules/framework.functions.sh
 #output dir
 output_dir=$"/input/qualFiltered_out"
-
+export output_dir
 #############################
 ### Start of the workflow ###
 #############################
@@ -63,12 +63,12 @@ runtime=$((end-start))
 printf "# Quality filtering with dada2.
 
 Files in 'qualFiltered_out':
-# *_filt.fastq          = quality filtered sequences per sample.
-# seq_count_summary.txt = summary of sequence counts per sample.
-# (*.rds = R objects for dada2).
+    # *.$extension             = quality filtered sequences per sample.
+    # seq_count_summary.txt    = summary of sequence counts per sample.
+    # *.rds                    = R objects for dada2.
 
 Core command -> 
-filterAndTrim(inputR1, outputR1, maxN = $maxN, maxEE = $maxEE, truncQ = $truncQ, truncLen = $truncLen_R1, maxLen = $maxLen, minLen = $minLen, minQ=$minQ, rm.phix = TRUE, compress = FALSE, multithread = TRUE)
+filterAndTrim(inputR1, outputR1, maxN = $maxN, maxEE = $maxEE, truncQ = $truncQ, truncLen = $truncLen_R1, maxLen = $maxLen, minLen = $minLen, minQ=$minQ, rm.phix = TRUE, multithread = TRUE)
 
 Total run time was $runtime sec.
 ##################################################################

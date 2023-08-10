@@ -41,6 +41,7 @@ fnFs = sort(list.files(pattern = read_R1, full.names = TRUE))
 fnRs = sort(list.files(pattern = read_R2, full.names = TRUE))
 #sample names
 sample_names = sapply(strsplit(basename(fnFs), samp_ID), `[`, 1)
+cat("sample names = ", sample_names, "\n")
 
 #filtered files path
 filtFs = file.path(path_results, paste0(sample_names, "_R1.", fileFormat))
@@ -74,7 +75,6 @@ write.table(seq_count, file.path(path_results, "seq_count_summary.txt"), sep = "
 R1qf = sort(list.files(path_results, pattern = "_R1.", full.names = TRUE))
 R2qf = sort(list.files(path_results, pattern = "_R2.", full.names = TRUE))
 sample_names = sapply(strsplit(basename(R1qf), "_R1."), `[`, 1)
-cat("sample names = ", sample_names, "\n")
 saveRDS(R1qf, file.path(path_results, "filtFs.rds"))
 saveRDS(R2qf, file.path(path_results, "filtRs.rds"))
 saveRDS(sample_names, file.path(path_results, "sample_names.rds"))
