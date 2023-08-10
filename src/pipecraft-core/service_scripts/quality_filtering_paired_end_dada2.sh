@@ -23,8 +23,6 @@ extension=${fileFormat}
 dataFormat=${dataFormat}
 workingDir=${workingDir}
 
-echo $extension
-
 #load variables
 read_R1=${read_R1}
 read_R2=${read_R2}
@@ -43,6 +41,7 @@ matchIDs=${matchIDs}
 source /scripts/submodules/framework.functions.sh
 #output dir
 output_dir=$"/input/qualFiltered_out"
+export output_dir
 
 #############################
 ### Start of the workflow ###
@@ -85,7 +84,7 @@ printf "# Running DADA2 filterAndTrim \n"
 Rlog=$(Rscript /scripts/submodules/dada2_PE_filterAndTrim.R 2>&1)
 echo $Rlog > $output_dir/dada2_PE_filterAndTrim.log 
 wait
-printf "\n DADA2 filterAndTrim completed \n"
+printf "\n DADA2 filterAndTrim completed \n\n"
 
 
 ### Synchronizing R1 and R2 reads if $matchIDs == "true" - WORK WITH SEQKIT for matchIDs = TRUE, because sometimes DADA2 CANNOT automatically identify paired-end headers
@@ -123,7 +122,8 @@ fi
 ### end pipe if no outputs were generated
 outfile_check=$(ls $output_dir/*.$extension 2>/dev/null | wc -l)
 if [[ $outfile_check != 0 ]]; then 
-    :
+    qFilt_compleated=$"TRUE"
+    export qFilt_compleated
 else 
     printf '%s\n' "ERROR]: no output files generated after quality filtering ($output_dir). Adjust settings.
     >Quitting" >&2

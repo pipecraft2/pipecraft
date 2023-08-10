@@ -32,7 +32,7 @@ dir.create(path_ASVs)
 ASV_tab = readRDS(file.path(workingDir, "ASVs_table.denoised.rds"))
 
 #remove chimeras
-ASV_tab.nochim <- removeBimeraDenovo(ASV_tab, method = method, multithread = FALSE, verbose = FALSE)
+ASV_tab.nochim <- removeBimeraDenovo(ASV_tab, method = method, multithread = FALSE, verbose = TRUE)
 
 #save rds
 saveRDS(ASV_tab.nochim, file.path(path_ASVs, "ASVs_table.denoised.nochim.rds"))

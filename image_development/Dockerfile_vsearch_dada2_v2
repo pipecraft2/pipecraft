@@ -2,26 +2,25 @@ FROM ubuntu:22.04
 #ARG DEBIAN_FRONTEND=noninteractive
 ENV TZ=Europe/Tallinn
 RUN ln -snf /usr/share/zoneinfo/$TZ /etc/localtime && echo $TZ > /etc/timezone
-RUN apt-get update -y
-RUN apt-get install build-essential -y
-RUN apt-get install wget -y
-RUN apt-get install pigz -y
-RUN apt-get install git -y
-RUN apt-get install r-base -y
-RUN apt-get install parallel -y
-RUN apt-get install ncbi-blast+ -y
+RUN apt-get update -y \
+&& apt-get install build-essential -y \
+&& apt-get install wget -y \
+&& apt-get install pigz -y \
+&& apt-get install git -y \
+&& apt-get install r-base -y \
+&& apt-get install parallel -y \
+&& apt-get install ncbi-blast+ -y
 RUN wget https://github.com/shenwei356/seqkit/releases/download/v2.3.0/seqkit_linux_amd64.tar.gz -O /tmp/seqkit.tar.gz && \
     tar zxvf /tmp/seqkit.tar.gz -C /usr/bin/ && rm /tmp/seqkit.tar.gz
 RUN apt-get install autoconf -y
-RUN git clone --branch v2.22.1 https://github.com/torognes/vsearch.git \
+RUN git clone --branch v2.23.0 https://github.com/torognes/vsearch.git \
     && cd vsearch && ./autogen.sh && ./configure && make && make install
-RUN Rscript -e 'install.packages("data.table", dependencies=TRUE , repos="https://cloud.r-project.org")'
-RUN Rscript -e 'install.packages("optparse", repos="https://cloud.r-project.org")'
-RUN Rscript -e 'install.packages("dplyr", repos = "https://cloud.r-project.org/" )'
-RUN Rscript -e 'install.packages("remotes", repos = "https://cloud.r-project.org/")'
-RUN Rscript -e 'install.packages("BiocManager", repos = "https://cloud.r-project.org/")'
-RUN Rscript -e 'remotes::install_github("tobiasgf/lulu")'
-RUN apt-get install libcurl4-gnutls-dev libxml2-dev libssl-dev -y
+RUN Rscript -e 'install.packages("data.table", dependencies=TRUE , repos="https://cloud.r-project.org")' \
+&& Rscript -e 'install.packages("optparse", repos="https://cloud.r-project.org")' \
+&& Rscript -e 'install.packages("dplyr", repos = "https://cloud.r-project.org/" )' \
+&& Rscript -e 'install.packages("remotes", repos = "https://cloud.r-project.org/")' \
+&& Rscript -e 'install.packages("BiocManager", repos = "https://cloud.r-project.org/")'
+RUN Rscript -e 'remotes::install_github("tobiasgf/lulu")' 
+RUN apt-get install libcurl4-gnutls-dev libxml2-dev libssl-dev -y 
 RUN Rscript -e 'remotes::install_github("benjjneb/dada2", ref="v1.26")'
-RUN Rscript -e 'install.packages("data.table", dependencies=TRUE , repos="https://cloud.r-project.org")'
-RUN Rscript -e 'install.packages("seqinr")'
+RUN Rscript -e 'install.packages(c("openssl", "seqinr", "devtools"), dependencies=TRUE)'

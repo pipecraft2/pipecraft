@@ -30,6 +30,7 @@ qualityType=${qualityType}
 source /scripts/submodules/framework.functions.sh
 #output dirs
 output_dir=$"/input/denoised_assembled.dada2"
+export output_dir
 
 ### Check that at least 2 samples are provided
 files=$(ls /input/qualFiltered_out | grep -c ".$extension")
