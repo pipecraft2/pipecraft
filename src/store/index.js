@@ -5149,6 +5149,11 @@ export default new Vuex.Store({
     },
     setDADAmode(state, payload) {
       state.data.dada2mode = payload.target.innerText.replace(/-/g, "_");
+      if (payload.target.innerText == "MIXED") {
+        state.DADA2_ASVs[0].selected = "always";
+      } else {
+        state.DADA2_ASVs[0].selected = false;
+      }
     },
     inputUpdate(state, payload) {
       state.selectedSteps[payload.stepIndex].services[payload.serviceIndex][
