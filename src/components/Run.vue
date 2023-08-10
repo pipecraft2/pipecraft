@@ -558,7 +558,12 @@ export default {
           this.updateRunInfo(0, 1, "NextITS", "NextITS");
           let log = fs.createWriteStream("NextITS_log.txt");
           let stdout = new streams.WritableStream();
-          let props = this.createParamsFile(this.$store.state.NextITS[0]);
+          let step = this.$store.state.NextITS[0];
+          step.Inputs = step.Inputs.concat(this.$store.state.NextITS[1].Inputs);
+          step.extraInputs = step.extraInputs.concat(
+            this.$store.state.NextITS[1].extraInputs
+          );
+          let props = this.createParamsFile(step);
           console.log(props);
           await this.clearContainerConflicts("NextITS");
           await this.imageCheck("vmikk/nextits:0.0.3");
@@ -585,6 +590,7 @@ export default {
                   }
                 }
               )
+
               .on("stream", (stream) => {
                 stream.on("data", function (data) {
                   console.log(data.toString().replace(/[\n\r]/g, ""));

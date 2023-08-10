@@ -1,28 +1,22 @@
-FROM ubuntu:22.10
+FROM ubuntu:23.10
 #ARG DEBIAN_FRONTEND=noninteractive
 ENV TZ=Europe/Tallinn
 RUN ln -snf /usr/share/zoneinfo/$TZ /etc/localtime && echo $TZ > /etc/timezone
 RUN sed -i.bak "/^#.*deb-src.*universe$/s/^# //g" /etc/apt/sources.list
 RUN apt-get update -y
-RUN apt build-dep r-base -y
-RUN apt-get install libcurl4-gnutls-dev libxml2-dev libssl-dev libzmq3-dev -y
-RUN apt-get install build-essential -y
 RUN apt-get install wget -y
+RUN apt install software-properties-common dirmngr -y
+RUN wget -qO- https://cloud.r-project.org/bin/linux/ubuntu/marutter_pubkey.asc | tee -a /etc/apt/trusted.gpg.d/cran_ubuntu_key.asc
+RUN add-apt-repository "deb https://cloud.r-project.org/bin/linux/ubuntu $(lsb_release -cs)-cran40/"
+RUN apt install r-base r-base-dev -y
+RUN apt-get install libcurl4-gnutls-dev libxml2-dev libssl-dev openssl libzmq3-dev -y
+RUN apt-get install build-essential -y
 RUN apt-get install pigz -y
 RUN apt-get install git -y
 RUN apt-get install curl -y
-RUN apt-get install gfortran -y
-RUN apt-get install libreadline-dev -y
-RUN wget https://cran.r-project.org/src/base/R-4/R-4.3.1.tar.gz -O /tmp/R-4.3.1.tar.gz && \
-    tar zxvf /tmp/R-4.3.1.tar.gz -C /usr/bin/ && rm /tmp/R-4.3.1.tar.gz && cd /usr/bin/R-4.3.1 && ./configure --prefix=/usr/bin/R-4.3.1 --enable-R-shlib --enable-memory-profiling --with-blas --with-lapack && \
-    make && make install
-RUN apt-get install r-base -y
 RUN apt-get install r-recommended -y
-RUN apt-get install python3-pip -y
-RUN python3 -m pip install biopython
-RUN curl https://bootstrap.pypa.io/get-pip.py -o get-pip.py
-RUN python3 get-pip.py
-RUN python3 -m pip install cutadapt==4.4
+RUN apt-get install python3-biopython -y
+RUN apt-get install python3-cutadapt -y
 RUN wget https://github.com/marbl/Krona/releases/download/v2.8.1/KronaTools-2.8.1.tar -O /tmp/KronaTools-2.8.1.tar && \
     tar xvf /tmp/KronaTools-2.8.1.tar -C /usr/bin/ && rm /tmp/KronaTools-2.8.1.tar && cd /usr/bin/KronaTools-2.8.1 && ./install.pl
 RUN wget https://github.com/shenwei356/seqkit/releases/download/v2.3.0/seqkit_linux_amd64.tar.gz -O /tmp/seqkit.tar.gz && \
@@ -31,6 +25,9 @@ RUN apt-get install autoconf -y
 RUN git clone --branch v2.22.1 https://github.com/torognes/vsearch.git \
     && cd vsearch && ./autogen.sh && ./configure && make && make install
 RUN Rscript -e 'install.packages("curl", repos="https://cloud.r-project.org")'
+RUN Rscript -e 'install.packages("openssl", repos="https://cloud.r-project.org")'
+RUN Rscript -e 'install.packages("assertthat", repos="https://cloud.r-project.org")'
+RUN Rscript -e 'install.packages("checkmate", repos="https://cloud.r-project.org")'
 RUN Rscript -e 'install.packages("clustermq", repos = "https://cloud.r-project.org/" )'
 RUN Rscript -e 'install.packages("dplyr", repos = "https://cloud.r-project.org/")'
 RUN Rscript -e 'install.packages("fst", repos = "https://cloud.r-project.org/")'
