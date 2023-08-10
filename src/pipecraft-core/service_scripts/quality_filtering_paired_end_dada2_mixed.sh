@@ -45,6 +45,17 @@ source /scripts/submodules/framework.functions.sh
 #############################
 start=$(date +%s)
 
+### Check if cut primers was performed - mandatory for MIXED orient amplicons
+if [[ -d "/input/primersCut_out/fwd_orient" ]] && [[ -d "/input/primersCut_out/rev_orient" ]]; then
+    :
+else
+       printf '%s\n' "ERROR]: input folders primersCut_out/fwd_orient and/or primersCut_out/rev_orient not found!
+       (CUT PRIMERS is mandatory when amplicons are MIXED orient)
+    >Quitting" >&2
+        end_process
+fi
+
+#define quality_filtering_paired_end_dada2 function
 function quality_filtering_paired_end_dada2 () {
     ### Check if files with specified extension exist in the dir
     first_file_check
