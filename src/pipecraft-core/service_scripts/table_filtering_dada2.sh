@@ -45,21 +45,27 @@ start=$(date +%s)
 ### Filtering the ASV table
 printf "Filtering the ASV table ... \n"
 Rlog=$(Rscript /scripts/submodules/dada2_table_filtering.R 2>&1)
-echo $Rlog > $output_dir/R_run.log 
+echo $Rlog > $output_dir/dada2_table_filtering.log 
 wait
 
 # Count ASVs
-ASVs_collapsed=$(grep -c "^>" $output_dir/ASVs_collapsed.fasta)
-if [[ $ASVs_collapsed == "" ]]; then
-    ASVs_collapsed=$"0"
+if [[ -f $output_dir/ASVs_collapsed.fasta ]]; then
+    ASVs_collapsed=$(grep -c "^>" $output_dir/ASVs_collapsed.fasta)
+    if [[ $ASVs_collapsed == "" ]]; then
+        ASVs_collapsed=$"0"
+    fi
 fi
 
-ASVs_lenFilt=$(grep -c "^>" $output_dir/ASVs_lenFilt.fasta)
+if [[ -f $output_dir/ASVs_lenFilt.fasta ]]; then
+    ASVs_lenFilt=$(grep -c "^>" $output_dir/ASVs_lenFilt.fasta)
+fi
 if [[ -f $output_dir/a.txt ]]; then
     ASVs_lenFilt_result_table=$"None of the ASVs were filtered out based on the length filter ($by_length bp); no files generated"
+    ASVs_lenFilt_result_fasta=$"NA"
     rm $output_dir/a.txt
 elif [[ $ASVs_lenFilt == "" ]]; then
     ASVs_lenFilt_result_table=$"All ASVs were filtered out based on the length filter ($by_length bp); no files generated"
+    ASVs_lenFilt_result_fasta=$"NA"
 elif [[ $ASVs_lenFilt != "" ]]; then
     ASVs_lenFilt_result_table=$"ASV table after discarding < $by_length bp ASVs. Contains $ASVs_lenFilt ASVs"
     ASVs_lenFilt_result_fasta=$"ASV sequences after discarding < $by_length bp ASVs. Contains $ASVs_lenFilt ASVs"
@@ -73,17 +79,12 @@ if [[ -s $output_dir/ASVs_table_collapsed.txt ]]; then
     sed -i "1 s|^|ASV|" $output_dir/ASVs_table_collapsed.txt
 fi
 
-#rm 
-if [[ -f $output_dir/R_run.log ]]; then
-    rm -f $output_dir/R_run.log
-fi
 
 #Make README.txt file
 end=$(date +%s)
 runtime=$((end-start))
 if [[ $collapseNoMismatch == "true" ]]; then
     printf "# Filtering the of the dada2 ASV table.
-    Note that ASV headers between tables/fastas do not match. Named from ASV_1 to ASV_N according to ASV lis
 
     Files in 'filtered_table':
     # ASVs_table_collapsed.txt = ASV table after collapsing identical ASVs. Contains $ASVs_collapsed ASVs
@@ -104,7 +105,6 @@ if [[ $collapseNoMismatch == "true" ]]; then
     ########################################################" > $output_dir/README.txt
 else
     printf "# Filtering the of the dada2 ASV table.
-    Note that ASV headers between tables/fastas do not match. Named from ASV_1 to ASV_N according to ASV lis
 
     Files in 'filtered_table':
     # ASV_table_lenFilt.txt    = $ASVs_lenFilt_result_table

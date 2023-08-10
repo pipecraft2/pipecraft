@@ -45,7 +45,7 @@ prepare_SE_env
 ### Process samples with dada2 filterAndTrim function in R
 printf "# Running DADA2 filterAndTrim \n"
 Rlog=$(Rscript /scripts/submodules/dada2_SE_filterAndTrim.R 2>&1)
-echo $Rlog > $output_dir/R_run.log 
+echo $Rlog > $output_dir/qFilt.log 
 wait
 printf "\n DADA2 filterAndTrim completed \n"
 
@@ -55,9 +55,7 @@ printf "\n DADA2 filterAndTrim completed \n"
 if [[ -d tempdir2 ]]; then
     rm -rf tempdir2
 fi
-if [[ -f $output_dir/R_run.log ]]; then
-    rm -f $output_dir/R_run.log
-fi
+
 end=$(date +%s)
 runtime=$((end-start))
 
@@ -67,7 +65,7 @@ printf "# Quality filtering with dada2.
 Files in 'qualFiltered_out':
 # *_filt.fastq          = quality filtered sequences per sample.
 # seq_count_summary.txt = summary of sequence counts per sample.
-# (*.rds = R objects for dada2, you may delete these files if present).
+# (*.rds = R objects for dada2).
 
 Core command -> 
 filterAndTrim(inputR1, outputR1, maxN = $maxN, maxEE = $maxEE, truncQ = $truncQ, truncLen = $truncLen_R1, maxLen = $maxLen, minLen = $minLen, minQ=$minQ, rm.phix = TRUE, compress = FALSE, multithread = TRUE)

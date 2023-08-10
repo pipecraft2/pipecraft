@@ -10,7 +10,6 @@ readType = Sys.getenv('readType')
 fileFormat= Sys.getenv('fileFormat')
 dataFormat = Sys.getenv('dataFormat')
 workingDir = Sys.getenv('workingDir')
-print(workingDir)
 
 #load  variables
 minOverlap = as.numeric(Sys.getenv('minOverlap'))
@@ -20,6 +19,7 @@ justConcatenate = Sys.getenv('justConcatenate')
 pool = Sys.getenv('pool')
 selfConsist = Sys.getenv('selfConsist')
 qualityType = Sys.getenv('qualityType')
+orient = Sys.getenv('orient')
 
 #"FALSE" or "TRUE" to FALSE or TRUE for dada2
 if (pool == "false" || pool == "FALSE"){
@@ -47,22 +47,26 @@ if (justConcatenate == "true" || justConcatenate == "TRUE"){
     justConcatenate = TRUE
 }
 
+#output_dir
+path_results = Sys.getenv('output_dir')
+
+
+
 ### Denoise
 if (pool != ""){
-    print("#Denoising")
+    cat("| Working directory = ", workingDir)
+    cat("| Performing DADA2 denoising | ")
     #check for output dir and delete if needed
-    if (dir.exists("/input/denoised_assembled.dada2")) {
-        unlink("/input/denoised_assembled.dada2", recursive=TRUE)
+    if (dir.exists(path_results)) {
+        unlink(path_results, recursive=TRUE)
     }
     #create output dir
-    path_results = "/input/denoised_assembled.dada2/"
     dir.create(path_results)
 
     #filtered files path
     filtFs = readRDS(file.path(workingDir, "filtFs.rds"))
     filtRs = readRDS(file.path(workingDir, "filtRs.rds"))
     sample_names = readRDS(file.path(workingDir, "sample_names.rds"))
-    print(filtFs)
 
     #Learn the error rates
     errF = learnErrors(filtFs, multithread = FALSE)
@@ -91,15 +95,16 @@ if (pool != ""){
 
 ### Merge denoised paired-end reads
 if (pool == ""){
-    print("#Merging")
-    path_results = "/input/denoised_assembled.dada2"
+    cat("| Working directory = ", path_results)
+    cat("| Merging data with mergePairs | ")
     #load denoised data
     dadaFs = readRDS(file.path(path_results, "dadaFs.rds"))
     dadaRs = readRDS(file.path(path_results, "dadaRs.rds"))
     derepFs = readRDS(file.path(path_results, "derepFs.rds"))
     derepRs = readRDS(file.path(path_results, "derepRs.rds"))
-    sample_names = readRDS("/input/qualFiltered_out/sample_names.rds")
-    qfilt = readRDS("/input/qualFiltered_out/quality_filtered.rds")
+    getwd()
+    sample_names = readRDS("../qualFiltered_out/sample_names.rds")
+    qfilt = readRDS("../qualFiltered_out/quality_filtered.rds")
 
     #merge paired-end reads
     merge = mergePairs(dadaFs, derepFs, dadaRs, derepRs, 
@@ -111,29 +116,27 @@ if (pool == ""){
     ### WRITE PER-SAMPLE DENOISED and MERGED FASTA FILES
     #make sequence table
     ASV_tab = makeSequenceTable(merge)
-    rownames(ASV_tab) = gsub("_R1_filt.fastq", "", rownames(ASV_tab))
+    rownames(ASV_tab) = gsub("_R1.*", "", rownames(ASV_tab))
     
     #write RDS object
     saveRDS(ASV_tab, (file.path(path_results, "ASVs_table.denoised.rds")))
 
     #sequence headers
     asv_seqs = colnames(ASV_tab)
-    asv_headers = vector(dim(ASV_tab)[2], mode="character")
-    for (i in 1:dim(ASV_tab)[2]) {
-    asv_headers[i] = paste(">ASV", i, sep="_")
-    }
+    asv_headers = openssl::sha1(asv_seqs) #header as sha1
+
     #transpose sequence table
     ASV_tab = t(ASV_tab)
     #add sequences to 1st column
     ASV_tab = cbind(row.names(ASV_tab), ASV_tab)
     colnames(ASV_tab)[1] = "Sequence"
     #row names as sequence headers
-    row.names(ASV_tab) = sub(">", "", asv_headers)
+    row.names(ASV_tab) = asv_headers
 
     #Loop through each sample in the table and write per-sample fasta files
     for (i in 2:length(colnames(ASV_tab))){
         sample_name = colnames(ASV_tab)[i]
-        sample_file = paste(sample_name, "merged_ASVs.fasta", sep = ".") 
+        sample_file = paste(sample_name, "ASVs.fasta", sep = ".") 
         j = 0
         for (abundance in ASV_tab[,i]){
             j = j + 1
@@ -159,7 +162,5 @@ if (pool == ""){
     colnames(seq_count) <- c("input", "qualFiltered", "denoised_R1", "denoised_R2", "merged")
     rownames(seq_count) <- sample_names
     write.table(seq_count, file.path(path_results, "seq_count_summary.txt"), sep = "\t", col.names = NA, row.names = TRUE, quote = FALSE)
+    print("DONE")
 }
-
-#DONE 
-

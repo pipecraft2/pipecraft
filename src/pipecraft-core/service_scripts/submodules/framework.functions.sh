@@ -94,11 +94,12 @@ fi
 ### Check PAIRED-END data and pepare working env ###
 ####################################################
 function prepare_PE_env () {
+echo "output_dir = $output_dir"
 #Remove 'old' output_dir if exist and make new empty one
 if [[ -d $output_dir ]]; then
     rm -rf $output_dir
 fi
-mkdir $output_dir
+mkdir -p $output_dir
 #Make tempdir2, for seq count statistics
 if [[ -d "tempdir2" ]]; then
     rm -rf tempdir2
@@ -151,6 +152,7 @@ done < tempdir2/files_in_folder.txt
 ### Check SINGLE-END data and pepare working env ###
 ####################################################
 function prepare_SE_env () {
+echo "output_dir = $output_dir"
 if [[ -d $output_dir ]]; then
     rm -rf $output_dir
 fi

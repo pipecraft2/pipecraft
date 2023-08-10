@@ -255,7 +255,7 @@ export default new Vuex.Store({
                 name: "pair_filter",
                 items: ["both", "any"],
                 value: "both",
-                disabled: "never",
+                disabled: "single_end",
                 tooltip:
                   "applies only for paired-end data. Option 'both' discards a read-pair when both reads do not contain a primer sequence. Option 'any' discards the read-pair when one of the reads does not contain a primer sequence",
                 type: "select",
@@ -271,7 +271,7 @@ export default new Vuex.Store({
           {
             tooltip: "quality filtering with vsearch",
             scriptName: "quality_filtering_paired_end_vsearch.sh",
-            imageName: "pipecraft/vsearch_dada2:1",
+            imageName: "pipecraft/vsearch_dada2:2",
             serviceName: "vsearch",
             selected: false,
             showExtra: false,
@@ -633,7 +633,7 @@ export default new Vuex.Store({
           {
             tooltip: "quality filtering with DADA2 'filterAndTrim' function",
             scriptName: "quality_filtering_paired_end_dada2.sh",
-            imageName: "pipecraft/vsearch_dada2:1",
+            imageName: "pipecraft/vsearch_dada2:2",
             serviceName: "DADA2",
             selected: false,
             showExtra: false,
@@ -758,7 +758,7 @@ export default new Vuex.Store({
           {
             tooltip: "assemble paired-end reads with vsearch",
             scriptName: "assemble_paired_end_data_vsearch.sh",
-            imageName: "pipecraft/vsearch_dada2:1",
+            imageName: "pipecraft/vsearch_dada2:2",
             serviceName: "vsearch",
             disabled: "single_end",
             selected: false,
@@ -856,7 +856,7 @@ export default new Vuex.Store({
             tooltip:
               "assemble paired-end reads with DADA2 'mergePairs' function. This step performs also dada denoising! Note that only FASTA is outputted!",
             scriptName: "assemble_paired_end_data_dada2.sh",
-            imageName: "pipecraft/vsearch_dada2:1",
+            imageName: "pipecraft/vsearch_dada2:2",
             serviceName: "DADA2_denoise_and_merge",
             selected: false,
             disabled: "single_end",
@@ -962,7 +962,7 @@ export default new Vuex.Store({
             tooltip:
               "tick the checkbox to filter chimeras with vsearch --uchime_denovo",
             scriptName: "chimera_filtering_vsearch.sh",
-            imageName: "pipecraft/vsearch_dada2:1",
+            imageName: "pipecraft/vsearch_dada2:2",
             serviceName: "uchime_denovo",
             selected: false,
             showExtra: false,
@@ -1042,7 +1042,7 @@ export default new Vuex.Store({
             tooltip:
               "tick the checkbox to filter chimeras with vsearch --uchime3_denovo [for denoised sequences]",
             scriptName: "chimera_filtering_vsearch_uchime3.sh",
-            imageName: "pipecraft/vsearch_dada2:1",
+            imageName: "pipecraft/vsearch_dada2:2",
             serviceName: "uchime3_denovo",
             selected: false,
             showExtra: false,
@@ -1243,7 +1243,7 @@ export default new Vuex.Store({
           {
             scriptName: "clustering_vsearch.sh",
             tooltip: "tick the checkbox to cluster reads with vsearch",
-            imageName: "pipecraft/vsearch_dada2:1",
+            imageName: "pipecraft/vsearch_dada2:2",
             serviceName: "vsearch",
             selected: false,
             showExtra: false,
@@ -1345,7 +1345,7 @@ export default new Vuex.Store({
             scriptName: "clustering_unoise.sh",
             tooltip:
               "tick the checkbox to cluster reads with vsearch --cluster_unoise (and optionally remove chimeras with --uchime3_denovo)",
-            imageName: "pipecraft/vsearch_dada2:1",
+            imageName: "pipecraft/vsearch_dada2:2",
             serviceName: "unoise3",
             selected: false,
             showExtra: false,
@@ -1480,7 +1480,7 @@ export default new Vuex.Store({
           {
             tooltip: "postclustering with LULU algorithm",
             scriptName: "lulu.sh",
-            imageName: "pipecraft/vsearch_dada2:1",
+            imageName: "pipecraft/vsearch_dada2:2",
             serviceName: "LULU",
             selected: false,
             showExtra: false,
@@ -1615,7 +1615,7 @@ export default new Vuex.Store({
             tooltip:
               "applies to DADA2 output ASV table (rds). Collaplse identical ASVs or/and filter ASVs by length [SELECT WORKDIR (data format, extension and read types are irrelevant here)]",
             scriptName: "table_filtering_dada2.sh",
-            imageName: "pipecraft/vsearch_dada2:1",
+            imageName: "pipecraft/vsearch_dada2:2",
             serviceName: "DADA2 collapse ASVs",
             disabled: "never",
             selected: false,
@@ -1651,15 +1651,15 @@ export default new Vuex.Store({
               },
               {
                 name: "collapseNoMismatch",
-                value: true,
+                value: false,
                 disabled: "never",
                 tooltip:
-                  "collapses ASVs in an ASV table that are identical up to shifts or length variation, i.e. that have no mismatches or internal indels",
+                  "collapses ASVs in an ASV table that are identical up to shifts or length variation, i.e. that have no mismatches or internal indels (dada2 'collapseNoMismatch')",
                 type: "bool",
               },
               {
                 name: "by_length",
-                value: 250,
+                value: 249,
                 disabled: "never",
                 tooltip:
                   "discard ASVs from the ASV table that are shorter than specified value (in base pairs). Value 0 means OFF; no filtering by length.",
@@ -1777,7 +1777,7 @@ export default new Vuex.Store({
             tooltip:
               "assign taxonomy with DADA2 'assignTaxonomy' function [SELECT WORKDIR that contains only ONE fasta file for the process]",
             scriptName: "taxonomy_dada2.sh",
-            imageName: "pipecraft/vsearch_dada2:1",
+            imageName: "pipecraft/vsearch_dada2:2",
             serviceName: "DADA2 classifier",
             disabled: "never",
             selected: false,
@@ -1828,7 +1828,7 @@ export default new Vuex.Store({
           {
             tooltip: "postclustering with LULU algorithm",
             scriptName: "lulu.sh",
-            imageName: "pipecraft/vsearch_dada2:1",
+            imageName: "pipecraft/vsearch_dada2:2",
             serviceName: "LULU",
             selected: false,
             showExtra: false,
@@ -1961,7 +1961,7 @@ export default new Vuex.Store({
           {
             scriptName: "clustering_vsearch_ASVs2OTUs.sh",
             tooltip: "clustering ASVs to OTUs with vsearch",
-            imageName: "pipecraft/vsearch_dada2:1",
+            imageName: "pipecraft/vsearch_dada2:2",
             serviceName: "ASV_to_OTU",
             selected: false,
             showExtra: false,
@@ -2411,7 +2411,7 @@ export default new Vuex.Store({
             name: "pair_filter",
             items: ["both", "any"],
             value: "both",
-            disabled: "never",
+            disabled: "single_end",
             tooltip:
               "applies only for paired-end data. Option 'both' discards a read-pair when both reads do not contain a primer sequence. Option 'any' discards the read-pair when one of the reads does not contain a primer sequence",
             type: "select",
@@ -2421,7 +2421,7 @@ export default new Vuex.Store({
       {
         tooltip: "assemble paired-end reads with vsearch",
         scriptName: "assemble_paired_end_data_vsearch.sh",
-        imageName: "pipecraft/vsearch_dada2:1",
+        imageName: "pipecraft/vsearch_dada2:2",
         serviceName: "merge reads",
         manualLink:
           "https://pipecraft2-manual.readthedocs.io/en/stable/user_guide.html#merge-vsearch",
@@ -2520,7 +2520,7 @@ export default new Vuex.Store({
       {
         tooltip: "quality filtering with vsearch",
         scriptName: "quality_filtering_paired_end_vsearch.sh",
-        imageName: "pipecraft/vsearch_dada2:1",
+        imageName: "pipecraft/vsearch_dada2:2",
         serviceName: "quality filtering",
         manualLink:
           "https://pipecraft2-manual.readthedocs.io/en/stable/user_guide.html#qfilt-vsearch",
@@ -2628,7 +2628,7 @@ export default new Vuex.Store({
         tooltip:
           "chimera filtering with vsearch. Untick the checkbox to skip this step",
         scriptName: "chimera_filtering_vsearch.sh",
-        imageName: "pipecraft/vsearch_dada2:1",
+        imageName: "pipecraft/vsearch_dada2:2",
         serviceName: "chimera filtering",
         manualLink:
           "https://pipecraft2-manual.readthedocs.io/en/stable/user_guide.html#chimera-filtering",
@@ -2851,7 +2851,7 @@ export default new Vuex.Store({
       {
         tooltip: "cluster reads to OTUs with vsearch",
         scriptName: "clustering_vsearch.sh",
-        imageName: "pipecraft/vsearch_dada2:1",
+        imageName: "pipecraft/vsearch_dada2:2",
         serviceName: "clustering",
         manualLink:
           "https://pipecraft2-manual.readthedocs.io/en/stable/user_guide.html#clustering-vsearch",
@@ -3262,7 +3262,7 @@ export default new Vuex.Store({
             name: "pair_filter",
             items: ["both", "any"],
             value: "both",
-            disabled: "never",
+            disabled: "single_end",
             tooltip:
               "applies only for paired-end data. Option 'both' discards a read-pair when both reads do not contain a primer sequence. Option 'any' discards the read-pair when one of the reads does not contain a primer sequence",
             type: "select",
@@ -3272,7 +3272,7 @@ export default new Vuex.Store({
       {
         tooltip: "assemble paired-end reads with vsearch",
         scriptName: "assemble_paired_end_data_vsearch.sh",
-        imageName: "pipecraft/vsearch_dada2:1",
+        imageName: "pipecraft/vsearch_dada2:2",
         serviceName: "merge reads",
         manualLink:
           "https://pipecraft2-manual.readthedocs.io/en/stable/user_guide.html#merge-vsearch",
@@ -3371,7 +3371,7 @@ export default new Vuex.Store({
       {
         tooltip: "quality filtering with vsearch",
         scriptName: "quality_filtering_paired_end_vsearch.sh",
-        imageName: "pipecraft/vsearch_dada2:1",
+        imageName: "pipecraft/vsearch_dada2:2",
         serviceName: "quality filtering",
         manualLink:
           "https://pipecraft2-manual.readthedocs.io/en/stable/user_guide.html#qfilt-vsearch",
@@ -3620,7 +3620,7 @@ export default new Vuex.Store({
         scriptName: "clustering_unoise.sh",
         tooltip:
           "make zOTUs with vsearch --cluster_unoise (and optionally remove chimeras with --uchime3_denovo)",
-        imageName: "pipecraft/vsearch_dada2:1",
+        imageName: "pipecraft/vsearch_dada2:2",
         serviceName: "unoise3",
         manualLink:
           "https://pipecraft2-manual.readthedocs.io/en/stable/user_guide.html#id22",
@@ -4382,8 +4382,8 @@ export default new Vuex.Store({
         tooltip: "remove primers sequences from the reads",
         scriptName: {
           FORWARD: "cut_primers_paired_end_reads.sh",
-          MIXED: "cut_primers_paired_end_reads.sh",
-          SINGLE_END: "script.sh",
+          MIXED: "cut_mixed_primers_paired_end_reads.sh",
+          SINGLE_END: "cut_primers_single_end_reads.sh",
         },
         imageName: "pipecraft/cutadapt:3.5",
         serviceName: "cut primers",
@@ -4468,7 +4468,7 @@ export default new Vuex.Store({
             name: "pair_filter",
             items: ["both", "any"],
             value: "both",
-            disabled: "never",
+            disabled: "single_end",
             tooltip:
               "applies only for paired-end data. Option 'both' discards a read-pair when both reads do not contain a primer sequence. Option 'any' discards the read-pair when one of the reads does not contain a primer sequence",
             type: "select",
@@ -4478,11 +4478,11 @@ export default new Vuex.Store({
       {
         tooltip: "quality filtering with DADA2 'filterAndTrim' function",
         scriptName: {
-          FORWARD: "cut_primers_paired_end_reads.sh",
-          MIXED: "cut_primers_paired_end_reads.sh",
-          SINGLE_END: "script.sh",
+          FORWARD: "quality_filtering_paired_end_dada2.sh",
+          MIXED: "quality_filtering_paired_end_dada2_mixed.sh",
+          SINGLE_END: "quality_filtering_single_end_dada2.sh",
         },
-        imageName: "pipecraft/vsearch_dada2:1",
+        imageName: "pipecraft/vsearch_dada2:2",
         serviceName: "quality filtering",
         manualLink:
           "https://pipecraft2-manual.readthedocs.io/en/stable/user_guide.html#quality-filtering",
@@ -4602,8 +4602,12 @@ export default new Vuex.Store({
       },
       {
         tooltip: "select the denoising options for DADA2 'dada' function",
-        scriptName: "assemble_paired_end_data_dada2_wf.sh",
-        imageName: "pipecraft/vsearch_dada2:1",
+        scriptName: {
+          FORWARD: "assemble_paired_end_data_dada2_wf.sh",
+          MIXED: "assemble_paired_end_data_dada2_mixed_wf.sh",
+          SINGLE_END: "XXX.sh",
+        },
+        imageName: "pipecraft/vsearch_dada2:2",
         serviceName: "denoise",
         manualLink:
           "https://pipecraft2-manual.readthedocs.io/en/stable/user_guide.html#dada2-denoise",
@@ -4643,8 +4647,12 @@ export default new Vuex.Store({
       {
         tooltip:
           "assemble paired-end reads (R1 and R2) with DADA2 'mergePairs' function",
-        scriptName: "assemble_paired_end_data_dada2_wf.sh",
-        imageName: "pipecraft/vsearch_dada2:1",
+        scriptName: {
+            FORWARD: "assemble_paired_end_data_dada2_wf.sh",
+            MIXED: "assemble_paired_end_data_dada2_mixed_wf.sh",
+            SINGLE_END: "XXX.sh",
+        },
+        imageName: "pipecraft/vsearch_dada2:2",
         serviceName: "merge Pairs",
         manualLink:
           "https://pipecraft2-manual.readthedocs.io/en/stable/user_guide.html#assemble-paired-end-reads",
@@ -4690,8 +4698,12 @@ export default new Vuex.Store({
       },
       {
         tooltip: "remove chimeras with DADA2 'removeBimeraDenovo' function",
-        scriptName: "chimera_filtering_dada2_wf.sh",
-        imageName: "pipecraft/vsearch_dada2:1",
+        scriptName: {
+          FORWARD: "chimera_filtering_dada2_wf.sh",
+          MIXED: "chimera_filtering_dada2_mixed_wf.sh",
+          SINGLE_END: "XXX.sh",
+        },
+        imageName: "pipecraft/vsearch_dada2:2",
         serviceName: "chimera filtering",
         manualLink:
           "https://pipecraft2-manual.readthedocs.io/en/stable/user_guide.html#chimera-filtering",
@@ -4714,7 +4726,7 @@ export default new Vuex.Store({
       {
         tooltip: "Collaplse identical ASVs or/and filter ASVs by length",
         scriptName: "table_filtering_dada2_wf.sh",
-        imageName: "pipecraft/vsearch_dada2:1",
+        imageName: "pipecraft/vsearch_dada2:2",
         serviceName: "filter ASV table",
         manualLink:
           "https://pipecraft2-manual.readthedocs.io/en/stable/user_guide.html#dada2-table-filtering",
@@ -4743,15 +4755,15 @@ export default new Vuex.Store({
         Inputs: [
           {
             name: "collapseNoMismatch",
-            value: true,
+            value: false,
             disabled: "never",
             tooltip:
-              "collapses ASVs that are identical up to shifts or length variation, i.e. that have no mismatches or internal indels",
+              "collapses ASVs that are identical up to shifts or length variation, i.e. that have no mismatches or internal indels (dada2 'collapseNoMismatch')",
             type: "bool",
           },
           {
             name: "by_length",
-            value: 250,
+            value: 249,
             disabled: "never",
             tooltip:
               "discard ASVs from the ASV table that are shorter than specified value (in base pairs). Value 0 means OFF, no filtering by length",
@@ -4764,7 +4776,7 @@ export default new Vuex.Store({
         tooltip:
           "assign taxonomy with DADA2 'assignTaxonomy' function against a selected database. Untick the checkbox to skip this step",
         scriptName: "taxonomy_dada2.sh",
-        imageName: "pipecraft/vsearch_dada2:1",
+        imageName: "pipecraft/vsearch_dada2:2",
         serviceName: "assign Taxonomy",
         manualLink:
           "https://pipecraft2-manual.readthedocs.io/en/stable/user_guide.html#assign-taxonomy-dada2",
