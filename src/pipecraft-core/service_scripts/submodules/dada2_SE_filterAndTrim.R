@@ -59,7 +59,7 @@ getN <- function(x) sum(getUniques(x))
 seq_count <- cbind(qfilt)
 colnames(seq_count) <- c("input", "qualFiltered")
 rownames(seq_count) <- sample_names
-write.table(seq_count, file.path(path_results, "seq_count_summary.txt"), sep = "\t", col.names = NA, row.names = TRUE, quote = FALSE)
+write.csv(seq_count, file.path(path_results, "seq_count_summary.txt"), row.names = TRUE, quote = FALSE)
 
 #save R objects for denoising
 filtered = sort(list.files(path_results, pattern = fileFormat, full.names = TRUE))

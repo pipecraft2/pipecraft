@@ -93,14 +93,6 @@ printf "Total time: $runtime sec.\n\n"
 
 #variables for all services
 echo "workingDir=$output_dir"
-if [[ -z $pool ]]; then
-    echo "fileFormat=fasta"
-else
-    echo "fileFormat=$extension"
-fi
+echo "fileFormat=fasta"
 echo "dataFormat=$dataFormat"
-if [[ -z $pool ]]; then
-    echo "readType=single_end"
-else
-    echo "readType=paired_end"
-fi
+echo "readType=single_end"

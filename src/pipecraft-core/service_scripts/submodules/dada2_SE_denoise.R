@@ -12,11 +12,14 @@ dataFormat = Sys.getenv('dataFormat')
 workingDir = Sys.getenv('workingDir')
 
 #load  variables
-errorEstimationFunction = Sys.getenv('errorEstimationFunction')
-BAND_SIZE = Sys.getenv('BAND_SIZE')
+errorEstFun = Sys.getenv('errorEstimationFunction')
+band_size = as.numeric(Sys.getenv('BAND_SIZE'))
 pool = Sys.getenv('pool')
 selfConsist = Sys.getenv('selfConsist')
 qualityType = Sys.getenv('qualityType')
+
+cat("errorEstimationFunction = ", errorEstFun, "\n")
+cat("BAND_SIZE = ", band_size, "\n\n")
 
 #"FALSE" or "TRUE" to FALSE or TRUE for dada2
 if (pool == "false" || pool == "FALSE"){
@@ -31,10 +34,15 @@ if (selfConsist == "false" || selfConsist == "FALSE"){
 if (selfConsist == "true" || selfConsist == "TRUE"){
     selfConsist = TRUE
 }
+if (errorEstFun == "PacBioErrfun"){
+    errorEstFun = PacBioErrfun
+} else {
+    errorEstFun = loessErrfun
+}
+
 
 #output_dir
 path_results = Sys.getenv('output_dir')
-
 
 ### Denoise
 cat("| Working directory = ", workingDir)
@@ -51,11 +59,11 @@ qFiltered = readRDS(file.path(workingDir, "qFiltered.rds"))
 sample_names = readRDS(file.path(workingDir, "sample_names.rds"))
 
 #Dereplicate
-dereplicated <- derepFastq(qFiltered, verbose = TRUE, qualityType = qualityType)
+dereplicated <- derepFastq(qFiltered, verbose = FALSE, qualityType = qualityType)
 saveRDS(dereplicated, (file.path(path_results, "dereplicated.rds")))
 
 #Learn errors
-errors = learnErrors(dereplicated, errorEstimationFunction = errorEstimationFunction, BAND_SIZE = BAND_SIZE, multithread = TRUE, verbose = TRUE)
+errors = learnErrors(dereplicated, errorEstimationFunction = errorEstFun, BAND_SIZE = band_size, multithread = TRUE, verbose = TRUE)
 saveRDS(errors, file.path(path_results, "errors.rds"))
 
 #Error rate figures
@@ -64,7 +72,7 @@ pdf(file.path(path_results, "Error_rates.pdf"))
 dev.off()
 
 #Denoise
-denoised = dada(dereplicated, err = errors, BAND_SIZE = BAND_SIZE, multithread = TRUE, verbose = TRUE)
+denoised = dada(dereplicated, err = errors, BAND_SIZE = band_size, multithread = TRUE, verbose = TRUE)
 saveRDS(denoised, file.path(path_results, "denoised.rds"))
 
 

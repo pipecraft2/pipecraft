@@ -64,7 +64,7 @@ printf "# Chimera filtering with dada2 removeBimeraDenovo function.
 
 Files in 'chimeraFiltered_out.dada2':
 # *.chimFilt_ASVs.fasta = chimera filtered ASVs per sample. 'Size' denotes the abundance of the ASV sequence  
-# seq_count_summary.txt = summary of sequence and ASV counts per sample
+# seq_count_summary.csv = summary of sequence and ASV counts per sample
 
 Core command -> 
 removeBimeraDenovo(ASV_tab, method = $method, multithread = FALSE, verbose = FALSE)

@@ -52,7 +52,7 @@ saveRDS(ASV_tab.nochim, file.path(path_ASVs, "ASVs_table.denoised.nochim.rds"))
 #seq count summary
 seq_count <- cbind(rowSums(ASV_tab), rowSums(ASV_tab.nochim))
 colnames(seq_count) <- c("input(merged)", "chimeraFiltered")
-write.table(seq_count, file.path(path_results, "seq_count_summary.txt"), sep = "\t", col.names = NA, row.names = TRUE, quote = FALSE)
+write.csv(seq_count, file.path(path_results, "seq_count_summary.txt"), row.names = TRUE, quote = FALSE)
 
 ###format and save ASVs_table.txt and ASVs.fasta
 #sequence headers

@@ -132,6 +132,6 @@ getN <- function(x) sum(getUniques(x))
 seq_count <- cbind(sapply(derepFs, getN), sapply(dadaFs, getN), sapply(dadaRs, getN), sapply(merge, getN))
 colnames(seq_count) <- c("input", "denoised_R1", "denoised_R2", "merged")
 rownames(seq_count) <- sample_names
-write.table(seq_count, file.path(path_results, "seq_count_summary.txt"), sep = "\t", col.names = NA, row.names = TRUE, quote = FALSE)
+write.csv(seq_count, file.path(path_results, "seq_count_summary.csv"), row.names = TRUE, quote = FALSE)
 print("DONE")
 #DONE, proceed with assemble_paired_end_dada2.sh to clean up make readme

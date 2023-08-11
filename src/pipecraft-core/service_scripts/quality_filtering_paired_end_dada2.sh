@@ -138,7 +138,7 @@ printf "# Quality filtering with dada2.
 
 Files in 'qualFiltered_out':
     # *.$extension             = quality filtered sequences per sample.
-    # seq_count_summary.txt    = summary of sequence counts per sample.
+    # seq_count_summary.csv    = summary of sequence counts per sample.
     # *.rds                    = R objects for dada2.
 
 Core command -> 
@@ -158,7 +158,7 @@ Total run time was $runtime sec.
 #Done
 printf "\nDONE\n"
 printf "Data in directory '$output_dir'\n"
-printf "Summary of sequence counts in '$output_dir/seq_count_summary.txt'\n"
+printf "Summary of sequence counts in '$output_dir/seq_count_summary.csv'\n"
 printf "Check README.txt files in output directory for further information about the process.\n"
 printf "Total time: $runtime sec.\n\n"
 

@@ -72,7 +72,7 @@ Files in 'denoised_assembled.dada2':
 # *.ASVs.fasta   = denoised and assembled ASVs per sample. 'Size' denotes the abundance of the ASV sequence.  
 # Error_rates_R1.pdf    = plots for estimated R1 error rates
 # Error_rates_R2.pdf    = plots for estimated R2 error rates
-# seq_count_summary.txt = summary of sequence and ASV counts per sample
+# seq_count_summary.csv = summary of sequence and ASV counts per sample
 # *.rds = R objects for dada2.
 
 Core commands -> 

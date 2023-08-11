@@ -4626,6 +4626,15 @@ export default new Vuex.Store({
             type: "select",
           },
           {
+            name: "BAND_SIZE",
+            value: 16,
+            disabled: "never",
+            tooltip:
+              "default = 16. Banding for Needleman-Wunsch alignments. Default sets here = 16 for Illumina and 32 for PacBio",
+            type: "numeric",
+            rules: [(v) => v >= -1 || "ERROR: specify values >= -1"],
+          },
+          {
             name: "pool",
             items: ["FALSE", "TRUE", "psuedo"],
             value: "FALSE",
@@ -4659,7 +4668,7 @@ export default new Vuex.Store({
         scriptName: {
             FORWARD: "assemble_paired_end_data_dada2_wf.sh",
             MIXED: "assemble_paired_end_data_dada2_mixed_wf.sh",
-            SINGLE_END: "XXX.sh",
+            SINGLE_END: "disabled.sh",
         },
         imageName: "pipecraft/vsearch_dada2:2",
         serviceName: "merge Pairs",
@@ -4710,7 +4719,7 @@ export default new Vuex.Store({
         scriptName: {
           FORWARD: "chimera_filtering_dada2_wf.sh",
           MIXED: "chimera_filtering_dada2_mixed_wf.sh",
-          SINGLE_END: "XXX.sh",
+          SINGLE_END: "chimera_filtering_dada2_wf.sh",
         },
         imageName: "pipecraft/vsearch_dada2:2",
         serviceName: "chimera filtering",

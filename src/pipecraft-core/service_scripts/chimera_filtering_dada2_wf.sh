@@ -46,7 +46,10 @@ fi
 ###Compare 'chimera filtered fasta files per sample' and 'NOT chimera filtered fasta files per sample' to paste out only chimeric sequences per sample
 echo "pasting chimeric seqs"
 #path to denoised-assembled fastas
-path_denoised=$"/input/denoised_assembled.dada2"
+#path_denoised=$"/input/denoised_assembled.dada2"
+path_denoised=$"$workingDir"
+printf "\n path_denoised = $path_denoised \n"
+
 #path to chimera filtered fastas
 path_chim_filt=$"/input/chimeraFiltered_out.dada2"
 
@@ -91,12 +94,12 @@ runtime=$((end-start))
 printf "# Chimera filtering with dada2 removeBimeraDenovo function.
 
 Files in 'chimeraFiltered_out.dada2':
-# *.chimFilt_ASVs.fasta = chimera filtered ASVs per sample. 'Size' denotes the abundance of the ASV sequence  
-# ASVs_table.denoised.rds         = rds formatted denoised ASV table (for DADA2)
-# seq_count_summary.txt = summary of sequence and ASV counts per sample
+# *.chimFilt_ASVs.fasta   = chimera filtered ASVs per sample. 'Size' denotes the abundance of the ASV sequence  
+# ASVs_table.denoised.rds = rds formatted denoised ASV table (for DADA2)
+# seq_count_summary.txt   = summary of sequence and ASV counts per sample
 
 Files in 'chimeraFiltered_out.dada2/chimeras':
-# *.chimeras.fasta      = ASVs per sample that were flagged as chimeras (and thus discarded).
+# *.chimeras.fasta        = ASVs per sample that were flagged as chimeras (and thus discarded).
 
 Core command -> 
 removeBimeraDenovo(ASV_tab, method = $method, multithread = FALSE, verbose = FALSE)
@@ -116,8 +119,8 @@ printf "# Make ASV table with dada2 makeSequenceTable function.
 Number of formed ASVs = $ASV_count
 
 Files in 'ASVs_out.dada2' directory:
-# ASVs_table.txt = ASV distribution table per sample (tab delimited file)
-# ASVs.fasta     = FASTA formated representative ASV sequences (this file is used for taxonomy assignment)
+# ASVs_table.txt                  = ASV distribution table per sample (tab delimited file)
+# ASVs.fasta                      = FASTA formated representative ASV sequences (this file is used for taxonomy assignment)
 # ASVs_table.denoised.nochim.rds  = rds formatted denoised and chimera filtered ASV table (for DADA2)
 
 Core command -> 
