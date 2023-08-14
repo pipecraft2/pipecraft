@@ -209,7 +209,7 @@ export default {
               readType: result.value[1],
               fileFormat: result.value[0].replace("_", "."),
             });
-            this.$store.commit("toggle_PE_SE_scripts", result.value[2]);
+            this.$store.commit("toggle_PE_SE_scripts", result.value[1]);
             dialog
               .showOpenDialog({
                 title: "Select the folder containing your sequnece files",
