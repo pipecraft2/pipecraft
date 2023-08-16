@@ -4666,9 +4666,9 @@ export default new Vuex.Store({
         tooltip:
           "assemble paired-end reads (R1 and R2) with DADA2 'mergePairs' function",
         scriptName: {
-            FORWARD: "assemble_paired_end_data_dada2_wf.sh",
-            MIXED: "assemble_paired_end_data_dada2_mixed_wf.sh",
-            SINGLE_END: "disabled.sh",
+          FORWARD: "assemble_paired_end_data_dada2_wf.sh",
+          MIXED: "assemble_paired_end_data_dada2_mixed_wf.sh",
+          SINGLE_END: "disabled.sh",
         },
         imageName: "pipecraft/vsearch_dada2:2",
         serviceName: "merge Pairs",
@@ -5162,6 +5162,11 @@ export default new Vuex.Store({
         state.DADA2_ASVs[0].selected = "always";
       } else {
         state.DADA2_ASVs[0].selected = false;
+      }
+      if (payload.target.innerText == "SINGLE-END") {
+        state.DADA2_ASVs[3].selected = false;
+      } else {
+        state.DADA2_ASVs[3].selected = "always";
       }
     },
     inputUpdate(state, payload) {
