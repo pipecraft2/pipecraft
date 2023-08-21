@@ -19,7 +19,7 @@
 ##########################################################
 
 #load variables
-extension=$fileFormat
+extension=$fileFormat && export fileFormat 
 mismatches=$"-e ${mismatches}"
 min_length=$"--minimum-length ${min_seq_length}"
 overlap=$"--overlap ${min_overlap}"

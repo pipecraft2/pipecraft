@@ -19,7 +19,7 @@
 ##########################################################
 
 #load variables
-extension=$fileFormat
+extension=$fileFormat && export fileFormat 
 maxee=$"--fastq_maxee ${maxee}"
 maxns=$"--fastq_maxns ${maxNs}"
 minlen=$"--fastq_minlen ${min_length}"

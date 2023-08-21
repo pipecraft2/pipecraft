@@ -19,13 +19,11 @@
 #pigz v2.4
 ##########################################################
 
+# Load variables
 ###############################
-#These variables are for testing (DELETE when implementing to PipeCraft)
-extension=$fileFormat
 mismatches=$mismatches
 fwd_tempprimer=$forward_primers
 rev_tempprimer=$reverse_primers
-###############################
 ###############################
 
 # Source for functions
@@ -43,21 +41,20 @@ first_file_check
 prepare_SE_env
 
 ### Process samples
-for file in *.$extension; do
+for file in *.$fileFormat; do
     ### Make temporary directory for temp files (for each sample)
     if [ -d tempdir ]; then
         rm -rf tempdir
     fi 
     mkdir tempdir
     #Write file name without extension
-    input=$(echo $file | sed -e "s/.$extension//")
-    outfile=$(echo $input | sed -e "s/.$extension//")
+    input=$(echo $file | sed -e "s/.$fileFormat//")
+    outfile=$(echo $input | sed -e "s/.$fileFormat//")
     ### Preparing files for reorienting
     printf "\n___________________________________\n"
     printf "Processing $file ...\n"
 
     #If input is compressed, then decompress (keeping the compressed file, but overwriting if filename exists!)
-        
     check_gz_zip_SE
     ### Check input formats (fastx supported)
     check_extension_fastx
@@ -115,7 +112,7 @@ PCR primer strings were specified in orientation they are used in a PCR; i.e.
 forward primer in 5'-3' orientation and reverse primer in 3'-5' orientation.
 [IF THAT WAS NOT THE CASE, THEN RUN THIS STEP AGAIN!]
 Therefore if a forward primer string was found in a sequence,
-but also a reverse primer sting was found in the same sequence,
+but also a reverse primer string was found in the same sequence,
 the sequence consists of 5'-3' and 3'-5' oriented fragments.
 It is highly likely that this sequence is a chimeric one, and should be therefore removed.
 Usually only very few such 'multi-primer' chimeric sequences are found in the amplicon data sets.\n" > $output_dir/multiprimer_chimeras/README.txt
@@ -124,10 +121,13 @@ Usually only very few such 'multi-primer' chimeric sequences are found in the am
 printf "Files here represent sequences that have been reoriented based on PCR primers.
 Forward primer(s) [has to be 5'-3']: $fwd_tempprimer
 Reverse primer(s) [has to be 3'-5']: $rev_tempprimer
-[If primers were not specified in orientations noted above, please run this step again].\n
-RUNNING THE PROCESS SEVERAL TIMES IN THE SAME DIRECTORY WILL OVERWRITE ALL OUTPUTS!
-\nSummary of sequence counts in 'seq_count_summary.txt'\n
-\n\nTotal run time was $runtime sec.\n\n
+[If primers were not specified in orientations noted above, please run this step again].
+
+
+Summary of sequence counts in 'seq_count_summary.txt'
+
+\Total run time was $runtime sec.
+
 ##################################################################
 ###Third-party applications for this process [PLEASE CITE]:
 #seqkit v2.3.0 for manipulating reads
@@ -139,13 +139,9 @@ RUNNING THE PROCESS SEVERAL TIMES IN THE SAME DIRECTORY WILL OVERWRITE ALL OUTPU
 ##########################################################" > $output_dir/README.txt
 
 printf "\nDONE\n"
-printf "Data in directory '$output_dir'\n"
-printf "Summary of sequence counts in 'seq_count_summary.txt'\n"
-printf "Check README.txt file in $output_dir directory for further information about the process.\n"
 printf "Total time: $runtime sec.\n\n"
 
 #variables for all services
-echo "workingDir=/$output_dir"
+echo "workingDir=$output_dir"
 echo "fileFormat=$extension"
-echo "dataFormat=demultiplexed"
 echo "readType=single_end"

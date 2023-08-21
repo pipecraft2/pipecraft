@@ -69,11 +69,11 @@ fi
 ### Check if files with specified extension exist in the dir ###
 #################################################################
 function first_file_check () {
-count=$(ls -1 *.$extension 2>/dev/null | wc -l)
+count=$(ls -1 *.$fileFormat 2>/dev/null | wc -l)
 if [[ $count != 0 ]]; then 
     :
 else
-    printf '%s\n' "ERROR]: cannot find files with specified extension '$extension'
+    printf '%s\n' "ERROR]: cannot find files with specified extension '$fileFormat'
 Please check the extension of your files and specify again.
 >Quitting" >&2
     end_process
@@ -81,11 +81,11 @@ fi
 }
 
 function first_file_check_clustering () {
-count=$(ls -1 *.$extension 2>/dev/null | wc -l)
+count=$(ls -1 *.$fileFormat 2>/dev/null | wc -l)
 if [[ $count != 0 ]]; then 
     :
 else
-    printf '%s\n' "ERROR]: cannot find input.
+    printf '%s\n' "ERROR]: cannot find input ($fileFormat files).
 Please check and specify again.
 >Quitting" >&2
     end_process
@@ -110,7 +110,7 @@ fi
 mkdir -p tempdir2
 #Make a file where to read R1 and R2 file names for paired-end read processing.
 touch tempdir2/files_in_folder.txt
-for file in *.$extension; do
+for file in *.$fileFormat; do
     echo $file >> tempdir2/files_in_folder.txt
 done
 #Check for empty spaces in the files names. Replace with _
@@ -166,7 +166,7 @@ fi
 mkdir -p tempdir2
 #Make a file where to read file names for single-end read processing.
 touch tempdir2/files_in_folder.txt
-for file in *.$extension; do
+for file in *.$fileFormat; do
     echo $file >> tempdir2/files_in_folder.txt
 done
 #Check for empty spaces in the files names. Replace with _
@@ -183,22 +183,26 @@ done < tempdir2/files_in_folder.txt
 ### Check if single-end files are compressed (decompress and check) ###
 #######################################################################
 #If input is compressed, then decompress (keeping the compressed file, but overwriting if filename exists!)
-    #$extension will be $extension
 function check_gz_zip_SE () {
     #Read user specified input extension
     #If compressed, then decompress (keeping the compressed file, but overwriting if filename exists!)
-    check_compress=$(echo $extension | (awk 'BEGIN{FS=OFS="."} {print $NF}';))
+    check_compress=$(echo $fileFormat | (awk 'BEGIN{FS=OFS="."} {print $NF}';))
     if [[ $check_compress == "gz" ]] || [[ $check_compress == "zip" ]]; then
-        pigz --decompress --force --keep $input.$extension
+        pigz --decompress --force --keep $input.$fileFormat
         #Check errors
         if [[ "$?" != "0" ]]; then
-            printf '%s\n' "ERROR]: $input.$extension decompressing failed! File not compressed as gz or zip.
+            printf '%s\n' "ERROR]: $input.$fileFormat decompressing failed! File not compressed as gz or zip.
 Decompressing other formats is not supported, please decompress manually.
 >Quitting" >&2 
             quit_process      
         fi
-        extension=$(echo $extension | (awk 'BEGIN{FS=OFS="."} {print $(NF-1)}';))
+        extension=$(echo $fileFormat | (awk 'BEGIN{FS=OFS="."} {print $(NF-1)}';))
         export extension
+        export check_compress
+    else 
+        extension=$fileFormat
+        export extension
+        export check_compress
     fi
 }
 
@@ -207,29 +211,33 @@ Decompressing other formats is not supported, please decompress manually.
 ### Check if paired-end files are compressed (decompress and check) ###
 #######################################################################
 #If input is compressed, then decompress (keeping the compressed file, but overwriting if filename exists!)
-    #$extension will be $extension
 function check_gz_zip_PE () {
-check_compress=$(echo $extension | (awk 'BEGIN{FS=OFS="."} {print $NF}';))
+check_compress=$(echo $fileFormat | (awk 'BEGIN{FS=OFS="."} {print $NF}';))
 if [[ $check_compress == "gz" ]] || [[ $check_compress == "zip" ]]; then
-    pigz --decompress --force --keep $inputR1.$extension
+    pigz --decompress --force --keep $inputR1.$fileFormat
     #Check errors
     if [[ "$?" != "0" ]]; then
-        printf '%s\n' "ERROR]: $inputR1.$extension decompressing failed! File not compressed as gz or zip.
+        printf '%s\n' "ERROR]: $inputR1.$fileFormat decompressing failed! File not compressed as gz or zip.
 Decompressing other formats is not supported, please decompress manually.
 >Quitting" >&2
         end_process
     fi
-    pigz --decompress --force --keep $inputR2.$extension
+    pigz --decompress --force --keep $inputR2.$fileFormat
     #Check errors
     if [[ "$?" != "0" ]]; then
-        printf '%s\n' "ERROR]: $inputR2.$extension decompressing failed! File not compressed as gz or zip.
+        printf '%s\n' "ERROR]: $inputR2.$fileFormat decompressing failed! File not compressed as gz or zip.
 Decompressing other formats is not supported, please decompress manually.
 >Quitting" >&2
         end_process
     fi
-    extension=$(echo $extension | (awk 'BEGIN{FS=OFS="."} {print $(NF-1)}';))
+    extension=$(echo $fileFormat | (awk 'BEGIN{FS=OFS="."} {print $(NF-1)}';))
     export extension
-    fi
+    export check_compress
+else 
+    extension=$fileFormat
+    export extension
+    export check_compress
+fi
 }
 
 
@@ -268,7 +276,7 @@ function check_extension_fastx () {
 if [[ $extension == "fasta" ]] || [[ $extension == "fa" ]] || [[ $extension == "fas" ]] || [[ $extension == "fastq" ]] || [[ $extension == "fq" ]]; then
     :
 else
-    printf '%s\n' "ERROR]: $file formatting not supported here!
+    printf '%s\n' "ERROR]: $extension formatting not supported here!
 Supported extensions: fastq, fq, fasta, fas, fa (and gz or zip compressed formats).
 >Quitting" >&2
     end_process
@@ -282,13 +290,12 @@ function check_extension_fastxgz () {
 if [[ $extension == "fasta" ]] || [[ $extension == "fa" ]] || [[ $extension == "fas" ]] || [[ $extension == "fastq" ]] || [[ $extension == "fq" ]] || [[ $extension == "fasta.gz" ]] || [[ $extension == "fa.gz" ]] || [[ $extension == "fas.gz" ]] || [[ $extension == "fastq.gz" ]] || [[ $extension == "fq.gz" ]]; then
     :
 else
-    printf '%s\n' "ERROR]: $file formatting not supported here!
+    printf '%s\n' "ERROR]: $extension formatting not supported here!
 Supported extensions: fastq, fq, fasta, fas, fa (and gz compressed formats).
 >Quitting" >&2
     end_process
 fi
 }
-
 
 #######################################################################
 ### Cleaning up and compiling final stats file, only for demux data ###
@@ -393,7 +400,7 @@ fi
 ### Compile a track reads summary file (seq_count_summary.txt)
 printf "File\tReads\tAssembled_reads\n" > $output_dir/seq_count_summary.txt
 while read LINE; do
-    file1=$(echo $LINE | awk '{print $1}' | sed -e "s/$read_R1.*\.$extension/\.$extension/")
+    file1=$(echo $LINE | awk '{print $1}' | sed -e "s/$read_R1.*\.$fileFormat/\.$extension/")
     count1=$(echo $LINE | awk '{print $2}')
     file2=$(grep "$file1" tempdir2/seq_count_after.txt | awk '{print $1}' | awk 'BEGIN{FS="/"}{print $NF}')
     count2=$(grep "$file1" tempdir2/seq_count_after.txt | awk '{print $2}')
@@ -463,10 +470,6 @@ while read LINE; do
     fi
 done < tempdir2/seq_count_before.txt
 
-#countend=$(date +%s)
-#countruntime=$((countend-countstart))
-#printf "\n Count seqs runtime = $countruntime" >> $output_dir/seq_count_summary.txt
-
 #Delete decompressed files if original set of files were compressed
 if [[ $check_compress == "gz" ]] || [[ $check_compress == "zip" ]]; then
     rm *.$extension
@@ -481,6 +484,9 @@ if [[ $debugger != "true" ]]; then
     if [[ -d "tempdir" ]]; then
         rm -rf tempdir
     fi
+else 
+    #compress files in /tempdir
+    pigz tempdir/*
 fi
 if [[ $debugger != "true" ]]; then
     if [[ -d "tempdir2" ]]; then
@@ -546,7 +552,7 @@ while read LINE; do
     if [[ $? != 0 ]]; then
         printf "$file1\t$count1\t0\n" >> $output_dir/$subdir/seq_count_summary.txt
     fi
-done < tempdir2/seq_count_before.txt && rm -rf tempdir2
+done < tempdir2/seq_count_before.txt #&& rm -rf tempdir2
 
 #Note for counting seqs in FASTQ files
 if [[ $extension == "fastq" ]] || [[ $extension == "fq" ]]; then
@@ -567,6 +573,14 @@ fi
 if [[ $debugger != "true" ]]; then
     if [[ -d "tempdir" ]]; then
         rm -rf tempdir
+    fi
+else 
+    #compress files in /tempdir
+    pigz tempdir/*
+fi
+if [[ $debugger != "true" ]]; then
+    if [[ -d "tempdir2" ]]; then
+        rm -rf tempdir2
     fi
 fi
 }

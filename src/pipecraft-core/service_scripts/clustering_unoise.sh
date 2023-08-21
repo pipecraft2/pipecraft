@@ -22,9 +22,6 @@
 ###############################
 ###############################
 #load variables
-extension=$fileFormat
-
-#mandatory options
 id=$"--id ${similarity_threshold}"              # positive float (0-1)  # OTU clustering if id < 1
 id_float=${similarity_threshold}
 zid=$"--id ${zOTUs_similarity_threshold}"       # positive float (0-1)  # for zOTU table
@@ -64,13 +61,12 @@ prepare_SE_env
 
 ### Pre-process samples
 printf "Checking files ... \n"
-for file in *.$extension; do
+for file in *.$fileFormat; do
     #Read file name; without extension
-    input=$(echo $file | sed -e "s/.$extension//")
+    input=$(echo $file | sed -e "s/.$fileFormat//")
     #If input is compressed, then decompress (keeping the compressed file, but overwriting if filename exists!)
-        
     check_gz_zip_SE
-    ### Check input formats (only fasta, fa, fas supported)
+    ### Check input formats
     check_extension_fastx
 done
 
@@ -82,14 +78,14 @@ if [[ $extension == "fastq" ]] || [[ $extension == "fq" ]]; then
         check_app_error
     done
 
-    was_fastq=$"TRUE"
+    was_fastq=$"true"
     export was_fastq
     extension=$"fasta"
     export extension
 fi
 
 #tempdir
-if [ -d tempdir ]; then
+if [[ -d tempdir ]]; then
     rm -rf tempdir
 fi
 mkdir -p tempdir
@@ -273,7 +269,7 @@ Rlog=$(Rscript /scripts/submodules/ASV_OTU_merging_script.R \
   --asv          tempdir/ASV_table_long.txt \
   --rmsingletons FALSE \
   --output       "$output_dir"/zOTU_table.txt 2>&1)
-echo $Rlog > $output_dir/R_run.log 
+echo $Rlog > tempdir/zOTU_table_creation.log 
 wait
 
 ## Perform OTU clustering (if required, id < 1)
@@ -304,7 +300,7 @@ if [[ $id_float != 1 ]]; then
     --asv          tempdir/ASV_table_long.txt \
     --rmsingletons FALSE \
     --output       "$output_dir"/OTU_table.txt 2>&1)
-  echo $Rlog > $output_dir/R_run.log 
+  echo $Rlog > tempdir/OTU_table_creation.log 
   wait
 fi # end of OTU clustering
 
@@ -321,40 +317,50 @@ fi
 #################################################
 printf "\nCleaning up and compiling final stats files ... \n"
 
-#If input = FASTQ, then mkdir for converted fasta files
-if [[ $was_fastq == "TRUE" ]]; then
-    mkdir -p FASTA
-    mv *.fasta FASTA
-fi
+mv $output_dir/Glob_derep.fasta tempdir/Glob_derep.fasta
+mv $output_dir/Dereplicated_samples.fasta tempdir/Dereplicated_samples.fasta
 
-rm $output_dir/Glob_derep.fasta
-rm $output_dir/Dereplicated_samples.fasta
+#If input = FASTQ, then mkdir for converted fasta files
+if [[ $was_fastq == "true" ]]; then
+    mkdir -p $output_dir/clustering_input_to_FASTA
+    mv *.fasta $output_dir/clustering_input_to_FASTA
+fi
 
 #Delete decompressed files if original set of files were compressed
 if [[ $check_compress == "gz" ]] || [[ $check_compress == "zip" ]]; then
-    rm *.$extension
+  delete_uncompressed=$(echo $fileFormat | (awk 'BEGIN{FS=OFS="."} {print $(NF-1)}';))
+  rm *.$delete_uncompressed
 fi
 
 #Delete tempdirs
-if [ -d tempdir ]; then
-    rm -rf tempdir
-fi
-if [ -d tempdir2 ]; then
-    rm -rf tempdir2
-fi
-if [ -d tempdir_denoize ]; then
-    rm -rf tempdir_denoize
-fi
-if [ -d tempdir_chimera ]; then
-    rm -rf tempdir_chimera
-fi
-#rm
-if [[ -f $output_dir/R_run.log ]]; then
-    rm -f $output_dir/R_run.log
+if [[ $debugger != "true" ]]; then
+  if [[ -d tempdir ]]; then
+      rm -rf tempdir
+  fi
+  if [[ -d tempdir2 ]]; then
+      rm -rf tempdir2
+  fi
+  if [[ -d tempdir_denoize ]]; then
+      rm -rf tempdir_denoize
+  fi
+  if [[ -d tempdir_chimera ]]; then
+      rm -rf tempdir_chimera
+  fi
+  if [[ -f $output_dir/zOTU_table_creation.log ]]; then
+      rm -f $output_dir/zOTU_table_creation.log
+  fi
+  if [[ -f $output_dir/OTU_table_creation.log ]]; then
+      rm -f $output_dir/OTU_table_creation.log
+  fi
+else 
+  #compress files in /tempdir
+  pigz tempdir/*
 fi
 
 #Make README.txt file
 size_zotu=$(grep -c "^>" $output_dir/zOTUs.fasta)
+end=$(date +%s)
+runtime=$((end-start))
 
 printf "Sequence denoising formed $size_zotu zOTUs (zero-radius OTUs).
 
@@ -362,7 +368,9 @@ Files in 'clustering_out' directory:
 # zOTUs.fasta    = FASTA formated denoized sequences (zOTUs.fasta). Headers are renamed according to sha1 algorithm in vsearch.
 # zOTU_table.txt = zOTU distribution table per sample (per input file in the working directory).
 # zOTUs.uc       = uclust-like formatted clustering results for zOTUs
-\n" > $output_dir/README.txt
+
+Core command -> 
+UNOISE: vsearch --cluster_unoise dereplicated_sequences.fasta $strands $minsize $unoise_alpha $simtype $mask $maxaccepts $maxrejects $cores --centroids zOTUs.fasta --uc zOTUs.uc \n\n" > $output_dir/README.txt
 
 ## If additional clustering was performed
 if [[ $id_float != 1 ]]; then
@@ -371,7 +379,9 @@ if [[ $id_float != 1 ]]; then
     # OTUs.fasta    = FASTA formated representative OTU sequences. Headers are renamed according to sha1 algorithm in vsearch.
     # OTU_table.txt = OTU distribution table per sample (per input file in the working directory).
     # OTUs.uc       = uclust-like formatted clustering results for OTUs.
-    \n" >> $output_dir/README.txt
+    
+    Core command -> 
+    clustering: vsearch --cluster_size zOTUs.fasta $id $simtype $strands $mask $maxaccepts $maxrejects $cores --centroids OTUs.fasta --uc OTUs.uc \n\n" >> $output_dir/README.txt
 fi
 
 ## Chimera stats
@@ -379,21 +389,27 @@ if [[ $chimerarm == "true" ]]; then
     printf "Chimera removal step eliminated $chimeras sequences\n" >> $output_dir/README.txt
 fi
 
+## if input was fastq
+if [[ $was_fastq == "true" ]]; then
+  printf "\nInput was fastq; converted those to fasta before clustering. 
+  Converted fasta files in directory 'clustering_input_to_FASTA' \n" >> $output_dir/README.txt
+fi
+
 printf "\nIf samples are denoised individually rather by pooling all samples together, 
 reducing minsize to 4 is more reasonable for higher sensitivity.
 \n" >> $output_dir/README.txt
 
-#Done
-printf "\nDONE\n"
-printf "Data in directory '$output_dir'\n"
-printf "Check README.txt files in output directory for further information about the process.\n"
-
-end=$(date +%s)
-runtime=$((end-start))
-printf "Total time: $runtime sec.\n\n"
+printf "\nTotal run time was $runtime sec.\n\n
+##################################################################
+###Third-party applications for this process [PLEASE CITE]:
+#vsearch v2.23.0 for clustering
+    #citation: Rognes T, Flouri T, Nichols B, Quince C, Mahé F (2016) VSEARCH: a versatile open source tool for metagenomics PeerJ 4:e2584
+    #https://github.com/torognes/vsearch
+#GNU Parallel 20210422 for job parallelisation 
+    #Citation: Tange, O. (2021, April 22). GNU Parallel 20210422 ('Ever Given'). Zenodo. https://doi.org/10.5281/zenodo.4710607
+##########################################################" >> $output_dir/README.txt
 
 #variables for all services
-echo "workingDir=/$output_dir"
+echo "workingDir=$output_dir"
 echo "fileFormat=$extension"
-
 echo "readType=single-end"

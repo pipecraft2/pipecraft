@@ -26,7 +26,7 @@ mkdir -p $output_dir
 
 
 #samples
-extension=$fileFormat # must be gz files -> check with pigz at first !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+extension=$fileFormat && export fileFormat  # must be gz files -> check with pigz at first !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 filename_structure=${filename_structure}
 R1=$(echo $filename_structure | sed 's/R{read}/R1/')
 R2=$(echo $filename_structure | sed 's/R{read}/R2/')

@@ -19,9 +19,8 @@
 #pigz v2.4
 ##########################################################
 
-# Load variables from interface
+# Load variables
 ###############################
-extension=$fileFormat
 mismatches=$mismatches
 fwd_tempprimer=$forward_primers
 rev_tempprimer=$reverse_primers
@@ -31,7 +30,6 @@ rev_tempprimer=$reverse_primers
 source /scripts/submodules/framework.functions.sh
 #output dir
 output_dir=$"/input/reoriented_out"
-
 
 #############################
 ### Start of the workflow ###
@@ -50,14 +48,13 @@ while read LINE; do
     fi 
     mkdir tempdir
     #Write file name without extension
-    inputR1=$(echo $LINE | sed -e "s/.$extension//")
+    inputR1=$(echo $LINE | sed -e "s/.$fileFormat//")
     inputR2=$(echo $inputR1 | sed -e 's/R1/R2/')
     ## Preparing files for reorienting
     printf "\n____________________________________\n"
     printf "Processing $inputR1 and $inputR2 ...\n"
 
     #If input is compressed, then decompress (keeping the compressed file, but overwriting if filename exists!)
-        
     check_gz_zip_PE
     ### Check input formats (only fastq/fq supported)
     check_extension_fastq
@@ -156,7 +153,7 @@ PCR primer strings were specified in orientation they are used in a PCR; i.e.
 forward primer in 5'-3' orientation and reverse primer in 3'-5' orientation.
 [IF THAT WAS NOT THE CASE, THEN RUN THIS STEP AGAIN!]
 Therefore if a forward primer string was found in a sequence,
-but also a reverse primer sting was found in the same sequence,
+but also a reverse primer string was found in the same sequence,
 the sequence consists of 5'-3' and 3'-5' oriented fragments.
 It is highly likely that this sequence is a chimeric one, and should be therefore removed.
 Usually only very few such 'multi-primer' chimeric sequences are found in the amplicon data sets.\n" > $output_dir/multiprimer_chimeras/README.txt
@@ -165,13 +162,15 @@ Usually only very few such 'multi-primer' chimeric sequences are found in the am
 printf "Files here represent sequences that have been reoriented based on PCR primers.
 Forward primer(s) [has to be 5'-3']: $fwd_tempprimer
 Reverse primer(s) [has to be 3'-5']: $rev_tempprimer
-[If primers were not specified in orientations noted above, please run this step again].\n
+[If primers were not specified in orientations noted above, please run this step again].
+
 Output R1 and R2 reads have been synchronized for merging paired-end data. 
-(R1 reads are 5'-3' oriented and R2 reads 3'-5' oriented (for merging paired-end data)).\n
-This does not affect merging paired-end reads using PipeCraft implemented software.\n
-RUNNING THE PROCESS SEVERAL TIMES IN THE SAME DIRECTORY WILL OVERWRITE ALL OUTPUTS!
-\nSummary of sequence counts in 'seq_count_summary.txt'\n
-\n\nTotal run time was $runtime sec.\n\n
+(R1 reads are 5'-3' oriented and R2 reads 3'-5' oriented (for merging paired-end data)).
+
+Summary of sequence counts in 'seq_count_summary.txt'\n
+
+Total run time was $runtime sec.
+
 ##################################################################
 ###Third-party applications for this process [PLEASE CITE]:
 #seqkit v2.3.0 for manipulating reads and synchronizing R1 and R2
@@ -183,13 +182,9 @@ RUNNING THE PROCESS SEVERAL TIMES IN THE SAME DIRECTORY WILL OVERWRITE ALL OUTPU
 ##########################################################" > $output_dir/README.txt
 
 printf "\nDONE\n"
-printf "Data in directory '$output_dir'\n"
-printf "Summary of sequence counts in 'seq_count_summary.txt'\n"
-printf "Check README.txt file in $output_dir directory for further information about the process.\n"
 printf "Total time: $runtime sec.\n\n"
 
 #variables for all services
 echo "workingDir=/$output_dir"
 echo "fileFormat=$extension"
-echo "dataFormat=demultiplexed"
 echo "readType=paired_end"

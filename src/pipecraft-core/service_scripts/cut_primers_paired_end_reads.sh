@@ -19,7 +19,7 @@
 ##########################################################
 
 #load variables
-extension=$fileFormat
+extension=$fileFormat && export fileFormat 
 mismatches=$"-e ${mismatches}"
 min_length=$"--minimum-length ${min_seq_length}"
 overlap=$"--overlap ${min_overlap}"
@@ -276,7 +276,6 @@ printf "Check README.txt files in output directory for further information about
 printf "Total time: $runtime sec.\n\n"
 
 #variables for all services
-echo "workingDir=/$output_dir"
+echo "workingDir=$output_dir"
 echo "fileFormat=$extension"
-
 echo "readType=paired_end"

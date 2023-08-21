@@ -13,7 +13,7 @@
 
 #env variables
 workingDir=${workingDir}
-extension=$fileFormat
+extension=$fileFormat && export fileFormat 
 #load variables
 minBoot=${minBoot}
 tryRC=${tryRC}

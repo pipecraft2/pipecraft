@@ -22,7 +22,7 @@
 
 #env variables
 workingDir=${workingDir}
-extension=$fileFormat
+extension=$fileFormat && export fileFormat 
 #load variables
 match_list_soft=${match_list_soft}
 vsearch_similarity_type=${vsearch_similarity_type}

@@ -19,7 +19,6 @@
 ##########################################################
 
 #load variables
-extension=$fileFormat
 id=$"--id ${pre_cluster}" #float (0-1)
 minuniquesize=$"--minuniquesize ${min_unique_size}" #pos int >0
 denovo=${denovo} #FALSE or TRUE
@@ -41,6 +40,12 @@ else
     database=$db
 fi
 
+#ERROR if both chimera filtering methods = false
+if [[ $reference_based == "undefined" ]] && [[ $denovo == "false" ]]; then
+    printf '%s\n' "ERROR]: None of the methods, denovo or reference based, selected. >Quitting" >&2
+    end_process
+fi
+
 #############################
 ### Start of the workflow ###
 #############################
@@ -52,19 +57,18 @@ prepare_SE_env
 #make output dir for CHIMERAS
 mkdir $output_dir/chimeras
 ### Process samples
-for file in *.$extension; do
+for file in *.$fileFormat; do
     ### Make temporary directory for temp files (for each sample)
-    if [ -d tempdir ]; then
+    if [[ -d tempdir ]]; then
         rm -rf tempdir
     fi 
     mkdir tempdir
     #Read file name; without extension
-    input=$(echo $file | sed -e "s/.$extension//")
+    input=$(echo $file | sed -e "s/.$fileFormat//")
     ## Preparing files for the process
     printf "\n____________________________________\n"
     printf "Processing $input ...\n"
     #If input is compressed, then decompress (keeping the compressed file, but overwriting if filename exists!)
-        
     check_gz_zip_SE
     ### Check input formats (fastq/fasta supported)
     check_extension_fastx
@@ -77,7 +81,7 @@ for file in *.$extension; do
 
         extension=$"fasta"
         export extension
-        was_fastq=$"TRUE"
+        was_fastq=$"true"
         export was_fastq
     fi
 
@@ -127,9 +131,9 @@ for file in *.$extension; do
             check_app_error
 
             #If input was fastq, then move all converted FASTA files to $output_dir/FASTA
-            if [[ $was_fastq == "TRUE" ]]; then
-                mkdir -p $output_dir/input_FASTA
-                mv $input.fasta $output_dir/input_FASTA
+            if [[ $was_fastq == "true" ]]; then
+                mkdir -p $output_dir/chimeraFilt_input_to_FASTA
+                mv $input.fasta $output_dir/chimeraFilt_input_to_FASTA
             fi
         else
             echo "time for ref"
@@ -154,9 +158,9 @@ for file in *.$extension; do
             check_app_error
 
             #If input was fastq, then move all converted FASTA files to $output_dir/FASTA
-            if [[ $was_fastq == "TRUE" ]]; then
-                mkdir -p $output_dir/input_FASTA
-                mv $input.fasta $output_dir/input_FASTA
+            if [[ $was_fastq == "true" ]]; then
+                mkdir -p $output_dir/chimeraFilt_input_to_FASTA
+                mv $input.fasta $output_dir/chimeraFilt_input_to_FASTA
             fi
         fi
     
@@ -172,9 +176,9 @@ for file in *.$extension; do
         check_app_error
 
         #If input was fastq, then move all converted FASTA files to $output_dir/FASTA
-        if [[ $was_fastq == "TRUE" ]]; then
-            mkdir -p $output_dir/input_FASTA
-            mv $input.fasta $output_dir/input_FASTA
+        if [[ $was_fastq == "true" ]]; then
+            mkdir -p $output_dir/chimeraFilt_input_to_FASTA
+            mv $input.fasta $output_dir/chimeraFilt_input_to_FASTA
         fi
     fi
 done
@@ -183,16 +187,21 @@ done
 ### COMPILE FINAL STATISTICS AND README FILES ###
 #################################################
 printf "\nCleaning up and compiling final stats files ...\n"
-if [[ $was_fastq == "TRUE" ]]; then
+if [[ $was_fastq == "true" ]]; then
     #Delete tempdirs
-    if [ -d tempdir ]; then
-        rm -rf tempdir
-    fi
-    if [ -d tempdir2 ]; then
-        rm -rf tempdir2
+    if [[ $debugger != "true" ]]; then
+        if [[ -d tempdir ]]; then
+            rm -rf tempdir
+        fi
+        if [[ -d tempdir2 ]]; then
+            rm -rf tempdir2
+        fi
+    else 
+        #compress files in /tempdir
+        pigz tempdir/*
     fi
     #make stats
-    cd $output_dir/input_FASTA
+    cd $output_dir/chimeraFilt_input_to_FASTA
     mkdir -p tempdir2
     clean_and_make_stats
     cd ..
@@ -205,13 +214,17 @@ runtime=$((end-start))
 #Make README.txt file
 printf "Files in 'chimeraFiltered_out' directory represent chimera filtered sequences.
 Files in 'chimeraFiltered_out/chimeras' directory represent identified putative chimeric sequences.
-If input was FASTQ formatted file(s), then it was converted to FASTA (location = chimeraFiltered_out/input_FASTA), and only FASTA is outputted.
+If input was FASTQ formatted file(s), then it was converted to FASTA (location = chimeraFiltered_out/chimeraFilt_input_to_FASTA), and only FASTA is outputted.
 
-Core commands -> 
-denovo filtering: vsearch --uchime3_denovo input.preclustered.fasta $abskew --sizein --sizeout --fasta_width 0 --chimeras chimeras/output.denovo.chimeras.fasta --nonchimeras output.fasta
-reference based filtering: vsearch --uchime_ref input.fasta $cores --db database_file --sizein --sizeout --fasta_width 0 --chimeras chimeras/output.ref.chimeras.fasta --nonchimeras output.fasta
+Core commands -> \n" > $output_dir/README.txt
+if [[ $denovo == "true" ]]; then
+    printf "denovo filtering: vsearch --uchime3_denovo input.preclustered.fasta $abskew --chimeras chimeras/output.denovo.chimeras.fasta --nonchimeras output.fasta \n" >> $output_dir/README.txt
+fi
+if [[ $reference_based != "undefined" ]]; then
+    printf "reference based filtering: vsearch --uchime_ref input.fasta $cores --db database_file --chimeras chimeras/output.ref.chimeras.fasta --nonchimeras output.fasta \n" >> $output_dir/README.txt
+fi
 
-\nSummary of sequence counts in 'seq_count_summary.txt'\n
+printf "\nSummary of sequence counts in 'seq_count_summary.txt'\n
 \nTotal run time was $runtime sec.\n\n
 ##################################################################
 ###Third-party applications for this process [PLEASE CITE]:
@@ -221,7 +234,7 @@ reference based filtering: vsearch --uchime_ref input.fasta $cores --db database
 #seqkit v2.3.0 for converting fastq to fasta (if input was fastq)
     #citation: Shen W, Le S, Li Y, Hu F (2016) SeqKit: A Cross-Platform and Ultrafast Toolkit for FASTA/Q File Manipulation. PLOS ONE 11(10): e0163962. https://doi.org/10.1371/journal.pone.0163962
     #https://bioinf.shenwei.me/seqkit/
-##########################################################" > $output_dir/README.txt
+##########################################################" >> $output_dir/README.txt
 
 #Done
 printf "\nDONE\n"

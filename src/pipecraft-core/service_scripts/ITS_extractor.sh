@@ -27,7 +27,7 @@
 ##########################################################
 
 #load variables
-extension=$fileFormat
+extension=$fileFormat && export fileFormat 
 organisms=$"-t ${organisms}"
 regions=$"--save_regions ${regions}"
 partial=$"--partial ${partial}"

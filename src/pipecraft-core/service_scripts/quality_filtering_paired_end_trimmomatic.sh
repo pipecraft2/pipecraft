@@ -19,7 +19,6 @@
 ##########################################################
 
 #load variables
-extension=${fileFormat}
 window_size=${window_size}
 required_qual=${required_quality}
 min_length=${min_length}
@@ -56,13 +55,12 @@ prepare_PE_env
 ### Process samples
 while read LINE; do
     #Read in R1 and R2 file names; without extension
-    inputR1=$(echo $LINE | sed -e "s/.$extension//")
+    inputR1=$(echo $LINE | sed -e "s/.$fileFormat//")
     inputR2=$(echo $inputR1 | sed -e 's/R1/R2/')
     ## Preparing files for the process
     printf "\n____________________________________\n"
     printf "Processing $inputR1 and $inputR2 ...\n"
     #If input is compressed, then decompress (keeping the compressed file, but overwriting if filename exists!)
-        
     check_gz_zip_PE
     ### Check input formats (fastq supported)
     check_extension_fastq
@@ -109,7 +107,7 @@ If no files in this folder, then all sequences were passed to files in $output_d
 printf "# Quality filtering with trimmomatic.
 
 Files in 'qualFiltered_out':
-# *.$extension           = quality filtered sequences in FASTQ format.
+# *.$extension              = quality filtered sequences in FASTQ format.
 # seq_count_summary.txt     = summary of sequence counts per sample.
 Files in 'qualFiltered_out/FASTA':
 # *.fasta                   = quality filtered sequences in FASTA format.
@@ -134,13 +132,9 @@ Total run time was $runtime sec.
 
 #Done
 printf "\nDONE\n"
-printf "Data in directory '$output_dir'\n"
-printf "Summary of sequence counts in '$output_dir/seq_count_summary.txt'\n"
-printf "Check README.txt files in output directory for further information about the process.\n"
 printf "Total time: $runtime sec.\n\n"
 
 #variables for all services
 echo "workingDir=$output_dir"
 echo "fileFormat=$extension"
-
 echo "readType=paired_end"
