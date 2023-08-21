@@ -326,7 +326,7 @@ Total run time was $runtime sec.\n\n
 #ITSx v1.1.3 for extracting ITS regions
     #citation: Bengtsson-Palme J., et al., 2013. Improved software detection and extraction of ITS1 and ITS2 from ribosomal ITS sequences of fungi and other eukaryotes for analysis of environmental sequencing data. Methods in Ecology and Evolution 4, 914-919.
     #microbiology.se/software/itsx/
-#seqkit v2.0.0 for converting fastq to fasta (if input was fastq)
+#seqkit v2.3.0 for converting fastq to fasta (if input was fastq)
     #citation: Shen W, Le S, Li Y, Hu F (2016) SeqKit: A Cross-Platform and Ultrafast Toolkit for FASTA/Q File Manipulation. PLOS ONE 11(10): e0163962. https://doi.org/10.1371/journal.pone.0163962
     #https://bioinf.shenwei.me/seqkit/
 #mothur 1.46.1 for unique and deunique sequences prior and after extraction
@@ -348,5 +348,5 @@ else
     echo "workingDir=$output_dir"
 fi
 echo "fileFormat=$extension"
-echo "dataFormat=$dataFormat"
+
 echo "readType=single_end"

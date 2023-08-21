@@ -871,14 +871,14 @@ export default new Vuex.Store({
                   "Denoising option. If pool = TRUE, the algorithm will pool together all samples prior to sample inference. Pooling improves the detection of rare variants, but is computationally more expensive. If pool = 'pseudo', the algorithm will perform pseudo-pooling between individually processed samples. This argument has no effect if only 1 sample is provided, and pool does not affect error rates, which are always estimated from pooled observations across samples",
                 type: "select",
               },
-              {
-                name: "selfConsist",
-                disabled: "never",
-                value: false,
-                tooltip:
-                  "Denoising option. If selfConsist = TRUE, the algorithm will alternate between sample inference and error rate estimation until convergence",
-                type: "bool",
-              },
+              // {
+              //   name: "selfConsist",
+              //   disabled: "never",
+              //   value: false,
+              //   tooltip:
+              //     "Denoising option. If selfConsist = TRUE, the algorithm will alternate between sample inference and error rate estimation until convergence",
+              //   type: "bool",
+              // },
               {
                 name: "qualityType",
                 items: ["Auto", "FastqQuality"],
@@ -1960,7 +1960,7 @@ export default new Vuex.Store({
           },
           {
             scriptName: "clustering_vsearch_ASVs2OTUs.sh",
-            tooltip: "clustering ASVs to OTUs with vsearch",
+            tooltip: "clustering ASVs to OTUs with vsearch; and making an OTU table",
             imageName: "pipecraft/vsearch_dada2:2",
             serviceName: "ASV_to_OTU",
             selected: false,
@@ -4383,7 +4383,7 @@ export default new Vuex.Store({
         scriptName: {
           FORWARD: "cut_primers_paired_end_reads.sh",
           MIXED: "cut_mixed_primers_paired_end_reads.sh",
-          SINGLE_END: "cut_primers_single_end_reads.sh",
+          SINGLE_END: "cut_primers_single_end_dada2.sh",
         },
         imageName: "pipecraft/cutadapt:3.5",
         serviceName: "cut primers",
@@ -4614,17 +4614,7 @@ export default new Vuex.Store({
         selected: "always",
         disabled: "never",
         showExtra: false,
-        extraInputs: [],
-        Inputs: [
-          {
-            name: "errorEstimationFunction",
-            items: ["PacBioErrfun", "loessErrfun"],
-            value: "PacBioErrfun",
-            disabled: "never",
-            tooltip:
-              "'loessErrfun' for Illumina data; 'PacBioErrfun' for PacBio data",
-            type: "select",
-          },
+        extraInputs: [
           {
             name: "BAND_SIZE",
             value: 16,
@@ -4635,6 +4625,52 @@ export default new Vuex.Store({
             rules: [(v) => v >= -1 || "ERROR: specify values >= -1"],
           },
           {
+            name: "OMEGA_A",
+            value: 1e-40,
+            disabled: "never",
+            tooltip:
+              "default = 1e-40. Denoising setting; see DADA2 'setDadaOpt()' for detalis. Default value  is a conservative setting to avoid making false positive inferences, but comes at the cost of reducing the ability to identify some rare variants",
+            type: "numeric",
+            rules: [(v) => v >= -1 || "ERROR: specify values >= -1"],
+          },
+          {
+            name: "OMEGA_P",
+            value: 1e-4,
+            disabled: "never",
+            tooltip:
+              "default = 1e-4 (0.0001). Denoising setting; see DADA2 'setDadaOpt()' for detalis",
+            type: "numeric",
+            rules: [(v) => v >= -1 || "ERROR: specify values >= -1"],
+          },
+          {
+            name: "OMEGA_C",
+            value: 1e-40,
+            disabled: "never",
+            tooltip:
+              "default = 1e-40. Denoising setting; see DADA2 'setDadaOpt()' for detalis",
+            type: "numeric",
+            rules: [(v) => v >= -1 || "ERROR: specify values >= -1"],
+          },
+          {
+            name: "DETECT_SINGLETONS",
+            disabled: "never",
+            value: false,
+            tooltip:
+              "Default = FALSE. Denoising setting; see DADA2 'setDadaOpt()' for detalis. If set to TRUE, this removes the requirement for at least two reads with the same sequences to exist in order for a new ASV to be detected",
+            type: "bool",
+          },
+        ],
+        Inputs: [
+          {
+            name: "errorEstFun",
+            items: ["PacBioErrfun", "loessErrfun"],
+            value: "PacBioErrfun",
+            disabled: "never",
+            tooltip:
+              "DADA2 errorEstimationFunction. 'loessErrfun' for Illumina data; 'PacBioErrfun' for PacBio data",
+            type: "select",
+          },
+          {
             name: "pool",
             items: ["FALSE", "TRUE", "psuedo"],
             value: "FALSE",
@@ -4643,14 +4679,14 @@ export default new Vuex.Store({
               "if pool = TRUE, the algorithm will pool together all samples prior to sample inference. Pooling improves the detection of rare variants, but is computationally more expensive. If pool = 'pseudo', the algorithm will perform pseudo-pooling between individually processed samples. This argument has no effect if only 1 sample is provided, and pool does not affect error rates, which are always estimated from pooled observations across samples",
             type: "select",
           },
-          {
-            name: "selfConsist",
-            disabled: "never",
-            value: false,
-            tooltip:
-              "if selfConsist = TRUE, the algorithm will alternate between sample inference and error rate estimation until convergence",
-            type: "bool",
-          },
+          // {
+          //   name: "selfConsist",
+          //   disabled: "never",
+          //   value: false,
+          //   tooltip:
+          //     "if selfConsist = TRUE, the algorithm will alternate between sample inference and error rate estimation until convergence",
+          //   type: "bool",
+          // },
           {
             name: "qualityType",
             items: ["Auto", "FastqQuality"],

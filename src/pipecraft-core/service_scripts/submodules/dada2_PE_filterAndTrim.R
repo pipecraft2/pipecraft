@@ -5,6 +5,9 @@
 #load dada2
 library('dada2')
 
+#print DADA2 version
+cat("DADA2 version = ", base::toString(packageVersion("dada2")), "\n")
+
 #load env variables
 fileFormat = Sys.getenv('fileFormat')
 

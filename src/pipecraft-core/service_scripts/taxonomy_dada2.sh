@@ -5,7 +5,7 @@
 
 ##########################################################
 ###Third-party applications:
-#dada2 v1.20
+#dada2 v1.26
     #citation: Callahan, B., McMurdie, P., Rosen, M. et al. (2016) DADA2: High-resolution sample inference from Illumina amplicon data. Nat Methods 13, 581–583. https://doi.org/10.1038/nmeth.3869
     #Distributed under the GNU LESSER GENERAL PUBLIC LICENSE
     #https://github.com/benjjneb/dada2
@@ -23,6 +23,7 @@ dada2_database=${dada2_database}
 source /scripts/submodules/framework.functions.sh
 #output dir
 output_dir=$"/input/taxonomy_out.dada2"
+export output_dir
 
 #start time
 start=$(date +%s)
@@ -90,7 +91,7 @@ Total run time was $runtime sec.
 
 ##########################################################
 ###Third-party applications [PLEASE CITE]:
-#dada2 v1.20
+#dada2 v1.26
     #citation: Callahan, B., McMurdie, P., Rosen, M. et al. (2016) DADA2: High-resolution sample inference from Illumina amplicon data. Nat Methods 13, 581-583. https://doi.org/10.1038/nmeth.3869
 ##################################################################" > $output_dir/README.txt
 
@@ -103,5 +104,5 @@ printf "Total time: $runtime sec.\n\n"
 #variables for all services
 echo "workingDir=$output_dir"
 echo "fileFormat=$extension"
-echo "dataFormat=$dataFormat"
+
 echo "readType=single_end"

@@ -5,7 +5,7 @@
 
 ##########################################################
 ###Third-party applications:
-#vsearch v2.22.1
+#vsearch v2.23.0
     #citation: Rognes T, Flouri T, Nichols B, Quince C, Mahé F (2016) VSEARCH: a versatile open source tool for metagenomics PeerJ 4:e2584
     #Copyright (C) 2014-2021, Torbjorn Rognes, Frederic Mahe and Tomas Flouri
     #Distributed under the GNU General Public License version 3 by the Free Software Foundation
@@ -127,7 +127,7 @@ Total run time was $runtime sec.
 
 ##################################################################
 ###Third-party applications for this process [PLEASE CITE]:
-#vsearch v2.18.0 for quality filtering
+#vsearch v2.23.0 for quality filtering
     #citation: Rognes T, Flouri T, Nichols B, Quince C, Mahé F (2016) VSEARCH: a versatile open source tool for metagenomics PeerJ 4:e2584
     #https://github.com/torognes/vsearch
 ##########################################################" > $output_dir/README.txt
@@ -142,5 +142,5 @@ printf "Total time: $runtime sec.\n\n"
 #variables for all services
 echo "workingDir=$output_dir"
 echo "fileFormat=$extension"
-echo "dataFormat=$dataFormat"
+
 echo "readType=single_end"

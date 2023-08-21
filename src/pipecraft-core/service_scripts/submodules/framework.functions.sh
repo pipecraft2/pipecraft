@@ -6,11 +6,13 @@
 ### Quit process upon ERROR ###
 ###############################
 function end_process () {
-if [[ -d "tempdir" ]]; then
-    rm -rf tempdir
-fi
-if [[ -d "tempdir2" ]]; then
-    rm -rf tempdir2
+if [[ $debugger != "true" ]]; then
+    if [[ -d "tempdir" ]]; then
+        rm -rf tempdir
+    fi
+    if [[ -d "tempdir2" ]]; then
+        rm -rf tempdir2
+    fi
 fi
 exit 1
 }
@@ -77,6 +79,7 @@ Please check the extension of your files and specify again.
     end_process
 fi 
 }
+
 function first_file_check_clustering () {
 count=$(ls -1 *.$extension 2>/dev/null | wc -l)
 if [[ $count != 0 ]]; then 
@@ -353,8 +356,10 @@ if [[ $check_compress == "gz" ]] || [[ $check_compress == "zip" ]]; then
     rm *.$extension
 fi
 #remove tempdir2
-if [[ -d "tempdir2" ]]; then
-    rm -rf tempdir2
+if [[ $debugger != "true" ]]; then
+    if [[ -d "tempdir2" ]]; then
+        rm -rf tempdir2
+    fi
 fi
 }
 
@@ -408,8 +413,10 @@ if [[ $check_compress == "gz" ]] || [[ $check_compress == "zip" ]]; then
 fi
 
 #Delete tempdir2
-if [[ -d "tempdir2" ]]; then
-    rm -rf tempdir2
+if [[ $debugger != "true" ]]; then
+    if [[ -d "tempdir2" ]]; then
+        rm -rf tempdir2
+    fi
 fi
 }
 
@@ -470,11 +477,15 @@ if [[ $mothur_logfiles != 0 ]]; then
     rm mothur.*.logfile 
 fi
 #Delete tempdir
-if [[ -d "tempdir" ]]; then
-    rm -rf tempdir
+if [[ $debugger != "true" ]]; then
+    if [[ -d "tempdir" ]]; then
+        rm -rf tempdir
+    fi
 fi
-if [[ -d "tempdir2" ]]; then
-    rm -rf tempdir2
+if [[ $debugger != "true" ]]; then
+    if [[ -d "tempdir2" ]]; then
+        rm -rf tempdir2
+    fi
 fi
 }
 
@@ -553,8 +564,10 @@ if [[ $mothur_logfiles != 0 ]]; then
     rm mothur.*.logfile 
 fi
 #Delete tempdir
-if [[ -d "tempdir" ]]; then
-    rm -rf tempdir
+if [[ $debugger != "true" ]]; then
+    if [[ -d "tempdir" ]]; then
+        rm -rf tempdir
+    fi
 fi
 }
 

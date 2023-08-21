@@ -6,7 +6,7 @@
 
 ##########################################################
 ###Third-party applications:
-#cutadapt v3.5
+#cutadapt v4.4
     #citation: Martin, Marcel (2011) Cutadapt removes adapter sequences from high-throughput sequencing reads. EMBnet.journal, 17(1), 10-12.
     #Distributed under the MIT license
     #https://cutadapt.readthedocs.io/en/stable/index.html
@@ -173,7 +173,7 @@ Total run time was $runtime sec.
 
 ##################################################################
 ###Third-party applications for this process [PLEASE CITE]:
-#cutadapt v3.5 for demultiplexing
+#cutadapt v4.4 for demultiplexing
     #citation: Martin, Marcel (2011) Cutadapt removes adapter sequences from high-throughput sequencing reads. EMBnet.journal, 17(1), 10-12.
     #https://cutadapt.readthedocs.io/en/stable/index.html
 #seqkit v2.3.0 for validating indexes file

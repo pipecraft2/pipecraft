@@ -5,7 +5,7 @@
 
 ##########################################################
 ###Third-party applications:
-#dada2 v1.20
+#dada2 v1.26
     #citation: Callahan, B., McMurdie, P., Rosen, M. et al. (2016) DADA2: High-resolution sample inference from Illumina amplicon data. Nat Methods 13, 581–583. https://doi.org/10.1038/nmeth.3869
     #Copyright (C) 2007 Free Software Foundation, Inc.
     #Distributed under the GNU LESSER GENERAL PUBLIC LICENSE
@@ -73,7 +73,7 @@ filterAndTrim(inputR1, outputR1, maxN = $maxN, maxEE = $maxEE, truncQ = $truncQ,
 Total run time was $runtime sec.
 ##################################################################
 ###Third-party applications for this process [PLEASE CITE]:
-#dada2 v1.20
+#dada2 v1.26
     #citation: Callahan, B., McMurdie, P., Rosen, M. et al. (2016) DADA2: High-resolution sample inference from Illumina amplicon data. Nat Methods 13, 581-583. https://doi.org/10.1038/nmeth.3869
     #https://github.com/benjjneb/dada2
 ########################################################" > $output_dir/README.txt
@@ -88,6 +88,6 @@ printf "Total time: $runtime sec.\n\n"
 #variables for all services
 echo "workingDir=$output_dir"
 echo "fileFormat=$extension"
-echo "dataFormat=$dataFormat"
+
 echo "readType=single_end"
 

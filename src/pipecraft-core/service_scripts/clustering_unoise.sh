@@ -7,7 +7,7 @@
 
 ##########################################################
 ###Third-party applications:
-#vsearch v2.22.1
+#vsearch v2.23.0
     #citation: Rognes T, Flouri T, Nichols B, Quince C, Mahé F (2016) VSEARCH: a versatile open source tool for metagenomics PeerJ 4:e2584
     #Copyright (C) 2014-2021, Torbjorn Rognes, Frederic Mahe and Tomas Flouri
     #Distributed under the GNU General Public License version 3 by the Free Software Foundation
@@ -100,7 +100,7 @@ derep_rename () {
   samp_name=$(basename $1 | awk 'BEGIN{FS="."} {$NF=""; print $0}' | sed 's/ //g')
   vsearch \
     --derep_fulllength "$1" \
-    --relabel_md5 \
+    --relabel_sha1 \
     --output - \
     --fasta_width 0 \
     --sizein --sizeout \
@@ -359,7 +359,7 @@ size_zotu=$(grep -c "^>" $output_dir/zOTUs.fasta)
 printf "Sequence denoising formed $size_zotu zOTUs (zero-radius OTUs).
 
 Files in 'clustering_out' directory:
-# zOTUs.fasta    = FASTA formated denoized sequences (zOTUs.fasta)
+# zOTUs.fasta    = FASTA formated denoized sequences (zOTUs.fasta). Headers are renamed according to sha1 algorithm in vsearch.
 # zOTU_table.txt = zOTU distribution table per sample (per input file in the working directory).
 # zOTUs.uc       = uclust-like formatted clustering results for zOTUs
 \n" > $output_dir/README.txt
@@ -368,7 +368,7 @@ Files in 'clustering_out' directory:
 if [[ $id_float != 1 ]]; then
     size_otu=$(grep -c "^>" $output_dir/OTUs.fasta)
     printf "Additional clustering of zOTUs at $id similarity threshold formed $size_otu OTUs.
-    # OTUs.fasta = FASTA formated representative OTU sequences.
+    # OTUs.fasta    = FASTA formated representative OTU sequences. Headers are renamed according to sha1 algorithm in vsearch.
     # OTU_table.txt = OTU distribution table per sample (per input file in the working directory).
     # OTUs.uc       = uclust-like formatted clustering results for OTUs.
     \n" >> $output_dir/README.txt
@@ -395,5 +395,5 @@ printf "Total time: $runtime sec.\n\n"
 #variables for all services
 echo "workingDir=/$output_dir"
 echo "fileFormat=$extension"
-echo "dataFormat=$dataFormat"
+
 echo "readType=single-end"

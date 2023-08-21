@@ -175,5 +175,5 @@ printf "Total time: $runtime sec.\n\n"
 #variables for all services
 echo "workingDir=$output_dir"
 echo "fileFormat=$extension"
-echo "dataFormat=$dataFormat"
+
 echo "readType=single_end"

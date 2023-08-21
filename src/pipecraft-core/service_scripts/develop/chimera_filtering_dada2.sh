@@ -5,12 +5,12 @@
 
 ##########################################################
 ###Third-party applications:
-#dada2 v1.20
+#dada2 v1.26
     #citation: Callahan, B., McMurdie, P., Rosen, M. et al. (2016) DADA2: High-resolution sample inference from Illumina amplicon data. Nat Methods 13, 581–583. https://doi.org/10.1038/nmeth.3869
     #Copyright (C) 2007 Free Software Foundation, Inc.
     #Distributed under the GNU LESSER GENERAL PUBLIC LICENSE
     #https://github.com/benjjneb/dada2
-#seqkit v2.0.0
+#seqkit v2.3.0
     #citation: Shen W, Le S, Li Y, Hu F (2016) SeqKit: A Cross-Platform and Ultrafast Toolkit for FASTA/Q File Manipulation. PLOS ONE 11(10): e0163962. https://doi.org/10.1371/journal.pone.0163962
     #Distributed under the MIT License
     #Copyright © 2016-2019 Wei Shen, 2019 Oxford Nanopore Technologies.

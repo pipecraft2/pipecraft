@@ -5,6 +5,9 @@
 #load dada2
 library('dada2')
 
+#print DADA2 version
+cat("DADA2 version = ", base::toString(packageVersion("dada2")), "\n")
+
 #load env variables
 readType = Sys.getenv('readType')
 fileFormat= Sys.getenv('fileFormat')
@@ -12,11 +15,16 @@ dataFormat = Sys.getenv('dataFormat')
 workingDir = Sys.getenv('workingDir')
 
 #load  variables
-errorEstFun = Sys.getenv('errorEstimationFunction')
+errorEstFun = Sys.getenv('errorEstFun')
 band_size = as.numeric(Sys.getenv('BAND_SIZE'))
 pool = Sys.getenv('pool')
-selfConsist = Sys.getenv('selfConsist')
 qualityType = Sys.getenv('qualityType')
+#setDadaOpt() settings
+omegaa = as.numeric(Sys.getenv('OMEGA_A')
+omegap = as.numeric(Sys.getenv('OMEGA_P')
+omegac= as.numeric(Sys.getenv('OMEGA_C')
+detect_singletons = Sys.getenv('DETECT_SINGLETONS')
+
 
 cat("errorEstimationFunction = ", errorEstFun, "\n")
 cat("BAND_SIZE = ", band_size, "\n\n")
@@ -28,18 +36,20 @@ if (pool == "false" || pool == "FALSE"){
 if (pool == "true" || pool == "TRUE"){
     pool = TRUE
 }
-if (selfConsist == "false" || selfConsist == "FALSE"){
-    selfConsist = FALSE
-}
-if (selfConsist == "true" || selfConsist == "TRUE"){
-    selfConsist = TRUE
-}
 if (errorEstFun == "PacBioErrfun"){
     errorEstFun = PacBioErrfun
 } else {
     errorEstFun = loessErrfun
 }
+if (detect_singletons == "false" || detect_singletons == "FALSE"){
+    detect_singletons = FALSE
+}
+if (detect_singletons == "true" || detect_singletons == "TRUE"){
+    detect_singletons = TRUE
+}
 
+#Set DADA options
+setDadaOpt(OMEGA_A = omegaa, OMEGA_P = omegap, OMEGA_C = omegac, DETECT_SINGLETONS = detect_singletons, BAND_SIZE = band_size)
 
 #output_dir
 path_results = Sys.getenv('output_dir')
