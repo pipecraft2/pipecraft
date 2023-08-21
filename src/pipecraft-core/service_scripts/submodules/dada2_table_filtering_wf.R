@@ -14,6 +14,10 @@ path_out="/input/ASVs_out.dada2/filtered"
 
 #load dada2
 library('dada2')
+
+#print DADA2 version
+cat("DADA2 version = ", base::toString(packageVersion("dada2")), "\n")
+
 print("### Filtering the ASV table")
 print("")
 

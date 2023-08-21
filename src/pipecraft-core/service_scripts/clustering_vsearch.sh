@@ -6,7 +6,7 @@
 
 ##########################################################
 ###Third-party applications:
-#vsearch v2.22.1
+#vsearch v2.23.0
     #citation: Rognes T, Flouri T, Nichols B, Quince C, Mahé F (2016) VSEARCH: a versatile open source tool for metagenomics PeerJ 4:e2584
     #Copyright (C) 2014-2021, Torbjorn Rognes, Frederic Mahe and Tomas Flouri
     #Distributed under the GNU General Public License version 3 by the Free Software Foundation
@@ -87,13 +87,13 @@ if [ -d tempdir ]; then
 fi
 mkdir -p tempdir
 
-### Rename sequences to md5
+### Rename sequences to sha1
     # and dereplication of individual samples, add sample ID to the header
 derep_rename () {
   samp_name=$(basename $1 | awk 'BEGIN{FS="."} {$NF=""; print $0}' | sed 's/ //g')
   vsearch \
     --derep_fulllength "$1" \
-    --relabel_md5 \
+    --relabel_sha1 \
     --output - \
     --fasta_width 0 \
     --threads 1 \
@@ -213,8 +213,8 @@ runtime=$((end-start))
 printf "Clustering formed $size OTUs.
 
 Files in 'clustering_out' directory:
-# OTUs.fasta    = FASTA formated representative OTU sequences. OTU headers are renamed according to MD5 algorithm in vsearch.
-# OTU_table.txt = OTU distribution table per sample (tab delimited file). OTU headers are renamed according to MD5 algorithm in vsearch.
+# OTUs.fasta    = FASTA formated representative OTU sequences. OTU headers are renamed according to sha1 algorithm in vsearch.
+# OTU_table.txt = OTU distribution table per sample (tab delimited file). OTU headers are renamed according to sha1 algorithm in vsearch.
 # OTUs.uc       = uclust-like formatted clustering results for OTUs.
 
 Core commands -> 
@@ -223,7 +223,7 @@ clustering: vsearch $seqsort dereplicated_sequences.fasta $id $simtype $strands 
 Total run time was $runtime sec.\n\n
 ##################################################################
 ###Third-party applications for this process [PLEASE CITE]:
-#vsearch v2.18.0 for clustering
+#vsearch v2.23.0 for clustering
     #citation: Rognes T, Flouri T, Nichols B, Quince C, Mahé F (2016) VSEARCH: a versatile open source tool for metagenomics PeerJ 4:e2584
     #https://github.com/torognes/vsearch
 #GNU Parallel 20210422 for job parallelisation 
@@ -241,5 +241,4 @@ printf "Total time: $runtime sec.\n\n"
 #variables for all services
 echo "workingDir=$output_dir"
 echo "fileFormat=$extension"
-echo "dataFormat=$dataFormat"
 echo "readType=single_end"

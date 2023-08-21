@@ -134,7 +134,7 @@ export default {
           title: "Debug",
           icon: "mdi-bug",
           tooltip:
-            "Debugging mode, Pipecraft will retain all temporary files while debugger is active",
+            "Green = debugging mode ON; PipeCraft will retain all temporary files",
           action: this.debug,
         },
       ],

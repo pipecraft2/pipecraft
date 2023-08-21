@@ -5,7 +5,7 @@
 
 ##########################################################
 ###Third-party applications:
-#dada2 v1.20
+#dada2 v1.26
     #citation: Callahan, B., McMurdie, P., Rosen, M. et al. (2016) DADA2: High-resolution sample inference from Illumina amplicon data. Nat Methods 13, 581–583. https://doi.org/10.1038/nmeth.3869
     #Copyright (C) 2007 Free Software Foundation, Inc.
     #Distributed under the GNU LESSER GENERAL PUBLIC LICENSE
@@ -165,10 +165,10 @@ for folder in /input/primersCut_out/fwd_orient /input/primersCut_out/rev_orient;
     Total run time was $runtime sec for $output_dir.
     ##################################################################
     ###Third-party applications for this process [PLEASE CITE]:
-    #dada2 v1.20
+    #dada2 v1.26
         #citation: Callahan, B., McMurdie, P., Rosen, M. et al. (2016) DADA2: High-resolution sample inference from Illumina amplicon data. Nat Methods 13, 581-583. https://doi.org/10.1038/nmeth.3869
         #https://github.com/benjjneb/dada2
-    #seqkit v2.0.0 for synchronizing R1 and R2 after filtering (when matchIDs = TRUE)
+    #seqkit v2.3.0 for synchronizing R1 and R2 after filtering (when matchIDs = TRUE)
         #citation: Shen W, Le S, Li Y, Hu F (2016) SeqKit: A Cross-Platform and Ultrafast Toolkit for FASTA/Q File Manipulation. PLOS ONE 11(10): e0163962. https://doi.org/10.1371/journal.pone.0163962
         #https://bioinf.shenwei.me/seqkit/
     ########################################################" > $output_dir/README.txt
@@ -185,6 +185,6 @@ printf "Total time: $runtime sec.\n\n"
 #variables for all services
 echo "workingDir=$output_dir"
 echo "fileFormat=$extension"
-echo "dataFormat=$dataFormat"
+
 echo "readType=paired_end"
 

@@ -1,1 +1,5 @@
+<<<<<<< HEAD
+{"ASV_fasta":"C:/Users/stena/Desktop/testData/ASV_to_OTU/ASVs.fasta","ASV_table":"C:/Users/stena/Desktop/testData/ASV_to_OTU/ASVs_table.txt","similarity_threshold":0.97,"OTU_type":"centroid","strands":"both","remove_singletons":false,"similarity_type":"2","sequence_sorting":"size","centroid_type":"similarity","maxaccepts":1,"mask":"dust","cores":4}
+=======
 {"method":"consensus"}
+>>>>>>> 47d19cc8e3e40fb1f3da34d2420410c5e8a1b746

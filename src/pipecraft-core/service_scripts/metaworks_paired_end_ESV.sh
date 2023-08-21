@@ -451,7 +451,7 @@ printf "Total time: $runtime sec.\n\n"
 #variables for all services
 echo "workingDir=$output_dir"
 echo "fileFormat=fq.gz"
-echo "dataFormat=$dataFormat"
+
 echo "readType=paired_end"
 
 

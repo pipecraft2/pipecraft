@@ -5,6 +5,9 @@
 #load dada2
 library('dada2')
 
+#print DADA2 version
+cat("DADA2 version = ", base::toString(packageVersion("dada2")), "\n")
+
 #load env variables
 readType = Sys.getenv('readType')
 fileFormat= Sys.getenv('fileFormat')
@@ -17,8 +20,14 @@ maxMismatch = as.numeric(Sys.getenv('maxMismatch'))
 trimOverhang = Sys.getenv('trimOverhang')
 justConcatenate = Sys.getenv('justConcatenate')
 pool = Sys.getenv('pool')
-selfConsist = Sys.getenv('selfConsist')
 qualityType = Sys.getenv('qualityType')
+errorEstFun = Sys.getenv('errorEstFun')
+band_size = as.numeric(Sys.getenv('BAND_SIZE'))
+#setDadaOpt() settings
+omegaa = as.numeric(Sys.getenv('OMEGA_A')
+omegap = as.numeric(Sys.getenv('OMEGA_P')
+omegac= as.numeric(Sys.getenv('OMEGA_C')
+detect_singletons = Sys.getenv('DETECT_SINGLETONS')
 
 #"FALSE" or "TRUE" to FALSE or TRUE for dada2
 if (pool == "false" || pool == "FALSE"){
@@ -26,12 +35,6 @@ if (pool == "false" || pool == "FALSE"){
 }
 if (pool == "true" || pool == "TRUE"){
     pool = TRUE
-}
-if (selfConsist == "false" || selfConsist == "FALSE"){
-    selfConsist = FALSE
-}
-if (selfConsist == "true" || selfConsist == "TRUE"){
-    selfConsist = TRUE
 }
 if (trimOverhang == "false" || trimOverhang == "FALSE"){
     trimOverhang = FALSE
@@ -45,16 +48,25 @@ if (trimOverhang == "true" || trimOverhang == "TRUE"){
 if (justConcatenate == "true" || justConcatenate == "TRUE"){
     justConcatenate = TRUE
 }
+if (detect_singletons == "false" || detect_singletons == "FALSE"){
+    detect_singletons = FALSE
+}
+if (detect_singletons == "true" || detect_singletons == "TRUE"){
+    detect_singletons = TRUE
+}
 
 #output_dir
 path_results = Sys.getenv('output_dir')
 
-
+#Set DADA options
+setDadaOpt(OMEGA_A = omegaa, OMEGA_P = omegap, OMEGA_C = omegac, DETECT_SINGLETONS = detect_singletons, BAND_SIZE = band_size)
 
 ### Denoise
 if (pool != ""){
     cat("| Working directory = ", workingDir)
     cat("| Performing DADA2 denoising | ")
+    cat("errorEstimationFunction = ", errorEstFun, "\n")
+    cat("BAND_SIZE = ", band_size, "\n\n")  
     #check for output dir and delete if needed
     if (dir.exists(path_results)) {
         unlink(path_results, recursive=TRUE)
@@ -68,8 +80,8 @@ if (pool != ""){
     sample_names = readRDS(file.path(workingDir, "sample_names.rds"))
 
     #Learn the error rates
-    errF = learnErrors(filtFs, multithread = FALSE)
-    errR = learnErrors(filtRs, multithread = FALSE)
+    errF = learnErrors(filtFs, errorEstimationFunction = errorEstFun, multithread = FALSE)
+    errR = learnErrors(filtRs, errorEstimationFunction = errorEstFun, multithread = FALSE)
 
     #Error rate figures
     pdf(file.path(path_results, "Error_rates_R1.pdf"))
@@ -86,8 +98,8 @@ if (pool != ""){
     saveRDS(derepRs, (file.path(path_results, "derepRs.rds")))
 
     #denoise
-    dadaFs = dada(derepFs, err = errF, pool = pool, selfConsist = selfConsist, multithread = FALSE)
-    dadaRs = dada(derepRs, err = errR, pool = pool, selfConsist = selfConsist, multithread = FALSE)
+    dadaFs = dada(derepFs, err = errF, pool = pool, multithread = FALSE)
+    dadaRs = dada(derepRs, err = errR, pool = pool, multithread = FALSE)
     saveRDS(dadaFs, (file.path(path_results, "dadaFs.rds")))
     saveRDS(dadaRs, (file.path(path_results, "dadaRs.rds")))
 }

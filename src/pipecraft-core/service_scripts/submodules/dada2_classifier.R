@@ -7,18 +7,19 @@
 library("dada2")
 library("seqinr")
 
+#print DADA2 version
+cat("DADA2 version = ", base::toString(packageVersion("dada2")), "\n")
+
 #load env variables
-readType = Sys.getenv('readType')
 fileFormat = Sys.getenv('fileFormat')
-dataFormat = Sys.getenv('dataFormat')
 workingDir = Sys.getenv('workingDir')
+path_results = Sys.getenv('output_dir')
 
 #check for output dir and delete if needed
-if (dir.exists("/input/taxonomy_out.dada2")) {
-    unlink("/input/taxonomy_out.dada2", recursive=TRUE)
+if (dir.exists(path_results)) {
+    unlink(path_results, recursive = TRUE)
 }
 #create output dir
-path_results = "/input/taxonomy_out.dada2"
 dir.create(path_results)
 
 #load environment variables
@@ -27,7 +28,6 @@ database = gsub("\\\\", "/", database) #replace backslashes \ in the database pa
 database = paste("/extraFiles", basename(database), sep = "/")
 minBoot = as.integer(Sys.getenv('minBoot'))
 tryRC = Sys.getenv('tryRC')
-print(database)
 
 #"FALSE" or "TRUE" to FALSE or TRUE for dada2
 if (tryRC == "false" || tryRC == "FALSE"){
@@ -44,23 +44,26 @@ if (file.exists("ASVs_lenFilt.fasta") == TRUE && file.exists("ASVs_collapsed.fas
     seqs_file = list.files(file.path(workingDir), pattern = fileFormat)
 }
 
-print(seqs_file)
+#log
+cat("input = ", seqs_file, "\n")
+cat("database file = ", database, "\n")
 
-
+#read.fasta
 fasta = read.fasta(seqs_file, seqtype = "DNA", as.string = TRUE, forceDNAtolower = FALSE, seqonly = FALSE)
 seq_names = getName(fasta)
 seqs = unlist(getSequence(fasta, as.string = TRUE))
-#Print no of ASVs
+#Print no of sequences in the input file
 paste("Number of sequences = ", length(seq_names))
-
 
 #assign taxonomy
 set.seed(100)
-tax = assignTaxonomy(fasta, database, multithread = TRUE, minBoot = minBoot, tryRC = tryRC, outputBootstraps = TRUE)
+tax = assignTaxonomy(seqs, database, multithread = TRUE, minBoot = minBoot, tryRC = tryRC, outputBootstraps = TRUE)
+
 #add sequence names to tax table
-tax2 = cbind(row.names(tax$tax), tax$tax, tax$boot)
+tax2 = cbind(rownames(tax$tax), tax$tax, tax$boot)
+rownames(tax2) = seq_names
 colnames(tax2)[1] = "Sequence"
 #write taxonomy
-write.table(tax2, file.path(path_results, "taxonomy.txt"), sep = "\t", col.names = NA, row.names = TRUE, quote = FALSE)
+write.csv(tax2, file.path(path_results, "taxonomy.csv"), row.names = TRUE, quote = FALSE)
 
 #DONE, proceed with taxonomy_dada2.sh to clean up make readme

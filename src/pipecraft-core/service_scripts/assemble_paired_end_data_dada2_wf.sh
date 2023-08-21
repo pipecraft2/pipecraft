@@ -4,7 +4,7 @@
 
 ##########################################################
 ###Third-party applications:
-#dada2 v1.20
+#dada2 v1.26
     #citation: Callahan, B., McMurdie, P., Rosen, M. et al. (2016) DADA2: High-resolution sample inference from Illumina amplicon data. Nat Methods 13, 581-583. https://doi.org/10.1038/nmeth.3869
     #Copyright (C) 2007 Free Software Foundation, Inc.
     #Distributed under the GNU LESSER GENERAL PUBLIC LICENSE
@@ -23,7 +23,6 @@ maxMismatch=${maxMismatch}
 trimOverhang=${trimOverhang}
 justConcatenate=${justConcatenate}
 pool=${pool}
-selfConsist=${selfConsist}
 qualityType=${qualityType}
 
 #Source for functions
@@ -78,13 +77,13 @@ Files in 'denoised_assembled.dada2':
 Core commands -> 
 learn errors: err = learnErrors(input)
 dereplicate:  derep = derepFastq(input, qualityType = $qualityType)
-denoise:      dadaFs = dada(input, err = err, pool = $pool, selfConsist = $selfConsist)
+denoise:      dadaFs = dada(input, err = err, pool = $pool)
 assemble:     mergePairs(inputR1, dereplicatedR1, inputR2, dereplicatedR2, maxMismatch = $maxMismatch, minOverlap = $minOverlap, justConcatenate = $justConcatenate, trimOverhang = $trimOverhang)
 
 Total run time was $runtime sec.
 ##################################################################
 ###Third-party applications for this process [PLEASE CITE]:
-#dada2 v1.20
+#dada2 v1.26
     #citation: Callahan, B., McMurdie, P., Rosen, M. et al. (2016) DADA2: High-resolution sample inference from Illumina amplicon data. Nat Methods 13, 581-583. https://doi.org/10.1038/nmeth.3869
     #https://github.com/benjjneb/dada2
 ########################################################" > $output_dir/README.txt
@@ -100,7 +99,6 @@ if [[ -z $pool ]]; then
 else
     echo "fileFormat=$extension"
 fi
-echo "dataFormat=$dataFormat"
 if [[ -z $pool ]]; then
     echo "readType=single_end"
 else

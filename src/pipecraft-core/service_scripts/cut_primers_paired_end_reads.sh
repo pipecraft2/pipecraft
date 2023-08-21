@@ -6,7 +6,7 @@
 
 ##########################################################
 ###Third-party applications:
-#cutadapt v3.5
+#cutadapt v4.4
     #citation: Martin, M. (2011). Cutadapt removes adapter sequences from high-throughput sequencing reads. EMBnet. journal, 17(1), 10-12.
     #Distributed under MIT License
     #https://cutadapt.readthedocs.io/en/stable/#
@@ -260,10 +260,10 @@ If no outputs were generated into /$output_dir, check your specified primer stri
 \n\nTotal run time was $runtime sec.\n\n\n
 ##########################################################
 ###Third-party applications used for this process [PLEASE CITE]:
-#cutadapt v3.5 for cutting the primers
+#cutadapt v4.4 for cutting the primers
     #citation: Martin, Marcel (2011) Cutadapt removes adapter sequences from high-throughput sequencing reads. EMBnet.journal, 17(1), 10-12.
     #https://cutadapt.readthedocs.io/en/stable/index.html
-#seqkit v2.0.0 for generating reverse complementary primer strings
+#seqkit v2.3.0 for generating reverse complementary primer strings
     #citation: Shen W, Le S, Li Y, Hu F (2016) SeqKit: A Cross-Platform and Ultrafast Toolkit for FASTA/Q File Manipulation. PLOS ONE 11(10): e0163962. https://doi.org/10.1371/journal.pone.0163962
     #https://bioinf.shenwei.me/seqkit/
 ##################################################################" > $output_dir/README.txt
@@ -278,5 +278,5 @@ printf "Total time: $runtime sec.\n\n"
 #variables for all services
 echo "workingDir=/$output_dir"
 echo "fileFormat=$extension"
-echo "dataFormat=$dataFormat"
+
 echo "readType=paired_end"

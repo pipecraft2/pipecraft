@@ -127,7 +127,7 @@ Total run time was $runtime sec.
 #trimmomatic v0.39 for quality filtering
     #citation: Bolger, A. M., Lohse, M., & Usadel, B. (2014). Trimmomatic: A flexible trimmer for Illumina Sequence Data. Bioinformatics, btu1
     #https://github.com/usadellab/Trimmomatic
-#seqkit v2.0.0 for converting filtered fastq to fasta 
+#seqkit v2.3.0 for converting filtered fastq to fasta 
     #citation: Shen W, Le S, Li Y, Hu F (2016) SeqKit: A Cross-Platform and Ultrafast Toolkit for FASTA/Q File Manipulation. PLOS ONE 11(10): e0163962. https://doi.org/10.1371/journal.pone.0163962
     #https://bioinf.shenwei.me/seqkit/
 ##########################################################" > $output_dir/README.txt
@@ -142,5 +142,5 @@ printf "Total time: $runtime sec.\n\n"
 #variables for all services
 echo "workingDir=$output_dir"
 echo "fileFormat=$extension"
-echo "dataFormat=$dataFormat"
+
 echo "readType=paired_end"
