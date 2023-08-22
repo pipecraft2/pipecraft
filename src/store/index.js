@@ -4101,14 +4101,13 @@ export default new Vuex.Store({
             rules: [(v) => v >= 1 || "ERROR: specify values >= 1"],
           },
           {
-            name: "ITSx_evalue ",
-            value: 0.01,
+            name: "ITSx_evalue",
+            value: (0.01).toExponential(),
             disabled: "never",
-            tooltip: "ITSx E-value cutoff threshold (default, 1e-1)",
-            max: 1,
-            min: 0,
-            step: 0.01,
-            type: "slide",
+            tooltip:
+            "ITSx E-value cutoff threshold (default, 1e-1)",
+            type: "numeric",
+            rules: [(v) => v >= 0 || "ERROR: specify only values > 0"],
           },
           {
             name: "ITSx_partial",

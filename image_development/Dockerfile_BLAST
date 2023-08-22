@@ -1,7 +1,12 @@
 FROM ubuntu:22.04
 RUN apt-get update -y  \
-&& apt-get install gawk -y \
-&& apt-get install python3 -y \
-&& apt-get install python3-pip -y \
-&& python3 -m pip install biopython \
-&& apt-get install ncbi-blast+=2.12.0+ds-3build1 -y
+    && apt-get install wget -y \
+    && apt-get install gawk -y \
+    && apt-get install python3 -y \
+    && apt-get install python3-pip -y \
+    && python3 -m pip install biopython \
+    && wget https://ftp.ncbi.nlm.nih.gov/blast/executables/LATEST/ncbi-blast-2.14.0+-x64-linux.tar.gz -O /tmp/blast.tar.gz \
+    && tar zxvf /tmp/blast.tar.gz -C /usr/bin \
+    && wget https://github.com/shenwei356/seqkit/releases/download/v2.3.0/seqkit_linux_amd64.tar.gz -O /tmp/seqkit.tar.gz \
+    && tar zxvf /tmp/seqkit.tar.gz -C /usr/bin
+ENV PATH=/usr/bin/ncbi-blast-2.14.0+/bin:$PATH
