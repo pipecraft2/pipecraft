@@ -41,7 +41,7 @@ if (tryRC == "true" || tryRC == "TRUE"){
 if (file.exists("ASVs_lenFilt.fasta") == TRUE && file.exists("ASVs_collapsed.fasta") == TRUE) {
     seqs_file = list.files(file.path(getwd()), pattern = "ASVs_lenFilt.fasta")
 } else {
-    seqs_file = list.files(file.path(workingDir), pattern = fileFormat)
+    seqs_file = list.files(file.path(workingDir), pattern = paste0(fileFormat,"$"))
 }
 
 #log

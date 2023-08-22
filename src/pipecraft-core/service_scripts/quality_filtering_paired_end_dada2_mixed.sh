@@ -5,7 +5,7 @@
 
 ##########################################################
 ###Third-party applications:
-#dada2 v1.26
+#dada2 v1.28
     #citation: Callahan, B., McMurdie, P., Rosen, M. et al. (2016) DADA2: High-resolution sample inference from Illumina amplicon data. Nat Methods 13, 581–583. https://doi.org/10.1038/nmeth.3869
     #Copyright (C) 2007 Free Software Foundation, Inc.
     #Distributed under the GNU LESSER GENERAL PUBLIC LICENSE
@@ -165,7 +165,7 @@ for folder in /input/primersCut_out/fwd_orient /input/primersCut_out/rev_orient;
     Total run time was $runtime sec for $output_dir.
     ##################################################################
     ###Third-party applications for this process [PLEASE CITE]:
-    #dada2 v1.26
+    #dada2 v1.28
         #citation: Callahan, B., McMurdie, P., Rosen, M. et al. (2016) DADA2: High-resolution sample inference from Illumina amplicon data. Nat Methods 13, 581-583. https://doi.org/10.1038/nmeth.3869
         #https://github.com/benjjneb/dada2
     #seqkit v2.3.0 for synchronizing R1 and R2 after filtering (when matchIDs = TRUE)

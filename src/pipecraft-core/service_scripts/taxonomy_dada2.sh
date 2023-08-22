@@ -5,7 +5,7 @@
 
 ##########################################################
 ###Third-party applications:
-#dada2 v1.26
+#dada2 v1.28
     #citation: Callahan, B., McMurdie, P., Rosen, M. et al. (2016) DADA2: High-resolution sample inference from Illumina amplicon data. Nat Methods 13, 581–583. https://doi.org/10.1038/nmeth.3869
     #Distributed under the GNU LESSER GENERAL PUBLIC LICENSE
     #https://github.com/benjjneb/dada2
@@ -62,7 +62,7 @@ prepare_SE_env
 ###Run DADA2 classifier in R
 printf "# Running DADA2 classifier \n"
 Rlog=$(Rscript /scripts/submodules/dada2_classifier.R 2>&1)
-echo $Rlog > $output_dir/R_run.log 
+echo $Rlog > $output_dir/dada2_classifier.log 
 wait
 printf "\n DADA2 classifier completed \n"
 
@@ -70,39 +70,43 @@ printf "\n DADA2 classifier completed \n"
 ### CLEAN UP AND COMPILE README FILE ###
 ########################################
 #Delete tempdir
-if [[ -d tempdir2 ]]; then
-    rm -rf tempdir2
-fi
-if [[ -f $output_dir/R_run.log ]]; then
-    rm -f $output_dir/R_run.log
+if [[ $debugger != "true" ]]; then
+    if [[ -d tempdir2 ]]; then
+        rm -rf tempdir2
+    fi
+    if [[ -f $output_dir/dada2_classifier.log ]]; then
+        rm -f $output_dir/dada2_classifier.log
+    fi
 fi
 
 end=$(date +%s)
 runtime=$((end-start))
 
 ###Make README.txt file
-printf "Taxonomy annotation with DADA2 classifier (function assignTaxonomy).
-# taxonomy.txt = classifier results with bootstrap values.
+printf "# Taxonomy was assigned using DADA2 classifier (see 'Core command' below for the used settings).
+
+Query    = $input_fasta
+Database = $dada2_database
+
+# taxonomy.csv = classifier results with bootstrap values.
+  [if the above file does not exists, then check if the database formatting is appropriate for DADA2 classifier]
 
 Core command -> 
-tax = assignTaxonomy($input_fasta, $dada2_database, multithread = FALSE, minBoot = $minBoot, tryRC = $tryRC, outputBootstraps = TRUE)
+assignTaxonomy($input_fasta, $dada2_database, minBoot = $minBoot, tryRC = $tryRC, outputBootstraps = TRUE)
 
 Total run time was $runtime sec.
 
 ##########################################################
 ###Third-party applications [PLEASE CITE]:
-#dada2 v1.26
+#dada2 v1.28
     #citation: Callahan, B., McMurdie, P., Rosen, M. et al. (2016) DADA2: High-resolution sample inference from Illumina amplicon data. Nat Methods 13, 581-583. https://doi.org/10.1038/nmeth.3869
 ##################################################################" > $output_dir/README.txt
 
 #Done
 printf "\nDONE\n"
-printf "Data in directory '$output_dir'\n"
-printf "Check README.txt files in output directory for further information about the process.\n"
 printf "Total time: $runtime sec.\n\n"
 
 #variables for all services
 echo "workingDir=$output_dir"
 echo "fileFormat=$extension"
-
 echo "readType=single_end"

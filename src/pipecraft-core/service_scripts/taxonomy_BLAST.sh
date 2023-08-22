@@ -161,9 +161,9 @@ runtime=$((end-start))
 
 #Make README.txt file
 db_x=$(echo $db1 | sed -e 's/\/extraFiles\///')
-printf "Taxonomy annotation with BLAST. 
+printf "# Taxonomy was assigned using BLAST (see 'Core command' below for the used settings).
 
-Query = $IN
+Query    = $IN
 Database = $db_x
 
 BLAST_1st_best_hit.txt = BLAST results for the 1st best hit in the used database.

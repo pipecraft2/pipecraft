@@ -6,7 +6,7 @@
 
 ##########################################################
 ###Third-party applications:
-#dada2 v1.26
+#dada2 v1.28
     #citation: Callahan, B., McMurdie, P., Rosen, M. et al. (2016) DADA2: High-resolution sample inference from Illumina amplicon data. Nat Methods 13, 581–583. https://doi.org/10.1038/nmeth.3869
     #Copyright (C) 2007 Free Software Foundation, Inc.
     #Distributed under the GNU LESSER GENERAL PUBLIC LICENSE
@@ -78,7 +78,7 @@ if [[ $collapseNoMismatch == "true" ]]; then
     # ASVs_collapsed.fasta     = ASV sequences after collapsing identical ASVs. Contains $ASVs_collapsed ASVs
     # ASV_table_collapsed.rds  = ASV table in RDS format after collapsing identical ASVs. 
 
-    # If length filtering was applied (if 'by length' setting > 0) [performed after collapsing identical ASVs]:
+    # If length filtering was applied (if 'by length' setting > 0) [if collapseNoMismatch=true, then performed after collapsing identical ASVs]:
     # ASV_table_lenFilt.txt    = $ASVs_lenFilt_result_table
     # ASVs_lenFilt.fasta       = $ASVs_lenFilt_result_fasta
 
@@ -86,7 +86,7 @@ if [[ $collapseNoMismatch == "true" ]]; then
     Total run time was $runtime sec.
     ##################################################################
     ###Third-party applications for this process [PLEASE CITE]:
-    #dada2 v1.26
+    #dada2 v1.28
         #citation: Callahan, B., McMurdie, P., Rosen, M. et al. (2016) DADA2: High-resolution sample inference from Illumina amplicon data. Nat Methods 13, 581-583. https://doi.org/10.1038/nmeth.3869
         #https://github.com/benjjneb/dada2
     ########################################################" > $output_dir/README.txt
@@ -100,7 +100,7 @@ else
     Total run time was $runtime sec.
     ##################################################################
     ###Third-party applications for this process [PLEASE CITE]:
-    #dada2 v1.26
+    #dada2 v1.28
         #citation: Callahan, B., McMurdie, P., Rosen, M. et al. (2016) DADA2: High-resolution sample inference from Illumina amplicon data. Nat Methods 13, 581-583. https://doi.org/10.1038/nmeth.3869
         #https://github.com/benjjneb/dada2
     ########################################################" > $output_dir/README.txt

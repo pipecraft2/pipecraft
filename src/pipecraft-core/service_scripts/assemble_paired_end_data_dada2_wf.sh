@@ -4,7 +4,7 @@
 
 ##########################################################
 ###Third-party applications:
-#dada2 v1.26
+#dada2 v1.28
     #citation: Callahan, B., McMurdie, P., Rosen, M. et al. (2016) DADA2: High-resolution sample inference from Illumina amplicon data. Nat Methods 13, 581-583. https://doi.org/10.1038/nmeth.3869
     #Copyright (C) 2007 Free Software Foundation, Inc.
     #Distributed under the GNU LESSER GENERAL PUBLIC LICENSE
@@ -83,7 +83,7 @@ assemble:     mergePairs(inputR1, dereplicatedR1, inputR2, dereplicatedR2, maxMi
 Total run time was $runtime sec.
 ##################################################################
 ###Third-party applications for this process [PLEASE CITE]:
-#dada2 v1.26
+#dada2 v1.28
     #citation: Callahan, B., McMurdie, P., Rosen, M. et al. (2016) DADA2: High-resolution sample inference from Illumina amplicon data. Nat Methods 13, 581-583. https://doi.org/10.1038/nmeth.3869
     #https://github.com/benjjneb/dada2
 ########################################################" > $output_dir/README.txt
