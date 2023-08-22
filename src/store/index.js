@@ -1678,8 +1678,8 @@ export default new Vuex.Store({
           {
             tooltip:
               "assign taxonomy with BLAST against a selected database [SELECT WORKDIR that contains only ONE fasta file for the process]",
-            scriptName: "taxonomy_BLAST_xml.sh",
-            imageName: "pipecraft/blast:2.12",
+            scriptName: "taxonomy_BLAST.sh",
+            imageName: "pipecraft/blast:2.14",
             serviceName: "BLAST",
             selected: false,
             showExtra: false,
@@ -2831,8 +2831,8 @@ export default new Vuex.Store({
       },
       {
         tooltip: "assign taxonomy with BLAST against a selected database",
-        scriptName: "taxonomy_BLAST_xml.sh",
-        imageName: "pipecraft/blast:2.12",
+        scriptName: "taxonomy_BLAST.sh",
+        imageName: "pipecraft/blast:2.14",
         serviceName: "assign taxonomy",
         manualLink:
           "https://pipecraft2-manual.readthedocs.io/en/stable/user_guide.html#blast-camacho-et-al-2009",
@@ -3505,8 +3505,8 @@ export default new Vuex.Store({
       {
         tooltip:
           "assign taxonomy to zOTUs with BLAST against a selected database",
-        scriptName: "taxonomy_BLAST_xml.sh",
-        imageName: "pipecraft/blast:2.12",
+        scriptName: "taxonomy_BLAST.sh",
+        imageName: "pipecraft/blast:2.14",
         serviceName: "assign taxonomy",
         manualLink:
           "https://pipecraft2-manual.readthedocs.io/en/stable/user_guide.html#blast-camacho-et-al-2009",
