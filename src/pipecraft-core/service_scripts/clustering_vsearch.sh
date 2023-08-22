@@ -17,11 +17,7 @@
     #Distributed under the License GPLv3+
 #pigz v2.4
 ##########################################################
-echo "WORKDIR: $workingDir"
-
 #load variables
-extension=$fileFormat
-#mandatory options
 id=$"--id ${similarity_threshold}"          # positive float (0-1)
 otutype=$"--${OTU_type}"                    # list: --centroids, --consout
 strands=$"--strand ${strands}"              # list: --strand both, --strand plus
@@ -53,36 +49,44 @@ if [[ $centroid == "similarity" ]]; then
 else
     centroid_in=$"--sizeorder"
 fi
-if [[ $remove_singletons == "true"  ]]; then
-    remove_singletons=$"TRUE"
-fi
-if [[ $remove_singletons == "false"  ]]; then
-    remove_singletons=$"FALSE"
-fi
 
 #############################
 ### Start of the workflow ###
 #############################
 start=$(date +%s)
+
 ### Check if files with specified extension exist in the dir
-first_file_check_clustering
-### Prepare working env and check paired-end data
+first_file_check
+### Prepare working env and check single-end data
 prepare_SE_env
 
 ### Pre-process samples
 printf "Checking files ... \n"
-for file in *.$extension; do
+for file in *.$fileFormat; do
     #Read file name; without extension
-    input=$(echo $file | sed -e "s/.$extension//")
+    input=$(echo $file | sed -e "s/.$fileFormat//")
     #If input is compressed, then decompress (keeping the compressed file, but overwriting if filename exists!)
-        
     check_gz_zip_SE
-    ### Check input formats (only fasta, fa, fas supported)
-    check_extension_fasta
+    ### Check input formats
+    check_extension_fastx
 done
 
+#If input is FASTQ then convert to FASTA
+if [[ $extension == "fastq" ]] || [[ $extension == "fq" ]]; then
+    for file in *.$extension; do
+        samp_name=$(basename $file | awk 'BEGIN{FS="."} {$NF=""; print $0}' | sed 's/ //g')
+        checkerror=$(seqkit fq2fa -t dna --line-width 0 $file -o $samp_name.fasta 2>&1)
+        check_app_error
+    done
+
+    was_fastq=$"true"
+    export was_fastq
+    extension=$"fasta"
+    export extension
+fi
+
 #tempdir
-if [ -d tempdir ]; then
+if [[ -d tempdir ]]; then
     rm -rf tempdir
 fi
 mkdir -p tempdir
@@ -163,11 +167,11 @@ Rlog=$(Rscript /scripts/submodules/ASV_OTU_merging_script.R \
   --asv          tempdir/ASV_table_long.txt \
   --rmsingletons $remove_singletons \
   --output       "$output_dir"/OTU_table.txt 2>&1)
-echo $Rlog > $output_dir/R_run.log 
+echo $Rlog > tempdir/OTU_table_creation.log 
 wait
 
 ### Discard singleton OTUs
-if [[ $remove_singletons == "TRUE"  ]]; then
+if [[ $remove_singletons == "true"  ]]; then
     printf "Discarding singletons ... \n"
     checkerror=$(vsearch \
     --sortbysize $output_dir/OTUs.temp.fasta \
@@ -177,6 +181,7 @@ if [[ $remove_singletons == "TRUE"  ]]; then
     check_app_error
 
     sed -i 's/;sample=.*;/;/' $output_dir/OTUs.fasta
+    rm $output_dir/OTUs.temp.fasta
 else
     sed -e 's/;sample=.*;/;/' $output_dir/OTUs.temp.fasta > $output_dir/OTUs.fasta
     rm $output_dir/OTUs.temp.fasta
@@ -187,22 +192,34 @@ fi
 #################################################
 printf "\nCleaning up and compiling final stats files ... \n"
 
+mv $output_dir/Glob_derep.fasta tempdir/Glob_derep.fasta
+
+#If input = FASTQ, then mkdir for converted fasta files
+if [[ $was_fastq == "true" ]]; then
+    mkdir -p $output_dir/clustering_input_to_FASTA
+    mv *.fasta $output_dir/clustering_input_to_FASTA
+fi
+
 #Delete decompressed files if original set of files were compressed
 if [[ $check_compress == "gz" ]] || [[ $check_compress == "zip" ]]; then
-    rm *.$extension
+  delete_uncompressed=$(echo $fileFormat | (awk 'BEGIN{FS=OFS="."} {print $(NF-1)}';))
+  rm *.$delete_uncompressed
 fi
 
 #Delete tempdirs
-if [[ -d tempdir ]]; then
-    rm -rf tempdir
-fi
-if [[ -d tempdir2 ]]; then
-    rm -rf tempdir2
-fi
-rm $output_dir/Glob_derep.fasta
-#rm
-if [[ -f $output_dir/R_run.log ]]; then
-    rm -f $output_dir/R_run.log
+if [[ $debugger != "true" ]]; then
+  if [[ -d tempdir ]]; then
+      rm -rf tempdir
+  fi
+  if [[ -d tempdir2 ]]; then
+      rm -rf tempdir2
+  fi
+  if [[ -f $output_dir/OTU_table_creation.log ]]; then
+      rm -f $output_dir/OTU_table_creation.log
+  fi
+else 
+  #compress files in /tempdir
+  pigz tempdir/*
 fi
 
 size=$(grep -c "^>" $output_dir/OTUs.fasta)
@@ -217,10 +234,16 @@ Files in 'clustering_out' directory:
 # OTU_table.txt = OTU distribution table per sample (tab delimited file). OTU headers are renamed according to sha1 algorithm in vsearch.
 # OTUs.uc       = uclust-like formatted clustering results for OTUs.
 
-Core commands -> 
-clustering: vsearch $seqsort dereplicated_sequences.fasta $id $simtype $strands $mask $centroid_in $maxaccepts $cores $otutype OTUs.fasta --fasta_width 0 --sizein --sizeout
+Core command -> 
+clustering: vsearch $seqsort dereplicated_sequences.fasta $id $simtype $strands $mask $centroid_in $maxaccepts $cores $otutype OTUs.fasta " > $output_dir/README.txt
 
-Total run time was $runtime sec.\n\n
+## if input was fastq
+if [[ $was_fastq == "true" ]]; then
+  printf "\n\nInput was fastq; converted those to fasta before clustering. 
+  Converted fasta files in directory 'clustering_input_to_FASTA' \n" >> $output_dir/README.txt
+fi
+
+printf "\nTotal run time was $runtime sec.\n\n
 ##################################################################
 ###Third-party applications for this process [PLEASE CITE]:
 #vsearch v2.23.0 for clustering
@@ -228,14 +251,10 @@ Total run time was $runtime sec.\n\n
     #https://github.com/torognes/vsearch
 #GNU Parallel 20210422 for job parallelisation 
     #Citation: Tange, O. (2021, April 22). GNU Parallel 20210422 ('Ever Given'). Zenodo. https://doi.org/10.5281/zenodo.4710607
-##########################################################" > $output_dir/README.txt
+##########################################################" >> $output_dir/README.txt
 
 #Done
 printf "\nDONE\n"
-printf "Data in directory '$output_dir'\n"
-printf "Check README.txt files in output directory for further information about the process.\n"
-
-
 printf "Total time: $runtime sec.\n\n"
 
 #variables for all services

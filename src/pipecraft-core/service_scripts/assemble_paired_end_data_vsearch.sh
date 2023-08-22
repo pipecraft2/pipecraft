@@ -14,18 +14,16 @@
 ##########################################################
 
 #load variables
-extension=$fileFormat
-fastq_minoverlen=$"--fastq_minovlen ${min_overlap}"
-fastq_minmergelen=$"--fastq_minmergelen ${min_lenght}"
-fastq_allowmergestagger=$allow_merge_stagger
+fastq_minoverlen="--fastq_minovlen ${min_overlap}"
+fastq_minmergelen="--fastq_minmergelen ${min_lenght}"
+fastq_allowmergestagger=${allow_merge_stagger}
 include_R1=$include_only_R1
-fastq_maxdiffs=$"--fastq_maxdiffs ${max_diffs}"
-fastq_maxns=$"--fastq_maxns ${max_Ns}"
+fastq_maxdiffs="--fastq_maxdiffs ${max_diffs}"
+fastq_maxns="--fastq_maxns ${max_Ns}"
 fastq_maxmergelen="--fastq_maxmergelen ${max_len}"
 fastq_qmax=$fastq_qmax
 notmerged_files=$keep_disjointed
 read_R1=${read_R1}
-export $read_R1 #for framework.functions.sh to make seq_count_summary.txt
 
 #Source for functions
 source /scripts/submodules/framework.functions.sh
@@ -34,7 +32,7 @@ output_dir=$"/input/assembled_out"
 
 ## Check read_R1; correct read identifier specified?
 count=$(ls -1 *$read_R1* 2>/dev/null | wc -l)
-if [[ $count != 0 ]]; then 
+if [[ $count != 0 ]] && [[ ! -z $read_R1 ]]; then 
     :
 else
     printf '%s\n' "ERROR]: cannot find R1 and R2 files based on the specified identifier '$read_R1 '
@@ -54,7 +52,7 @@ prepare_PE_env
 ### Process samples
 while read LINE; do
     #Read in R1 and R2 file names; without extension
-    inputR1=$(echo $LINE | sed -e "s/.$extension//")
+    inputR1=$(echo $LINE | sed -e "s/.$fileFormat//")
     inputR2=$(echo $inputR1 | sed -e 's/R1/R2/')
     ## Preparing files for the process
     printf "\n____________________________________\n"
@@ -70,18 +68,20 @@ while read LINE; do
     fastqout=$(echo $inputR1 | sed -E "s/$read_R1.*//")
 
     #variables for not_merged output files
-    if [[ $notmerged_files == "TRUE" ]]; then
+    if [[ $notmerged_files == "TRUE" ]] || [[ $notmerged_files == "true" ]]; then
     	mkdir -p $output_dir/not_assembled_paired_end_reads
     	fastqout_notmerged_fwd="--fastqout_notmerged_fwd $output_dir/not_assembled_paired_end_reads/$inputR1.notAssembled.$extension"
     	fastqout_notmerged_rev="--fastqout_notmerged_rev $output_dir/not_assembled_paired_end_reads/$inputR2.notAssembled.$extension"
     fi
-    if [[ $fastq_allowmergestagger == "TRUE" ]]; then
+    if [[ $fastq_allowmergestagger == "TRUE" ]] || [[ $fastq_allowmergestagger == "true" ]]; then
         allowmergestagger=$"--fastq_allowmergestagger"
     fi 
     #When including R1 to the assembled output, then include fastqout_notmerged_fwd (in case notmerged_files=FALSE)
-    if [[ $include_R1 == "TRUE" ]]; then
-        mkdir -p $output_dir/not_assembled_paired_end_reads
-    	fastqout_notmerged_fwd="--fastqout_notmerged_fwd $output_dir/not_assembled_paired_end_reads/$inputR1.notAssembled.$extension"
+    if [[ $include_R1 == "TRUE" ]] || [[ $include_R1 == "true" ]]; then
+        if [[ $notmerged_files == "FALSE" ]] || [[ $notmerged_files == "false" ]]; then
+            mkdir -p $output_dir/not_assembled_paired_end_reads
+            fastqout_notmerged_fwd="--fastqout_notmerged_fwd $output_dir/not_assembled_paired_end_reads/$inputR1.notAssembled.$extension"
+        fi
     fi
 
 	checkerror=$(vsearch --quiet --fastq_mergepairs $inputR1.$extension \
@@ -100,7 +100,7 @@ while read LINE; do
     check_app_error
 
     #Include R1 reads to assembled data set if include_R1 = TRUE
-    if [[ $include_R1 == "TRUE" ]]; then
+    if [[ $include_R1 == "TRUE" ]] || [[ $include_R1 == "true" ]]; then
     	printf '%s\n' "include only R1 = TRUE, including also unmerged R1 reads to the assembled output"
     	cat $output_dir/not_assembled_paired_end_reads/$inputR1.notAssembled.$extension >> $output_dir/$fastqout.$extension
     fi
@@ -117,6 +117,11 @@ done < tempdir2/paired_end_files.txt
 #################################################
 printf "\nCleaning up and compiling final stats files ...\n"
 clean_and_make_stats_assemble
+if [[ $include_R1 == "TRUE" ]] || [[ $include_R1 == "true" ]]; then
+    if [[ $notmerged_files == "FALSE" ]] || [[ $notmerged_files == "false" ]]; then
+        rm -r $output_dir/not_assembled_paired_end_reads
+    fi
+fi
 end=$(date +%s)
 runtime=$((end-start))
 
@@ -132,10 +137,10 @@ should be run on the 'assembled' data.\n
 NOTE RUNNING THE PROCESS SEVERAL TIMES IN THE SAME DIRECTORY WILL OVERWRITE ALL THE OUTPUTS!
 
 Core command -> 
-vsearch --fastq_mergepairs inputR1 --reverse inputR2 $fastq_minoverlen $fastq_minmergelen $allowmergestagger $fastq_maxdiffs $fastq_maxns $fastq_maxmergelen $fastqout_notmerged_fwd $fastqout_notmerged_rev --fastq_qmax $fastq_qmax --fastq_qmaxout $fastq_qmax --fastqout output_file
+vsearch --fastq_mergepairs input.R1 --reverse input.R2 $fastq_minoverlen $fastq_minmergelen $allowmergestagger $fastq_maxdiffs $fastq_maxns $fastq_maxmergelen $fastqout_notmerged_fwd $fastqout_notmerged_rev --fastq_qmax $fastq_qmax --fastq_qmaxout $fastq_qmax --fastqout output_file
 
 \nSummary of sequence counts in 'seq_count_summary.txt'\n
-\n\nTotal run time was $runtime sec.\n\n\n
+\nTotal run time was $runtime sec.\n\n
 ##################################################################
 ###Third-party applications for this process [PLEASE CITE]:
 #vsearch v2.23.0 for assembling paired-end reads
@@ -144,10 +149,8 @@ vsearch --fastq_mergepairs inputR1 --reverse inputR2 $fastq_minoverlen $fastq_mi
 ##########################################################" > $output_dir/README.txt
 
 ###Done, files in $output_dir folder
-printf "\nDONE\n"
-printf "Data in directory $output_dir\n"
-printf "Summary of sequence counts in 'seq_count_summary.txt'\n"
-printf "Check README.txt file in $output_dir for further information about the process.\n\n"
+printf "\nDONE.\n"
+printf "Data in directory $output_dir.\n"
 printf "Total time: $runtime sec.\n\n"
 
 #variables for all services

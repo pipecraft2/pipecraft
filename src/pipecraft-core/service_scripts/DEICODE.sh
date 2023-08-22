@@ -33,7 +33,7 @@
 
 #env variables
 workingDir=${workingDir}
-extension=$fileFormat
+extension=$fileFormat && export fileFormat 
 ## Load variables
 subset_IDs=${subset_IDs}
 min_otu_reads=${min_otu_reads}

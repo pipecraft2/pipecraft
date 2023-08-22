@@ -19,7 +19,7 @@
 ########################################################
 
 #load variables
-extension=$fileFormat
+export fileFormat 
 maxee=$"--fastq_maxee ${maxee}"
 maxns=$"--fastq_maxns ${maxNs}"
 minlen=$"--fastq_minlen ${min_length}"
@@ -75,7 +75,7 @@ prepare_PE_env
 ### Process samples
 while read LINE; do
     #Read in R1 and R2 file names; without extension
-    inputR1=$(echo $LINE | sed -e "s/.$extension//")
+    inputR1=$(echo $LINE | sed -e "s/.$fileFormat//")
     inputR2=$(echo $inputR1 | sed -e 's/R1/R2/')
     ## Preparing files for the process
     printf "\n____________________________________\n"
@@ -188,8 +188,8 @@ runtime=$((end-start))
 printf "# Quality filtering with vsearch.
 
 Files in 'qualFiltered_out':
-# *.$extension           = quality filtered sequences in FASTQ format.
-# seq_count_summary.txt     = summary of sequence counts per sample.
+# *.$extension          = quality filtered sequences in FASTQ format.
+# seq_count_summary.txt = summary of sequence counts per sample.
 
 Core commands -> 
 quality filtering: vsearch --fastq_filter input_file $maxee $maxns $trunc_length $minlen $cores $qmax $qmin $max_length $maxee_rate $truncqual $truncee --fastqout output_file
@@ -217,5 +217,4 @@ printf "Total time: $runtime sec.\n\n"
 #variables for all services
 echo "workingDir=$output_dir"
 echo "fileFormat=$extension"
-
 echo "readType=paired_end"

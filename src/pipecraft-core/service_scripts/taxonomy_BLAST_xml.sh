@@ -14,7 +14,7 @@
 ##########################################################
 
 #load variables
-extension=$fileFormat
+extension=$fileFormat && export fileFormat 
 
 #database [# here, a possibility for multiple databases to be added: database=$"-db $db1 $db2 $db3 $db4 $db5"]
 regex='[^/]*$'

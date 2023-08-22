@@ -24,7 +24,7 @@ source /scripts/submodules/framework.functions.sh
 
 cd /MetaWorks1.12.0
 
-extension=$fileFormat # must be gz files
+extension=$fileFormat && export fileFormat  # must be gz files
 filename_structure=${filename_structure}
 R1=$(echo $filename_structure | sed "s/R{read}/R1/")
 R2=$(echo $filename_structure | sed "s/R{read}/R2/")
