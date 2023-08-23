@@ -698,7 +698,7 @@ export default new Vuex.Store({
                 value: ["\\.R1"],
                 disabled: "single_end",
                 tooltip:
-                  "applies only for paired-end data. Identifyer string that is common for all R1 reads (e.g. when all R1 files have '.R1' string, then enter '\\.R1'. Note that backslash is only needed to escape dot regex; e.g. when all R1 files have '_R1' string, then enter '_R1'.)'",
+                  "applies only for paired-end data. Identifyer string that is common for all R1 reads. R1 reads must contain R1 strings in the file names; sample names must not contain R1! (e.g. when all R1 files have '.R1' string, then enter '\\.R1'. Note that backslash is only needed to escape dot regex; e.g. when all R1 files have '_R1' string, then enter '_R1'.)'",
                 type: "chip",
                 rules: [(v) => v.length <= 1 || "ADD ONLY ONE IDENTIFIER"],
               },
@@ -707,7 +707,7 @@ export default new Vuex.Store({
                 value: ["\\.R2"],
                 disabled: "single_end",
                 tooltip:
-                  "applies only for paired-end data. Identifyer string that is common for all R2 reads (e.g. when all R2 files have '.R2' string, then enter '\\.R2'. Note that backslash is only needed to escape dot regex; e.g. when all R2 files have '_R1' string, then enter '_R2'.)",
+                  "applies only for paired-end data. Identifyer string that is common for all R2 reads. R2 reads must contain R2 strings in the file names; sample names must not contain R2! (e.g. when all R2 files have '.R2' string, then enter '\\.R2'. Note that backslash is only needed to escape dot regex; e.g. when all R2 files have '_R1' string, then enter '_R2'.)",
                 type: "chip",
                 rules: [(v) => v.length <= 1 || "ADD ONLY ONE IDENTIFIER"],
               },
@@ -814,7 +814,7 @@ export default new Vuex.Store({
                 value: ["\\.R1"],
                 disabled: "single_end",
                 tooltip:
-                  "identifyer string that is common for all R1 reads (e.g. when all R1 files have '.R1' string, then enter '\\.R1'. Note that backslash is only needed to escape dot regex; e.g. when all R1 files have '_R1' string, then enter '_R1'.)",
+                  "identifyer string that is common for all R1 reads. R1/R2 reads must contain R1/R2 strings in the file names; sample names must not contain R1/R2! (e.g. when all R1 files have '.R1' string, then enter '\\.R1'. Note that backslash is only needed to escape dot regex; e.g. when all R1 files have '_R1' string, then enter '_R1'.)",
                 type: "chip",
                 rules: [(v) => v.length <= 1 || "ADD ONLY ONE IDENTIFIER"],
               },
@@ -895,7 +895,7 @@ export default new Vuex.Store({
                 value: ["\\.R1"],
                 disabled: "single_end",
                 tooltip:
-                  "identifyer string that is common for all R1 reads (e.g. when all R1 files have '.R1' string, then enter '\\.R1'. Note that backslash is only needed to escape dot regex; e.g. when all R1 files have '_R1' string, then enter '_R1'.)",
+                  "identifyer string that is common for all R1 reads. R1/R2 reads must contain R1/R2 strings in the file names; sample names must not contain R1/R2! (e.g. when all R1 files have '.R1' string, then enter '\\.R1'. Note that backslash is only needed to escape dot regex; e.g. when all R1 files have '_R1' string, then enter '_R1'.)",
                 type: "chip",
                 rules: [(v) => v.length <= 1 || "ADD ONLY ONE IDENTIFIER"],
               },
@@ -1124,7 +1124,7 @@ export default new Vuex.Store({
             extraInputs: [
               {
                 name: "cores",
-                value: 4,
+                value: 6,
                 disabled: "never",
                 tooltip: "number of cores to use",
                 type: "numeric",
@@ -1587,10 +1587,10 @@ export default new Vuex.Store({
               },
               {
                 name: "min_match",
-                value: 95,
+                value: 90,
                 disabled: "never",
                 tooltip:
-                  "specify minimum threshold of sequence similarity for considering any OTU as an error of another",
+                  "default = 90%. specify minimum threshold of sequence similarity for considering any OTU as an error of another",
                 type: "numeric",
                 rules: [
                   (v) => v >= 1 || "ERROR: specify values >= 1",
@@ -1651,7 +1651,7 @@ export default new Vuex.Store({
               },
               {
                 name: "collapseNoMismatch",
-                value: false,
+                value: true,
                 disabled: "never",
                 tooltip:
                   "collapses ASVs in an ASV table that are identical up to shifts or length variation, i.e. that have no mismatches or internal indels (dada2 'collapseNoMismatch')",
@@ -1826,139 +1826,6 @@ export default new Vuex.Store({
         disabled: "never",
         services: [
           {
-            tooltip: "postclustering with LULU algorithm",
-            scriptName: "lulu.sh",
-            imageName: "pipecraft/vsearch_dada2:2",
-            serviceName: "LULU",
-            selected: false,
-            showExtra: false,
-            extraInputs: [
-              {
-                name: "match_list_soft",
-                items: ["vsearch", "BLAST"],
-                value: "vsearch",
-                disabled: "never",
-                tooltip:
-                  "use either 'blastn' or 'vsearch' to generate match list for LULU. Default is 'vsearch' (much faster)",
-                type: "select",
-              },
-              {
-                name: "vsearch_similarity_type",
-                items: ["0", "1", "2", "3", "4"],
-                value: "2",
-                disabled: "never",
-                tooltip:
-                  "applies only when 'vsearch' is used as 'match_list_soft'. Pairwise sequence identity definition (--iddef)",
-                type: "select",
-              },
-              {
-                name: "perc_identity",
-                value: 84,
-                disabled: "never",
-                tooltip:
-                  "percent identity cutoff for match list. Excluding pairwise comparisons with lower sequence identity percentage than specified threshold",
-                type: "numeric",
-                rules: [
-                  (v) => v >= 1 || "ERROR: specify values >= 1",
-                  (v) => v <= 100 || "ERROR: specify values <= 100",
-                ],
-              },
-              {
-                name: "coverage_perc",
-                value: 80,
-                disabled: "never",
-                tooltip:
-                  "percent query coverage per hit. Excluding pairwise comparisons with lower sequence coverage than specified threshold",
-                type: "numeric",
-                rules: [
-                  (v) => v >= 1 || "ERROR: specify values >= 1",
-                  (v) => v <= 100 || "ERROR: specify values <= 100",
-                ],
-              },
-              {
-                name: "strands",
-                items: ["plus", "both"],
-                value: "both",
-                disabled: "never",
-                tooltip:
-                  "query strand to search against database. Both = search also reverse complement",
-                type: "select",
-              },
-              {
-                name: "cores",
-                value: 4,
-                disabled: "never",
-                tooltip:
-                  "number of cores to use for generating match list for LULU",
-                type: "numeric",
-                rules: [(v) => v >= 1 || "ERROR: specify values >= 1"],
-              },
-            ],
-            Inputs: [
-              {
-                name: "table",
-                active: false,
-                btnName: "select file",
-                value: "undefined",
-                disabled: "never",
-                tooltip:
-                  "select OTU/ASV table. If no file is selected, then PipeCraft will look OTU_table.txt or ASV_table.txt in the working directory",
-                type: "boolfile",
-              },
-              {
-                name: "rep_seqs",
-                active: false,
-                btnName: "select file",
-                value: "undefined",
-                disabled: "never",
-                tooltip:
-                  "select fasta formatted sequence file containing your OTU/ASV reads",
-                type: "boolfile",
-              },
-              {
-                name: "min_ratio_type",
-                items: ["min", "avg"],
-                value: "min",
-                disabled: "never",
-                tooltip:
-                  "sets whether a potential error must have lower abundance than the parent in all samples 'min' (default), or if an error just needs to have lower abundance on average 'avg'",
-                type: "select",
-              },
-              {
-                name: "min_ratio",
-                value: 1,
-                disabled: "never",
-                tooltip:
-                  "default = 1. Sets the minimim abundance ratio between a potential error and a potential parent to be identified as an error",
-                type: "numeric",
-                rules: [(v) => v >= 1 || "ERROR: specify values >= 1"],
-              },
-              {
-                name: "min_match",
-                value: 95,
-                disabled: "never",
-                tooltip:
-                  "default = 95%. Specify minimum threshold of sequence similarity for considering any OTU as an error of another",
-                type: "numeric",
-                rules: [
-                  (v) => v >= 1 || "ERROR: specify values >= 1",
-                  (v) => v <= 100 || "ERROR: specify values <= 100",
-                ],
-              },
-              {
-                name: "min_rel_cooccurence",
-                value: 0.95,
-                disabled: "never",
-                tooltip:
-                  "minimum co-occurrence rate. Default = 0.95 (meaning that 1 in 20 samples are allowed to have no parent presence)",
-                max: 1,
-                min: 0,
-                step: 0.01,
-                type: "slide",
-              },
-            ],
-          },
-          {
             scriptName: "clustering_vsearch_ASVs2OTUs.sh",
             tooltip: "clustering ASVs to OTUs with vsearch; and making an OTU table",
             imageName: "pipecraft/vsearch_dada2:2",
@@ -2082,7 +1949,7 @@ export default new Vuex.Store({
               "pseudogene fintering with ORFfinder (search open reading frames)",
             scriptName: "ORFfinder.sh",
             imageName: "pipecraft/metaworks:1.12.0",
-            serviceName: "pseudogene filtering",
+            serviceName: "ORFfinder",
             selected: false,
             showExtra: false,
             extraInputs: [
@@ -2097,7 +1964,7 @@ export default new Vuex.Store({
               {
                 name: "strand",
                 items: ["plus", "minus", "both"],
-                value: "plus",
+                value: "both",
                 disabled: "never",
                 tooltip: "output ORFs on specified strand only",
                 type: "select",
@@ -2356,7 +2223,7 @@ export default new Vuex.Store({
             value: ["\\.R1"],
             disabled: "single_end",
             tooltip:
-              "identifyer string that is common for all R1 reads (e.g. when all R1 files have '.R1' string, then enter '\\.R1'. Note that backslash is only needed to escape dot regex; e.g. when all R1 files have '_R1' string, then enter '_R1'.)",
+              "identifyer string that is common for all R1 reads. R1/R2 reads must contain R1/R2 strings in the file names; sample names must not contain R1/R2! (e.g. when all R1 files have '.R1' string, then enter '\\.R1'. Note that backslash is only needed to escape dot regex; e.g. when all R1 files have '_R1' string, then enter '_R1'.)",
             type: "chip",
             rules: [(v) => v.length <= 1 || "ADD ONLY ONE IDENTIFIER"],
           },
@@ -2598,7 +2465,7 @@ export default new Vuex.Store({
         extraInputs: [
           {
             name: "cores",
-            value: 4,
+            value: 6,
             disabled: "never",
             tooltip: "number of cores to use",
             type: "numeric",
@@ -3084,7 +2951,7 @@ export default new Vuex.Store({
             value: ["\\.R1"],
             disabled: "single_end",
             tooltip:
-              "identifyer string that is common for all R1 reads (e.g. when all R1 files have '.R1' string, then enter '\\.R1'. Note that backslash is only needed to escape dot regex; e.g. when all R1 files have '_R1' string, then enter '_R1'.)",
+              "identifyer string that is common for all R1 reads. R1/R2 reads must contain R1/R2 strings in the file names; sample names must not contain R1/R2! (e.g. when all R1 files have '.R1' string, then enter '\\.R1'. Note that backslash is only needed to escape dot regex; e.g. when all R1 files have '_R1' string, then enter '_R1'.)",
             type: "chip",
             rules: [(v) => v.length <= 1 || "ADD ONLY ONE IDENTIFIER"],
           },
@@ -3243,7 +3110,7 @@ export default new Vuex.Store({
         extraInputs: [
           {
             name: "cores",
-            value: 4,
+            value: 6,
             disabled: "never",
             tooltip: "number of cores to use",
             type: "numeric",
@@ -4257,7 +4124,7 @@ export default new Vuex.Store({
             value: ["\\.R1"],
             disabled: "single_end",
             tooltip:
-              "[only for paired-end data] identifyer string that is common for all R1 reads (e.g. when all R1 files have '.R1' string, then enter '\\.R1'. Note that backslash is only needed to escape dot regex; e.g. when all R1 files have '_R1' string, then enter '_R1'.). When demultiplexing data during this workflow, then specify as '\\.R1'",
+              "[only for paired-end data] identifyer string that is common for all R1 reads. R1/R2 reads must contain R1/R2 strings in the file names; sample names must not contain R1/R2! (e.g. when all R1 files have '.R1' string, then enter '\\.R1'. Note that backslash is only needed to escape dot regex; e.g. when all R1 files have '_R1' string, then enter '_R1'.). When demultiplexing data during this workflow, then specify as '\\.R1'",
             type: "chip",
             rules: [(v) => v.length <= 1 || "ADD ONLY ONE IDENTIFIER"],
           },
@@ -4570,7 +4437,7 @@ export default new Vuex.Store({
         Inputs: [
           {
             name: "collapseNoMismatch",
-            value: false,
+            value: true,
             disabled: "never",
             tooltip:
               "collapses ASVs that are identical up to shifts or length variation, i.e. that have no mismatches or internal indels (dada2 'collapseNoMismatch')",

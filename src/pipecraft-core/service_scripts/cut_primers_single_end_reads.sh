@@ -19,7 +19,7 @@
 ##########################################################
 
 #load variables
-extension=$fileFormat && export fileFormat 
+extension=${fileFormat}  # KEEP THIS (removed in some other scripts)
 mismatches=$"-e ${mismatches}"
 min_length=$"--minimum-length ${min_seq_length}"
 overlap=$"--overlap ${min_overlap}"
@@ -28,7 +28,6 @@ no_indels=$no_indels
 discard_untrimmed=$"TRUE" #currently only fixed to TRUE 
 seqs_to_keep=$seqs_to_keep
 pair_filter=$pair_filter
-
 fwd_tempprimer=$forward_primers
 rev_tempprimer=$reverse_primers
 
@@ -90,13 +89,13 @@ done < tempdir2/fwd_primer.fasta
 #############################
 ### Start of the workflow ###
 #############################
-if [[ $no_indels == "TRUE" ]]; then
+if [[ $no_indels == "true" ]]; then
     indels=$"--no-indels"
 fi
 ### Read through each fastq/fasta file in folder
-for file in *.$extension; do
+for file in *.$fileFormat; do
     #Write file name without extension
-    input=$(echo $file | sed -e "s/.$extension//")
+    input=$(echo $file | sed -e "s/.$fileFormat//")
     ## Preparing files
     printf "\n____________________________________\n"
     printf "Checking $input ...\n"
@@ -168,17 +167,32 @@ If no files in this folder, then all sequences were passed to files in $output_d
 fi
 
 #Make README.txt file for PrimerClipped reads
-printf "Files in /$output_dir folder represent sequences from where the PCR primers were recognized and clipped.
+printf "# Primers were removed using cutadapt (see 'Core command' below for the used settings).
+
+Files in $output_dir folder represent sequences from where the PCR primers were recognized and clipped.
 Forward primer(s) [has to be 5'-3']: $fwd_tempprimer
 Reverse primer(s) [has to be 3'-5']: $rev_tempprimer
-[If primers were not specified in orientations noted above, please run this step again].\n
-Note that REVERSE COMPLEMENTARY search was also performed for sequences when no primer match was found on the 'original' strand.
+[If primers were not specified in orientations noted above, please run this step again].
+
+Note that REVERSE COMPLEMENTARY search was also performed for sequences when no primer match was found on the 'original' strand ('--revcomp' setting).
 If a match was found on a reverse complementary strand, then this reverse complementary sequence is outputted instead of 'original' read where no primer matches were found.
 If forward primer(s) were specified in 5'-3' orientation, then all output seqs are in 5'-3' orientation.
-Therefore, for single-end data, NO ADDITIONAL 'reorient reads' process is needed (and also impossible, because primers are now clipped).\n
-If no outputs were generated into /$output_dir, check your specified primer strings and adjust settings.
-\nSummary of sequence counts in 'seq_count_summary.txt'\n
-\n\nTotal run time was $runtime sec.\n\n\n
+Therefore, for single-end data, NO ADDITIONAL 'reorient reads' process is needed (and also impossible, because primers are now clipped).
+
+If no outputs were generated into $output_dir, check your specified primer strings and adjust settings.
+
+Core command -> \n" > $output_dir/README.txt
+
+if [[ $seqs_to_keep == "keep_all" ]]; then
+        printf "seqs_to_keep == "keep_all"; cutadapt --revcomp $mismatches $min_length $overlap $indels $untrimmed_output -g liked_forwardPrimer_and_reverseComplementReversePrimer -g forwardPrimer -a reverseComplementReversePrimer -o output input \n" >> $output_dir/README.txt
+elif [[ $seqs_to_keep == "keep_only_linked" ]]; then
+    printf "seqs_to_keep == "keep_only_linked"; cutadapt --revcomp $mismatches $min_length $overlap $indels $untrimmed_output -g liked_forwardPrimer_and_reverseComplementReversePrimer -o output input \n" >> $output_dir/README.txt
+fi
+
+printf "\nSummary of sequence counts in 'seq_count_summary.txt'
+
+Total run time was $runtime sec.
+
 ##########################################################
 ###Third-party applications used for this process [PLEASE CITE]:
 #cutadapt v4.4 for cutting the primers
@@ -187,17 +201,13 @@ If no outputs were generated into /$output_dir, check your specified primer stri
 #seqkit v2.3.0 for generating reverse complementary primer strings
     #citation: Shen W, Le S, Li Y, Hu F (2016) SeqKit: A Cross-Platform and Ultrafast Toolkit for FASTA/Q File Manipulation. PLOS ONE 11(10): e0163962. https://doi.org/10.1371/journal.pone.0163962
     #https://bioinf.shenwei.me/seqkit/
-##################################################################" > $output_dir/README.txt
+##################################################################" >> $output_dir/README.txt
 
 #Done
 printf "\nDONE\n"
-printf "Data in directory '$output_dir'\n"
-printf "Summary of sequence counts in 'seq_count_summary.txt'\n"
-printf "Check README.txt files in output directory for further information about the process.\n"
-printf "Total time: $runtime sec.\n\n"
+printf "Total time: $runtime sec.\n"
 
 #variables for all services
-echo "workingDir=/$output_dir"
+echo "workingDir=$output_dir"
 echo "fileFormat=$extension"
-
 echo "readType=single_end"

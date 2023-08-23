@@ -118,7 +118,7 @@ end=$(date +%s)
 runtime=$((end-start))
 
 #Make README.txt file
-printf "# Quality filtering with fastp.
+printf "# Quality filtering was performed using fastp (see 'Core command' below for the used settings).
 
 Files in 'qualFiltered_out':
 # *.fastq               = quality filtered sequences per sample.

@@ -13,7 +13,6 @@
 
 #load env variables
 readType=${readType}
-extension=${fileFormat}
 dataFormat=${dataFormat}
 workingDir=${workingDir}
 
@@ -31,7 +30,7 @@ source /scripts/submodules/framework.functions.sh
 start=$(date +%s)
 for folder in /input/primersCut_out/fwd_orient/qualFiltered_out /input/primersCut_out/rev_orient/qualFiltered_out; do
     ### Check that at least 2 samples are provided
-    files=$(ls $folder | grep -c ".$extension")
+    files=$(ls $folder | grep -c ".$fileFormat")
     if (( $files < 4 )); then
         printf '%s\n' "ERROR]: please provide at least 2 samples for the ASVs workflow
     >Quitting" >&2
@@ -58,31 +57,37 @@ for folder in /input/primersCut_out/fwd_orient/qualFiltered_out /input/primersCu
     #####################################
     ### CLEAN AND COMPILE README FILE ###
     #####################################
-    if [[ -d tempdir2 ]]; then
-        rm -rf tempdir2
+    if [[ $debugger != "true" ]]; then
+        if [[ -d tempdir2 ]]; then
+            rm -rf tempdir2
+        fi
     fi
     end=$(date +%s)
     runtime=$((end-start))
 
-    #Make README.txt file 
-    printf "# Denoising and assembling of PAIRED-END sequencing data with dada2.
+    #Make README.txt file
+    printf "# Denoising and assembling of paired-end sequencing data was performed with dada2 (see 'Core commands' below for the used settings).
 
     ### NOTE: ### 
     Input sequences must be made up only of A/C/G/T for denoising (i.e maxN must = 0 in quality filtering step). Otherwise DADA2 fails, and no output is generated.
     #############
 
     Files in 'denoised_assembled.dada2':
-    # *.ASVs.fasta   = denoised and assembled ASVs per sample. 'Size' denotes the abundance of the ASV sequence.  
+    # *ASVs.fasta   = denoised and assembled sequences per sample in FASTA format (no fastq output). 'Size' denotes the abundance of the ASV sequence.  
     # Error_rates_R1.pdf    = plots for estimated R1 error rates
     # Error_rates_R2.pdf    = plots for estimated R2 error rates
-    # seq_count_summary.csv = summary of sequence and ASV counts per sample
+    # seq_count_summary.csv = summary of sequence counts per sample
     # *.rds = R objects for dada2.
 
     Core commands -> 
-    learn errors: err = learnErrors(input)
-    dereplicate:  derep = derepFastq(input)
-    denoise:      dadaFs = dada(input, err = err, pool = pool)
-    assemble:     mergePairs(inputR1, dereplicatedR1, inputR2, dereplicatedR2, maxMismatch = $maxMismatch, minOverlap = $minOverlap, justConcatenate = $justConcatenate, trimOverhang = $trimOverhang)
+    setDadaOpt(OMEGA_A = $OMEGA_A, OMEGA_P = $OMEGA_P, OMEGA_C = $OMEGA_C, DETECT_SINGLETONS = $DETECT_SINGLETONS, BAND_SIZE = $BAND_SIZE)
+    learn errors: errF = learnErrors(fnFs, errorEstimationFunction = $errorEstFun)
+                  errR = learnErrors(fnRs, errorEstimationFunction = $errorEstFun)
+    dereplicate:  derepFs = derepFastq(fnFs, qualityType = $qualityType)
+                  derepRs = derepFastq(fnRs, qualityType = $qualityType)
+    denoise:      dadaFs = dada(derepFs, err = errF, pool = $pool)
+                  dadaRs = dada(derepRs, err = errR, pool = $pool)
+    assemble:     mergePairs(dadaFs, derepFs, dadaRs, derepRs, maxMismatch = $maxMismatch, minOverlap = $minOverlap, justConcatenate = $justConcatenate, trimOverhang = $trimOverhang)
 
     Total run time was $runtime sec.
     ##################################################################

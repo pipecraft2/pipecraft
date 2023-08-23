@@ -151,7 +151,7 @@ for folder in /input/primersCut_out/fwd_orient /input/primersCut_out/rev_orient;
     runtime=$((end-start))
     
     #Make README.txt file
-    printf "# Quality filtering with DADA2.
+    printf "# Quality filtering was performed using dada2 (see 'Core command' below for the used settings).
     Detected MIXED orient sequences as input data; note that there were independent runs for fwd_orient and rev_orient inputs.
 
     Files in 'qualFiltered_out':
@@ -160,7 +160,7 @@ for folder in /input/primersCut_out/fwd_orient /input/primersCut_out/rev_orient;
     # *.rds                     = R objects for dada2.
 
     Core command -> 
-    filterAndTrim(inputR1, outputR1, inputR2, outputR2, maxN = $maxN, maxEE = c($maxEE, $maxEE), truncQ = $truncQ, truncLen= c($truncLen_R1, $truncLen_R2), maxLen = $maxLen, minLen = $minLen, minQ=$minQ, rm.phix = TRUE, multithread = TRUE)
+    filterAndTrim(inputR1, outputR1, inputR2, outputR2, maxN = $maxN, maxEE = c($maxEE, $maxEE), truncQ = $truncQ, truncLen= c($truncLen_R1, $truncLen_R2), maxLen = $maxLen, minLen = $minLen, minQ=$minQ, rm.phix = TRUE)
 
     Total run time was $runtime sec for $output_dir.
     ##################################################################
@@ -177,14 +177,10 @@ done
 
 #Done
 printf "\nDONE\n"
-printf "Data in directory '$output_dir'\n"
-printf "Summary of sequence counts in '$output_dir/seq_count_summary.txt'\n"
-printf "Check README.txt files in output directory for further information about the process.\n"
 printf "Total time: $runtime sec.\n\n"
 
 #variables for all services
 echo "workingDir=$output_dir"
 echo "fileFormat=$extension"
-
 echo "readType=paired_end"
 

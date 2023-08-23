@@ -194,7 +194,7 @@ function check_gz_zip_SE () {
             printf '%s\n' "ERROR]: $input.$fileFormat decompressing failed! File not compressed as gz or zip.
 Decompressing other formats is not supported, please decompress manually.
 >Quitting" >&2 
-            quit_process      
+            end_process      
         fi
         extension=$(echo $fileFormat | (awk 'BEGIN{FS=OFS="."} {print $(NF-1)}';))
         export extension

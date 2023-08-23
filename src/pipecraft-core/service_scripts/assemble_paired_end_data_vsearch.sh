@@ -126,7 +126,9 @@ end=$(date +%s)
 runtime=$((end-start))
 
 #Make README.txt file for demultiplexed reads
-printf "Files in 'assembled_out' directory represent assembled paired-end files.\n
+printf "# Paired-end data was assembled using vsearch (see 'Core command' below for the used settings).
+
+Files in 'assembled_out' directory represent assembled paired-end files.\n
 If include only R1 = TRUE, then the unassembled R1 reads have been added to the set of assembled reads per sample.
 This may be relevant when working with e.g. ITS2 sequences, because ITS2 region in some taxa is too long for assembly, 
 therefore discarded completely after assembly process. Thus, including also unassembled R1 reads, partial ITS2 sequences 
@@ -139,8 +141,9 @@ NOTE RUNNING THE PROCESS SEVERAL TIMES IN THE SAME DIRECTORY WILL OVERWRITE ALL 
 Core command -> 
 vsearch --fastq_mergepairs input.R1 --reverse input.R2 $fastq_minoverlen $fastq_minmergelen $allowmergestagger $fastq_maxdiffs $fastq_maxns $fastq_maxmergelen $fastqout_notmerged_fwd $fastqout_notmerged_rev --fastq_qmax $fastq_qmax --fastq_qmaxout $fastq_qmax --fastqout output_file
 
-\nSummary of sequence counts in 'seq_count_summary.txt'\n
-\nTotal run time was $runtime sec.\n\n
+Summary of sequence counts in 'seq_count_summary.txt'
+Total run time was $runtime sec.
+
 ##################################################################
 ###Third-party applications for this process [PLEASE CITE]:
 #vsearch v2.23.0 for assembling paired-end reads
@@ -150,7 +153,6 @@ vsearch --fastq_mergepairs input.R1 --reverse input.R2 $fastq_minoverlen $fastq_
 
 ###Done, files in $output_dir folder
 printf "\nDONE.\n"
-printf "Data in directory $output_dir.\n"
 printf "Total time: $runtime sec.\n\n"
 
 #variables for all services

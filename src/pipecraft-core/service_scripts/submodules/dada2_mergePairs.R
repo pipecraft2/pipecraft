@@ -74,8 +74,8 @@ cat("sample names = ", sample_names, "\n")
 cat("#Performing DADA2 denoising;")
 
 #Learn the error rates
-errF = learnErrors(fnFs, errorEstimationFunction = errorEstFun, multithread = FALSE)
-errR = learnErrors(fnRs, errorEstimationFunction = errorEstFun, multithread = FALSE)
+errF = learnErrors(fnFs, errorEstimationFunction = errorEstFun, multithread = TRUE)
+errR = learnErrors(fnRs, errorEstimationFunction = errorEstFun, multithread = TRUE)
 
 #Error rate figures
 pdf(file.path(path_results, "Error_rates_R1.pdf"))
@@ -91,8 +91,8 @@ derepRs = derepFastq(fnRs, qualityType = qualityType)
 print("derepFastq DONE")
 
 #denoise
-dadaFs = dada(derepFs, err = errF, pool = pool, multithread = FALSE)
-dadaRs = dada(derepRs, err = errR, pool = pool, multithread = FALSE)
+dadaFs = dada(derepFs, err = errF, pool = pool, multithread = TRUE)
+dadaRs = dada(derepRs, err = errR, pool = pool, multithread = TRUE)
 print("denoising DONE")
 
 #merge paired-end reads

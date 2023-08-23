@@ -24,7 +24,6 @@ regex='[^/]*$'
 oligos_file_path=$(echo $index_file | grep -oP "$regex")
 oligos_file=$(basename $oligos_file_path) #basename, needed for macOS
 indexes_file=$(printf "/extraFiles/$oligos_file")
-extension=$fileFormat && export fileFormat 
 error_rate="-e ${index_mismatch}"
 search_window=${search_window}
 if [ "$no_indels" = true ] ; then
@@ -64,13 +63,11 @@ check_indexes_file
 ### Process file
 printf "Checking files ...\n"
 while read LINE; do
-
     #Write file name without extension
-    inputR1=$(echo $LINE | sed -e "s/.$extension//")
+    inputR1=$(echo $LINE | sed -e "s/.$fileFormat//")
     inputR2=$(echo $inputR1 | sed -e 's/R1/R2/')
 
     #If input is compressed, then decompress (keeping the compressed file, but overwriting if filename exists!)
-        
     check_gz_zip_PE
     ### Check input formats (fastq/fasta supported)
     check_extension_fastx
@@ -141,8 +138,6 @@ while read LINE; do
     ### Start demultiplexing ###
     ############################
     printf "\n# Demultiplexing with $tag indexes ... \n"
-    printf "   (this may take some time for large files)\n"
-
     ### Round1 demux
     checkerror=$(cutadapt --quiet \
     $indexes_file_round1 \
@@ -261,19 +256,24 @@ end=$(date +%s)
 runtime=$((end-start))
 
 #Make README.txt file for demultiplexed reads
-printf "Files in 'demultiplex_out' directory represent per sample sequence files, 
+printf "# Demultiplexing was performed using cutadapt (see 'Core command' below for the used settings).
+
+Files in 'demultiplex_out' directory represent per sample sequence files, 
 that were generated based on the specified indexes file ($oligos_file).
 [demultiplex_out/index_*fasta files(s) is $oligos_file but with added search window size for cutadapt].
 
 Paired-end data, has been demultiplexed taken into account that some sequences
-may be also in reverse complementary orientation.\n
+may be also in reverse complementary orientation (two rounds of cutadapt runs, see below).
 Output R1 and R2 reads are synchronized for merging paired-end data. 
 
 Files in 'unnamed_index_combinations' directory [if present; only when using dual indexes] represent
 index combinations that do not correspond to combinations used in indexes file ($oligos_file).
 
 IF SEQUENCE YIELD PER SAMPLE IS LOW (OR ZERO), DOUBLE-CHECK THE INDEXES FORMATTING.
-RUNNING THE PROCESS SEVERAL TIMES IN THE SAME DIRECTORY WILL OVERWRITE ALL THE OUTPUTS!
+
+Core commands -> 
+Round1: cutadapt $indexes_file_round1 $error_rate $no_indels $overlap $minlen outR1 outR2 inputR1 inputR2
+Round2 (RC; R1 and R2 position switched!): cutadapt $indexes_file_round2 $error_rate $no_indels $overlap $minlen outR2_round2 outR1_round2 input_for_round2_R2 input_for_round2_R1
 
 Summary of sequence counts in 'seq_count_summary.txt'
 

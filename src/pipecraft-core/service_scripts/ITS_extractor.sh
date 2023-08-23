@@ -27,7 +27,6 @@
 ##########################################################
 
 #load variables
-extension=$fileFormat && export fileFormat 
 organisms=$"-t ${organisms}"
 regions=$"--save_regions ${regions}"
 partial=$"--partial ${partial}"
@@ -77,28 +76,26 @@ run_python_module=$"python3 /scripts/submodules/remove_empty_seqs.py"
 start=$(date +%s)
 ### Check if files with specified extension exist in the dir
 first_file_check
-### Prepare working env and check paired-end data
+### Prepare working env and check single-end data
 prepare_SE_env
 #make output dir for no-detections
 mkdir $output_dir/no_detections
 ### Process samples
-for file in *.$extension; do
+for file in *.$fileFormat; do
     ### Make temporary directory for temp files (for each sample)
     if [ -d tempdir ]; then
         rm -rf tempdir
     fi
     mkdir tempdir
     #Read file name; without extension
-    input=$(echo $file | sed -e "s/.$extension//")
+    input=$(echo $file | sed -e "s/.$fileFormat//")
     ## Preparing files for the process
     printf "\n____________________________________\n"
     printf "Processing $input ...\n"
     #If input is compressed, then decompress (keeping the compressed file, but overwriting if filename exists!)
-        
     check_gz_zip_SE
     ### Check input formats (fastq supported)
     check_extension_fastx
-
     #If input is FASTQ then convert to FASTA
     if [[ $extension == "fastq" ]] || [[ $extension == "fq" ]]; then
         checkerror=$(seqkit fq2fa -t dna --line-width 0 $input.$extension -o $input.fasta 2>&1)
@@ -120,7 +117,7 @@ for file in *.$extension; do
     mv $input.names tempdir
 
     #Run ITSx
-    echo "ITSx -i tempdir/$input.unique.$extension -o tempdir/$input. --preserve T --graphical F $organisms  $partial $regions $cores $eval  $score $domains  $complement_in $only_full_in $truncate_in"
+    echo "ITSx -i $input.$extension -o $input. --preserve T --graphical F $organisms  $partial $regions $cores $eval  $score $domains  $complement_in $only_full_in $truncate_in"
 
     checkerror=$(ITSx -i tempdir/$input.unique.$extension \
     -o tempdir/$input. \
@@ -303,24 +300,28 @@ fi
 
 #If initial input was FASTQ then remove converted FASTA files
 if [[ $was_fastq == "TRUE" ]]; then
-    mkdir -p $output_dir/input_FASTA_files
-    mv *.fasta $output_dir/input_FASTA_files
+    mkdir -p $output_dir/ITSx_input_to_FASTA
+    mv *.fasta $output_dir/ITSx_input_to_FASTA
 fi
 
 end=$(date +%s)
 runtime=$((end-start))
 
 #Make README.txt file
-printf "Files in 'ITSx_out' directory represent sequences that passed ITS Extractor.
+printf "# ITS regions extracted with ITSx (see 'Core command' below for the used settings).
+
+Files in 'ITSx_out' directory represent sequences that passed ITS Extractor.
 Regions are placed under corrseponding directory (i.e., ITS2 sequences are in 'ITS2' directory).
-Files in /no_detections directory represent sequences where no ITS regions were identified.\n
+Files in /no_detections directory represent sequences where no ITS regions were identified.
+
 If input was FASTQ formatted file(s), then it was converted to FASTA, and only FASTA is outputted.
-Input FASTA files (converted from FASTQ) are in ITSx_out/input_FASTA_files directory.
+Input FASTA files (converted from FASTQ) are in ITSx_out/ITSx_input_to_FASTA directory.
 
 Core command -> 
 ITSx -i input.unique.seqs -o output --preserve T --graphical F $organisms $partial $regions $cores $eval $score $domains $complement_in $only_full_in $truncate_in
 
-Total run time was $runtime sec.\n\n
+Total run time was $runtime sec.
+
 ##################################################################
 ###Third-party applications for this process [PLEASE CITE]:
 #ITSx v1.1.3 for extracting ITS regions
@@ -336,9 +337,6 @@ Total run time was $runtime sec.\n\n
 
 #Done
 printf "\nDONE\n"
-printf "Data in directory '$output_dir'\n"
-printf "Summary of sequence counts in 'seq_count_summary.txt'\n"
-printf "Check README.txt files in output directory for further information about the process.\n"
 printf "Total time: $runtime sec.\n\n"
 
 #variables for all services
@@ -348,5 +346,4 @@ else
     echo "workingDir=$output_dir"
 fi
 echo "fileFormat=$extension"
-
 echo "readType=single_end"

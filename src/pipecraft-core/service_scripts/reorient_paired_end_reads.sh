@@ -159,7 +159,9 @@ It is highly likely that this sequence is a chimeric one, and should be therefor
 Usually only very few such 'multi-primer' chimeric sequences are found in the amplicon data sets.\n" > $output_dir/multiprimer_chimeras/README.txt
 
 #Make README.txt file for this process
-printf "Files here represent sequences that have been reoriented based on PCR primers.
+printf "# Reorienting of the sequences was performed using fqgrep by searching PCR primer strings in the reads (allowed mismatches = $mismatches).
+
+Files here represent sequences that have been reoriented based on PCR primers.
 Forward primer(s) [has to be 5'-3']: $fwd_tempprimer
 Reverse primer(s) [has to be 3'-5']: $rev_tempprimer
 [If primers were not specified in orientations noted above, please run this step again].

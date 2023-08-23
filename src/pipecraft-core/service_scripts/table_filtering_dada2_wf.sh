@@ -79,8 +79,8 @@ if [[ $collapseNoMismatch == "true" ]]; then
     # ASV_table_collapsed.rds  = ASV table in RDS format after collapsing identical ASVs. 
 
     # If length filtering was applied (if 'by length' setting > 0) [if collapseNoMismatch=true, then performed after collapsing identical ASVs]:
-    # ASV_table_lenFilt.txt    = $ASVs_lenFilt_result_table
-    # ASVs_lenFilt.fasta       = $ASVs_lenFilt_result_fasta
+    # ASV_table_lenFilt.txt = $ASVs_lenFilt_result_table
+    # ASVs_lenFilt.fasta    = $ASVs_lenFilt_result_fasta
 
 
     Total run time was $runtime sec.
@@ -94,8 +94,8 @@ else
     printf "# Filtering the of the dada2 ASV table.
 
     Files in 'ASVs_out.dada2/filtered':
-    # ASV_table_lenFilt.txt    = $ASVs_lenFilt_result_table
-    # ASVs_lenFilt.fasta       = $ASVs_lenFilt_result_fasta
+    # ASV_table_lenFilt.txt = $ASVs_lenFilt_result_table
+    # ASVs_lenFilt.fasta    = $ASVs_lenFilt_result_fasta
 
     Total run time was $runtime sec.
     ##################################################################

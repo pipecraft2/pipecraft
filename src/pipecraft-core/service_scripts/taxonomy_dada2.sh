@@ -56,7 +56,7 @@ fi
 #############################
 ### Check if files with specified extension exist in the dir
 first_file_check
-### Prepare working env and check paired-end data
+### Prepare working env and check single-end data
 prepare_SE_env
 
 ###Run DADA2 classifier in R

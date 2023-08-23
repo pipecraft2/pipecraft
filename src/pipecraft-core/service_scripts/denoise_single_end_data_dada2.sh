@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# denoise and assemble paired-end data with DADA2 dada and mergePairs functions. For DADA2 full workflow.
+# denoise single-end data with DADA2.
 
 ##########################################################
 ###Third-party applications:
@@ -62,7 +62,7 @@ end=$(date +%s)
 runtime=$((end-start))
 
 #Make README.txt file 
-printf "# Denoising of SINGLE-END sequencing data with dada2.
+printf "# Denoising of SINGLE-END sequencing data with dada2 (see 'Core command' below for the used settings).
 
 ### NOTE: ### 
 Input sequences must be made up only of A/C/G/T for denoising (i.e maxN must = 0 in quality filtering step). Otherwise DADA2 fails, and no output is generated.
@@ -75,9 +75,9 @@ Files in 'denoised_assembled.dada2':
 # *.rds                   = R objects for dada2.
 
 Core commands -> 
-learn errors: err = learnErrors(input)
 dereplicate:  derep = derepFastq(input, qualityType = $qualityType)
-denoise:      dadaFs = dada(input, err = err, pool = $pool) [errorEstimationFunction = $errorEstFun]
+learn errors: err = learnErrors(derep)
+denoise:      dada(derep, err = err, pool = $pool) [errorEstimationFunction = $errorEstFun]
 
 Total run time was $runtime sec.
 ##################################################################
