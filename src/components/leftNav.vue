@@ -209,6 +209,9 @@ export default {
               readType: result.value[1],
               fileFormat: result.value[0].replace("_", "."),
             });
+            if (result.value[0] == "single_end") {
+              this.$store.commit("setDADAmode", "SINGLE_END");
+            }
             this.$store.commit("toggle_PE_SE_scripts", result.value[1]);
             dialog
               .showOpenDialog({

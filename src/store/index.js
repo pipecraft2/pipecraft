@@ -1790,15 +1790,8 @@ export default new Vuex.Store({
                 value: "undefined",
                 disabled: "never",
                 tooltip:
-                  "select a reference database fasta file for taxonomy annotation",
+                  "Select a reference database fasta file for taxonomy annotation, Dowload databases at https://benjjneb.github.io/dada2/training.html",
                 type: "file",
-              },
-              {
-                name: "download databases",
-                value: "https://benjjneb.github.io/dada2/training.html",
-                disabled: "never",
-                type: "link",
-                tooltip: "link to download DADA2-formatted reference databases",
               },
               {
                 name: "minBoot",
@@ -4473,15 +4466,8 @@ export default new Vuex.Store({
             value: "undefined",
             disabled: "never",
             tooltip:
-              "select a reference database fasta file for taxonomy annotation",
+              "Select a reference database fasta file for taxonomy annotation, Dowload databases at https://benjjneb.github.io/dada2/training.html",
             type: "file",
-          },
-          {
-            name: "download databases",
-            value: "https://benjjneb.github.io/dada2/training.html",
-            disabled: "never",
-            type: "link",
-            tooltip: "link to download DADA2-formatted reference databases",
           },
           {
             name: "minBoot",
@@ -4532,6 +4518,10 @@ export default new Vuex.Store({
     },
   },
   getters: {
+    linkify: () => (tooltip) => {
+      var urlRegex = /(((https?:\/\/)|(www\.))[^\s]+)/g;
+      return tooltip.match(urlRegex);
+    },
     singleStepNames: (state) => state.steps.map(({ stepName }) => stepName),
     steps2Run: (state) => (id) => {
       let steps = state[id].filter(
@@ -4553,7 +4543,11 @@ export default new Vuex.Store({
         state.selectedSteps[index[0]].services.forEach((input) => {
           if (input.selected === true || input.selected == "always") {
             input.Inputs.forEach((input) => {
-              if (input.type == "file") {
+              if (
+                input.type == "file" ||
+                input.type == "chip" ||
+                (input.type == "boolfile" && input.active == true)
+              ) {
                 fileInputValues.push(input.value);
               }
             });
@@ -4751,7 +4745,6 @@ export default new Vuex.Store({
       state.inputDir = filePath;
     },
     addInputInfo(state, payload) {
-      (state.data.dataFormat = payload.dataFormat),
         (state.data.fileFormat = payload.fileFormat),
         (state.data.readType = payload.readType);
     },
@@ -4821,8 +4814,8 @@ export default new Vuex.Store({
         payload.value;
     },
     setDADAmode(state, payload) {
-      state.data.dada2mode = payload.target.innerText.replace(/-/g, "_");
-      if (payload.target.innerText == "MIXED") {
+      state.data.dada2mode = payload;
+      if (payload == "MIXED") {
         state.DADA2_ASVs[0].selected = "always";
       } else {
         state.DADA2_ASVs[0].selected = false;

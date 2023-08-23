@@ -40,9 +40,34 @@
       >
       <v-card-actions v-if="$route.params.workflowName.includes('DADA2')">
         <v-tabs>
-          <v-tab @click="$store.commit('setDADAmode', $event)">FORWARD</v-tab>
-          <v-tab @click="$store.commit('setDADAmode', $event)">MIXED</v-tab>
-          <v-tab @click="$store.commit('setDADAmode', $event)"
+          <v-tab
+            :disabled="$store.state.data.readType == 'single_end'"
+            @click="
+              $store.commit(
+                'setDADAmode',
+                $event.target.innerText.replace(/-/g, '_')
+              )
+            "
+            >FORWARD</v-tab
+          >
+          <v-tab
+            :disabled="$store.state.data.readType == 'single_end'"
+            @click="
+              $store.commit(
+                'setDADAmode',
+                $event.target.innerText.replace(/-/g, '_')
+              )
+            "
+            >MIXED</v-tab
+          >
+          <v-tab
+            :disabled="$store.state.data.readType == 'paired_end'"
+            @click="
+              $store.commit(
+                'setDADAmode',
+                $event.target.innerText.replace(/-/g, '_')
+              )
+            "
             >SINGLE-END</v-tab
           >
         </v-tabs>
