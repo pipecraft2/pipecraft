@@ -136,4 +136,3 @@ colnames(seq_count) <- c("input", "qualFiltered", "denoised")
 rownames(seq_count) <- sample_names
 write.csv(seq_count, file.path(path_results, "seq_count_summary.csv"), row.names = TRUE, quote = FALSE)
 print("DONE")
-

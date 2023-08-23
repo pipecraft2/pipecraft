@@ -1,1 +1,5 @@
+<<<<<<< HEAD
 {"read_R1":["\\.R1"],"min_overlap":12,"min_lenght":32,"allow_merge_stagger":true,"include_only_R1":false,"max_diffs":20,"max_Ns":0,"max_len":600,"keep_disjointed":false,"fastq_qmax":41}
+=======
+{"maxee":1,"maxNs":0,"min_length":32,"trunc_length":null,"qmax":41,"max_length":null,"qmin":0,"maxee_rate":null,"truncqual":null,"truncee":null,"cores":1}
+>>>>>>> 358415027cdd9290dba0e0bdfbe9ffabaf66a3f5

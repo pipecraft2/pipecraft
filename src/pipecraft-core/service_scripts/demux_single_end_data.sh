@@ -23,7 +23,6 @@ regex='[^/]*$'
 oligos_file_path=$(echo $index_file | grep -oP "$regex")
 oligos_file=$(basename $oligos_file_path) #basename, needed for macOS
 indexes_file=$(printf "/extraFiles/$oligos_file")
-extension=$fileFormat && export fileFormat 
 error_rate="-e ${index_mismatch}"
 if [ "$no_indels" = true ] ; then
     no_indels=$"--no-indels"
@@ -48,20 +47,17 @@ output_dir=$"/input/demultiplex_out"
 start=$(date +%s)
 ### Check if files with specified extension exist in the dir
 first_file_check
-### Prepare working env and check paired-end data
+### Prepare working env and check single-end data
 prepare_SE_env
 ### Check barcodes file
 check_indexes_file
 
 ### Process file
 printf "Checking files ...\n"
-for file in *.$extension; do
-
+for file in *.$fileFormat; do
     #Write file name without extension
-    input=$(echo $file | sed -e "s/.$extension//")
-
+    input=$(echo $file | sed -e "s/.$fileFormat//")
     #If input is compressed, then decompress (keeping the compressed file, but overwriting if filename exists!)
-        
     check_gz_zip_SE
     ### Check input formats (fastq/fasta supported)
     check_extension_fastx
@@ -147,14 +143,17 @@ end=$(date +%s)
 runtime=$((end-start))
 
 #Make README.txt file for demultiplexed reads
-printf "Files in 'demultiplex_out' directory represent per sample sequence files, 
+printf "# Demultiplexing was performed using cutadapt (see 'Core command' below for the used settings).
+
+Files in 'demultiplex_out' directory represent per sample sequence files, 
 that were generated based on the specified indexes file (demultiplex_out/index_file.fasta).
 [demultiplex_out/index_file.fasta is $oligos_file but with added search window size for cutadapt].
 
 Data, has been demultiplexed taken into account that some sequences
-may be also in reverse complementary orientation.
+may be also in reverse complementary orientation ('--revcomp' setting).
 Sequences where reverse complementary indexes have been found 
-were reverse complemented, so all the sequences are in uniform orientation in the files.\n
+were reverse complemented, so all the sequences are in uniform orientation in the files.
+
 Sequence orientation in 'demultiplex_out' reflects the indexes orientation: i.e. 
 1) if only single-end indexes have been specified, and these indexes are attached to 3'-end of a sequence,
 then sequence orientation is 3'-5'.
@@ -165,7 +164,9 @@ and indexes in the file were specified as 5'_indexes followed by 3'_indexes (fwd
 then sequence orientation is 5'-3'.\n
 
 IF SEQUENCE YIELD PER SAMPLE IS LOW (OR ZERO), DOUBLE-CHECK THE INDEXES FORMATTING.\n
-RUNNING THE PROCESS SEVERAL TIMES IN THE SAME DIRECTORY WILL OVERWRITE ALL THE OUTPUTS!
+
+Core command -> 
+cutadapt $indexes_file_in $error_rate $no_indels --revcomp $overlap $minlen
 
 Summary of sequence counts in 'seq_count_summary.txt'
 
@@ -183,13 +184,9 @@ Total run time was $runtime sec.
 
 #Done
 printf "\nDemultiplexing DONE"
-printf "Data in directory $output_dir\n"
-printf "Summary of sequence counts in '$output_dir/seq_count_summary.txt'\n"
-printf "Check README.txt file in $output_dir for further information about the process.\n"
 printf "Total time: $runtime sec.\n"
 
 #variables for all services
-echo "workingDir=/$output_dir"
+echo "workingDir=$output_dir"
 echo "fileFormat=$extension"
-echo "dataFormat=demultiplexed"
 echo "readType=single_end"

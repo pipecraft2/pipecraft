@@ -134,7 +134,7 @@ end=$(date +%s)
 runtime=$((end-start))
 
 #Make README.txt file
-printf "# Quality filtering with dada2.
+printf "# Quality filtering was performed using dada2 (see 'Core command' below for the used settings).
 
 Files in 'qualFiltered_out':
     # *.$extension             = quality filtered sequences per sample.
@@ -157,14 +157,10 @@ Total run time was $runtime sec.
 
 #Done
 printf "\nDONE\n"
-printf "Data in directory '$output_dir'\n"
-printf "Summary of sequence counts in '$output_dir/seq_count_summary.csv'\n"
-printf "Check README.txt files in output directory for further information about the process.\n"
 printf "Total time: $runtime sec.\n\n"
 
 #variables for all services
 echo "workingDir=$output_dir"
 echo "fileFormat=$extension"
-
 echo "readType=paired_end"
 

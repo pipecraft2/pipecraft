@@ -179,10 +179,10 @@ runtime=$((end-start))
 ###Make README.txt file
 #match_list generation
 if [[ $match_list_soft == "BLAST" ]]; then
-    match_list_generation=$"makeblastdb -in $input_fasta -parse_seqids -dbtype nucl; blastn -db $input_fasta -outfmt '6 qseqid sseqid pident' -out $output_dir/match_list.lulu -qcov_hsp_perc $coverage_perc -perc_identity $perc_identity -query $input_fasta -num_threads $cores"
+    match_list_generation=$"makeblastdb -in $input_fasta -parse_seqids -dbtype nucl; blastn -db $input_fasta -outfmt '6 qseqid sseqid pident' -out match_list.lulu -qcov_hsp_perc $coverage_perc -perc_identity $perc_identity -query $input_fasta"
 fi
 if [[ $match_list_soft == "vsearch" ]]; then
-    match_list_generation=$"vsearch --usearch_global $input_fasta --db $input_fasta --strand both --self --id $vsearch_perc_identity --iddef $vsearch_similarity_type --userout $output_dir/match_list.lulu --userfields query+target+id --maxaccepts 0 --query_cov $vsearch_coverage_perc --threads $cores"
+    match_list_generation=$"vsearch --usearch_global $input_fasta --db $input_fasta --strand both --self --id $vsearch_perc_identity --iddef $vsearch_similarity_type --userout match_list.lulu --userfields query+target+id --maxaccepts 0 --query_cov $vsearch_coverage_perc"
 fi
 #count merged units and curated units
 curated_units=$(grep -c "^>" $output_dir/lulu_out_RepSeqs.fasta)
@@ -197,7 +197,9 @@ else
     info=$"Output table consists of $curated_units molecular units (OTUs or ASVs)."
 fi
 
-printf "Total of $merged_units molecular units (OTUs or ASVs) were merged.
+printf "# Performed post-clustering with LULU (see 'Core commands' below for the used settings).
+
+Total of $merged_units molecular units (OTUs or ASVs) were merged.
 $info
 
 Files in 'lulu_out' directory:
@@ -216,7 +218,7 @@ Total run time was $runtime sec.
 ###Third-party applications [PLEASE CITE]:
 #lulu v0.1.0
     #citation: Froslev, T.G., Kjoller, R., Bruun, H.H. et al. 2017. Algorithm for post-clustering curation of DNA amplicon data yields reliable biodiversity estimates. Nat Commun 8, 1188.
-#BLAST 2.11.0+ (if BLAST was used to make match_list.lulu)
+#BLAST 2.14.0+ (if BLAST was used to make match_list.lulu)
     #citation: Camacho C., Coulouris G., Avagyan V., Ma N., Papadopoulos J., Bealer K., & Madden T.L. (2008) BLAST+: architecture and applications. BMC Bioinformatics 10:421. 
 #vsearch v2.23.0 (if vsearch was used to make match_list.lulu)
     #citation: Rognes T, Flouri T, Nichols B, Quince C, Mahé F (2016) VSEARCH: a versatile open source tool for metagenomics PeerJ 4:e2584

@@ -47,7 +47,7 @@ output_dir=$"/input/taxonomy_out"
 start=$(date +%s)
 ### Check if files with specified extension exist in the dir
 first_file_check
-### Prepare working env and check paired-end data
+### Prepare working env and check single-end data
 prepare_SE_env
 #If input is compressed, then decompress (keeping the compressed file, but overwriting if filename exists!)
 check_gz_zip_SE

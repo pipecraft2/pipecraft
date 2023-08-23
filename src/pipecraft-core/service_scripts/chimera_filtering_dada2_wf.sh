@@ -16,6 +16,7 @@ readType=${readType}
 extension=${fileFormat}
 dataFormat=${dataFormat}
 workingDir=${workingDir}
+echo ${dada2mode}
 
 #load variables
 method=${method}
@@ -83,8 +84,10 @@ done
 #################################################
 ### COMPILE FINAL STATISTICS AND README FILES ###
 #################################################
-if [[ -d tempdir2 ]]; then
-    rm -rf tempdir2
+if [[ $debugger != "true" ]]; then
+    if [[ -d tempdir2 ]]; then
+        rm -rf tempdir2
+    fi
 fi
 
 end=$(date +%s)
@@ -115,12 +118,13 @@ Total run time was $runtime sec.
 #Make README.txt file (ASVs_out.dada2)
 #count ASVs
 ASV_count=$(grep -c "^>" $output_dir2/ASVs.fasta)
-printf "# Make ASV table with dada2 makeSequenceTable function.
-Number of formed ASVs = $ASV_count
+printf "# Made an ASV table with dada2 makeSequenceTable function.
+
+Number of ASVs = $ASV_count
 
 Files in 'ASVs_out.dada2' directory:
 # ASVs_table.txt                  = ASV distribution table per sample (tab delimited file)
-# ASVs.fasta                      = FASTA formated representative ASV sequences (this file is used for taxonomy assignment)
+# ASVs.fasta                      = FASTA formated representative ASV sequences
 # ASVs_table.denoised.nochim.rds  = rds formatted denoised and chimera filtered ASV table (for DADA2)
 
 Core command -> 
@@ -140,7 +144,6 @@ printf "Total time: $runtime sec.\n\n"
 #variables for all services
 echo "workingDir=$output_dir2"
 echo "fileFormat=fasta"
-
 echo "readType=single_end"
 
 

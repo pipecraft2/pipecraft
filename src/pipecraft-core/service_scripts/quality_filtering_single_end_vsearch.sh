@@ -70,7 +70,7 @@ fi
 start=$(date +%s)
 ### Check if files with specified extension exist in the dir
 first_file_check
-### Prepare working env and check paired-end data
+### Prepare working env and check single-end data
 prepare_SE_env
 ### Process samples
 for file in *.$extension; do
@@ -114,7 +114,7 @@ end=$(date +%s)
 runtime=$((end-start))
 
 #Make README.txt file
-printf "# Quality filtering with vsearch.
+printf "# Quality filtering was performed using vsearch (see 'Core command' below for the used settings).
 
 Files in 'qualFiltered_out':
 # *.$extension           = quality filtered sequences in FASTQ format.
@@ -134,13 +134,9 @@ Total run time was $runtime sec.
 
 #Done
 printf "\nDONE\n"
-printf "Data in directory '$output_dir'\n"
-printf "Summary of sequence counts in '$output_dir/seq_count_summary.txt'\n"
-printf "Check README.txt files in output directory for further information about the process.\n"
 printf "Total time: $runtime sec.\n\n"
 
 #variables for all services
 echo "workingDir=$output_dir"
 echo "fileFormat=$extension"
-
 echo "readType=single_end"

@@ -16,7 +16,7 @@ readType=${readType}
 extension=${fileFormat}
 dataFormat=${dataFormat}
 workingDir=${workingDir}
-dada2mode=${dada2mode}
+echo ${dada2mode}
 
 #load variables
 method=${method}

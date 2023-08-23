@@ -14,17 +14,11 @@
     #Distributed under the GNU General Public License version 3 by the Free Software Foundation
     #https://github.com/torognes/vsearch
 ##########################################################
-echo "WORKDIR: $workingDir"
-
-
-debugger=${debugger}
-export debugger
-
-#load data
+#load ASV_fasta
 ASV_fasta=${ASV_fasta}
-#If specified, get OTUs subset
 if [[ $ASV_fasta == "undefined" ]]; then
-    :
+    printf '%s\n' "ERROR]: ASV_fasta not selected. >Quitting" >&2
+    end_process
 else
     regex='[^/]*$'
     ASV_fasta_temp=$(echo $ASV_fasta | grep -oP "$regex")
@@ -33,10 +27,11 @@ else
 fi
 extension=$(basename $ASV_fasta | awk 'BEGIN{FS="."}{print $NF}')
 
+#load ASV_table
 ASV_table=${ASV_table}
-#If specified, get OTUs subset
 if [[ $ASV_table == "undefined" ]]; then
-    :
+    printf '%s\n' "ERROR]: ASV_table not selected. >Quitting" >&2
+    end_process
 else
     regex='[^/]*$'
     ASV_table_temp=$(echo $ASV_table | grep -oP "$regex")
@@ -44,7 +39,7 @@ else
     printf "\n ASV_table = $ASV_table \n"
 fi
 
-#options
+#settings
 id=$"--id ${similarity_threshold}"          # positive float (0-1)
 otutype=$"--${OTU_type}"                    # list: --centroids, --consout
 strands=$"--strand ${strands}"              # list: --strand both, --strand plus
@@ -195,7 +190,9 @@ end=$(date +%s)
 runtime=$((end-start))
 
 #Make README.txt file
-printf "Clustering formed $size OTUs.
+printf "# ASVs clustered to OTUs with vsearch (see 'Core command' below for the used settings).
+
+Clustering formed $size OTUs.
 
 Files in 'ASVs2OTUs' directory:
 # OTUs.fasta            = FASTA formated representative OTU sequences. 
@@ -203,8 +200,8 @@ Files in 'ASVs2OTUs' directory:
 # OTUs.uc               = uclust-like formatted clustering results for OTUs.
 # $fastasize.size.fasta = size annotated input sequences [size annotation based on the input table $ASV_table] 
 
-Core commands -> 
-clustering: vsearch $seqsort input.fasta $id $simtype $strands $mask $centroid_in $maxaccepts $cores $otutype OTUs.fasta --fasta_width 0 --sizein
+Core command -> 
+vsearch $seqsort input.fasta $id $simtype $strands $mask $centroid_in $maxaccepts $cores $otutype OTUs.fasta --fasta_width 0 --sizein
 [before clustering, ASV size annotations were fetched from the ASV table]
 
 Total run time was $runtime sec.\n\n

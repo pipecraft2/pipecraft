@@ -185,7 +185,7 @@ end=$(date +%s)
 runtime=$((end-start))
 
 #Make README.txt file
-printf "# Quality filtering with vsearch.
+printf "# Quality filtering was performed using vsearch (see 'Core command' below for the used settings).
 
 Files in 'qualFiltered_out':
 # *.$extension          = quality filtered sequences in FASTQ format.
@@ -193,7 +193,7 @@ Files in 'qualFiltered_out':
 
 Core commands -> 
 quality filtering: vsearch --fastq_filter input_file $maxee $maxns $trunc_length $minlen $cores $qmax $qmin $max_length $maxee_rate $truncqual $truncee --fastqout output_file
-Synchronizing R1 and R2 reads: seqkit pair -1 inputR1 -2 inputR2
+Synchronizing R1 and R2 reads (matching pair mates): seqkit pair -1 inputR1 -2 inputR2
 
 Total run time was $runtime sec.
 
@@ -209,9 +209,6 @@ Total run time was $runtime sec.
 
 #Done
 printf "\nDONE\n"
-printf "Data in directory '$output_dir'\n"
-printf "Summary of sequence counts in '$output_dir/seq_count_summary.txt'\n"
-printf "Check README.txt files in output directory for further information about the process.\n"
 printf "Total time: $runtime sec.\n\n"
 
 #variables for all services

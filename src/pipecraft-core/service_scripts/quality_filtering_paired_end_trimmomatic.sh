@@ -104,11 +104,12 @@ printf "Files in /discarded folder represent sequences that did not pass quality
 If no files in this folder, then all sequences were passed to files in $output_dir directory" > $output_dir/untrimmed/README.txt
 
 #Make README.txt file
-printf "# Quality filtering with trimmomatic.
+printf "# Quality filtering was performed using trimmomatic (see 'Core commands' below for the used settings).
 
 Files in 'qualFiltered_out':
 # *.$extension              = quality filtered sequences in FASTQ format.
 # seq_count_summary.txt     = summary of sequence counts per sample.
+
 Files in 'qualFiltered_out/FASTA':
 # *.fasta                   = quality filtered sequences in FASTA format.
 Files in 'qualFiltered_out/discarded':

@@ -58,7 +58,7 @@ fi
 start=$(date +%s)
 ### Check if files with specified extension exist in the dir
 first_file_check
-### Prepare working env and check paired-end data
+### Prepare working env and check single-end data
 prepare_SE_env
 ### Process samples
 for file in *.$fileFormat; do
@@ -104,7 +104,7 @@ end=$(date +%s)
 runtime=$((end-start))
 
 #Make README.txt file
-printf "# Quality filtering with fastp.
+printf "# Quality filtering was performed using fastp (see 'Core command' below for the used settings).
 
 Files in 'qualFiltered_out':
 # *.fastq               = quality filtered sequences per sample.

@@ -19,7 +19,7 @@
 ##########################################################
 
 #load variables
-extension=$fileFormat && export fileFormat 
+extension=${fileFormat}  # KEEP THIS (removed in some other scripts)
 mismatches=$"-e ${mismatches}"
 min_length=$"--minimum-length ${min_seq_length}"
 overlap=$"--overlap ${min_overlap}"
@@ -28,7 +28,6 @@ no_indels=$no_indels
 discard_untrimmed=$"TRUE" #currently only fixed to TRUE 
 seqs_to_keep=$seqs_to_keep
 pair_filter=$pair_filter
-
 fwd_tempprimer=$forward_primers
 rev_tempprimer=$reverse_primers
 
@@ -40,7 +39,7 @@ output_dir=$"/input/primersCut_out"
 #############################
 ### Start of the workflow ###
 #############################
-if [[ $no_indels == "TRUE" ]]; then
+if [[ $no_indels == "true" ]]; then
     indels=$"--no-indels"
 fi
 start=$(date +%s)
@@ -114,7 +113,7 @@ done < tempdir2/rev_primer.fasta
 ### Read through each file in paired_end_files.txt
 while read LINE; do
     #Write file name without extension
-    inputR1=$(echo $LINE | sed -e "s/.$extension//")
+    inputR1=$(echo $LINE | sed -e "s/.$fileFormat//")
     inputR2=$(echo $inputR1 | sed -e 's/R1/R2/')
     ## Preparing files
     ### Check input formats (fastq/fasta/gz supported)
@@ -250,14 +249,75 @@ If no files in this folder, then all sequences were passed to files in $output_d
 fi
 
 #Make README.txt file for PrimerClipped reads
-printf "Files in 'primersCut_out' folder represent sequences from where the PCR primers were recognized and clipped.
+printf "# Primers were removed using cutadapt (see 'Core command' below for the used settings).
+
+Files in 'primersCut_out' folder represent sequences from where the PCR primers were recognized and clipped.
 Forward primer(s) [has to be 5'-3']: $fwd_tempprimer
 Reverse primer(s) [has to be 3'-5']: $rev_tempprimer
-[If primers were not specified in orientations noted above, please run this step again].\n
+[If primers were not specified in orientations noted above, please run this step again].
+
 Output R1 and R2 reads are synchronized for merging paired-end data. 
 If no outputs were generated into /$output_dir, check your specified primer strings and adjust settings.
-\nSummary of sequence counts in 'seq_count_summary.txt'\n
-\n\nTotal run time was $runtime sec.\n\n\n
+
+Core commnads -> \n" > $output_dir/README.txt
+
+if [[ $seqs_to_keep == "keep_all" ]]; then
+    printf "seqs_to_keep == "keep_all"; cutadapt $mismatches $min_length $overlap $indels $untrimmed_output $untrimmed_paired_output --pair-filter=$pair_filter \
+-g liked_forwardPrimer_and_reverseComplementReversePrimer \
+-g liked_reversePrimer_and_reverseComplementForwardPrimer \
+-g ForwardPrimer \
+-a reverseComplementReversePrimer \
+-g ReversePrimer \
+-a reverseComplementForwardPrimer \
+-G liked_forwardPrimer_and_reverseComplementReversePrimer \
+-G liked_reversePrimer_and_reverseComplementForwardPrimer \
+-G ReversePrimer \
+-A reverseComplementForwardPrimer \
+-G forwardPrimer \
+-A reverseComplementReversePrimer \
+-o output.round1 -p output.round1 inputR1 inputR2 
+
+#round2; clipping if present, but no discarding
+cutadapt $mismatches $min_length $overlap $indels --pair-filter=$pair_filter \
+-g liked_forwardPrimer_and_reverseComplementReversePrimer \
+-g liked_reversePrimer_and_reverseComplementForwardPrimer \
+-g forwardPrimer \
+-a reverseComplementReversePrimer \
+-g ReversePrimer \
+-a reverseComplementForwardPrimer \
+-G liked_forwardPrimer_and_reverseComplementReversePrimer \
+-G liked_reversePrimer_and_reverseComplementForwardPrimer \
+-G ReversePrimer \
+-A reverseComplementForwardPrimer \
+-G forwardPrimer \
+-A reverseComplementReversePrimer \
+-o outputR1 -p outputR2 inputR1.from_round1 inputR2.from_round1 \n" >> $output_dir/README.txt
+
+elif [[ $seqs_to_keep == "keep_only_linked" ]]; then
+    printf "seqs_to_keep == "keep_only_linked"; cutadapt $mismatches $min_length $overlap $indels $untrimmed_output $untrimmed_paired_output --pair-filter=$pair_filter \
+-g liked_forwardPrimer_and_reverseComplementReversePrimer \
+-g liked_reversePrimer_and_reverseComplementForwardPrimer \
+-G liked_forwardPrimer_and_reverseComplementReversePrimer \
+-G liked_reversePrimer_and_reverseComplementForwardPrimer \
+-o output.round1 -p output.round1 inputR1 inputR2 
+
+#additional check of the primer presence (no discarding)
+cutadapt $mismatches $min_length $overlap $indels \
+-g ForwardPrimer \
+-g reverseComplementForwardPrimer \
+-g ReversePrimer \
+-g reverseComplementReversePrimer \
+-G ForwardPrimer \
+-G reverseComplementForwardPrimer \
+-G ReversePrimer \
+-G reverseComplementReversePrimer \
+-o outputR1 -p outputR2 inputR1.from_round1 inputR2.from_round1 \n" >> $output_dir/README.txt
+fi
+
+printf "\nSummary of sequence counts in 'seq_count_summary.txt'
+
+Total run time was $runtime sec.
+
 ##########################################################
 ###Third-party applications used for this process [PLEASE CITE]:
 #cutadapt v4.4 for cutting the primers
@@ -266,14 +326,11 @@ If no outputs were generated into /$output_dir, check your specified primer stri
 #seqkit v2.3.0 for generating reverse complementary primer strings
     #citation: Shen W, Le S, Li Y, Hu F (2016) SeqKit: A Cross-Platform and Ultrafast Toolkit for FASTA/Q File Manipulation. PLOS ONE 11(10): e0163962. https://doi.org/10.1371/journal.pone.0163962
     #https://bioinf.shenwei.me/seqkit/
-##################################################################" > $output_dir/README.txt
+##################################################################" >> $output_dir/README.txt
 
 #Done
 printf "\nDONE\n"
-printf "Data in directory '$output_dir'\n"
-printf "Summary of sequence counts in 'seq_count_summary.txt'\n"
-printf "Check README.txt files in output directory for further information about the process.\n"
-printf "Total time: $runtime sec.\n\n"
+printf "Total time: $runtime sec.\n"
 
 #variables for all services
 echo "workingDir=$output_dir"
