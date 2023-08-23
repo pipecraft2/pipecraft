@@ -4,7 +4,8 @@
     elevation="2"
     :disabled="
       Object.values(inputData).includes(input.disabled) ||
-      $store.state.runInfo.active == true
+      $store.state.runInfo.active == true ||
+      $store.getters.check_depends_on(input)
     "
   >
     <v-card-actions style="justify-content: center">

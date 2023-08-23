@@ -5,7 +5,8 @@
     width="400px"
     :disabled="
       Object.values(inputData).includes(input.disabled) ||
-      $store.state.runInfo.active == true
+      $store.state.runInfo.active == true ||
+      $store.getters.check_depends_on(input)
     "
   >
     <v-tooltip top>
