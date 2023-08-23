@@ -4295,7 +4295,7 @@ export default new Vuex.Store({
           {
             name: "errorEstFun",
             items: ["PacBioErrfun", "loessErrfun"],
-            value: "PacBioErrfun",
+            value: "loessErrfun",
             disabled: "never",
             tooltip:
               "DADA2 errorEstimationFunction. 'loessErrfun' for Illumina data; 'PacBioErrfun' for PacBio data",
