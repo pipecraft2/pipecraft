@@ -11,9 +11,21 @@
           elevation="2"
           style="height: fit-content; resize: auto; min-height: 145px"
         >
-          <v-card-title style="justify-content: center; padding: 10px 0px">{{
-            input.name.replace(/_/g, " ")
-          }}</v-card-title>
+          <v-card-title
+            v-if="$store.getters.linkify(input.tooltip) !== null"
+            v-on="on"
+            style="justify-content: center; padding: 10px 0px"
+          >
+            <a :href="$store.getters.linkify(input.tooltip)" target="_blank">{{
+              input.name.replace(/_/g, " ")
+            }}</a></v-card-title
+          >
+          <v-card-title
+            v-else
+            v-on="on"
+            style="justify-content: center; padding: 10px 0px"
+            >{{ input.name.replace(/_/g, " ") }}</v-card-title
+          >
 
           <v-card-actions style="justify-content: center">
             <v-row style="height: fit-content; resize: auto"
