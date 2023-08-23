@@ -207,7 +207,7 @@ export default {
           if (result.value) {
             this.$store.commit("addInputInfo", {
               readType: result.value[1],
-              fileFormat: result.value[0],
+              fileFormat: result.value[0].replace("_", "."),
             });
             if (result.value[0] == "single_end") {
               this.$store.commit("setDADAmode", "SINGLE_END");

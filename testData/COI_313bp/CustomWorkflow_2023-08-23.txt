@@ -1,0 +1,1 @@
+ERROR]: cannot find files with specified extension 'fastq_gz'Please check the extension of your files and specify again.>Quitting
