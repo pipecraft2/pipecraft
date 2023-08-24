@@ -31,7 +31,7 @@ async function createWindow() {
       enableRemoteModule: true,
     },
   });
-  // win.webContents.openDevTools();
+  win.webContents.openDevTools();
   win.removeMenu();
 
   if (process.env.WEBPACK_DEV_SERVER_URL) {
