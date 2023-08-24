@@ -908,7 +908,8 @@ export default new Vuex.Store({
               },
               {
                 name: "OMEGA_A",
-                value: (0.0000000000000000000000000000000000000001).toExponential(),
+                value:
+                  (0.0000000000000000000000000000000000000001).toExponential(),
                 disabled: "never",
                 tooltip:
                   "default = 1e-40. Denoising setting; see DADA2 'setDadaOpt()' for detalis. Default value  is a conservative setting to avoid making false positive inferences, but comes at the cost of reducing the ability to identify some rare variants",
@@ -926,7 +927,8 @@ export default new Vuex.Store({
               },
               {
                 name: "OMEGA_C",
-                value: (0.0000000000000000000000000000000000000001).toExponential(),
+                value:
+                  (0.0000000000000000000000000000000000000001).toExponential(),
                 disabled: "never",
                 tooltip:
                   "default = 1e-40. Denoising setting; see DADA2 'setDadaOpt()' for detalis",
@@ -2115,7 +2117,7 @@ export default new Vuex.Store({
         ],
       },
     ],
-    vsearch_OTUs: [      
+    vsearch_OTUs: [
       {
         tooltip: "remove primers sequences from the reads",
         scriptName: "cut_primers_paired_end_reads.sh",
@@ -3736,8 +3738,7 @@ export default new Vuex.Store({
         scriptName: "",
         imageName: "vmikk/nextits:0.0.3",
         serviceName: "Step 1",
-        manualLink:
-          "https://pipecraft2-manual.readthedocs.io/en/stable/user_guide.html#demultiplex",
+        manualLink: "https://next-its.github.io/parameters/#step-1",
         disabled: "never",
         selected: "always",
         showExtra: false,
@@ -3772,8 +3773,7 @@ export default new Vuex.Store({
             name: "ITSx_evalue",
             value: (0.01).toExponential(),
             disabled: "never",
-            tooltip:
-            "ITSx E-value cutoff threshold (default, 1e-1)",
+            tooltip: "ITSx E-value cutoff threshold (default, 1e-1)",
             type: "numeric",
             rules: [(v) => v >= 0 || "ERROR: specify only values > 0"],
           },
@@ -3904,8 +3904,7 @@ export default new Vuex.Store({
         scriptName: "",
         imageName: "vmikk/nextits:0.0.3",
         serviceName: "Step 2",
-        manualLink:
-          "https://pipecraft2-manual.readthedocs.io/en/stable/user_guide.html#demultiplex",
+        manualLink: "https://next-its.github.io/parameters/#step-2",
         disabled: "never",
         selected: "always",
         showExtra: false,
@@ -3934,7 +3933,8 @@ export default new Vuex.Store({
             disabled: "never",
             tooltip: "Link nearby low-abundance swarms (fastidious option)",
             type: "bool",
-            depends_on: 'state.NextITS[1].Inputs[0].value == "swarm" && state.NextITS[1].Inputs[2].value <= 1'
+            depends_on:
+              'state.NextITS[1].Inputs[0].value == "swarm" && state.NextITS[1].Inputs[2].value <= 1',
           },
           {
             name: "unoise_alpha",
@@ -3943,7 +3943,7 @@ export default new Vuex.Store({
             tooltip: "Alpha parameter of UNOISE",
             type: "numeric",
             rules: [(v) => v >= 1 || "ERROR: specify values >= 1"],
-            depends_on: 'state.NextITS[1].Inputs[4].value == true'
+            depends_on: "state.NextITS[1].Inputs[4].value == true",
           },
           {
             name: "unoise_minsize",
@@ -3952,7 +3952,7 @@ export default new Vuex.Store({
             tooltip: "Minimum sequence abundance ",
             type: "numeric",
             rules: [(v) => v >= 1 || "ERROR: specify values >= 1"],
-            depends_on: 'state.NextITS[1].Inputs[4].value == true'
+            depends_on: "state.NextITS[1].Inputs[4].value == true",
           },
           {
             name: "max_MEEP",
@@ -3977,7 +3977,7 @@ export default new Vuex.Store({
             tooltip: "Minimum similarity threshold",
             type: "numeric",
             rules: [(v) => v >= 0 || "ERROR: specify values >= 1"],
-            depends_on: 'state.NextITS[1].Inputs[3].value == true'
+            depends_on: "state.NextITS[1].Inputs[3].value == true",
           },
           {
             name: "lulu_ratio",
@@ -3986,7 +3986,7 @@ export default new Vuex.Store({
             tooltip: "Minimum abundance ratio",
             type: "numeric",
             rules: [(v) => v >= 0 || "ERROR: specify values >= 1"],
-            depends_on: 'state.NextITS[1].Inputs[3].value == true'
+            depends_on: "state.NextITS[1].Inputs[3].value == true",
           },
           {
             name: "lulu_ratiotype",
@@ -3995,7 +3995,7 @@ export default new Vuex.Store({
             disabled: "never",
             tooltip: "Abundance ratio type - 'min' or 'avg'	",
             type: "select",
-            depends_on: 'state.NextITS[1].Inputs[3].value == true'
+            depends_on: "state.NextITS[1].Inputs[3].value == true",
           },
           {
             name: "lulu_relcooc",
@@ -4004,7 +4004,7 @@ export default new Vuex.Store({
             tooltip: "Relative co-occurrence",
             type: "numeric",
             rules: [(v) => v >= 0 || "ERROR: specify values >= 1"],
-            depends_on: 'state.NextITS[1].Inputs[3].value == true'
+            depends_on: "state.NextITS[1].Inputs[3].value == true",
           },
           {
             name: "lulu_maxhits",
@@ -4013,7 +4013,7 @@ export default new Vuex.Store({
             tooltip: "Maximum number of hits (0 = unlimited)",
             type: "numeric",
             rules: [(v) => v >= 0 || "ERROR: specify values >= 1"],
-            depends_on: 'state.NextITS[1].Inputs[3].value == true'
+            depends_on: "state.NextITS[1].Inputs[3].value == true",
           },
         ],
         Inputs: [
@@ -4042,7 +4042,7 @@ export default new Vuex.Store({
             tooltip: "SWARM clustering resolution (d)",
             type: "numeric",
             rules: [(v) => v >= 0 || "ERROR: specify values >= 1"],
-            depends_on: 'state.NextITS[1].Inputs[0].value == "swarm"'
+            depends_on: 'state.NextITS[1].Inputs[0].value == "swarm"',
           },
           {
             name: "lulu",
@@ -4057,7 +4057,7 @@ export default new Vuex.Store({
             disabled: "never",
             tooltip: "Perform denoising with UNOISE algorithm",
             type: "bool",
-            depends_on: 'state.NextITS[1].Inputs[0].value == "unoise"'
+            depends_on: 'state.NextITS[1].Inputs[0].value == "unoise"',
           },
         ],
       },
@@ -4583,11 +4583,11 @@ export default new Vuex.Store({
   },
   getters: {
     check_depends_on: (state) => (input) => {
-      if(input.depends_on && state) {
-        return !eval(input.depends_on)
+      if (input.depends_on && state) {
+        return !eval(input.depends_on);
       } else {
-        return false
-      }   
+        return false;
+      }
     },
     linkify: () => (tooltip) => {
       var urlRegex = /(((https?:\/\/)|(www\.))[^\s]+)/g;
@@ -4816,7 +4816,7 @@ export default new Vuex.Store({
       state.inputDir = filePath;
     },
     addInputInfo(state, payload) {
-        (state.data.fileFormat = payload.fileFormat),
+      (state.data.fileFormat = payload.fileFormat),
         (state.data.readType = payload.readType);
     },
     removeStep(state, index) {
@@ -4887,14 +4887,14 @@ export default new Vuex.Store({
     setDADAmode(state, payload) {
       state.data.dada2mode = payload;
       if (payload == "SINGLE_END") {
-        state.data.readType = 'single_end'
-        state.DADA2_ASVs[3].selected = false
-        state.DADA2_ASVs[2].Inputs[0].value = 'PacBioErrfun'
-        state.DADA2_ASVs[2].Inputs[2].value = 'FastqQuality'
+        state.data.readType = "single_end";
+        state.DADA2_ASVs[3].selected = false;
+        state.DADA2_ASVs[2].Inputs[0].value = "PacBioErrfun";
+        state.DADA2_ASVs[2].Inputs[2].value = "FastqQuality";
       } else {
-        state.DADA2_ASVs[3].selected = 'always'
-        state.DADA2_ASVs[2].Inputs[0].value = 'loessErrfun'
-        state.DADA2_ASVs[2].Inputs[2].value = 'Auto'
+        state.DADA2_ASVs[3].selected = "always";
+        state.DADA2_ASVs[2].Inputs[0].value = "loessErrfun";
+        state.DADA2_ASVs[2].Inputs[2].value = "Auto";
       }
       if (payload == "MIXED") {
         state.DADA2_ASVs[0].selected = "always";
