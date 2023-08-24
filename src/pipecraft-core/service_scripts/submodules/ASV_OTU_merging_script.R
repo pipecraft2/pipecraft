@@ -51,6 +51,7 @@ DUC[, ASVall  := tstrsplit(V9, ";", keep = 1) ]
 DUC[, ASVuniq := tstrsplit(V10, ";", keep = 1) ]
 DUC[V1 == "C", ASVuniq := ASVall ]
 DUC <- DUC[, .(ASVall, ASVuniq)]
+DUC <- unique(DUC)
 
 ## Add dereplicated-ASV-IDs to the ASV table
 ASV <- merge(x = ASV, y = DUC,
