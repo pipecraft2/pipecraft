@@ -1873,7 +1873,8 @@ export default new Vuex.Store({
         services: [
           {
             scriptName: "clustering_vsearch_ASVs2OTUs.sh",
-            tooltip: "clustering ASVs to OTUs with vsearch; and making an OTU table",
+            tooltip:
+              "clustering ASVs to OTUs with vsearch; and making an OTU table",
             imageName: "pipecraft/vsearch_dada2:2",
             serviceName: "ASV_to_OTU",
             selected: false,
@@ -3786,6 +3787,15 @@ export default new Vuex.Store({
             rules: [(v) => v >= 1 || "ERROR: specify values >= 1"],
           },
           {
+            name: "chimera_database",
+            active: false,
+            btnName: "select file",
+            value: "undefined",
+            disabled: "never",
+            tooltip: "Database for reference-based chimera removal",
+            type: "boolfile",
+          },
+          {
             name: "ITSx_tax",
             items: [
               "all",
@@ -3814,15 +3824,6 @@ export default new Vuex.Store({
             disabled: "never",
             tooltip: "ITSx taxonomy profile (default, 'all')",
             type: "combobox",
-          },
-          {
-            name: "chimera_database",
-            active: false,
-            btnName: "select file",
-            value: "undefined",
-            disabled: "never",
-            tooltip: "Database for reference-based chimera removal",
-            type: "boolfile",
           },
           {
             name: "chimera_rescueoccurrence",
@@ -4386,9 +4387,9 @@ export default new Vuex.Store({
         tooltip:
           "assemble paired-end reads (R1 and R2) with DADA2 'mergePairs' function",
         scriptName: {
-            FORWARD: "assemble_paired_end_data_dada2_wf.sh",
-            MIXED: "assemble_paired_end_data_dada2_mixed_wf.sh",
-            SINGLE_END: "disabled.sh",
+          FORWARD: "assemble_paired_end_data_dada2_wf.sh",
+          MIXED: "assemble_paired_end_data_dada2_mixed_wf.sh",
+          SINGLE_END: "disabled.sh",
         },
         imageName: "pipecraft/vsearch_dada2:2",
         serviceName: "merge Pairs",
