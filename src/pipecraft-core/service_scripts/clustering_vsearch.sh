@@ -222,12 +222,20 @@ else
   pigz tempdir/*
 fi
 
-size=$(grep -c "^>" $output_dir/OTUs.fasta)
+#Make README.txt file
+OTU_count=$(grep -c "^>" $output_dir/OTUs.fasta)
+nSeqs=$(awk 'BEGIN{FS=OFS="\t"}NR>1{for(i=2;i<=NF;i++) t+=$i; print t; t=0}' $output_dir/OTU_table.txt | awk '{for(i=1;i<=NF;i++)$i=(a[i]+=$i)}END{print}')
+nCols=$(awk -F'\t' '{print NF; exit}' $output_dir/OTU_table.txt)
+nSample=$(awk -v NUM=$nCols 'BEGIN {print (NUM-1)}') # -1 cuz 1st column is OTU_ID
+
 end=$(date +%s)
 runtime=$((end-start))
 
-#Make README.txt file
-printf "Clustering formed $size OTUs.
+printf "# Reads were clustered to OTUs using vsearch (see 'Core command' below for the used settings).
+
+Number of OTUs                       = $OTU_count
+Number of sequences in the OTU table = $nSeqs
+Number of samples in the OTU table   = $nSample
 
 Files in 'clustering_out' directory:
 # OTUs.fasta    = FASTA formated representative OTU sequences. OTU headers are renamed according to sha1 algorithm in vsearch.

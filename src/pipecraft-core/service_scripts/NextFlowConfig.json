@@ -1,1 +1,1 @@
-{"rep_seqs_file":"C:/Users/stena/Desktop/testData/COI_313bp/FWD_ASVs_out.dada2/ASVs.fasta","min_len":"200","max_len":"400","genetic_code":5,"start_codon":2,"ignore_nested":true,"strand":"both"}
+{"zOTUs_thresh":1,"similarity_threshold":1,"strands":"both","minsize":8,"unoise_alpha":2,"denoise_level":"global","remove_chimeras":true,"abskew":16,"similarity_type":"2","maxaccepts":1,"maxrejects":32,"mask":"dust","cores":4}

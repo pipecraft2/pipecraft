@@ -141,7 +141,7 @@ check_app_error
 
 
 ### OTU table creation
-printf "Making OTU table ... \n"
+printf "Making OTU table ... \n "
 Rlog=$(Rscript /scripts/submodules/ASVs2OTUs.R 2>&1)
 echo $Rlog > $output_dir/ASVs2OTUs.log 
 wait
@@ -185,14 +185,16 @@ if [[ $debugger != "true" ]]; then
     fi
 fi
 
-size=$(grep -c "^>" $output_dir/OTUs.fasta)
+OTU_count=$(grep -c "^>" $output_dir/OTUs.fasta)
+input_ASV_count=$(grep -c "^>" $ASV_fasta_size)
 end=$(date +%s)
 runtime=$((end-start))
 
 #Make README.txt file
 printf "# ASVs clustered to OTUs with vsearch (see 'Core command' below for the used settings).
 
-Clustering formed $size OTUs.
+Clustering formed $OTU_count OTUs 
+  [input contained $input_ASV_count ASVs (sequences)].
 
 Files in 'ASVs2OTUs' directory:
 # OTUs.fasta            = FASTA formated representative OTU sequences. 
