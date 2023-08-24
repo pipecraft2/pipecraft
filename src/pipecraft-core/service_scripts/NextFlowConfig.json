@@ -1,5 +1,1 @@
-<<<<<<< HEAD
-{"minOverlap":12,"maxMismatch":0,"trimOverhang":false,"justConcatenate":false}
-=======
-{"method":"consensus"}
->>>>>>> 9f72798164fe6dbaae2027ea7243801a3eded042
+{"rep_seqs_file":"C:/Users/stena/Desktop/testData/COI_313bp/FWD_ASVs_out.dada2/ASVs.fasta","min_len":"200","max_len":"400","genetic_code":5,"start_codon":2,"ignore_nested":true,"strand":"both"}

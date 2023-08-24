@@ -336,10 +336,11 @@ Total run time was $runtime sec.
 ##################################################################" > $output_dir/README.txt
 
 #Done
-printf "\nDONE\n"
-printf "Total time: $runtime sec.\n\n"
+printf "\nDONE "
+printf "Total time: $runtime sec.\n "
 
 #variables for all services
+echo "#variables for all services: "
 if [[ $region_for_clustering != "" ]]; then
     echo "workingDir=$output_dir/$region_for_clustering/$full_and_partial"
 else

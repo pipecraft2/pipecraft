@@ -140,10 +140,11 @@ Summary of sequence counts in 'seq_count_summary.txt'
     #https://github.com/indraniel/fqgrep
 ##########################################################" > $output_dir/README.txt
 
-printf "\nDONE\n"
-printf "Total time: $runtime sec.\n\n"
+printf "\nDONE "
+printf "Total time: $runtime sec.\n "
 
 #variables for all services
+echo "#variables for all services: "
 echo "workingDir=$output_dir"
 echo "fileFormat=$extension"
 echo "readType=single_end"

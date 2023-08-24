@@ -174,5 +174,4 @@ snakemake --jobs $cores --snakefile snakefile_ESV --configfile in.config_ESV.yam
 
 echo "workingDir=$workingDir"
 echo "fileFormat=$fileFormat"
-
 echo "readType=paired_end"

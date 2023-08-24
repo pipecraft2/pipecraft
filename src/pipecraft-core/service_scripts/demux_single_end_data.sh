@@ -183,10 +183,11 @@ Total run time was $runtime sec.
 ##################################################################" > $output_dir/README.txt
 
 #Done
-printf "\nDemultiplexing DONE"
-printf "Total time: $runtime sec.\n"
+printf "\nDONE "
+printf "Total time: $runtime sec.\n "
 
 #variables for all services
+echo "#variables for all services: "
 echo "workingDir=$output_dir"
 echo "fileFormat=$extension"
 echo "readType=single_end"

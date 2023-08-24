@@ -410,6 +410,7 @@ printf "\nTotal run time was $runtime sec.\n\n
 ##########################################################" >> $output_dir/README.txt
 
 #variables for all services
+echo "#variables for all services: "
 echo "workingDir=$output_dir"
 echo "fileFormat=$extension"
 echo "readType=single-end"

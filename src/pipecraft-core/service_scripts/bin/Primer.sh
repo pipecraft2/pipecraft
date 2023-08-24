@@ -1,5 +1,6 @@
 #!/bin/bash
 #variables for all services
+echo "#variables for all services: "
 echo "workingDir=otuput"
 echo "fileFormat=fasta"
 echo "dataFormat=demux"

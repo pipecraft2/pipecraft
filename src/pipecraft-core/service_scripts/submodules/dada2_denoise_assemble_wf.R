@@ -64,10 +64,10 @@ setDadaOpt(OMEGA_A = omegaa, OMEGA_P = omegap, OMEGA_C = omegac, DETECT_SINGLETO
 
 ### Denoise
 if (pool != ""){
-    cat("| Working directory = ", workingDir)
-    cat("| Performing DADA2 denoising | ")
-    cat("errorEstimationFunction = ", errorEstFun, "\n")
-    cat("BAND_SIZE = ", band_size, "\n")  
+    cat(";; Working directory = ", workingDir)
+    cat(";; errorEstimationFunction = ", errorEstFun, "\n")
+    cat(";; BAND_SIZE = ", band_size, "\n")  
+    cat(";; Performing DADA2 denoising ;; ")
     #check for output dir and delete if needed
     if (dir.exists(path_results)) {
         unlink(path_results, recursive=TRUE)
@@ -79,12 +79,11 @@ if (pool != ""){
     filtFs = readRDS(file.path(workingDir, "filtFs.rds"))
     filtRs = readRDS(file.path(workingDir, "filtRs.rds"))
     sample_names = readRDS(file.path(workingDir, "sample_names.rds"))
-    cat("sample names = ", sample_names, "\n")
+    cat(";; sample names = ", sample_names, "\n")
 
     #copy rds files to denoised_assembled.dada2 (for making seq_count_summary)
     file.copy(file.path(workingDir, "sample_names.rds"), path_results)
     file.copy(file.path(workingDir, "quality_filtered.rds"), path_results)
-
 
     #Learn the error rates
     if (errorEstFun == "loessErrfun"){
@@ -96,8 +95,8 @@ if (pool != ""){
         errR = learnErrors(filtRs, errorEstimationFunction = PacBioErrfun, multithread = TRUE)
     }
 
-
     #Error rate figures
+    cat(";; ")
     pdf(file.path(path_results, "Error_rates_R1.pdf"))
       print( plotErrors(errF) )
     dev.off()
@@ -120,8 +119,8 @@ if (pool != ""){
 
 ### Merge denoised paired-end reads
 if (pool == ""){
-    cat("| Working directory = ", workingDir)
-    cat("| Merging data with mergePairs | ")
+    cat(";; Working directory = ", workingDir)
+    cat(";; Merging data with mergePairs ")
     #load denoised data
     dadaFs = readRDS(file.path(path_results, "dadaFs.rds"))
     dadaRs = readRDS(file.path(path_results, "dadaRs.rds"))
@@ -137,6 +136,7 @@ if (pool == ""){
 
     ### WRITE PER-SAMPLE DENOISED and MERGED FASTA FILES
     #make sequence table
+    cat(";; Writing per-sample denoised and merged fasta files ")
     ASV_tab = makeSequenceTable(merge)
     rownames(ASV_tab) = gsub("_R1.*", "", rownames(ASV_tab))
     
@@ -189,5 +189,5 @@ if (pool == ""){
 
     unlink(c("sample_names.rds", "quality_filtered.rds")) #not needed here anymore, present in qualFiltered_out dir
 
-    print("DONE")
+    cat(";; DONE")
 }

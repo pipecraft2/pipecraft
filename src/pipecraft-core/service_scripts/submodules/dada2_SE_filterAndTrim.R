@@ -72,6 +72,6 @@ filtered = sort(list.files(path_results, pattern = fileFormat, full.names = TRUE
 sample_names = sapply(strsplit(basename(filtered), paste0(".", fileFormat)), `[`, 1)
 saveRDS(filtered, file.path(path_results, "qFiltered.rds"))
 saveRDS(sample_names, file.path(path_results, "sample_names.rds"))
-print(";; DONE ")
+cat(";; DONE ")
 
 #DONE, proceed with quality_filtering_single_end_dada2.sh to clean up make readme

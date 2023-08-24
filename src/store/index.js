@@ -2029,9 +2029,17 @@ export default new Vuex.Store({
               },
               {
                 name: "min_len",
-                value: 300,
+                value: 309,
                 disabled: "never",
                 tooltip: "minimum length of an output sequence",
+                type: "numeric",
+                rules: [(v) => v >= 1 || "ERROR: specify values >= 1"],
+              },
+              {
+                name: "max_len",
+                value: 317,
+                disabled: "never",
+                tooltip: "maximum length of an output sequence",
                 type: "numeric",
                 rules: [(v) => v >= 1 || "ERROR: specify values >= 1"],
               },

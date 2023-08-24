@@ -54,7 +54,8 @@ printf "# Running DADA2 denoising and assembling \n"
 Rlog=$(Rscript /scripts/submodules/dada2_denoise_assemble_wf.R 2>&1)
 echo $Rlog >> $output_dir/denoise_assemble.log 
 wait
-printf "\n DADA2 completed \n"
+#format R-log file
+sed -i "s/;; /\n/g" $output_dir/denoise_assemble.log
 
 #################################################
 ### COMPILE FINAL STATISTICS AND README FILES ###
@@ -106,10 +107,11 @@ Total run time was $runtime sec.
 fi
 
 #Done
-printf "\nDONE\n"
-printf "Total time: $runtime sec.\n\n"
+printf "\nDONE "
+printf "Total time: $runtime sec.\n "
 
 #variables for all services
+echo "#variables for all services: "
 echo "workingDir=$output_dir"
 if [[ -z $pool ]]; then
     echo "fileFormat=fasta"

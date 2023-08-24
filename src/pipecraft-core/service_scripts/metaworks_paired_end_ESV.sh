@@ -449,6 +449,7 @@ printf "Check README.txt files in output directory for further information about
 printf "Total time: $runtime sec.\n\n"
 
 #variables for all services
+echo "#variables for all services: "
 echo "workingDir=$output_dir"
 echo "fileFormat=fq.gz"
 

@@ -19,7 +19,6 @@
 
 #load env variables
 readType=${readType}
-extension=${fileFormat}
 dataFormat=${dataFormat}
 workingDir=${workingDir}
 
@@ -62,7 +61,7 @@ function quality_filtering_paired_end_dada2 () {
     ### Prepare working env and check paired-end data
     prepare_PE_env
     ### Check file formatting for FASTQ 
-    if [[ $extension == "fastq" ]] || [[ $extension == "fq" ]] || [[ $extension == "fastq.gz" ]] || [[ $extension == "fq.gz" ]]; then
+    if [[ $fileFormat == "fastq" ]] || [[ $fileFormat == "fq" ]] || [[ $fileFormat == "fastq.gz" ]] || [[ $fileFormat == "fq.gz" ]]; then
         :
     else
         printf '%s\n' "ERROR]: $file formatting not supported here!
@@ -94,7 +93,8 @@ function quality_filtering_paired_end_dada2 () {
     Rlog=$(Rscript /scripts/submodules/dada2_PE_filterAndTrim.R 2>&1)
     echo $Rlog > $output_dir/filterAndTrim.log 
     wait
-    printf "\n DADA2 filterAndTrim completed \n"
+    #format R-log file
+    sed -i "s/;; /\n/g" $output_dir/dada2_PE_filterAndTrim.log 
 
     ### Synchronizing R1 and R2 reads if $matchIDs == "true" - WORK WITH SEQKIT for matchIDs = TRUE, because sometimes DADA2 CANNOT automatically identify paired-end headers
     if [[ $matchIDs == "true" ]] || [[ $matchIDs == "TRUE" ]]; then
@@ -120,9 +120,11 @@ function quality_filtering_paired_end_dada2 () {
             fi
         done < tempdir2/paired_end_files.txt
     fi
-
-    if [[ -d "tempdir2" ]]; then
-        rm -rf tempdir2
+    if [[ $debugger != "true" ]]; then
+        if [[ -d "tempdir2" ]]; then
+            rm -rf tempdir2
+        fi
+        rm $output_dir/dada2_PE_filterAndTrim.log 
     fi
 
     ### end pipe if no outputs were generated
@@ -136,7 +138,7 @@ function quality_filtering_paired_end_dada2 () {
     fi
 }
 
-### Run dada2 quality filtering
+### Run dada2 quality filtering (run function above)
 echo "DADA2 quality filtering - working with MIXED orient amplicons"
 for folder in /input/primersCut_out/fwd_orient /input/primersCut_out/rev_orient; do
     cd $folder
@@ -176,10 +178,11 @@ for folder in /input/primersCut_out/fwd_orient /input/primersCut_out/rev_orient;
 done 
 
 #Done
-printf "\nDONE\n"
-printf "Total time: $runtime sec.\n\n"
+printf "\nDONE "
+printf "Total time: $runtime sec.\n "
 
 #variables for all services
+echo "#variables for all services: "
 echo "workingDir=$output_dir"
 echo "fileFormat=$extension"
 echo "readType=paired_end"

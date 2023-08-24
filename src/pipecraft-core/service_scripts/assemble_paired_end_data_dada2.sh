@@ -103,7 +103,8 @@ printf "# Running DADA2 mergePairs \n"
 Rlog=$(Rscript /scripts/submodules/dada2_mergePairs.R 2>&1)
 echo $Rlog > $output_dir/denoise_assemble.log 
 wait
-printf "\n DADA2 mergePairs completed \n"
+#format R-log file
+sed -i "s/;; /\n/g" $output_dir/denoise_assemble.log
 
 # Rereplicate sequences per sample
 for file in $output_dir/*.fasta; do
@@ -120,6 +121,7 @@ if [[ $debugger != "true" ]]; then
     if [[ -d tempdir2 ]]; then
         rm -rf tempdir2
     fi
+    rm $output_dir/denoise_assemble.log
 fi
 end=$(date +%s)
 runtime=$((end-start))
@@ -157,10 +159,11 @@ Total run time was $runtime sec.
 ########################################################" > $output_dir/README.txt
 
 #Done
-printf "\nDONE\n"
-printf "Total time: $runtime sec.\n\n"
+printf "\nDONE "
+printf "Total time: $runtime sec.\n "
 
 #variables for all services
+echo "#variables for all services: "
 echo "workingDir=$output_dir"
 echo "fileFormat=$fileFormat"
 echo "readType=single_end"
