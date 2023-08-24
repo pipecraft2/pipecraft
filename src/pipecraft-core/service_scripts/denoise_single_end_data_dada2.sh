@@ -24,7 +24,13 @@ trimOverhang=${trimOverhang}
 justConcatenate=${justConcatenate}
 pool=${pool}
 qualityType=${qualityType}
+
 errorEstFun=${errorEstFun}
+band_size=${BAND_SIZE}
+omegaa=${OMEGA_A}
+omegap=${OMEGA_P}
+omegac=${OMEGA_C}
+detect_singletons=${DETECT_SINGLETONS}
 
 #Source for functions
 source /scripts/submodules/framework.functions.sh
@@ -62,7 +68,7 @@ end=$(date +%s)
 runtime=$((end-start))
 
 #Make README.txt file 
-printf "# Denoising of SINGLE-END sequencing data with dada2 (see 'Core command' below for the used settings).
+printf "# Single-end sequencing data was denoised with DADA2 (see 'Core command' below for the used settings).
 
 ### NOTE: ### 
 Input sequences must be made up only of A/C/G/T for denoising (i.e maxN must = 0 in quality filtering step). Otherwise DADA2 fails, and no output is generated.
@@ -75,9 +81,10 @@ Files in 'denoised_assembled.dada2':
 # *.rds                   = R objects for dada2.
 
 Core commands -> 
-dereplicate:  derep = derepFastq(input, qualityType = $qualityType)
-learn errors: err = learnErrors(derep)
-denoise:      dada(derep, err = err, pool = $pool) [errorEstimationFunction = $errorEstFun]
+setDadaOpt(OMEGA_A = $omegaa, OMEGA_P = $omegap, OMEGA_C = $omegac, DETECT_SINGLETONS = $detect_singletons, BAND_SIZE = $band_size)
+dereplicate:  dereplicated <- derepFastq(input, qualityType = $qualityType)
+learn errors: errors = learnErrors(dereplicated, errorEstimationFunction = $errorEstFun, BAND_SIZE = $band_size)
+denoise:      denoised = dada(dereplicated, err = errors, BAND_SIZE = $band_size)
 
 Total run time was $runtime sec.
 ##################################################################

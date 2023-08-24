@@ -29,6 +29,13 @@ justConcatenate=${justConcatenate}
 pool=${pool}
 qualityType=${qualityType}
 
+errorEstFun=${errorEstFun}
+band_size=${BAND_SIZE}
+omegaa=${OMEGA_A}
+omegap=${OMEGA_P}
+omegac=${OMEGA_C}
+detect_singletons=${DETECT_SINGLETONS}
+
 #Source for functions
 source /scripts/submodules/framework.functions.sh
 #output dir
@@ -132,7 +139,7 @@ Files in 'denoised_assembled.dada2':
 # *.rds = R objects for dada2.
 
 Core commands -> 
-setDadaOpt(OMEGA_A = $OMEGA_A, OMEGA_P = $OMEGA_P, OMEGA_C = $OMEGA_C, DETECT_SINGLETONS = $DETECT_SINGLETONS, BAND_SIZE = $BAND_SIZE)
+setDadaOpt(OMEGA_A = $omegaa, OMEGA_P = $omegap, OMEGA_C = $omegac, DETECT_SINGLETONS = $detect_singletons, BAND_SIZE = $band_size)
 learn errors: errF = learnErrors(fnFs, errorEstimationFunction = $errorEstFun)
               errR = learnErrors(fnRs, errorEstimationFunction = $errorEstFun)
 dereplicate:  derepFs = derepFastq(fnFs, qualityType = $qualityType)

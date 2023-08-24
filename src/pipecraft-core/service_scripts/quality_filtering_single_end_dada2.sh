@@ -49,11 +49,17 @@ echo $Rlog > $output_dir/qFilt.log
 wait
 printf "\n DADA2 filterAndTrim completed \n"
 
+#format R-log file
+sed -i "s/;; /\n/g" $output_dir/qFilt.log 
+
 #################################################
 ### COMPILE FINAL STATISTICS AND README FILES ###
 #################################################
-if [[ -d tempdir2 ]]; then
-    rm -rf tempdir2
+if [[ $debugger != "true" ]]; then
+    if [[ -d tempdir2 ]]; then
+        rm -rf tempdir2
+    fi
+    rm $output_dir/qFilt.log 
 fi
 
 end=$(date +%s)
@@ -68,7 +74,7 @@ Files in 'qualFiltered_out':
     # *.rds                    = R objects for dada2.
 
 Core command -> 
-filterAndTrim(inputR1, outputR1, maxN = $maxN, maxEE = $maxEE, truncQ = $truncQ, truncLen = $truncLen_R1, maxLen = $maxLen, minLen = $minLen, minQ=$minQ, rm.phix = TRUE)
+filterAndTrim(inputR1, outputR1, maxN = $maxN, maxEE = $maxEE, truncQ = $truncQ, truncLen = $truncLen_R1, maxLen = $maxLen, minLen = $minLen, minQ = $minQ, rm.phix = TRUE)
 
 Total run time was $runtime sec.
 ##################################################################

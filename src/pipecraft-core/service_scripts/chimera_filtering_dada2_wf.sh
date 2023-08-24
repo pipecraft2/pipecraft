@@ -88,13 +88,14 @@ if [[ $debugger != "true" ]]; then
     if [[ -d tempdir2 ]]; then
         rm -rf tempdir2
     fi
+    $output_dir1/dada2_chimeraFilt.log
 fi
 
 end=$(date +%s)
 runtime=$((end-start))
 
 #Make README.txt file (chimeraFiltered_out.dada2)
-printf "# Chimera filtering with dada2 removeBimeraDenovo function.
+printf "# Chimeras were filtered out with DADA2 removeBimeraDenovo function (method = $method).
 
 Files in 'chimeraFiltered_out.dada2':
 # *.chimFilt_ASVs.fasta   = chimera filtered ASVs per sample. 'Size' denotes the abundance of the ASV sequence  
@@ -104,10 +105,8 @@ Files in 'chimeraFiltered_out.dada2':
 Files in 'chimeraFiltered_out.dada2/chimeras':
 # *.chimeras.fasta        = ASVs per sample that were flagged as chimeras (and thus discarded).
 
-Core command -> 
-removeBimeraDenovo(ASV_tab, method = $method, multithread = FALSE, verbose = FALSE)
-
 Total run time was $runtime sec.
+
 ##################################################################
 ###Third-party applications for this process [PLEASE CITE]:
 #dada2 v1.28
@@ -118,17 +117,20 @@ Total run time was $runtime sec.
 #Make README.txt file (ASVs_out.dada2)
 #count ASVs
 ASV_count=$(grep -c "^>" $output_dir2/ASVs.fasta)
-printf "# Made an ASV table with dada2 makeSequenceTable function.
+nSeqs=$(awk 'BEGIN{FS=OFS="\t"}NR>1{for(i=2;i<=NF;i++) t+=$i; print t; t=0}' $output_dir2/ASVs_table.txt  | awk '{for(i=1;i<=NF;i++)$i=(a[i]+=$i)}END{print}')
+nCols=$(awk -F'\t' '{print NF; exit}' $output_dir2/ASVs_table.txt)
+nSample=$(awk -v NUM=$nCols 'BEGIN {print (NUM-2)}') # -2 cuz 1st column is ASV_ID and 2nd is Sequence
 
-Number of ASVs = $ASV_count
+printf "# ASV table was constructed with DADA2 makeSequenceTable function.
+
+Number of ASVs                       = $ASV_count
+Number of sequences in the ASV table = $nSeqs
+Number of samples in the ASV table   = $nSample
 
 Files in 'ASVs_out.dada2' directory:
-# ASVs_table.txt                  = ASV distribution table per sample (tab delimited file)
-# ASVs.fasta                      = FASTA formated representative ASV sequences
+# ASVs_table.txt                  = ASV-by-sample table (tab delimited file). [denoised and chimera filtered]
+# ASVs.fasta                      = FASTA formated representative ASV sequences [denoised and chimera filtered]
 # ASVs_table.denoised.nochim.rds  = rds formatted denoised and chimera filtered ASV table (for DADA2)
-
-Core command -> 
-makeSequenceTable(merged_paired_end_inputs) [chimeras removed with dada2 removeBimeraDenovo function; see 'chimeraFiltered_out.dada2' directory]
 
 ##################################################################
 ###Third-party applications for this process [PLEASE CITE]:

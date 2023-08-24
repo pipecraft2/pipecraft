@@ -10,6 +10,7 @@ cat("DADA2 version = ", base::toString(packageVersion("dada2")), "\n")
 
 #load env variables
 fileFormat = Sys.getenv('fileFormat')
+workingDir = Sys.getenv('workingDir')
 #output path
 path_results = Sys.getenv('output_dir')
 #load variables
@@ -37,13 +38,15 @@ if (identical(is_gz, character(0)) != "TRUE") {
 fnFs = sort(list.files(pattern = fileFormat, full.names = TRUE))
 #sample names
 sample_names = sapply(strsplit(basename(fnFs), paste0(".", fileFormat)), `[`, 1)
-cat("sample names = ", sample_names, "\n")
+cat(";; sample names = ", sample_names, "\n")
 
 #filtered files path
 qFiltered = file.path(path_results, paste0(sample_names, ".", fileFormat))
 names(qFiltered) = sample_names
 
 #quality filter
+cat(";; Working directory = ", workingDir)
+cat(";; Performing DADA2 filterAndTrim  ")
 qfilt = filterAndTrim(fnFs, qFiltered, 
                     maxN = maxN, 
                     maxEE = maxEE, 
@@ -62,12 +65,13 @@ getN <- function(x) sum(getUniques(x))
 seq_count <- cbind(qfilt)
 colnames(seq_count) <- c("input", "qualFiltered")
 rownames(seq_count) <- sample_names
-write.csv(seq_count, file.path(path_results, "seq_count_summary.txt"), row.names = TRUE, quote = FALSE)
+write.csv(seq_count, file.path(path_results, "seq_count_summary.csv"), row.names = TRUE, quote = FALSE)
 
 #save R objects for denoising
 filtered = sort(list.files(path_results, pattern = fileFormat, full.names = TRUE))
 sample_names = sapply(strsplit(basename(filtered), paste0(".", fileFormat)), `[`, 1)
 saveRDS(filtered, file.path(path_results, "qFiltered.rds"))
 saveRDS(sample_names, file.path(path_results, "sample_names.rds"))
+print(";; DONE ")
 
 #DONE, proceed with quality_filtering_single_end_dada2.sh to clean up make readme

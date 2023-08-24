@@ -24,6 +24,13 @@ justConcatenate=${justConcatenate}
 pool=${pool}
 qualityType=${qualityType}
 
+errorEstFun=${errorEstFun}
+band_size=${BAND_SIZE}
+omegaa=${OMEGA_A}
+omegap=${OMEGA_P}
+omegac=${OMEGA_C}
+detect_singletons=${DETECT_SINGLETONS}
+
 #Source for functions
 source /scripts/submodules/framework.functions.sh
 
@@ -61,12 +68,14 @@ for folder in /input/primersCut_out/fwd_orient/qualFiltered_out /input/primersCu
         if [[ -d tempdir2 ]]; then
             rm -rf tempdir2
         fi
+        $output_dir/denoise_assemble.log
     fi
     end=$(date +%s)
     runtime=$((end-start))
 
     #Make README.txt file
-    printf "# Denoising and assembling of paired-end sequencing data was performed with dada2 (see 'Core commands' below for the used settings).
+    if [[ ! -z $omegaa ]]; then
+        printf "# Denoising and assembling of paired-end sequencing data was performed with dada2 (see 'Core commands' below for the used settings).
 
     ### NOTE: ### 
     Input sequences must be made up only of A/C/G/T for denoising (i.e maxN must = 0 in quality filtering step). Otherwise DADA2 fails, and no output is generated.
@@ -80,14 +89,16 @@ for folder in /input/primersCut_out/fwd_orient/qualFiltered_out /input/primersCu
     # *.rds = R objects for dada2.
 
     Core commands -> 
-    setDadaOpt(OMEGA_A = $OMEGA_A, OMEGA_P = $OMEGA_P, OMEGA_C = $OMEGA_C, DETECT_SINGLETONS = $DETECT_SINGLETONS, BAND_SIZE = $BAND_SIZE)
+    setDadaOpt(OMEGA_A = $omegaa, OMEGA_P = $omegap, OMEGA_C = $omegac, DETECT_SINGLETONS = $detect_singletons, BAND_SIZE = $band_size)
     learn errors: errF = learnErrors(fnFs, errorEstimationFunction = $errorEstFun)
                   errR = learnErrors(fnRs, errorEstimationFunction = $errorEstFun)
     dereplicate:  derepFs = derepFastq(fnFs, qualityType = $qualityType)
                   derepRs = derepFastq(fnRs, qualityType = $qualityType)
     denoise:      dadaFs = dada(derepFs, err = errF, pool = $pool)
-                  dadaRs = dada(derepRs, err = errR, pool = $pool)
-    assemble:     mergePairs(dadaFs, derepFs, dadaRs, derepRs, maxMismatch = $maxMismatch, minOverlap = $minOverlap, justConcatenate = $justConcatenate, trimOverhang = $trimOverhang)
+                  dadaRs = dada(derepRs, err = errR, pool = $pool)" > $output_dir/README.txt
+    fi
+    if [[ -z $omegaa ]]; then
+        printf "assemble:     mergePairs(dadaFs, derepFs, dadaRs, derepRs, maxMismatch = $maxMismatch, minOverlap = $minOverlap, justConcatenate = $justConcatenate, trimOverhang = $trimOverhang)
 
     Total run time was $runtime sec.
     ##################################################################
@@ -95,7 +106,8 @@ for folder in /input/primersCut_out/fwd_orient/qualFiltered_out /input/primersCu
     #dada2 v1.28
         #citation: Callahan, B., McMurdie, P., Rosen, M. et al. (2016) DADA2: High-resolution sample inference from Illumina amplicon data. Nat Methods 13, 581-583. https://doi.org/10.1038/nmeth.3869
         #https://github.com/benjjneb/dada2
-    ########################################################" > $output_dir/README.txt
+    ########################################################" >> $output_dir/README.txt
+    fi
 done 
 
 #Done

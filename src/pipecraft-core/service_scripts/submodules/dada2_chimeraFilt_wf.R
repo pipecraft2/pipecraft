@@ -20,10 +20,10 @@ method = Sys.getenv('method')
 
 #check for output dir and delete if needed
 if (dir.exists("/input/chimeraFiltered_out.dada2")) {
-    unlink("/input/chimeraFiltered_out.dada2", recursive=TRUE)
+    unlink("/input/chimeraFiltered_out.dada2", recursive = TRUE)
 }
 if (dir.exists("/input/ASVs_out.dada2")) {
-    unlink("/input/ASVs_out.dada2", recursive=TRUE)
+    unlink("/input/ASVs_out.dada2", recursive = TRUE)
 }
 #create output dir
 path_results = "/input/chimeraFiltered_out.dada2"
@@ -35,7 +35,7 @@ dir.create(path_ASVs)
 ASV_tab = readRDS(file.path(workingDir, "ASVs_table.denoised.rds"))
 
 #remove chimeras
-ASV_tab.nochim <- removeBimeraDenovo(ASV_tab, method = method, multithread = FALSE, verbose = TRUE)
+ASV_tab.nochim = removeBimeraDenovo(ASV_tab, method = method, multithread = TRUE, verbose = TRUE)
 
 #save rds
 saveRDS(ASV_tab.nochim, file.path(path_ASVs, "ASVs_table.denoised.nochim.rds"))
@@ -69,19 +69,20 @@ colnames(ASV_tab.nochim)[1] = "Sequence"
 #row names as sequence headers
 row.names(ASV_tab.nochim) = asv_headers
 #write ASVs.fasta to path_ASVs
-asv_fasta <- c(rbind(paste(">", asv_headers, sep=""), asv_seqs))
+asv_fasta <- c(rbind(paste(">", asv_headers, sep = ""), asv_seqs))
 write(asv_fasta, file.path(path_ASVs, "ASVs.fasta"))
 #write ASVs table to path_ASVs
-write.table(ASV_tab.nochim, file.path(path_ASVs, "ASVs_table.txt"), sep = "\t", col.names = NA, row.names = TRUE, quote = FALSE)
+write.table(ASV_tab.nochim, file.path(path_ASVs, "ASVs_table.txt"),
+            sep = "\t", col.names = NA, row.names = TRUE, quote = FALSE)
 
 #Loop through each sample in the table and write per-sample fasta files containin non-chimeric ASVs
 for (i in 2:length(colnames(ASV_tab.nochim))){
     sample_name = colnames(ASV_tab.nochim)[i]
-    sample_file = paste(sample_name, "chimFilt_ASVs.fasta", sep = ".") 
+    sample_file = paste(sample_name, "chimFilt_ASVs.fasta", sep = ".")
     j = 0
-    for (abundance in ASV_tab.nochim[,i]){
+    for (abundance in ASV_tab.nochim[, i]){
         j = j + 1
-        if (abundance != 0){
+        if (abundance != 0) {
             #seq header and abundance
             header = paste(">", row.names(ASV_tab.nochim)[j], ";size=", abundance, sep = "")
             write(header, file.path(path_results, sample_file), append = TRUE)

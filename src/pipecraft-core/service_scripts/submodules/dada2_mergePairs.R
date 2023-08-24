@@ -24,10 +24,12 @@ qualityType = Sys.getenv('qualityType')
 errorEstFun = Sys.getenv('errorEstFun')
 band_size = as.numeric(Sys.getenv('BAND_SIZE'))
 #setDadaOpt() settings
-omegaa = as.numeric(Sys.getenv('OMEGA_A')
-omegap = as.numeric(Sys.getenv('OMEGA_P')
-omegac= as.numeric(Sys.getenv('OMEGA_C')
+omegaa = as.numeric(Sys.getenv('OMEGA_A'))
+omegap = as.numeric(Sys.getenv('OMEGA_P'))
+omegac= as.numeric(Sys.getenv('OMEGA_C'))
 detect_singletons = Sys.getenv('DETECT_SINGLETONS')
+band_size = as.numeric(Sys.getenv('BAND_SIZE'))
+
 
 
 #"FALSE" or "TRUE" to FALSE or TRUE for dada2

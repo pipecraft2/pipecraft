@@ -888,6 +888,59 @@ export default new Vuex.Store({
                   "Auto means to attempt to auto-detect the fastq quality encoding. This may fail for PacBio files with uniformly high quality scores, in which case use 'FastqQuality'",
                 type: "select",
               },
+              {
+                name: "BAND_SIZE",
+                value: 16,
+                disabled: "never",
+                tooltip:
+                  "default = 16. Banding for Needleman-Wunsch alignments. Default sets here = 16 for Illumina and 32 for PacBio",
+                type: "numeric",
+                rules: [(v) => v >= -1 || "ERROR: specify values >= -1"],
+              },
+              {
+                name: "errorEstFun",
+                items: ["PacBioErrfun", "loessErrfun"],
+                value: "loessErrfun",
+                disabled: "never",
+                tooltip:
+                  "DADA2 errorEstimationFunction. 'loessErrfun' for Illumina data; 'PacBioErrfun' for PacBio data",
+                type: "select",
+              },
+              {
+                name: "OMEGA_A",
+                value: (0.0000000000000000000000000000000000000001).toExponential(),
+                disabled: "never",
+                tooltip:
+                  "default = 1e-40. Denoising setting; see DADA2 'setDadaOpt()' for detalis. Default value  is a conservative setting to avoid making false positive inferences, but comes at the cost of reducing the ability to identify some rare variants",
+                type: "numeric",
+                rules: [(v) => v >= 0 || "ERROR: specify values > 0"],
+              },
+              {
+                name: "OMEGA_P",
+                value: (0.0001).toExponential(),
+                disabled: "never",
+                tooltip:
+                  "default = 1e-4 (0.0001). Denoising setting; see DADA2 'setDadaOpt()' for detalis",
+                type: "numeric",
+                rules: [(v) => v >= 0 || "ERROR: specify values > 0"],
+              },
+              {
+                name: "OMEGA_C",
+                value: (0.0000000000000000000000000000000000000001).toExponential(),
+                disabled: "never",
+                tooltip:
+                  "default = 1e-40. Denoising setting; see DADA2 'setDadaOpt()' for detalis",
+                type: "numeric",
+                rules: [(v) => v >= 0 || "ERROR: specify values > 0"],
+              },
+              {
+                name: "DETECT_SINGLETONS",
+                disabled: "never",
+                value: false,
+                tooltip:
+                  "Default = FALSE. Denoising setting; see DADA2 'setDadaOpt()' for detalis. If set to TRUE, this removes the requirement for at least two reads with the same sequences to exist in order for a new ASV to be detected",
+                type: "bool",
+              },
             ],
             Inputs: [
               {
@@ -4243,34 +4296,34 @@ export default new Vuex.Store({
             tooltip:
               "default = 16. Banding for Needleman-Wunsch alignments. Default sets here = 16 for Illumina and 32 for PacBio",
             type: "numeric",
-            rules: [(v) => v >= -1 || "ERROR: specify values >= -1"],
+            rules: [(v) => v >= 0 || "ERROR: specify values >= 0"],
           },
           {
             name: "OMEGA_A",
-            value: 1e-40,
+            value: (0.0000000000000000000000000000000000000001).toExponential(),
             disabled: "never",
             tooltip:
               "default = 1e-40. Denoising setting; see DADA2 'setDadaOpt()' for detalis. Default value  is a conservative setting to avoid making false positive inferences, but comes at the cost of reducing the ability to identify some rare variants",
             type: "numeric",
-            rules: [(v) => v >= -1 || "ERROR: specify values >= -1"],
+            rules: [(v) => v >= 0 || "ERROR: specify values > 0"],
           },
           {
             name: "OMEGA_P",
-            value: 1e-4,
+            value: (0.0001).toExponential(),
             disabled: "never",
             tooltip:
               "default = 1e-4 (0.0001). Denoising setting; see DADA2 'setDadaOpt()' for detalis",
             type: "numeric",
-            rules: [(v) => v >= -1 || "ERROR: specify values >= -1"],
+            rules: [(v) => v >= 0 || "ERROR: specify values > 0"],
           },
           {
             name: "OMEGA_C",
-            value: 1e-40,
+            value: (0.0000000000000000000000000000000000000001).toExponential(),
             disabled: "never",
             tooltip:
               "default = 1e-40. Denoising setting; see DADA2 'setDadaOpt()' for detalis",
             type: "numeric",
-            rules: [(v) => v >= -1 || "ERROR: specify values >= -1"],
+            rules: [(v) => v >= 0 || "ERROR: specify values > 0"],
           },
           {
             name: "DETECT_SINGLETONS",
@@ -4285,7 +4338,7 @@ export default new Vuex.Store({
           {
             name: "errorEstFun",
             items: ["PacBioErrfun", "loessErrfun"],
-            value: "PacBioErrfun",
+            value: "loessErrfun",
             disabled: "never",
             tooltip:
               "DADA2 errorEstimationFunction. 'loessErrfun' for Illumina data; 'PacBioErrfun' for PacBio data",

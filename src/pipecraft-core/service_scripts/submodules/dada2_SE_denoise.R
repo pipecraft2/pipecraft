@@ -16,14 +16,14 @@ workingDir = Sys.getenv('workingDir')
 
 #load  variables
 errorEstFun = Sys.getenv('errorEstFun')
-band_size = as.numeric(Sys.getenv('BAND_SIZE'))
 pool = Sys.getenv('pool')
 qualityType = Sys.getenv('qualityType')
 #setDadaOpt() settings
-omegaa = as.numeric(Sys.getenv('OMEGA_A')
-omegap = as.numeric(Sys.getenv('OMEGA_P')
-omegac= as.numeric(Sys.getenv('OMEGA_C')
+omegaa = as.numeric(Sys.getenv('OMEGA_A'))
+omegap = as.numeric(Sys.getenv('OMEGA_P'))
+omegac= as.numeric(Sys.getenv('OMEGA_C'))
 detect_singletons = Sys.getenv('DETECT_SINGLETONS')
+band_size = as.numeric(Sys.getenv('BAND_SIZE'))
 
 
 cat("errorEstimationFunction = ", errorEstFun, "\n")
@@ -67,6 +67,7 @@ dir.create(path_results)
 #filtered files path
 qFiltered = readRDS(file.path(workingDir, "qFiltered.rds"))
 sample_names = readRDS(file.path(workingDir, "sample_names.rds"))
+cat("sample names = ", sample_names, "\n")
 
 #Dereplicate
 dereplicated <- derepFastq(qFiltered, verbose = FALSE, qualityType = qualityType)

@@ -22,12 +22,13 @@ justConcatenate = Sys.getenv('justConcatenate')
 pool = Sys.getenv('pool')
 qualityType = Sys.getenv('qualityType')
 errorEstFun = Sys.getenv('errorEstFun')
-band_size = as.numeric(Sys.getenv('BAND_SIZE'))
+
 #setDadaOpt() settings
-omegaa = as.numeric(Sys.getenv('OMEGA_A')
-omegap = as.numeric(Sys.getenv('OMEGA_P')
-omegac= as.numeric(Sys.getenv('OMEGA_C')
+omegaa = as.numeric(Sys.getenv('OMEGA_A'))
+omegap = as.numeric(Sys.getenv('OMEGA_P'))
+omegac= as.numeric(Sys.getenv('OMEGA_C'))
 detect_singletons = Sys.getenv('DETECT_SINGLETONS')
+band_size = as.numeric(Sys.getenv('BAND_SIZE'))
 
 #"FALSE" or "TRUE" to FALSE or TRUE for dada2
 if (pool == "false" || pool == "FALSE"){
@@ -66,7 +67,7 @@ if (pool != ""){
     cat("| Working directory = ", workingDir)
     cat("| Performing DADA2 denoising | ")
     cat("errorEstimationFunction = ", errorEstFun, "\n")
-    cat("BAND_SIZE = ", band_size, "\n\n")  
+    cat("BAND_SIZE = ", band_size, "\n")  
     #check for output dir and delete if needed
     if (dir.exists(path_results)) {
         unlink(path_results, recursive=TRUE)
@@ -78,10 +79,23 @@ if (pool != ""){
     filtFs = readRDS(file.path(workingDir, "filtFs.rds"))
     filtRs = readRDS(file.path(workingDir, "filtRs.rds"))
     sample_names = readRDS(file.path(workingDir, "sample_names.rds"))
+    cat("sample names = ", sample_names, "\n")
+
+    #copy rds files to denoised_assembled.dada2 (for making seq_count_summary)
+    file.copy(file.path(workingDir, "sample_names.rds"), path_results)
+    file.copy(file.path(workingDir, "quality_filtered.rds"), path_results)
+
 
     #Learn the error rates
-    errF = learnErrors(filtFs, errorEstimationFunction = errorEstFun, multithread = FALSE)
-    errR = learnErrors(filtRs, errorEstimationFunction = errorEstFun, multithread = FALSE)
+    if (errorEstFun == "loessErrfun"){
+        errF = learnErrors(filtFs, errorEstimationFunction = loessErrfun, multithread = TRUE)
+        errR = learnErrors(filtRs, errorEstimationFunction = loessErrfun, multithread = TRUE)
+    }
+    if (errorEstFun == "PacBioErrfun"){
+        errF = learnErrors(filtFs, errorEstimationFunction = PacBioErrfun, multithread = TRUE)
+        errR = learnErrors(filtRs, errorEstimationFunction = PacBioErrfun, multithread = TRUE)
+    }
+
 
     #Error rate figures
     pdf(file.path(path_results, "Error_rates_R1.pdf"))
@@ -98,15 +112,15 @@ if (pool != ""){
     saveRDS(derepRs, (file.path(path_results, "derepRs.rds")))
 
     #denoise
-    dadaFs = dada(derepFs, err = errF, pool = pool, multithread = FALSE)
-    dadaRs = dada(derepRs, err = errR, pool = pool, multithread = FALSE)
+    dadaFs = dada(derepFs, err = errF, pool = pool, multithread = TRUE)
+    dadaRs = dada(derepRs, err = errR, pool = pool, multithread = TRUE)
     saveRDS(dadaFs, (file.path(path_results, "dadaFs.rds")))
     saveRDS(dadaRs, (file.path(path_results, "dadaRs.rds")))
 }
 
 ### Merge denoised paired-end reads
 if (pool == ""){
-    cat("| Working directory = ", path_results)
+    cat("| Working directory = ", workingDir)
     cat("| Merging data with mergePairs | ")
     #load denoised data
     dadaFs = readRDS(file.path(path_results, "dadaFs.rds"))
@@ -163,7 +177,7 @@ if (pool == ""){
     getN <- function(x) sum(getUniques(x))
     sample_names = readRDS(file.path(workingDir, "sample_names.rds"))
     qfilt = readRDS(file.path(workingDir, "quality_filtered.rds"))
-    
+
         #remove 0 seqs samples from qfilt statistics
         row_sub = apply(qfilt, 1, function(row) all(row !=0 ))
         qfilt = qfilt[row_sub, ]
@@ -172,5 +186,8 @@ if (pool == ""){
     colnames(seq_count) <- c("input", "qualFiltered", "denoised_R1", "denoised_R2", "merged")
     rownames(seq_count) <- sample_names
     write.csv(seq_count, file.path(path_results, "seq_count_summary.csv"), row.names = TRUE, quote = FALSE)
+
+    unlink(c("sample_names.rds", "quality_filtered.rds")) #not needed here anymore, present in qualFiltered_out dir
+
     print("DONE")
 }
