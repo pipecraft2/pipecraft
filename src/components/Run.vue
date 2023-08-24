@@ -327,7 +327,6 @@ export default {
                 ),
                 readType: this.getVariableFromLog(result.stdout, "readType"),
               };
-              this.$store.commit("toggle_PE_SE_scripts", newDataInfo.readType);
               this.$store.commit("addInputInfo", newDataInfo);
               this.$store.commit("addWorkingDir", newWorkingDir);
             } else {

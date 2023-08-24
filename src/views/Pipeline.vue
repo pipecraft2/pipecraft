@@ -163,13 +163,14 @@
               v-for="(input, i) in service.Inputs"
               :key="input.name"
               cols="12"
+              :disabled="true"
               :xl="input.type === 'combobox' ? 4 : 2"
               :lg="input.type === 'combobox' ? 6 : 3"
               :md="input.type === 'combobox' ? 8 : 4"
               :sm="input.type === 'combobox' ? 12 : 6"
               style="height: fit-content; width: fit-content"
             >
-              <v-container v-if="input.type === 'numeric'"
+              <v-container :disabled="true" v-if="input.type === 'numeric'"
                 ><InputNumeric
                   :serviceIndex="index"
                   :inputIndex="i"
