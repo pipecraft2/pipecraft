@@ -457,7 +457,7 @@ fi
 ### Compile a track reads summary file (seq_count_summary.txt)
 output_dir_for_sed=$(echo $output_dir | sed -e "s/\//\\\\\//g")
 sed -e "s/$output_dir_for_sed\///" < tempdir2/seq_count_after.txt > tempdir2/seq_count_after.temp
-printf "File\tReads\tProcessed_reads\n" > $output_dir/seq_count_summary.txt
+printf "File\tReads_in\tReads_out\n" > $output_dir/seq_count_summary.txt
 while read LINE; do
     file1=$(echo $LINE | awk '{print $1}')
     count1=$(echo $LINE | awk '{print $2}')
@@ -541,7 +541,8 @@ fi
 output_dir_for_sed=$(echo $output_dir | sed -e "s/\//\\\\\//g")
 sed -e "s/\.$outfile_addition//" < tempdir2/seq_count_after.txt | \
 sed -e "s/^$output_dir_for_sed\///" | sed -e "s/^$subdir\///" > tempdir2/seq_count_after.temp
-printf "File\tReads\tProcessed_reads\n" > $output_dir/$subdir/seq_count_summary.txt
+subdir=$(echo $subdir | sed -e "s/\\\\//g")
+printf "File\tReads_in\tReads_out\n" > $output_dir/$subdir/seq_count_summary.txt
 while read LINE; do
     file1=$(echo $LINE | awk '{print $1}')
     count1=$(echo $LINE | awk '{print $2}')
