@@ -56,10 +56,9 @@ start=$(date +%s)
 ### Check if files with specified extension exist in the dir
 first_file_check
 ### Prepare working env and check paired-end data
-prepare_PE_env
+prepare_PE_env #checks also multiple R1/R2 occurrences
 ### Check barcodes file
 check_indexes_file
-
 ### Process file
 printf "Checking files ...\n"
 while read LINE; do
@@ -258,9 +257,8 @@ runtime=$((end-start))
 #Make README.txt file for demultiplexed reads
 printf "# Demultiplexing was performed using cutadapt (see 'Core command' below for the used settings).
 
-Files in 'demultiplex_out' directory represent per sample sequence files, 
-that were generated based on the specified indexes file ($oligos_file).
-[demultiplex_out/index_*fasta files(s) is $oligos_file but with added search window size for cutadapt].
+Files in 'demultiplex_out' directory represent per sample sequence files, that were generated based on the specified indexes file ($oligos_file).
+index_*fasta file(s) = $oligos_file but with added search window size for cutadapt.
 
 Paired-end data, has been demultiplexed taken into account that some sequences
 may be also in reverse complementary orientation (two rounds of cutadapt runs, see below).

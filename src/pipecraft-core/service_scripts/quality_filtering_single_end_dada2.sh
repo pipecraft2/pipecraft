@@ -19,7 +19,6 @@ dataFormat=${dataFormat}
 workingDir=${workingDir}
 
 #load variables
-samp_ID=${samp_ID}
 maxEE=${maxEE}
 maxN=${maxN}
 truncQ=${truncQ}

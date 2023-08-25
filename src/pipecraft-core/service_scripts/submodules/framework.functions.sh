@@ -139,11 +139,11 @@ while read file; do
     if [[ $x == "1" ]]; then
         :
     elif [[ $x == "0" ]]; then
-        printf '%s\n' "ERROR]: $file name does not contain R1 or R2 strings to identify paired-end reads. Remove file from folder or fix the name.
+        printf '%s\n' "ERROR]: $file name does not contain R1/R2 strings to identify paired-end reads. Remove file from folder or fix the name.
 >Quitting" >&2
         end_process
     else    
-        printf '%s\n' "ERROR]: $file name contains multiple R1 or R2 strings -> change names (e.g. R123.R1.fastq to S123.R1.fastq)
+        printf '%s\n' "ERROR]: $file name contains multiple R1/R2 strings -> change names (e.g. R123.R1.fastq to S123.R1.fastq)
 >Quitting" >&2
         end_process
     fi
@@ -325,10 +325,14 @@ if [[ $extension == "fastq" ]] || [[ $extension == "fq" ]] || [[ $extension == "
         if [[ -f tempdir2/paired_end_files.txt ]]; then
             for file in $output_dir/*R1.$extension; do
                 seqkit stats --threads 6 -T $file | awk -F'\t' 'BEGIN{OFS="\t";} FNR == 2 {print $1,$4}' | sed -e 's/demultiplex_out\///' >> tempdir2/seq_count_after.txt
+                #sum all demux seqs (column 2)
+                demux_sum=$(awk -F'\t' '{sum+=$2;} END{print sum;}' tempdir2/seq_count_after.txt)
             done
         else
             for file in $output_dir/*.$extension; do
                 seqkit stats --threads 6 -T $file | awk -F'\t' 'BEGIN{OFS="\t";} FNR == 2 {print $1,$4}' | sed -e 's/demultiplex_out\///' >> tempdir2/seq_count_after.txt
+                #sum all demux seqs (column 2)
+                demux_sum=$(awk -F'\t' '{sum+=$2;} END{print sum;}' tempdir2/seq_count_after.txt)
             done
         fi
     else
@@ -338,13 +342,14 @@ if [[ $extension == "fastq" ]] || [[ $extension == "fq" ]] || [[ $extension == "
 fi
 
 ### Compile a track reads summary file
-printf "File\tReads\n" > $output_dir/seq_count_summary.txt
+printf "Input file:\n" > $output_dir/seq_count_summary.txt
 while read LINE; do
     file1=$(echo $LINE | awk '{print $1}')
     count1=$(echo $LINE | awk '{print $2}')
     printf "$file1\t$count1\n" >> $output_dir/seq_count_summary.txt    
 done < tempdir2/seq_count.txt
-printf "\nSAMPLES:\n" >> $output_dir/seq_count_summary.txt
+printf "\nSUM of demultiplexed sequences\t$demux_sum" >> $output_dir/seq_count_summary.txt 
+printf "\n\nSamples\tNumber_of_seqs\n" >> $output_dir/seq_count_summary.txt
 while read LINE; do
     file1=$(echo $LINE | awk '{print $1}')
     count1=$(echo $LINE | awk '{print $2}')
@@ -552,7 +557,8 @@ while read LINE; do
     if [[ $? != 0 ]]; then
         printf "$file1\t$count1\t0\n" >> $output_dir/$subdir/seq_count_summary.txt
     fi
-done < tempdir2/seq_count_before.txt #&& rm -rf tempdir2
+done < tempdir2/seq_count_before.txt
+rm tempdir2/seq_count_after.txt tempdir2/seq_count_before.txt
 
 #Note for counting seqs in FASTQ files
 if [[ $extension == "fastq" ]] || [[ $extension == "fq" ]]; then
@@ -577,11 +583,6 @@ if [[ $debugger != "true" ]]; then
 else 
     #compress files in /tempdir
     pigz tempdir/*
-fi
-if [[ $debugger != "true" ]]; then
-    if [[ -d "tempdir2" ]]; then
-        rm -rf tempdir2
-    fi
 fi
 }
 
