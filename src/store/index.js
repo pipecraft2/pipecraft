@@ -4114,7 +4114,7 @@ export default new Vuex.Store({
         scriptName: {
           FORWARD: "cut_primers_paired_end_reads.sh",
           MIXED: "cut_mixed_primers_paired_end_reads.sh",
-          SINGLE_END: "cut_primers_single_end_dada2.sh",
+          SINGLE_END: "cut_primers_single_end_reads.sh",
         },
         imageName: "pipecraft/cutadapt:3.5",
         serviceName: "cut primers",

@@ -1,1 +1,5 @@
+<<<<<<< HEAD
 {"read_R1":["_R1"],"read_R2":["_R2"],"samp_ID":["_"],"maxEE":2,"maxN":0,"minLen":20,"truncQ":2,"truncLen":0,"truncLen_R2":0,"maxLen":9999,"minQ":0,"matchIDs":true}
+=======
+{"forward_primers":["GGTCAACAAATCATAAAGATATTGG"],"reverse_primers":["TAAACTTCAGGGTGACCAAAAAAT"],"mismatches":1,"min_overlap":21,"seqs_to_keep":"keep_all","pair_filter":"both","cores":1,"min_seq_length":32,"no_indels":true}
+>>>>>>> d8463bcab48fa884a95840da0cbe7dd3fb282e66
