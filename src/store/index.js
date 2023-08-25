@@ -695,7 +695,7 @@ export default new Vuex.Store({
             Inputs: [
               {
                 name: "read_R1",
-                value: ["\\.R1"],
+                value: ["_R1"],
                 disabled: "single_end",
                 tooltip:
                   "applies only for paired-end data. Identifyer string that is common for all R1 reads. R1 reads must contain R1 strings in the file names; sample names must not contain R1! (e.g. when all R1 files have '.R1' string, then enter '\\.R1'. Note that backslash is only needed to escape dot regex; e.g. when all R1 files have '_R1' string, then enter '_R1'.)'",
@@ -704,7 +704,7 @@ export default new Vuex.Store({
               },
               {
                 name: "read_R2",
-                value: ["\\.R2"],
+                value: ["_R2"],
                 disabled: "single_end",
                 tooltip:
                   "applies only for paired-end data. Identifyer string that is common for all R2 reads. R2 reads must contain R2 strings in the file names; sample names must not contain R2! (e.g. when all R2 files have '.R2' string, then enter '\\.R2'. Note that backslash is only needed to escape dot regex; e.g. when all R2 files have '_R1' string, then enter '_R2'.)",
@@ -713,7 +713,7 @@ export default new Vuex.Store({
               },
               {
                 name: "samp_ID",
-                value: ["\\."],
+                value: ["_"],
                 disabled: "single_end",
                 tooltip:
                   "applies only for paired-end data. Identifyer string that separates the sample name from redundant charachters (e.g. file name = sample1.R1.fastq, then '\\.' would be the 'identifier string' (sample name = sample1)); note that backslash is only needed to escape dot regex (e.g. when file name = sample1_R1.fastq then specify as '_')",
@@ -811,7 +811,7 @@ export default new Vuex.Store({
             Inputs: [
               {
                 name: "read_R1",
-                value: ["\\.R1"],
+                value: ["_R1"],
                 disabled: "single_end",
                 tooltip:
                   "identifyer string that is common for all R1 reads. R1/R2 reads must contain R1/R2 strings in the file names; sample names must not contain R1/R2! (e.g. when all R1 files have '.R1' string, then enter '\\.R1'. Note that backslash is only needed to escape dot regex; e.g. when all R1 files have '_R1' string, then enter '_R1'.)",
@@ -947,7 +947,7 @@ export default new Vuex.Store({
             Inputs: [
               {
                 name: "read_R1",
-                value: ["\\.R1"],
+                value: ["_R1"],
                 disabled: "single_end",
                 tooltip:
                   "identifyer string that is common for all R1 reads. R1/R2 reads must contain R1/R2 strings in the file names; sample names must not contain R1/R2! (e.g. when all R1 files have '.R1' string, then enter '\\.R1'. Note that backslash is only needed to escape dot regex; e.g. when all R1 files have '_R1' string, then enter '_R1'.)",
@@ -956,7 +956,7 @@ export default new Vuex.Store({
               },
               {
                 name: "read_R2",
-                value: ["\\.R2"],
+                value: ["_R2"],
                 disabled: "single_end",
                 tooltip:
                   "identifyer string that is common for all R2 reads (e.g. when all R2 files have '.R2' string, then enter '\\.R2'. Note that backslash is only needed to escape dot regex; e.g. when all R2 files have '_R1' string, then enter '_R2'.)",
@@ -965,7 +965,7 @@ export default new Vuex.Store({
               },
               {
                 name: "samp_ID",
-                value: ["\\."],
+                value: ["_"],
                 disabled: "never",
                 tooltip:
                   "identifyer string that separates the sample name from redundant charachters (e.g. file name = sample1.R1.fastq, then '\\.' would be the 'identifier string' (sample name = sample1)); note that backslash is only needed to escape dot regex (e.g. when file name = sample1_R1.fastq then specify as '_')",
@@ -2315,7 +2315,7 @@ export default new Vuex.Store({
         Inputs: [
           {
             name: "read_R1",
-            value: ["\\.R1"],
+            value: ["_R1"],
             disabled: "single_end",
             tooltip:
               "identifyer string that is common for all R1 reads. R1/R2 reads must contain R1/R2 strings in the file names; sample names must not contain R1/R2! (e.g. when all R1 files have '.R1' string, then enter '\\.R1'. Note that backslash is only needed to escape dot regex; e.g. when all R1 files have '_R1' string, then enter '_R1'.)",
@@ -3043,7 +3043,7 @@ export default new Vuex.Store({
         Inputs: [
           {
             name: "read_R1",
-            value: ["\\.R1"],
+            value: ["_R1"],
             disabled: "single_end",
             tooltip:
               "identifyer string that is common for all R1 reads. R1/R2 reads must contain R1/R2 strings in the file names; sample names must not contain R1/R2! (e.g. when all R1 files have '.R1' string, then enter '\\.R1'. Note that backslash is only needed to escape dot regex; e.g. when all R1 files have '_R1' string, then enter '_R1'.)",
@@ -4223,25 +4223,25 @@ export default new Vuex.Store({
         Inputs: [
           {
             name: "read_R1",
-            value: ["\\.R1"],
+            value: ["_R1"],
             disabled: "single_end",
             tooltip:
-              "[only for paired-end data] identifyer string that is common for all R1 reads. R1/R2 reads must contain R1/R2 strings in the file names; sample names must not contain R1/R2! (e.g. when all R1 files have '.R1' string, then enter '\\.R1'. Note that backslash is only needed to escape dot regex; e.g. when all R1 files have '_R1' string, then enter '_R1'.). When demultiplexing data during this workflow, then specify as '\\.R1'",
+              "[only for paired-end data] identifyer string that is common for all R1 reads. R1/R2 reads must contain R1/R2 strings in the file names; sample names must not contain R1/R2! (e.g. when all R1 files have '.R1' string, then enter '\\.R1'. Note that backslash is only needed to escape dot regex; e.g. when all R1 files have '_R1' string, then enter '_R1'.)",
             type: "chip",
             rules: [(v) => v.length <= 1 || "ADD ONLY ONE IDENTIFIER"],
           },
           {
             name: "read_R2",
-            value: ["\\.R2"],
+            value: ["_R2"],
             disabled: "single_end",
             tooltip:
-              "[only for paired-end data] identifyer string that is common for all R2 reads (e.g. when all R2 files have '.R2' string, then enter '\\.R2'. Note that backslash is only needed to escape dot regex; e.g. when all R2 files have '_R1' string, then enter '_R2'.). When demultiplexing data during this workflow, then specify as '\\.R2'",
+              "[only for paired-end data] identifyer string that is common for all R2 reads (e.g. when all R2 files have '.R2' string, then enter '\\.R2'. Note that backslash is only needed to escape dot regex; e.g. when all R2 files have '_R1' string, then enter '_R2'.)",
             type: "chip",
             rules: [(v) => v.length <= 1 || "ADD ONLY ONE IDENTIFIER"],
           },
           {
             name: "samp_ID",
-            value: ["\\."],
+            value: ["_"],
             disabled: "single_end",
             tooltip:
               "[only for paired-end data] identifyer string that separates the sample name from redundant charachters (e.g. file name = sample1.R1.fastq, then '\\.' would be the 'identifier string' (sample name = sample1)); note that backslash is only needed to escape dot regex (e.g. when file name = sample1_R1.fastq then specify as '_')",

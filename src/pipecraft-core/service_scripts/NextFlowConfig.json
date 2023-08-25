@@ -1,1 +1,1 @@
-{"forward_primers":["GGTCAACAAATCATAAAGATATTGG"],"reverse_primers":["TAAACTTCAGGGTGACCAAAAAAT"],"mismatches":1,"min_overlap":21,"seqs_to_keep":"keep_all","pair_filter":"both","cores":1,"min_seq_length":32,"no_indels":true}
+{"index_file":"C:/Users/stena/Desktop/testData/demultiplex/single-indexes-fwd.txt","index_file_example":"https://pipecraft2-manual.readthedocs.io/en/stable/user_guide.html#indexes-file-example-fasta-formatted","index_mismatch":0,"overlap":8,"search_window":35,"cores":1,"min_seq_length":32,"no_indels":true}

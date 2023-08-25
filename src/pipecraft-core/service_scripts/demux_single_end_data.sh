@@ -53,7 +53,15 @@ prepare_SE_env
 check_indexes_file
 
 ### Process file
-printf "Checking files ...\n"
+printf "Checking the input file ...\n"
+#Chech that only one $fileFormat file is in the WORRKING dir
+files=$(ls $workingDir | grep -c ".$fileFormat")
+if (( $files > 1 )); then
+    printf '%s\n' "ERROR]: please include only one $fileFormat file in the WORKDIR \n
+>Quitting" >&2
+    end_process
+fi
+
 for file in *.$fileFormat; do
     #Write file name without extension
     input=$(echo $file | sed -e "s/.$fileFormat//")
@@ -145,9 +153,8 @@ runtime=$((end-start))
 #Make README.txt file for demultiplexed reads
 printf "# Demultiplexing was performed using cutadapt (see 'Core command' below for the used settings).
 
-Files in 'demultiplex_out' directory represent per sample sequence files, 
-that were generated based on the specified indexes file (demultiplex_out/index_file.fasta).
-[demultiplex_out/index_file.fasta is $oligos_file but with added search window size for cutadapt].
+Files in 'demultiplex_out' directory represent per sample sequence files, that were generated based on the specified indexes file ($oligos_file).
+index_file.fasta = $oligos_file but with added search window size for cutadapt.
 
 Data, has been demultiplexed taken into account that some sequences
 may be also in reverse complementary orientation ('--revcomp' setting).
