@@ -67,6 +67,7 @@ export default {
     inputUpdate(value) {
       if (this.$route.params.workflowName) {
         this.blastSwitch(value);
+        this.unoiseSwitch(this.$route.params.workflowName, value);
         this.$store.commit("premadeInputUpdate", {
           workflowName: this.$route.params.workflowName,
           serviceIndex: this.$attrs.serviceIndex,
@@ -97,6 +98,14 @@ export default {
     blastSwitch2(value, i1, i2) {
       if (value == "blastn" || value == "megablast") {
         this.$store.commit("blastSwitch2", { value: value, i1: i1, i2: i2 });
+      }
+    },
+    unoiseSwitch(name, value) {
+      if (name == "NextITS" && value == "unoise") {
+        this.$store.state.NextITS[1].Inputs[4].value = true;
+      }
+      if (name == "NextITS" && (value == "vsearch" || value == "swarm")) {
+        this.$store.state.NextITS[1].Inputs[4].value = false;
       }
     },
   },

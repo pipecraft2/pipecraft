@@ -4057,7 +4057,6 @@ export default new Vuex.Store({
             disabled: "never",
             tooltip: "Perform denoising with UNOISE algorithm",
             type: "bool",
-            depends_on: 'state.NextITS[1].Inputs[0].value == "unoise"',
           },
         ],
       },
