@@ -1,5 +1,1 @@
-<<<<<<< HEAD
-{"method":"consensus"}
-=======
-{"organisms":["fungi"],"regions":["all"],"partial":50,"cores":6,"e_value":"1e-2","scores":0,"domains":2,"complement":true,"only_full":false,"truncate":true}
->>>>>>> a6898bd6152ff96d3357734b19e02735340d6fe8
+{"primer_forward":["a"],"primer_reverse":["t"],"primer_mismatches":2,"its_region":"1","clustering_method":"vsearch","otu_id":0.98,"swarm_d":1,"lulu":true,"unoise":false,"qc_maxee":1,"qc_maxhomopolymerlen":25,"qc_maxn":4,"ITSx_evalue":"1e-2","ITSx_partial":0,"ITSx_tax":["all"],"chimera_database":"undefined","chimera_rescueoccurrence":2,"tj_f ":0.01,"tj_p":1,"hp":true,"otu_iddef":2,"otu_qmask":"dust","swarm_fastidious":true,"unoise_alpha":2,"unoise_minsize":8,"max_MEEP":0.5,"max_ChimeraScore":0.5,"lulu_match":95,"lulu_ratio":1,"lulu_ratiotype":"min","lulu_relcooc":0.95,"lulu_maxhits":0}

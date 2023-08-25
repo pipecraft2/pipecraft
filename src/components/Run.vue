@@ -82,6 +82,7 @@ const path = require("path");
 const slash = require("slash");
 const Swal = require("sweetalert2");
 const streams = require("memory-streams");
+var _ = require("lodash");
 import * as Dockerode from "dockerode";
 import { pullImageAsync } from "dockerode-utils";
 import { imageExists } from "dockerode-utils";
@@ -580,6 +581,7 @@ export default {
       return dockerProps;
     },
     async runNextITS() {
+      var writeLog = this.$store.state.data.debugger;
       this.confirmRun("NextITS").then(async (result) => {
         if (result.isConfirmed) {
           this.$store.state.runInfo.active = true;
@@ -589,7 +591,7 @@ export default {
           }
           let stdout = new streams.WritableStream();
           // let step = this.$store.state.NextITS[0];
-          let step = JSON.parse(JSON.stringify(this.$store.state.NextITS[0]));
+          let step = _.cloneDeep(this.$store.state.NextITS[0]);
           step.Inputs = step.Inputs.concat(this.$store.state.NextITS[1].Inputs);
           step.extraInputs = step.extraInputs.concat(
             this.$store.state.NextITS[1].extraInputs
@@ -622,7 +624,7 @@ export default {
               .on("stream", (stream) => {
                 stream.on("data", function (data) {
                   console.log(data.toString().replace(/[\n\r]/g, ""));
-                  if (this.$store.state.data.debugger == true) {
+                  if (writeLog == true) {
                     log.write(data.toString().replace(/[\n\r]/g, ""));
                   }
                   // term.write(data.toString().replace(/[\n\r]/g, "") + "\n");
@@ -632,7 +634,7 @@ export default {
           });
           let result = await promise;
           console.log(result);
-          this.$store.state.runInfo.active = false;
+          this.$store.commit("resetRunInfo");
           if (result.StatusCode == 0) {
             Swal.fire("Workflow finished");
           } else {
