@@ -20,10 +20,16 @@ suppressMessages(library(ggplot2))
 theme_set(theme_classic(base_size = 14))
 
 ## Load OTU table
-cat("..Loading OTU table\n")
+cat(";; Loading OTU table\n")
 OTUTABW <- fread(
   file = args[1],
   sep = "\t", header = TRUE)
+
+## Check OTU table; if 2nd col is sequence, then remove
+if (colnames(OTUTABW)[2] == "Sequence") {
+  cat(";; 2nd column was 'Sequence', removing this ... \n")
+  OTUTABW <- OTUTABW[, -2]
+}
 
 colnames(OTUTABW)[1] <- "OTU"
 

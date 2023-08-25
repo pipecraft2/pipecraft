@@ -1979,7 +1979,7 @@ export default new Vuex.Store({
                 value: "undefined",
                 disabled: "never",
                 tooltip:
-                  "select ASVs_table file [1st col is ASVs ID, 2nd col is sequence]",
+                  "select ASVs_table file [1st col is ASVs ID, 2nd col must be 'Sequences' (default PipeCraft's output)]",
                 type: "file",
               },
               {
@@ -2011,7 +2011,7 @@ export default new Vuex.Store({
                 value: "undefined",
                 disabled: "never",
                 tooltip:
-                  "select an OTU/ASV table [output will be in the directory as specified under 'SELECT WORKDIR']",
+                  "select TAB-DELIMITED OTU/ASV table [output will be in the directory as specified under 'SELECT WORKDIR']",
                 type: "file",
               },
               {

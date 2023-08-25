@@ -25,6 +25,7 @@ source /scripts/submodules/framework.functions.sh
 #############################
 ### Start of the workflow ###
 #############################
+start=$(date +%s)
 printf "# Running tag-jumps filtering \n"
 Rlog=$(Rscript /scripts/submodules/tag_jump_removal.R $OTU_table_file $f_value $p_value 2>&1)
 echo $Rlog > $output_dir/tag-jumps_filt.log 
