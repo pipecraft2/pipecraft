@@ -304,12 +304,15 @@ if [[ $id_float != 1 ]]; then
   wait
 fi # end of OTU clustering
 
-### remove ";sample=.*;" from OTU.fasta files
+### remove ";sample=.*;" and ";size=" from OTU.fasta files.
+    # removing ";size=" because OTU table does not have "size" annotations; so the files would fit to LULU
 if [[ -f $output_dir/OTUs.fasta ]]; then
   sed -i 's/;sample=.*;/;/' $output_dir/OTUs.fasta
+  sed -i 's/;size=.*//' $output_dir/OTUs.fasta
 fi
 if [[ -f $output_dir/zOTUs.fasta ]]; then
   sed -i 's/;sample=.*;/;/' $output_dir/zOTUs.fasta
+  sed -i 's/;size=.*//' $output_dir/zOTUs.fasta
 fi
 
 #################################################

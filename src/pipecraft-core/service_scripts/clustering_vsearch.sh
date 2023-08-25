@@ -133,7 +133,7 @@ $cores \
 $otutype $output_dir/OTUs.temp.fasta \
 --uc $output_dir/OTUs.uc \
 --fasta_width 0 \
---sizein --sizeout"
+--sizein "
 
 checkerror=$(vsearch $seqsort \
 $output_dir/Glob_derep.fasta \
@@ -179,11 +179,14 @@ if [[ $remove_singletons == "true"  ]]; then
     --sizein --sizeout --fasta_width 0 \
     --output $output_dir/OTUs.fasta 2>&1)
     check_app_error
-
+    # remove ";sample=.*;" from OTU.fasta file.
     sed -i 's/;sample=.*;/;/' $output_dir/OTUs.fasta
+    # removing ";size=" because OTU table does not have "size" annotations; so the files would fit to LULU
+    sed -i 's/;size=.*//' $output_dir/OTUs.fasta 
     rm $output_dir/OTUs.temp.fasta
 else
     sed -e 's/;sample=.*;/;/' $output_dir/OTUs.temp.fasta > $output_dir/OTUs.fasta
+    sed -i 's/;size=.*//' $output_dir/OTUs.fasta
     rm $output_dir/OTUs.temp.fasta
 fi
 

@@ -1968,7 +1968,7 @@ export default new Vuex.Store({
                 btnName: "select file",
                 value: "undefined",
                 disabled: "never",
-                tooltip: "select fasta formatted ASVs sequence file",
+                tooltip: "select fasta formatted ASVs sequence file (ASV IDs must match with the ones in the ASVs table) [output will be in the directory as specified under 'SELECT WORKDIR']",
                 type: "file",
               },
               {
@@ -1977,7 +1977,7 @@ export default new Vuex.Store({
                 btnName: "select file",
                 value: "undefined",
                 disabled: "never",
-                tooltip: "select fasta formatted ASVs sequence file",
+                tooltip: "select ASVs_table file [1st col is ASVs ID, 2nd col is sequence]",
                 type: "file",
               },
               {
@@ -1990,6 +1990,44 @@ export default new Vuex.Store({
                 min: 0,
                 step: 0.01,
                 type: "slide",
+              },
+            ],
+          },
+          {
+            scriptName: "tag_jump_removal.sh",
+            tooltip:
+              "using UNCROSS2 to filter out putative tag-jumps",
+            imageName: "vmikk/nextits:0.0.3",
+            serviceName: "filter_tag-jumps",
+            selected: false,
+            showExtra: false,
+            extraInputs: [
+            ],
+            Inputs: [
+              {
+                name: "OTU_table",
+                active: true,
+                btnName: "select file",
+                value: "undefined",
+                disabled: "never",
+                tooltip: "select an OTU/ASV table [output will be in the directory as specified under 'SELECT WORKDIR']",
+                type: "file",
+              },
+              {
+                name: "f_value",
+                value: 0.01,
+                disabled: "never",
+                tooltip: "f-parameter of UNCROSS2",
+                type: "numeric",
+                rules: [(v) => v > 0 || "ERROR: specify values > 0"],
+              },
+              {
+                name: "p_value",
+                value: 1,
+                disabled: "never",
+                tooltip: "p-parameter",
+                type: "numeric",
+                rules: [(v) => v > 0 || "ERROR: specify values > 0"],
               },
             ],
           },
@@ -2027,7 +2065,7 @@ export default new Vuex.Store({
                 value: "undefined",
                 disabled: "never",
                 tooltip:
-                  "select fasta formatted sequence file containing your OTU/ASV reads",
+                  "select fasta formatted sequence file containing your OTU/ASV reads [output will be in the directory as specified under 'SELECT WORKDIR']",
                 type: "boolfile",
               },
               {
@@ -2089,7 +2127,7 @@ export default new Vuex.Store({
                 value: "undefined",
                 disabled: "never",
                 tooltip:
-                  "select OTU/ASV table. If no file is selected, then PipeCraft will look OTU_table.txt or ASV_table.txt in the working directory",
+                  "select OTU/ASV table. If no file is selected, then PipeCraft will look OTU_table.txt or ASV_table.txt in the WORKDIR [output will be in the directory as specified under 'SELECT WORKDIR']",
                 type: "boolfile",
               },
               {

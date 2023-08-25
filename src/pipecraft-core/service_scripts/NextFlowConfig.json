@@ -1,1 +1,1 @@
-{"zOTUs_thresh":1,"similarity_threshold":1,"strands":"both","minsize":8,"unoise_alpha":2,"denoise_level":"global","remove_chimeras":true,"abskew":16,"similarity_type":"2","maxaccepts":1,"maxrejects":32,"mask":"dust","cores":4}
+{"OTU_table":"C:/Users/stena/Desktop/testData/COI_313bp/clustering_out/OTU_table.txt","f_value":"0.03","p_value":1}

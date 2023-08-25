@@ -12,7 +12,6 @@
     #Distributed under the GNU LESSER GENERAL PUBLIC LICENSE
     #https://github.com/benjjneb/dada2
 ##########################################################
-set -e
 #load variables
 collapseNoMismatch=${collapseNoMismatch}
 minOverlap=${minOverlap}
@@ -127,5 +126,4 @@ printf "Total time: $runtime sec.\n "
 echo "#variables for all services: "
 echo "workingDir=$output_dir"
 echo "fileFormat=fasta"
-
 echo "readType=single_end"
