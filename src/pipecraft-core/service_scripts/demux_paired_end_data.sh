@@ -290,13 +290,11 @@ Total run time was $runtime sec.
 ##################################################################" > $output_dir/README.txt
 
 ###Done, files in $output_dir folder
-printf "\nDONE\n"
-printf "Data in directory $output_dir\n"
-printf "Summary of sequence counts in 'seq_count_summary.txt'\n"
-printf "Check README.txt file in $output_dir for further information about the process.\n\n"
-printf "Total time: $runtime sec.\n\n"
+printf "\nDONE "
+printf "Total time: $runtime sec.\n "
 
 #variables for all services
+echo "#variables for all services: "
 echo "workingDir=$output_dir"
 echo "fileFormat=$extension"
 echo "dataFormat=demultiplexed"

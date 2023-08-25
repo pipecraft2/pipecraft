@@ -35,6 +35,7 @@ dir.create(path_ASVs)
 ASV_tab = readRDS(file.path(workingDir, "ASVs_table.denoised.rds"))
 
 #remove chimeras
+cat(";; Removing chimeras with removeBimeraDenovo function ;; ")
 ASV_tab.nochim = removeBimeraDenovo(ASV_tab, method = method, multithread = TRUE, verbose = TRUE)
 
 #save rds
@@ -42,6 +43,7 @@ saveRDS(ASV_tab.nochim, file.path(path_ASVs, "ASVs_table.denoised.nochim.rds"))
 
 #seq count summary
 sample_names = readRDS("/input/qualFiltered_out/sample_names.rds")
+cat(";; sample names = ", sample_names)
 
 no_of_ASVs_list = list() #add ASVs per sample count
 for (i in 1:nrow(ASV_tab.nochim)){
@@ -76,6 +78,7 @@ write.table(ASV_tab.nochim, file.path(path_ASVs, "ASVs_table.txt"),
             sep = "\t", col.names = NA, row.names = TRUE, quote = FALSE)
 
 #Loop through each sample in the table and write per-sample fasta files containin non-chimeric ASVs
+cat(";; Writing per-sample fasta files containin non-chimeric ASVs ")
 for (i in 2:length(colnames(ASV_tab.nochim))){
     sample_name = colnames(ASV_tab.nochim)[i]
     sample_file = paste(sample_name, "chimFilt_ASVs.fasta", sep = ".")
@@ -92,5 +95,5 @@ for (i in 2:length(colnames(ASV_tab.nochim))){
         }
     }
 }
-
+cat(";; DONE ")
 #DONE, proceed with chimera_filtering_dada2_wf.sh to clean up make readme

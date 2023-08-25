@@ -13,13 +13,10 @@
 
 #load env variables
 readType=${readType}
-extension=${fileFormat}
-dataFormat=${dataFormat}
 workingDir=${workingDir}
-echo ${dada2mode}
 
-#load variables
-method=${method}
+## settings
+# method = list ["consensus", "pooled", "per-sample"]. 
 
 #Source for functions
 source /scripts/submodules/framework.functions.sh
@@ -27,20 +24,18 @@ source /scripts/submodules/framework.functions.sh
 output_dir1=$"/input/chimeraFiltered_out.dada2"
 output_dir2=$"/input/ASVs_out.dada2"
 
-### Check the existance of previous steps, and skip if present
-
-
-
 #############################
 ### Start of the workflow ###
 #############################
 start=$(date +%s)
 ### Process samples with dada2 removeBimeraDenovo function in R
 
-printf "# Running DADA2 removeBimeraDenovo \n"
+printf "# Running DADA2 removeBimeraDenovo \n "
 Rlog=$(Rscript /scripts/submodules/dada2_chimeraFilt_mixed_wf.R 2>&1)
-echo $Rlog > $output_dir1/dada2_chimeraFilt.log 
+echo $Rlog > $output_dir1/dada2_chimeraFilt.log
 wait
+#format R-log file
+sed -i "s/;; /\n/g" $output_dir1/dada2_chimeraFilt.log
 
 # Add "ASV" as a 1st col name
 if [[ -s $output_dir2/ASVs_table.txt ]]; then
@@ -103,10 +98,11 @@ Files in 'ASVs_out.dada2' directory:
 ########################################################" > $output_dir2/README.txt
 
 #Done
-printf "\nDONE\n"
-printf "Total time: $runtime sec.\n\n"
+printf "\nDONE "
+printf "Total time: $runtime sec.\n "
 
 #variables for all services
+echo "#variables for all services: "
 echo "workingDir=$output_dir2"
 echo "fileFormat=fasta"
 echo "readType=single_end"

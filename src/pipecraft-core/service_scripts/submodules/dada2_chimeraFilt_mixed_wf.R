@@ -33,7 +33,7 @@ dir.create(path_ASVs)
 
 
 ### combine fwd_orient and rev_orient runs with mergeSequenceTables
-cat("| Combining fwd_orient and rev_orient runs with mergeSequenceTables | ")
+cat(";; Combining fwd_orient and rev_orient runs with mergeSequenceTables ")
 #load fwd and rev tables
 fwd = readRDS("/input/primersCut_out/fwd_orient/denoised_assembled.dada2/ASVs_table.denoised.rds")
 rev = readRDS("/input/primersCut_out/rev_orient/denoised_assembled.dada2/ASVs_table.denoised.rds")
@@ -43,10 +43,10 @@ colnames(rev) = dada2:::rc(colnames(rev))
 # Merge tables
     # repeats = "sum" -> samples with the same name are summed together in the merged table.
 ASV_tab = mergeSequenceTables(fwd, rev, repeats = "sum") 
-saveRDS(ASV_tab, file.path(path_ASVs, "ASVs_table.denoised.rds"))    
+saveRDS(ASV_tab, file.path(path_ASVs, "ASVs_table.denoised.rds"))
 
 #remove chimeras
-cat("| Removing chimeras with removeBimeraDenovo | ")
+cat(";; Removing chimeras with removeBimeraDenovo ;; ")
 ASV_tab.nochim <- removeBimeraDenovo(ASV_tab, method = method, multithread = TRUE, verbose = TRUE)
 
 #save rds
@@ -78,6 +78,7 @@ write(asv_fasta, file.path(path_ASVs, "ASVs.fasta"))
 write.table(ASV_tab.nochim, file.path(path_ASVs, "ASVs_table.txt"), sep = "\t", col.names = NA, row.names = TRUE, quote = FALSE)
 
 #Loop through each sample in the table and write per-sample fasta files containin non-chimeric ASVs (start with 2nd col [1st is Sequence])
+cat(";; Writing per-sample fasta files containin non-chimeric ASVs ")
 for (i in 2:length(colnames(ASV_tab.nochim))){
     sample_name = colnames(ASV_tab.nochim)[i]
     sample_file = paste(sample_name, "chimFilt_ASVs.fasta", sep = ".") 
@@ -94,5 +95,5 @@ for (i in 2:length(colnames(ASV_tab.nochim))){
         }
     }
 }
-
+cat(";; DONE ")
 #DONE, proceed with chimera_filtering_dada2_wf.sh to clean up make readme

@@ -45,18 +45,19 @@ if (file.exists("ASVs_lenFilt.fasta") == TRUE && file.exists("ASVs_collapsed.fas
 }
 
 #log
-cat("input = ", seqs_file, "\n")
-cat("database file = ", database, "\n")
+cat(";; input = ", seqs_file, "\n")
+cat(";; database file = ", database, "\n")
 
 #read.fasta
 fasta = read.fasta(seqs_file, seqtype = "DNA", as.string = TRUE, forceDNAtolower = FALSE, seqonly = FALSE)
 seq_names = getName(fasta)
 seqs = unlist(getSequence(fasta, as.string = TRUE))
 #Print no of sequences in the input file
-paste("Number of sequences = ", length(seq_names))
+cat(";; Number of sequences = ", length(seq_names))
 
 #assign taxonomy
 set.seed(100)
+cat(";; Assigning taxonomy with assignTaxonomy function ")
 tax = assignTaxonomy(seqs, database, multithread = TRUE, minBoot = minBoot, tryRC = tryRC, outputBootstraps = TRUE)
 
 #add sequence names to tax table
@@ -65,5 +66,5 @@ rownames(tax2) = seq_names
 colnames(tax2)[1] = "Sequence"
 #write taxonomy
 write.csv(tax2, file.path(path_results, "taxonomy.csv"), row.names = TRUE, quote = FALSE)
-
+cat(";; DONE ")
 #DONE, proceed with taxonomy_dada2.sh to clean up make readme

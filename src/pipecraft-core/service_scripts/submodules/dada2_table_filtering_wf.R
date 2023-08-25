@@ -18,13 +18,11 @@ library('dada2')
 #print DADA2 version
 cat("DADA2 version = ", base::toString(packageVersion("dada2")), "\n")
 
-print("### Filtering the ASV table")
-print("")
-
 ##########################################
+cat(";; Filtering the ASV table")
 #Combine together sequences that are identical up to shifts and/or length.
 if (collapseNoMismatch == "true") {
-    print("Combining together ASVs that are identical")
+    cat(";; Combining together ASVs that are identical")
     
     # Load ASVs table from the DADA2 workflow
     table_in = readRDS(table_rds)
@@ -33,9 +31,8 @@ if (collapseNoMismatch == "true") {
     saveRDS(ASV_tab_collapsed, file.path(path_out, "ASV_tab_collapsed.rds"))
 
     #Print ASV count
-    print(paste0("total no. of input ASVs = ", dim(table_in)[2]))
-    print(paste0("no. of ASVs in a collapsed table = ", dim(ASV_tab_collapsed)[2]))
-    print("")
+    print(paste0(";; total no. of input ASVs = ", dim(table_in)[2]))
+    print(paste0(";; no. of ASVs in a collapsed table = ", dim(ASV_tab_collapsed)[2]))
 
     ###format and save ASV table and ASVs.fasta
     #sequence headers
@@ -65,8 +62,6 @@ if (collapseNoMismatch == "true") {
     rm(asv_headers)
     rm(asv_fasta)
 }
-
-
 ##########################################
 
 ##########################################
@@ -76,7 +71,7 @@ if (collapseNoMismatch != "true") {
 }
 
 if (len_filt != 0) {
-    print(paste0("Filtering ASVs by length; discarding ASVs with sequence length < ", len_filt))
+    cat(paste0(";; Filtering ASVs by length; discarding ASVs with sequence length < ", len_filt))
     a = c()
     short_ASV_count = 0
     for (i in 1:dim(table_in)[2]) {
@@ -98,9 +93,8 @@ if (len_filt != 0) {
         ASV_tab_lenFilt = table_in[,-c(a)] #remove columns, i.e ASVs with short seqs
 
         #print ASV count
-        print(paste0("< ", len_filt, " bp ASVs = ", short_ASV_count))
-        print(paste0("no. of ASVs in a length filtered table = ", dim(ASV_tab_lenFilt)[2]))
-        print("")
+        print(paste0(";; < ", len_filt, " bp ASVs = ", short_ASV_count))
+        print(paste0(";; no. of ASVs in a length filtered table = ", dim(ASV_tab_lenFilt)[2]))
 
         #Proceed if NOT all ASVs were removed by length filtering
         if (dim(ASV_tab_lenFilt)[2] != 0) { 
@@ -126,12 +120,9 @@ if (len_filt != 0) {
             #write ASVs table to path_out
             write.table(tASV_tab_lenFilt, file.path(path_out, "ASV_table_lenFilt.txt"), sep = "\t", col.names = NA, row.names = TRUE, quote = FALSE)
         } else {
-            print(paste0("NO ASVs remained after length filtering; ", len_filt, " bp"))
+            print(paste0(";; NO ASVs remained after length filtering; ", len_filt, " bp"))
         }
     }
-
 }
 ##########################################
-
-#DONE 
-
+cat(";; DONE")

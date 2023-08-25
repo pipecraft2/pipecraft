@@ -60,8 +60,8 @@ if (detect_singletons == "true" || detect_singletons == "TRUE"){
 
 #Set DADA options
 setDadaOpt(OMEGA_A = omegaa, OMEGA_P = omegap, OMEGA_C = omegac, DETECT_SINGLETONS = detect_singletons, BAND_SIZE = band_size)
-cat("errorEstimationFunction = ", errorEstFun, "\n")
-cat("BAND_SIZE = ", band_size, "\n\n")  
+cat(";; errorEstimationFunction = ", errorEstFun, "\n")
+cat(";; BAND_SIZE = ", band_size, "\n")  
 
 #output path
 path_results = "/input/denoised_assembled.dada2"
@@ -71,11 +71,10 @@ fnFs = sort(list.files(pattern = read_R1, full.names = TRUE))
 fnRs = sort(list.files(pattern = read_R2, full.names = TRUE))
 #sample names
 sample_names = sapply(strsplit(basename(fnFs), samp_ID), `[`, 1)
-cat("sample names = ", sample_names, "\n")
-
-cat("#Performing DADA2 denoising;")
+cat(";; sample names = ", sample_names, "\n")
 
 #Learn the error rates
+cat(";; Performing DADA2 denoising ;; ")
 errF = learnErrors(fnFs, errorEstimationFunction = errorEstFun, multithread = TRUE)
 errR = learnErrors(fnRs, errorEstimationFunction = errorEstFun, multithread = TRUE)
 
@@ -95,10 +94,10 @@ print("derepFastq DONE")
 #denoise
 dadaFs = dada(derepFs, err = errF, pool = pool, multithread = TRUE)
 dadaRs = dada(derepRs, err = errR, pool = pool, multithread = TRUE)
-print("denoising DONE")
+print(";; denoising DONE")
 
 #merge paired-end reads
-cat("#Merging data with mergePairs;")
+cat(";; Merging data with mergePairs function ")
 merge = mergePairs(dadaFs, derepFs, dadaRs, derepRs, 
                             maxMismatch = maxMismatch,
                             minOverlap = minOverlap,
@@ -127,6 +126,7 @@ row.names(ASV_tab) = asv_headers
 #write.table(ASV_tab, file.path(path_results, "ASVs_table.txt"), sep = "\t", col.names = NA, row.names = TRUE, quote = FALSE)
 
 #Loop through each sample in the table and write per-sample fasta files
+cat(";; Writing per-sample fasta files ")
 for (i in 2:length(colnames(ASV_tab))){
     sample_name = colnames(ASV_tab)[i]
     sample_file = paste(sample_name, "ASVs.fasta", sep = ".") 
@@ -150,5 +150,5 @@ seq_count <- cbind(sapply(derepFs, getN), sapply(dadaFs, getN), sapply(dadaRs, g
 colnames(seq_count) <- c("input", "denoised_R1", "denoised_R2", "merged")
 rownames(seq_count) <- sample_names
 write.csv(seq_count, file.path(path_results, "seq_count_summary.csv"), row.names = TRUE, quote = FALSE)
-print("DONE")
+cat(";; DONE")
 #DONE, proceed with assemble_paired_end_dada2.sh to clean up make readme
