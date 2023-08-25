@@ -167,11 +167,14 @@ export default {
           let startTime = Date.now();
           let steps2Run = this.$store.getters.steps2Run(name);
           this.autoSaveConfig();
-          let log = fs.createWriteStream(
-            `${this.$store.state.inputDir}/${name}_${new Date()
-              .toJSON()
-              .slice(0, 10)}.txt`
-          );
+          let log;
+          if (this.$store.state.data.debugger == true) {
+            log = fs.createWriteStream(
+              `${this.$store.state.inputDir}/Pipecraft_${name}_${new Date()
+                .toJSON()
+                .slice(0, 10)}.txt`
+            );
+          }
           for (let [i, step] of this.$store.state[name].entries()) {
             if (step.selected == true || step.selected == "always") {
               let dockerProps = await this.getDockerProps(step);
@@ -211,7 +214,9 @@ export default {
                 });
               console.log(result);
               if (result.StatusCode == 0) {
-                log.write(result.stdout.toString().replace(/[\n\r]/g, ""));
+                if (this.$store.state.data.debugger == true) {
+                  log.write(result.stdout.toString().replace(/[\n\r]/g, ""));
+                }
                 let newWorkingDir = this.getVariableFromLog(
                   result.stdout,
                   "workingDir"
@@ -231,15 +236,25 @@ export default {
                 this.$store.commit("addWorkingDir", newWorkingDir);
               } else {
                 if (result.StatusCode == 137) {
-                  log.write(result.stderr.toString().replace(/[\n\r]/g, ""));
+                  if (this.$store.state.data.debugger == true) {
+                    log.write(result.stderr.toString().replace(/[\n\r]/g, ""));
+                  }
                   Swal.fire("Workflow stopped");
                 } else {
                   let err;
                   if (!result.stderr) {
-                    log.write(result.stdout.toString().replace(/[\n\r]/g, ""));
+                    if (this.$store.state.data.debugger == true) {
+                      log.write(
+                        result.stdout.toString().replace(/[\n\r]/g, "")
+                      );
+                    }
                     err = result;
                   } else {
-                    log.write(result.stderr.toString().replace(/[\n\r]/g, ""));
+                    if (this.$store.state.data.debugger == true) {
+                      log.write(
+                        result.stderr.toString().replace(/[\n\r]/g, "")
+                      );
+                    }
                     err = result.stderr;
                   }
                   Swal.fire({
@@ -280,11 +295,16 @@ export default {
           let steps2Run = this.$store.getters.steps2Run("selectedSteps");
           console.log(`${this.$store.state.inputDir}`);
           this.autoSaveConfig();
-          let log = fs.createWriteStream(
-            `${this.$store.state.inputDir}/Pipecraft_CustomWorkflow_${new Date()
-              .toJSON()
-              .slice(0, 10)}.txt`
-          );
+          let log;
+          if (this.$store.state.data.debugger == true) {
+            log = fs.createWriteStream(
+              `${
+                this.$store.state.inputDir
+              }/Pipecraft_CustomWorkflow_${new Date()
+                .toJSON()
+                .slice(0, 10)}.txt`
+            );
+          }
           for (let [i, step] of this.selectedSteps.entries()) {
             let selectedStep = this.findSelectedService(i);
             let dockerProps = await this.getDockerProps(selectedStep);
@@ -315,7 +335,9 @@ export default {
               });
             console.log(result);
             if (result.StatusCode == 0) {
-              log.write(result.stdout.toString().replace(/[\n\r]/g, ""));
+              if (this.$store.state.data.debugger == true) {
+                log.write(result.stdout.toString().replace(/[\n\r]/g, ""));
+              }
               let newWorkingDir = this.getVariableFromLog(
                 result.stdout,
                 "workingDir"
@@ -331,16 +353,22 @@ export default {
               this.$store.commit("addWorkingDir", newWorkingDir);
             } else {
               if (result.StatusCode == 137) {
-                log.write(result.stderr.toString().replace(/[\n\r]/g, ""));
+                if (this.$store.state.data.debugger == true) {
+                  log.write(result.stderr.toString().replace(/[\n\r]/g, ""));
+                }
                 Swal.fire("Workflow stopped");
               } else {
                 let err;
                 if (!result.stderr) {
-                  log.write(result.stdout.toString().replace(/[\n\r]/g, ""));
+                  if (this.$store.state.data.debugger == true) {
+                    log.write(result.stdout.toString().replace(/[\n\r]/g, ""));
+                  }
                   err = result;
                 } else {
                   err = result.stderr;
-                  log.write(result.stderr.toString().replace(/[\n\r]/g, ""));
+                  if (this.$store.state.data.debugger == true) {
+                    log.write(result.stderr.toString().replace(/[\n\r]/g, ""));
+                  }
                 }
                 Swal.fire({
                   title: "An error has occured while processing your data",
@@ -554,27 +582,28 @@ export default {
     async runNextITS() {
       this.confirmRun("NextITS").then(async (result) => {
         if (result.isConfirmed) {
-          this.updateRunInfo(0, 1, "NextITS", "NextITS");
-          let log = fs.createWriteStream("NextITS_log.txt");
+          this.$store.state.runInfo.active = true;
+          let log;
+          if (this.$store.state.data.debugger == true) {
+            log = fs.createWriteStream("NextITS_log.txt");
+          }
           let stdout = new streams.WritableStream();
-          let step = this.$store.state.NextITS[0];
+          // let step = this.$store.state.NextITS[0];
+          let step = JSON.parse(JSON.stringify(this.$store.state.NextITS[0]));
           step.Inputs = step.Inputs.concat(this.$store.state.NextITS[1].Inputs);
           step.extraInputs = step.extraInputs.concat(
             this.$store.state.NextITS[1].extraInputs
           );
           let props = this.createParamsFile(step);
           console.log(props);
-          await this.clearContainerConflicts("NextITS");
+          await this.clearContainerConflicts("Step_1");
+          await this.clearContainerConflicts("Step_2");
           await this.imageCheck("vmikk/nextits:0.0.3");
           let promise = new Promise((resolve, reject) => {
             dockerode
               .run(
                 "vmikk/nextits:0.0.3",
-                [
-                  "sh",
-                  "-c",
-                  `/scripts/NextITS_Pipeline.sh`,
-                ],
+                ["sh", "-c", `/scripts/NextITS_Pipeline.sh`],
                 false,
                 props,
                 (err, data, container) => {
@@ -593,7 +622,9 @@ export default {
               .on("stream", (stream) => {
                 stream.on("data", function (data) {
                   console.log(data.toString().replace(/[\n\r]/g, ""));
-                  log.write(data.toString().replace(/[\n\r]/g, ""));
+                  if (this.$store.state.data.debugger == true) {
+                    log.write(data.toString().replace(/[\n\r]/g, ""));
+                  }
                   // term.write(data.toString().replace(/[\n\r]/g, "") + "\n");
                   stdout.write(data.toString().replace(/[\n\r]/g, "") + "\n");
                 });
@@ -601,7 +632,7 @@ export default {
           });
           let result = await promise;
           console.log(result);
-          this.$store.commit("resetRunInfo");
+          this.$store.state.runInfo.active = false;
           if (result.StatusCode == 0) {
             Swal.fire("Workflow finished");
           } else {
