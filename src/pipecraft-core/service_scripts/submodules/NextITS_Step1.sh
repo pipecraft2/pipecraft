@@ -13,7 +13,6 @@
   nextflow run /scripts/NextITS/main.nf \
     -resume \
     -params-file /scripts/NextFlowConfig.json \
-    -profile     docker \
     --demultiplexed true \
     --input      "$BASEDIR"/Input/"$1" \
     --outdir     "$BASEDIR"/Step1_Results/"$1" \
