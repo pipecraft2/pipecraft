@@ -1,3 +1,9 @@
 GGWACWGGWTGAACWGTWTAYCCYCC #forward primer 
 
 TANACYTCNGGRTGNCCRAARAAYCA #reverse primer 
+
+    enable_unoise_nextits(state) {
+      if (state.NextITS.Inputs[0].value == "unoise") {
+        state.NextITS.Inputs[4].value = true;
+      }
+    },
