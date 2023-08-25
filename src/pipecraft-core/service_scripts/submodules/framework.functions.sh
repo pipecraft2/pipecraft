@@ -139,11 +139,11 @@ while read file; do
     if [[ $x == "1" ]]; then
         :
     elif [[ $x == "0" ]]; then
-        printf '%s\n' "ERROR]: $file name does not contain R1 or R2 strings to identify paired-end reads. Remove file from folder or fix the name.
+        printf '%s\n' "ERROR]: $file name does not contain R1/R2 strings to identify paired-end reads. Remove file from folder or fix the name.
 >Quitting" >&2
         end_process
     else    
-        printf '%s\n' "ERROR]: $file name contains multiple R1 or R2 strings -> change names (e.g. R123.R1.fastq to S123.R1.fastq)
+        printf '%s\n' "ERROR]: $file name contains multiple R1/R2 strings -> change names (e.g. R123.R1.fastq to S123.R1.fastq)
 >Quitting" >&2
         end_process
     fi
@@ -557,7 +557,8 @@ while read LINE; do
     if [[ $? != 0 ]]; then
         printf "$file1\t$count1\t0\n" >> $output_dir/$subdir/seq_count_summary.txt
     fi
-done < tempdir2/seq_count_before.txt #&& rm -rf tempdir2
+done < tempdir2/seq_count_before.txt
+rm tempdir2/seq_count_after.txt tempdir2/seq_count_before.txt
 
 #Note for counting seqs in FASTQ files
 if [[ $extension == "fastq" ]] || [[ $extension == "fq" ]]; then
@@ -582,11 +583,6 @@ if [[ $debugger != "true" ]]; then
 else 
     #compress files in /tempdir
     pigz tempdir/*
-fi
-if [[ $debugger != "true" ]]; then
-    if [[ -d "tempdir2" ]]; then
-        rm -rf tempdir2
-    fi
 fi
 }
 

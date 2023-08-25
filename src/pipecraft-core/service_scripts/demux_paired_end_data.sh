@@ -56,10 +56,9 @@ start=$(date +%s)
 ### Check if files with specified extension exist in the dir
 first_file_check
 ### Prepare working env and check paired-end data
-prepare_PE_env
+prepare_PE_env #checks also multiple R1/R2 occurrences
 ### Check barcodes file
 check_indexes_file
-
 ### Process file
 printf "Checking files ...\n"
 while read LINE; do

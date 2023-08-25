@@ -132,7 +132,7 @@ function quality_filtering_paired_end_dada2 () {
     if [[ $outfile_check != 0 ]]; then 
         :
     else 
-        printf '%s\n' "ERROR]: no output files generated after quality filtering ($output_dir). Adjust settings.
+        printf '%s\n' "ERROR]: no output files generated after quality filtering ($output_dir). Adjust settings or check sample identifier 'samp ID' so that all sample names would be unique.
         >Quitting" >&2
         end_process
     fi

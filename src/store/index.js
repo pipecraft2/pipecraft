@@ -3152,7 +3152,7 @@ export default new Vuex.Store({
         Inputs: [
           {
             name: "maxee",
-            value: null,
+            value: 1,
             disabled: "never",
             tooltip:
               "maximum number of expected errors per sequence. Sequences with higher error rates will be discarded",
@@ -3336,13 +3336,10 @@ export default new Vuex.Store({
       {
         scriptName: "clustering_unoise.sh",
         tooltip:
-          "make zOTUs with vsearch --cluster_unoise (and optionally remove chimeras with --uchime3_denovo)",
+          "tick the checkbox to cluster reads with vsearch --cluster_unoise (and optionally remove chimeras with --uchime3_denovo)",
         imageName: "pipecraft/vsearch_dada2:2",
         serviceName: "unoise3",
-        manualLink:
-          "https://pipecraft2-manual.readthedocs.io/en/stable/user_guide.html#id22",
-        disabled: "never",
-        selected: "always",
+        selected: false,
         showExtra: false,
         extraInputs: [
           {
@@ -3367,7 +3364,8 @@ export default new Vuex.Store({
             name: "remove_chimeras",
             value: true,
             disabled: "never",
-            tooltip: "perform chimera removal with UCHIME3 de novo algoritm",
+            tooltip:
+              "perform chimera removal with UCHIME3 de novo algoritm",
             type: "bool",
           },
           {

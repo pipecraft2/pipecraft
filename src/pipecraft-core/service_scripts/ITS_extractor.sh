@@ -281,6 +281,11 @@ if [[ -d $output_dir/ITS2 ]]; then
     outfile_addition=$"ITS2"
     subdir=$"ITS2"
     clean_and_make_stats_multidir
+    if [[ -d $output_dir/ITS2/full_and_partial ]]; then
+        outfile_addition=$"ITS2.full_and_partial"
+        subdir=$"ITS2/full_and_partial"
+        clean_and_make_stats_multidir
+    fi
 fi
 if [[ -d $output_dir/LSU ]]; then
     outfile_addition=$"LSU"
@@ -304,6 +309,11 @@ if [[ $was_fastq == "TRUE" ]]; then
     mv *.fasta $output_dir/ITSx_input_to_FASTA
 fi
 
+if [[ $debugger != "true" ]]; then
+    if [[ -d "tempdir2" ]]; then
+        rm -rf tempdir2
+    fi
+fi
 end=$(date +%s)
 runtime=$((end-start))
 
