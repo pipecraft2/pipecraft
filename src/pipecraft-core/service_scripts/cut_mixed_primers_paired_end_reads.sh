@@ -239,7 +239,7 @@ seqkit stats --threads 6 -T ../../*.$extension | awk -F'\t' 'BEGIN{OFS="\t";} NR
 sed -i "s/\..\/\..\///" /input/tempdir2/seq_count_before.txt
 
 #compile a track reads summary file (seq_count_summary.txt)
-printf "File\tReads\tProcessed_reads\n" > seq_count_summary.txt
+printf "File\tReads_in\tReads_out\n" > seq_count_summary.txt
 while read LINE; do
     file1=$(echo $LINE | awk '{print $1}')
     count1=$(echo $LINE | awk '{print $2}')
@@ -271,7 +271,7 @@ else
 fi
 
 #compile a track reads summary file (seq_count_summary.txt)
-printf "File\tReads\tProcessed_reads\n" > seq_count_summary.txt
+printf "File\tReads_in\tReads_out\n" > seq_count_summary.txt
 while read LINE; do
     file1=$(echo $LINE | awk '{print $1}')
     count1=$(echo $LINE | awk '{print $2}')
