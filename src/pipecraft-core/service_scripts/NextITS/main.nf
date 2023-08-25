@@ -4,7 +4,7 @@
 ============================================================================
   NextITS: Pipeline to process fungal ITS amplicons
 ============================================================================
-  Version: v0.4.0
+  Version: v0.5.0
   License: Apache-2.0
   Github : https://github.com/vmikk/NextITS
   Website: https://next-its.github.io/
@@ -14,8 +14,6 @@
 // NB!!:
 // - provide absolute paths to the input data (e.g. --input and --barcodes)
 // - File names should not contain period (.) characters (except for extensions)
-// - When providing a path to the BLAST DB (`--blast_taxdb`), do not add file extensions
-//   e.g., "/mnt/DB/UNITE/UNITE_96" (there should be multiple UNITE_96 files - ndb,nhr,nsq,...)
 
 // Dependencies:
 //  - lima >= 2.6.0
@@ -25,7 +23,6 @@
 //  - cutadapt >= 4.1
 //  - fastp >= 0.23.2
 //  - ITSx >= 1.1.3
-//  - BLAST 2.12.0+
 //  - R >= 4.1.0
 //    -- data.table >= 1.14.0
 //    -- Biostrings >= 2.60.0
@@ -46,7 +43,6 @@
 //
 // Databases:
 //  - UDB for chimera identification
-//  - BlastDB for taxonomy annotation
 
 // extract Filename
 public static String extractFilename(String path)  {  
@@ -63,7 +59,7 @@ public static String extractFilename(String path)  {
 nextflow.enable.dsl = 2
 
 // Pipeline version
-version = '0.4.0'
+version = '0.5.0'
 
 // Initialize parameters, set default values
 params.data_path = "${projectDir}/pipeline_data"
@@ -86,6 +82,7 @@ params.its_region = "full"
 //   "ITS1" or "ITS2"
 //   "none" = just trim primers
 //   "ITS1_5.8S_ITS2" = assemble near-full-length ITS from ITSx output (useful in the case if primers are too close to SSU or LSU, and ITSx is not able to detect full-length sequence)
+//   "SSU" or "LSU"
 
 // Quality control
 params.qc_maxee     = false       // only for single-end reads
@@ -160,8 +157,7 @@ params.hp_similarity = 0.999
 params.hp_iddef = 2
 
 // Reference-based chimera removal
-chimera_name = "${chimera_database}"
-params.chimera_db = '/extraFiles4/' + extractFilename(chimera_name)
+params.chimera_db = "/mnt/Dat2/DB/UNITE/Leho_Subset/UN95_chimera.udb"
 params.chimera_rescueoccurrence = 2
 
 // De novo chimera identification (UCHIME1)
@@ -180,19 +176,7 @@ params.otu_iddef = 2
 params.tj_f = 0.01    // UNCROSS parameter f
 params.tj_p = 1
 
-// Taxonomy annotation
-params.blast_taxdb     = false
-params.blast_task      = "blastn"   // or "megablast" 
-params.blast_chunksize = 100
-params.blast_maxts     = 10
-params.blast_hsps      = 1
-// params.blast_wordsize
 
-
-if(params.blast_taxdb){
-  bastdb_name = file(params.blast_taxdb).name
-  bastdb_dir = file(params.blast_taxdb).parent
-}
 
 
 // Pipeline help message
@@ -273,14 +257,6 @@ def helpMsg() {
         --illumina_joinpadgap      Join not merged reads into one sequence using padding sequence string (default, NNNNNNNNNN)
         --illumina_joinpadqual     Join not merged reads into one sequence using padding quality string (default, IIIIIIIIII)
         --trim_minlen              Min sequence length after primer trimming (default, 10)
-
-      # Taxonomy annotaion
-        --blast_taxdb     Path to BLAST database (default, false)
-        --blast_task      Blast task type - "blastn" (default) or "megablast"
-        --blast_chunksize Number of sequences per BLAST task (default, 100)
-        --blast_maxts     Max target seqs (default, 10)
-        --blast_hsps      Number of high-scoring segment pairs (default, 1)
-        --blast_wordsize  BLAST word size
 
     NEXTFLOW-SPECIFIC:
         -profile       Configuration profile
@@ -374,9 +350,9 @@ out_5_chim   = params.outdir + "/05_Chimera"
 out_6_tj     = params.outdir + "/06_TagJumpFiltration"
 out_7_seq    = params.outdir + "/07_SeqTable"
 out_8_smr    = params.outdir + "/08_RunSummary"
-out_9_blast  = params.outdir + "/09_Taxonomy"
 
-
+// Sub-workflow-specific outputs
+out_3_quickstats = params.outdir + "/03_Stats"
 
 
 // Quality filtering for single-end reads
@@ -474,6 +450,37 @@ process qc_pe {
       --out2 QC_R2.fq.gz
 
     echo -e "\nQC finished"
+    """
+}
+
+
+
+// Validate tags for demultiplexing
+process tag_validation {
+
+    label "main_container"
+    // cpus 1
+
+    input:
+      path barcodes
+
+    output:
+      path "barcodes_validated.fasta", emit: fasta
+
+    script:
+    """
+    echo -e "Valdidating demultiplexing tags\n"
+    echo -e "Input file: " ${barcodes}
+
+    ## Convert Windows-style line endings (CRLF) to Unix-style (LF)
+    LC_ALL=C sed -i 's/\r\$//g' ${barcodes}
+
+    ## Perform tag validation
+    validate_tags.R \
+      --tags   ${barcodes} \
+      --output barcodes_validated.fasta
+
+    echo -e "Tag validation finished"
     """
 }
 
@@ -819,11 +826,11 @@ process primer_check {
 
     ## If some artifacts are found
     if [ -s multiprimer.txt ]; then
- 
+
       ## Keep only uinque seqIDs
       runiq multiprimer.txt > multiprimers.txt
       rm multiprimer.txt
- 
+
       echo -e "\nNumber of artefacts found: " \$(wc -l < multiprimers.txt)
 
       echo -e "..Removing artefacts"
@@ -1331,7 +1338,7 @@ process just_derep {
 
     """
 
-     vsearch \
+    vsearch \
           --derep_fulllength ${input} \
           --output - \
           --strand both \
@@ -1844,79 +1851,6 @@ process prep_seqtab {
 
 
 
-// Taxonomy annotation
-// use globally-dereplicated sequences
-process blastn {
-
-    label "main_container"
-
-    // publishDir "${out_9_blast}", mode: 'copy'
-    // cpus 1
-
-    input:
-      path input
-      path taxdb_dir
-
-    output:
-      path "${input.getBaseName()}.m8.gz", emit: blast
-
-    script:
-    """
-
-    echo -e "Taxonomy annotation with BLASTn"
-    echo -e "Input file: " ${input}
-
-    blastn \
-      -task ${params.blast_task} \
-      -outfmt=6 -strand both \
-      -query ${input} \
-      -db ${taxdb_dir}/${bastdb_name} \
-      -max_target_seqs ${params.blast_maxts} \
-      -max_hsps ${params.blast_hsps} \
-      -out ${input.getBaseName()}.m8 \
-      -num_threads ${task.cpus}
-
-      # -word_size
-      # -evalue
-      # -perc_identity
-
-    ## Compress results
-    gzip -7 ${input.getBaseName()}.m8
-
-    echo "..Done"
-
-    """
-}
-
-
-// Aggregate BLAST results
-process blast_merge {
-
-    label "main_container"
-
-    publishDir "${out_9_blast}", mode: 'copy'
-    // cpus 1
-
-    input:
-      path input
-
-    output:
-      path "Blast_hits.m8.gz", emit: blast
-
-    script:
-    """
-
-    echo -e "Aggregating BLASTn hits"
-    
-    cat *.m8.gz > Blast_hits.m8.gz
-
-    echo "..Done"
-
-    """
-}
-
-
-
 // Demultiplexing with cutadapt - for Illumina PE reads (only not merged)
 // NB. it's possible to use anchored adapters (e.g., -g ^file:barcodes.fa),
 //     but there could be a preceding nucleotides before the barcode,
@@ -2344,7 +2278,7 @@ process join_pe {
       echo -e "\nIt looks like there are no joined reads"
     fi
 
-    ## Remove redundant copys
+    ## Remove redundant symlinks
     find -L . -name "*.fastq.gz" | grep -v ${input} | parallel -j1 "rm {}"
 
     """
@@ -2370,6 +2304,7 @@ process read_counts {
       path(samples_primerch, stageAs: "4_primerch/*")
       path(samples_primermult, stageAs: "4_multiprimer/*")
       path(samples_itsx_or_primertrim, stageAs: "5_itsxtrim/*")
+      path(homopolymers, stageAs: "5_homopolymers/*")
       path(samples_chimref, stageAs: "6_chimref/*")
       path(samples_chimdenovo, stageAs: "7_chimdenov/*")
       path(chimera_recovered, stageAs: "8_chimrecov/*")
@@ -2380,15 +2315,16 @@ process read_counts {
       path "Run_summary.xlsx",                  emit: xlsx
       path "Counts_1.RawData.txt",              emit: counts_1_raw
       path "Counts_2.QC.txt",                   emit: counts_2_qc
-      path "Counts_3.Demux.txt",                emit: counts_3_demux,       optional: true
-      path "Counts_4.PrimerCheck.txt",          emit: counts_4_primer,      optional: true
-      path "Counts_4.PrimerMultiArtifacts.txt", emit: counts_4_primermult,  optional: true
-      path "Counts_5.ITSx_or_PrimTrim.txt",     emit: counts_5_itsx_ptrim,  optional: true
-      path "Counts_6.ChimRef_reads.txt",        emit: counts_6_chimref_r,   optional: true
-      path "Counts_6.ChimRef_uniqs.txt",        emit: counts_6_chimref_u,   optional: true
-      path "Counts_7.ChimDenov.txt",            emit: counts_7_chimdenov,   optional: true
-      path "Counts_8.ChimRecov_reads.txt",      emit: counts_8_chimrecov_r, optional: true
-      path "Counts_8.ChimRecov_uniqs.txt",      emit: counts_8_chimrecov_u, optional: true
+      path "Counts_3.Demux.txt",                emit: counts_3_demux,        optional: true
+      path "Counts_4.PrimerCheck.txt",          emit: counts_4_primer,       optional: true
+      path "Counts_4.PrimerMultiArtifacts.txt", emit: counts_4_primermult,   optional: true
+      path "Counts_5.ITSx_or_PrimTrim.txt",     emit: counts_5_itsx_ptrim,   optional: true
+      path "Counts_5.Homopolymers.txt",         emit: counts_5_homopolymers, optional: true
+      path "Counts_6.ChimRef_reads.txt",        emit: counts_6_chimref_r,    optional: true
+      path "Counts_6.ChimRef_uniqs.txt",        emit: counts_6_chimref_u,    optional: true
+      path "Counts_7.ChimDenov.txt",            emit: counts_7_chimdenov,    optional: true
+      path "Counts_8.ChimRecov_reads.txt",      emit: counts_8_chimrecov_r,  optional: true
+      path "Counts_8.ChimRecov_uniqs.txt",      emit: counts_8_chimrecov_u,  optional: true
 
     script:
 
@@ -2452,6 +2388,18 @@ process read_counts {
     fi
 
 
+    ## Count homopolymer-correction results
+    echo -e "\n..Counting homopolymer-corrected reads"
+    if [ `find 5_homopolymers \\( -name no_homopolymer \\) 2>/dev/null` ]
+    then
+      echo -e "... No files found"
+      touch Counts_5.Homopolymers.txt
+    else
+      find 5_homopolymers -name "*.uc.gz" \
+        | parallel -j ${task.cpus} "count_homopolymer_stats.sh {} {/.}" \
+        | sed '1i SampleID\tQuery\tTarget' \
+        > Counts_5.Homopolymers.txt
+    fi
     
     ## Count number of reads for reference-based chimeras
     echo -e "\n..Reference-based chimeras"
@@ -2515,6 +2463,7 @@ process read_counts {
       --primer       Counts_4.PrimerCheck.txt \
       --primermulti  Counts_4.PrimerMultiArtifacts.txt \
       --itsx         Counts_5.ITSx_or_PrimTrim.txt \
+      --homopolymer  Counts_5.Homopolymers.txt \
       --chimrefn     Counts_6.ChimRef_reads.txt \
       --chimrefu     Counts_6.ChimRef_uniqs.txt \
       --chimdenovo   Counts_7.ChimDenov.txt \
@@ -2524,6 +2473,86 @@ process read_counts {
       --seqtab       ${seqtab} \
       --threads      ${task.cpus}
 
+    """
+}
+
+// Quick stats of demultiplexing and primer checking steps
+// (for the `seqstats` sub-workflow)
+process quick_stats {
+
+    label "main_container"
+
+    publishDir "${out_3_quickstats}",                 mode: 'copy', pattern: "*.xlsx"
+    publishDir "${out_3_quickstats}/PerProcessStats", mode: 'copy', pattern: "*.txt"
+    // cpus 5
+
+    input:
+      path(input_fastq, stageAs: "1_input/*")
+      path(qc, stageAs: "2_qc/*")
+      path(samples_demux, stageAs: "3_demux/*")
+      path(samples_primerch, stageAs: "4_primerch/*")
+      path(samples_primermult, stageAs: "4_multiprimer/*")
+
+    output:
+      path "Run_summary.xlsx",                  emit: xlsx
+      path "Counts_1.RawData.txt",              emit: counts_1_raw
+      path "Counts_2.QC.txt",                   emit: counts_2_qc
+      path "Counts_3.Demux.txt",                emit: counts_3_demux,       optional: true
+      path "Counts_4.PrimerCheck.txt",          emit: counts_4_primer,      optional: true
+      path "Counts_4.PrimerMultiArtifacts.txt", emit: counts_4_primermult,  optional: true
+
+    script:
+
+    """
+    echo -e "Summarizing run statistics\n"
+    echo -e "Counting the number of reads in:\n"
+
+
+    ## Count raw reads
+    echo -e "\n..Raw data"
+    seqkit stat --basename --tabular --threads ${task.cpus} \
+      1_input/* > Counts_1.RawData.txt
+    
+    ## Count number of reads passed QC
+    echo -e "\n..Sequenced passed QC"
+    seqkit stat --basename --tabular --threads ${task.cpus} \
+      2_qc/* > Counts_2.QC.txt
+    
+    ## Count demultiplexed reads
+    echo -e "\n..Demultiplexed data"
+    seqkit stat --basename --tabular --threads ${task.cpus} \
+      3_demux/* > Counts_3.Demux.txt
+
+    ## Count primer-checked reads
+    echo -e "\n..Primer-checked data"
+    if [ `find 4_primerch -name no_primerchecked 2>/dev/null` ]
+    then
+      echo -e "... No files found"
+      touch Counts_4.PrimerCheck.txt
+    else
+      seqkit stat --basename --tabular --threads ${task.cpus} \
+        4_primerch/* > Counts_4.PrimerCheck.txt
+    fi
+
+    ## Count multiprimer-artifacts
+    echo -e "\n..Multiprimer-artifacts"
+    if [ `find 4_multiprimer -name no_multiprimer 2>/dev/null` ]
+    then
+      echo -e "... No files found"
+      touch Counts_4.PrimerMultiArtifacts.txt
+    else
+      seqkit stat --basename --tabular --threads ${task.cpus} \
+        4_multiprimer/* > Counts_4.PrimerMultiArtifacts.txt
+    fi
+    
+    ## Summarize read counts
+    quick_stats.R \
+      --raw          Counts_1.RawData.txt \
+      --qc           Counts_2.QC.txt \
+      --demuxed      Counts_3.Demux.txt \
+      --primer       Counts_4.PrimerCheck.txt \
+      --primermulti  Counts_4.PrimerMultiArtifacts.txt \
+      --threads      ${task.cpus}
 
     """
 }
@@ -2541,6 +2570,9 @@ workflow {
     // Input file with barcodes (FASTA)
     ch_barcodes = Channel.value(params.barcodes)
 
+    // Validate tags
+    tag_validation(ch_barcodes)
+
     // PacBio
     if ( params.seqplatform == "PacBio" ) {
       
@@ -2553,7 +2585,7 @@ workflow {
       // Demultiplexing
       demux(
         qc_se.out.filtered,
-        ch_barcodes)
+        tag_validation.out.fasta)
 
       // Check primers
       primer_check(
@@ -2582,7 +2614,7 @@ workflow {
         qc_pe.out.filtered_R2)
 
       // Modify barcodes (restict search window)
-      prep_barcodes(ch_barcodes)
+      prep_barcodes(tag_validation.out.fasta)
 
       // Demultiplexing
       demux_illumina(
@@ -2646,7 +2678,7 @@ workflow {
   if( params.demultiplexed == true ){
 
     // Input files with demultiplexed reads (FASTQ.gz)
-    ch_input = Channel.fromPath( params.input + '/*.fastq.gz' )
+    ch_input = Channel.fromPath( params.input + '/*.{fastq.gz,fastq,fq.gz,fq}' )
 
     // QC
     qc_se(ch_input)
@@ -2665,7 +2697,7 @@ workflow {
 
 
     // Extract ITS
-    if(params.its_region == "full" || params.its_region == "ITS1" || params.its_region == "ITS2"){
+    if(params.its_region == "full" || params.its_region == "ITS1" || params.its_region == "ITS2" || params.its_region == "SSU" || params.its_region == "LSU"){
 
       // Run ITSx
       itsx(primer_check.out.fq_primer_checked)
@@ -2719,6 +2751,15 @@ workflow {
         if(params.its_region == "ITS2"){
           homopolymer(itsx.out.itsx_its2)
         }
+        // --SSU sequences
+        if(params.its_region == "SSU"){
+          homopolymer(itsx.out.itsx_ssu)
+        }
+        // --LSU sequences
+        if(params.its_region == "LSU"){
+          homopolymer(itsx.out.itsx_lsu)
+        }
+
         // --Primer-trimmed sequences
         if(params.its_region == "none"){
           homopolymer(trim_primers.out.primertrimmed_fa)
@@ -2739,7 +2780,7 @@ workflow {
       // No homopolymer comression is required,
       // Just dereplicate the data
 
-      if(params.its_region == "full" || params.its_region == "ITS1" || params.its_region == "ITS2"){
+      if(params.its_region == "full" || params.its_region == "ITS1" || params.its_region == "ITS2" || params.its_region == "SSU" || params.its_region == "LSU"){
         // --Full-length ITS sequences
         if(params.its_region == "full"){
           just_derep(itsx.out.itsx_full)
@@ -2751,6 +2792,14 @@ workflow {
         // --ITS2 sequences
         if(params.its_region == "ITS2"){
           just_derep(itsx.out.itsx_its2)
+        }
+        // --SSU sequences
+        if(params.its_region == "SSU"){
+          just_derep(itsx.out.itsx_ssu)
+        }
+        // --LSU sequences
+        if(params.its_region == "LSU"){
+          just_derep(itsx.out.itsx_lsu)
         }
 
         // Reference-based chimera removal
@@ -2827,11 +2876,17 @@ workflow {
       seq_qual.out.quals                    // sequence qualities
       )
 
-    // Read count summary
-    if( params.demultiplexed == false ){
-
-      // Prepare input channels
-      ch_all_demux = demux.out.samples_demux.flatten().collect()
+    
+    //// Read count summary
+    
+      // Initial data - Per-sample input channels
+      if( params.demultiplexed == false ){
+        ch_all_demux = demux.out.samples_demux.flatten().collect()
+      } else {
+        ch_all_demux = Channel.fromPath( params.input + '/*.{fastq.gz,fastq,fq.gz,fq}' ).flatten().collect()
+      }
+        
+      // Primer-checked and multiprimer sequences
       ch_all_primerchecked = primer_check.out.fq_primer_checked.flatten().collect().ifEmpty(file("no_primerchecked"))
       ch_all_multiprimer = primer_check.out.mutiprimer.flatten().collect().ifEmpty(file("no_multiprimer"))
       
@@ -2845,12 +2900,21 @@ workflow {
       if(params.its_region == "ITS2"){
         ch_all_trim = itsx.out.itsx_its2.flatten().collect().ifEmpty(file("no_itsx"))
       }
+      if(params.its_region == "SSU"){
+        ch_all_trim = itsx.out.itsx_ssu.flatten().collect().ifEmpty(file("no_itsx"))
+      }
+      if(params.its_region == "LSU"){
+        ch_all_trim = itsx.out.itsx_lsu.flatten().collect().ifEmpty(file("no_itsx"))
+      }
       if(params.its_region == "ITS1_5.8S_ITS2"){
         ch_all_trim = assemble_its.out.itsnf.flatten().collect().ifEmpty(file("no_itsx"))
       }
       if(params.its_region == "none"){
         ch_all_trim = trim_primers.out.primertrimmed_fq.flatten().collect().ifEmpty(file("no_primertrim"))
       }
+
+      // Homopolymer-correction channel
+      ch_homopolymers = homopolymer.out.uch.flatten().collect().ifEmpty(file("no_homopolymer"))
 
       // Chimeric channels
       ch_chimref = chimera_ref.out.chimeric.flatten().collect().ifEmpty(file("no_chimref"))
@@ -2868,6 +2932,7 @@ workflow {
           ch_all_primerchecked,    // primer-cheched sequences
           ch_all_multiprimer,      // multiprimer artifacts
           ch_all_trim,             // ITSx-extracted or primer-trimmed sequences
+          ch_homopolymers,         // Homopolymer stats
           ch_chimref,              // Reference-based chimeras
           ch_chimdenovo,           // De novo chimeras
           ch_chimrescued,          // Rescued chimeras
@@ -2875,30 +2940,60 @@ workflow {
           prep_seqtab.out.seq_rd   // Final table with sequences
           )
 
-    } // end of non-demux read counts
-
-
-    // BLAST sub-workflow (optional)
-    if ( params.blast_taxdb ) {
-
-      // Split FASTA sequences (globally dereplicated) into 
-      ch_fasta = glob_derep.out.globderep
-          .splitFasta(by: params.blast_chunksize, file:true)
-
-      // Taxonomy annotation
-      blastn(ch_fasta, bastdb_dir)
-
-      // Aggregate BLAST results
-      ch_blasthits = blastn.out.blast.collect()
-      blast_merge(ch_blasthits)
-
-      // Parse BLAST results
-      // parse_blast()
-    
-    } // end of BLAST
-
 
 }
+
+
+// Quick workflow for demultiplexing and estimation of the number of reads per sample
+// Only PacBio non-demultiplexed reads are supported
+workflow seqstats {
+
+  // Primer disambiguation
+  disambiguate()
+
+  // Input file with barcodes (FASTA)
+  ch_barcodes = Channel.value(params.barcodes)
+
+  // Input file with multiplexed reads (FASTQ.gz)
+  ch_input = Channel.value(params.input)
+
+  // Validate tags
+  tag_validation(ch_barcodes)
+
+  // Initial QC
+  qc_se(ch_input)
+
+  // Demultiplexing
+  demux(
+    qc_se.out.filtered,
+    tag_validation.out.fasta)
+
+  // Check primers
+  primer_check(
+    demux.out.samples_demux.flatten(),
+    disambiguate.out.F,
+    disambiguate.out.R,
+    disambiguate.out.Fr,
+    disambiguate.out.Rr
+    )
+
+  // Prepare input channels
+  ch_all_demux = demux.out.samples_demux.flatten().collect()
+  ch_all_primerchecked = primer_check.out.fq_primer_checked.flatten().collect().ifEmpty(file("no_primerchecked"))
+  ch_all_multiprimer = primer_check.out.mutiprimer.flatten().collect().ifEmpty(file("no_multiprimer"))
+
+  // Count reads and prepare summary stats for the run
+  quick_stats(
+      ch_input,                // input data
+      qc_se.out.filtered,      // data that passed QC
+      ch_all_demux,            // demultiplexed sequences per sample
+      ch_all_primerchecked,    // primer-cheched sequences
+      ch_all_multiprimer       // multiprimer artifacts
+      )
+
+} // end of `seqstats` subworkflow
+
+
 
 
 // On completion

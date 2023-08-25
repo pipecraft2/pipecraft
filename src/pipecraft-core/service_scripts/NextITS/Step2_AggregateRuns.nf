@@ -168,7 +168,7 @@ process dereplication_unite {
       | vsearch \
         --cluster_size - \
         --id         1 \
-        --iddef      0 \
+        --iddef      2 \
         --query_cov  ${params.unite_querycov} \
         --target_cov ${params.unite_targetcov} \
         --strand both \
@@ -572,26 +572,26 @@ workflow {
     }
 
    // Pool sequence tables and aggregate at OTU level
-   ch_seqtabs = Channel.fromPath(
-     params.data_path + "/**/07_SeqTable/Seqs.RData",
-     checkIfExists: true).collect()
+  ch_seqtabs = Channel.fromPath(
+    params.data_path + "/**/07_SeqTable/Seqs.RData",
+    checkIfExists: true).collect()
 
    // Summarize sequence abundances by OTU and sample
-   summarize(
+  summarize(
     ch_seqtabs,     // Step-1 sequnece tables in long format
     derepuc_ch,     // UC file with dereplication info
     clustuc_ch,     // UC file with OTU clustering info
     cluster_ch      // FASTA file with OTUs
-   )
+  )
 
    // Post-clustering curation with LULU
-   if ( params.lulu == true ) {
-     lulu(
-       summarize.out.otutabwide,
-       summarize.out.seqs
+  if ( params.lulu == true ) {
+    lulu(
+      summarize.out.otutabwide,
+      summarize.out.seqs
        // cluster_ch        // In the Clustered.fa.gz, there are seqs excluded from OTU table
-     )
-   }
+    )
+  }
 
 
 }
