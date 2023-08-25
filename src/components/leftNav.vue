@@ -209,8 +209,12 @@ export default {
               readType: result.value[1],
               fileFormat: result.value[0].replace("_", "."),
             });
-            if (result.value[0] == "single_end") {
+            if (result.value[1] == "single_end") {
+              console.log(result.value[1]);
               this.$store.commit("setDADAmode", "SINGLE_END");
+            } else {
+              this.$store.commit("setDADAmode", "FORWARD");
+              console.log(result.value[1]);
             }
             this.$store.commit("toggle_PE_SE_scripts", result.value[1]);
             dialog

@@ -281,7 +281,7 @@ export default {
           console.log(`${this.$store.state.inputDir}`);
           this.autoSaveConfig();
           let log = fs.createWriteStream(
-            `${this.$store.state.inputDir}/CustomWorkflow_${new Date()
+            `${this.$store.state.inputDir}/Pipecraft_CustomWorkflow_${new Date()
               .toJSON()
               .slice(0, 10)}.txt`
           );
