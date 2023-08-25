@@ -33,7 +33,7 @@ export default new Vuex.Store({
     data: {
       readType: "",
       fileFormat: "",
-      dada2mode: "",
+      dada2mode: "FORWARD",
       debugger: false,
     },
     env_variables: ["FOO=bar", "BAZ=quux"],
@@ -1968,7 +1968,8 @@ export default new Vuex.Store({
                 btnName: "select file",
                 value: "undefined",
                 disabled: "never",
-                tooltip: "select fasta formatted ASVs sequence file (ASV IDs must match with the ones in the ASVs table) [output will be in the directory as specified under 'SELECT WORKDIR']",
+                tooltip:
+                  "select fasta formatted ASVs sequence file (ASV IDs must match with the ones in the ASVs table) [output will be in the directory as specified under 'SELECT WORKDIR']",
                 type: "file",
               },
               {
@@ -1977,7 +1978,8 @@ export default new Vuex.Store({
                 btnName: "select file",
                 value: "undefined",
                 disabled: "never",
-                tooltip: "select ASVs_table file [1st col is ASVs ID, 2nd col is sequence]",
+                tooltip:
+                  "select ASVs_table file [1st col is ASVs ID, 2nd col is sequence]",
                 type: "file",
               },
               {
@@ -1995,14 +1997,12 @@ export default new Vuex.Store({
           },
           {
             scriptName: "tag_jump_removal.sh",
-            tooltip:
-              "using UNCROSS2 to filter out putative tag-jumps",
+            tooltip: "using UNCROSS2 to filter out putative tag-jumps",
             imageName: "vmikk/nextits:0.0.3",
             serviceName: "filter_tag-jumps",
             selected: false,
             showExtra: false,
-            extraInputs: [
-            ],
+            extraInputs: [],
             Inputs: [
               {
                 name: "OTU_table",
@@ -2010,7 +2010,8 @@ export default new Vuex.Store({
                 btnName: "select file",
                 value: "undefined",
                 disabled: "never",
-                tooltip: "select an OTU/ASV table [output will be in the directory as specified under 'SELECT WORKDIR']",
+                tooltip:
+                  "select an OTU/ASV table [output will be in the directory as specified under 'SELECT WORKDIR']",
                 type: "file",
               },
               {
@@ -4627,6 +4628,15 @@ export default new Vuex.Store({
     },
   },
   getters: {
+    dada2modeIndex: (state) => {
+      if (state.data.dada2mode == "FORWARD") {
+        return 0;
+      } else if (state.data.dada2mode == "MIXED") {
+        return 1;
+      } else if (state.data.dada2mode == "SINGLE_END") {
+        return 2;
+      }
+    },
     check_depends_on: (state) => (input) => {
       if (input.depends_on && state) {
         return !eval(input.depends_on);
@@ -4932,7 +4942,6 @@ export default new Vuex.Store({
     setDADAmode(state, payload) {
       state.data.dada2mode = payload;
       if (payload == "SINGLE_END") {
-        state.data.readType = "single_end";
         state.DADA2_ASVs[3].selected = false;
         state.DADA2_ASVs[2].Inputs[0].value = "PacBioErrfun";
         state.DADA2_ASVs[2].Inputs[2].value = "FastqQuality";

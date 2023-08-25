@@ -39,7 +39,7 @@
         ></v-card-text
       >
       <v-card-actions v-if="$route.params.workflowName.includes('DADA2')">
-        <v-tabs>
+        <v-tabs :value="$store.getters.dada2modeIndex">
           <v-tab
             :disabled="$store.state.data.readType == 'single_end'"
             @click="
