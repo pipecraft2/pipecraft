@@ -1,1 +1,1 @@
-{"OTU_table":"C:/Users/stena/Desktop/testData/COI_313bp/clustering_out/OTU_table.txt","f_value":"0.03","p_value":1}
+{"forward_primers":["GGTCAACAAATCATAAAGATATTGG"],"reverse_primers":["TAAACTTCAGGGTGACCAAAAAAT"],"mismatches":1,"min_overlap":21,"seqs_to_keep":"keep_all","pair_filter":"both","cores":1,"min_seq_length":32,"no_indels":true}
