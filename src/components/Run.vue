@@ -600,11 +600,11 @@ export default {
           console.log(props);
           await this.clearContainerConflicts("Step_1");
           await this.clearContainerConflicts("Step_2");
-          await this.imageCheck("vmikk/nextits:0.0.3");
+          await this.imageCheck("vmikk/nextits:0.5.0");
           let promise = new Promise((resolve, reject) => {
             dockerode
               .run(
-                "vmikk/nextits:0.0.3",
+                "vmikk/nextits:0.5.0",
                 ["sh", "-c", `/scripts/NextITS_Pipeline.sh`],
                 false,
                 props,

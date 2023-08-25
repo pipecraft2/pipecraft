@@ -1998,7 +1998,7 @@ export default new Vuex.Store({
           {
             scriptName: "tag_jump_removal.sh",
             tooltip: "using UNCROSS2 to filter out putative tag-jumps",
-            imageName: "vmikk/nextits:0.0.3",
+            imageName: "vmikk/nextits:0.5.0",
             serviceName: "filter_tag-jumps",
             selected: false,
             showExtra: false,
@@ -3781,7 +3781,7 @@ export default new Vuex.Store({
         tooltip:
           "NextITS is an automated pipeline for metabarcoding fungi and other eukaryotes with full-length ITS sequenced with PacBio. Amplicons obtained with Illumina are also supported.",
         scriptName: "",
-        imageName: "vmikk/nextits:0.0.3",
+        imageName: "vmikk/nextits:0.5.0",
         serviceName: "Step_1",
         manualLink: "https://next-its.github.io/parameters/#step-1",
         disabled: "never",
@@ -3947,7 +3947,7 @@ export default new Vuex.Store({
         tooltip:
           "NextITS is an automated pipeline for metabarcoding fungi and other eukaryotes with full-length ITS sequenced with PacBio. Amplicons obtained with Illumina are also supported.",
         scriptName: "",
-        imageName: "vmikk/nextits:0.0.3",
+        imageName: "vmikk/nextits:0.5.0",
         serviceName: "Step_2",
         manualLink: "https://next-its.github.io/parameters/#step-2",
         disabled: "never",
