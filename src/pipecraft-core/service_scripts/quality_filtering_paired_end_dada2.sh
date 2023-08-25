@@ -128,7 +128,7 @@ if [[ $outfile_check != 0 ]]; then
     qFilt_compleated=$"TRUE"
     export qFilt_compleated
 else 
-    printf '%s\n' "ERROR]: no output files generated after quality filtering ($output_dir). Adjust settings.
+    printf '%s\n' "ERROR]: no output files generated after quality filtering ($output_dir). Adjust settings or check sample identifier 'samp ID' so that all sample names would be unique.
     >Quitting" >&2
     end_process
 fi
