@@ -14,7 +14,6 @@ fileFormat = Sys.getenv('fileFormat')
 #load variables
 read_R1 = Sys.getenv('read_R1')
 read_R2 = Sys.getenv('read_R2')
-samp_ID = Sys.getenv('samp_ID')
 maxEE = as.numeric(Sys.getenv('maxEE'))
 maxN = as.numeric(Sys.getenv('maxN'))
 truncQ = as.numeric(Sys.getenv('truncQ'))
@@ -43,7 +42,7 @@ path_results = Sys.getenv('output_dir')
 fnFs = sort(list.files(pattern = read_R1, full.names = TRUE))
 fnRs = sort(list.files(pattern = read_R2, full.names = TRUE))
 #sample names
-sample_names = sapply(strsplit(basename(fnFs), samp_ID), `[`, 1)
+sample_names = sapply(strsplit(basename(fnFs), read_R1), `[`, 1)
 cat(";; sample names = ", sample_names, "\n")
 
 #filtered files path

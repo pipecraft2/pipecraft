@@ -711,15 +711,15 @@ export default new Vuex.Store({
                 type: "chip",
                 rules: [(v) => v.length <= 1 || "ADD ONLY ONE IDENTIFIER"],
               },
-              {
-                name: "samp_ID",
-                value: ["_"],
-                disabled: "single_end",
-                tooltip:
-                  "applies only for paired-end data. Identifyer string that separates the sample name from redundant charachters (e.g. file name = sample1.R1.fastq, then '\\.' would be the 'identifier string' (sample name = sample1)); note that backslash is only needed to escape dot regex (e.g. when file name = sample1_R1.fastq then specify as '_')",
-                type: "chip",
-                rules: [(v) => v.length <= 1 || "ADD ONLY ONE IDENTIFIER"],
-              },
+              // {
+              //   name: "samp_ID",
+              //   value: ["_"],
+              //   disabled: "single_end",
+              //   tooltip:
+              //     "applies only for paired-end data. Identifyer string that separates the sample name from redundant charachters (e.g. file name = sample1.R1.fastq, then '\\.' would be the 'identifier string' (sample name = sample1)); note that backslash is only needed to escape dot regex (e.g. when file name = sample1_R1.fastq then specify as '_')",
+              //   type: "chip",
+              //   rules: [(v) => v.length <= 1 || "ADD ONLY ONE IDENTIFIER"],
+              // },
               {
                 name: "maxEE",
                 value: 2,
@@ -963,15 +963,15 @@ export default new Vuex.Store({
                 type: "chip",
                 rules: [(v) => v.length <= 1 || "ADD ONLY ONE IDENTIFIER"],
               },
-              {
-                name: "samp_ID",
-                value: ["_"],
-                disabled: "never",
-                tooltip:
-                  "identifyer string that separates the sample name from redundant charachters (e.g. file name = sample1.R1.fastq, then '\\.' would be the 'identifier string' (sample name = sample1)); note that backslash is only needed to escape dot regex (e.g. when file name = sample1_R1.fastq then specify as '_')",
-                type: "chip",
-                rules: [(v) => v.length <= 1 || "ADD ONLY ONE IDENTIFIER"],
-              },
+              // {
+              //   name: "samp_ID",
+              //   value: ["_"],
+              //   disabled: "never",
+              //   tooltip:
+              //     "identifyer string that separates the sample name from redundant charachters (e.g. file name = sample1.R1.fastq, then '\\.' would be the 'identifier string' (sample name = sample1)); note that backslash is only needed to escape dot regex (e.g. when file name = sample1_R1.fastq then specify as '_')",
+              //   type: "chip",
+              //   rules: [(v) => v.length <= 1 || "ADD ONLY ONE IDENTIFIER"],
+              // },
               {
                 name: "minOverlap",
                 value: 12,
@@ -4238,15 +4238,15 @@ export default new Vuex.Store({
             type: "chip",
             rules: [(v) => v.length <= 1 || "ADD ONLY ONE IDENTIFIER"],
           },
-          {
-            name: "samp_ID",
-            value: ["_"],
-            disabled: "single_end",
-            tooltip:
-              "[only for paired-end data] identifyer string that separates the sample name from redundant charachters (e.g. file name = sample1.R1.fastq, then '\\.' would be the 'identifier string' (sample name = sample1)); note that backslash is only needed to escape dot regex (e.g. when file name = sample1_R1.fastq then specify as '_')",
-            type: "chip",
-            rules: [(v) => v.length <= 1 || "ADD ONLY ONE IDENTIFIER"],
-          },
+          // {
+          //   name: "samp_ID",
+          //   value: ["_"],
+          //   disabled: "single_end",
+          //   tooltip:
+          //     "[only for paired-end data] identifyer string that separates the sample name from redundant charachters (e.g. file name = sample1.R1.fastq, then '\\.' would be the 'identifier string' (sample name = sample1)); note that backslash is only needed to escape dot regex (e.g. when file name = sample1_R1.fastq then specify as '_')",
+          //   type: "chip",
+          //   rules: [(v) => v.length <= 1 || "ADD ONLY ONE IDENTIFIER"],
+          // },
           {
             name: "maxEE",
             value: 2,

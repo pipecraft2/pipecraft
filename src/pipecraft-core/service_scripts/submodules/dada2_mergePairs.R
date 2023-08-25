@@ -14,7 +14,6 @@ fileFormat = Sys.getenv('fileFormat')
 #load  variables
 read_R1 = Sys.getenv('read_R1')
 read_R2 = Sys.getenv('read_R2')
-samp_ID = Sys.getenv('samp_ID')
 minOverlap = as.numeric(Sys.getenv('minOverlap'))
 maxMismatch = as.numeric(Sys.getenv('maxMismatch'))
 trimOverhang = Sys.getenv('trimOverhang')
@@ -70,7 +69,7 @@ path_results = "/input/denoised_assembled.dada2"
 fnFs = sort(list.files(pattern = read_R1, full.names = TRUE))
 fnRs = sort(list.files(pattern = read_R2, full.names = TRUE))
 #sample names
-sample_names = sapply(strsplit(basename(fnFs), samp_ID), `[`, 1)
+sample_names = sapply(strsplit(basename(fnFs), read_R1), `[`, 1)
 cat(";; sample names = ", sample_names, "\n")
 
 #Learn the error rates
