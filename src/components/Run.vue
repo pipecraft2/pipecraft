@@ -441,7 +441,9 @@ export default {
       let inputs = element.Inputs.concat(element.extraInputs);
       inputs.forEach((input) => {
         let varObj = {};
-        nextFlowParams[input.name] = input.value;
+        if (input.value != "undefined" && input.value != "") {
+          nextFlowParams[input.name] = input.value;
+        }
         varObj[input.name] = input.value;
         envVariables.push(stringify(varObj).replace(/(\r\n|\n|\r)/gm, ""));
       });
@@ -585,12 +587,12 @@ export default {
       this.confirmRun("NextITS").then(async (result) => {
         if (result.isConfirmed) {
           this.$store.state.runInfo.active = true;
+          this.$store.state.runInfo.containerID = "Step_1";
           let log;
           if (this.$store.state.data.debugger == true) {
             log = fs.createWriteStream("NextITS_log.txt");
           }
           let stdout = new streams.WritableStream();
-          // let step = this.$store.state.NextITS[0];
           let step = _.cloneDeep(this.$store.state.NextITS[0]);
           step.Inputs = step.Inputs.concat(this.$store.state.NextITS[1].Inputs);
           step.extraInputs = step.extraInputs.concat(

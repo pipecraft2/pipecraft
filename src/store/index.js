@@ -3936,7 +3936,7 @@ export default new Vuex.Store({
           {
             name: "its_region",
             items: ["full", "ITS1", "ITS2"],
-            value: "1",
+            value: "full",
             disabled: "never",
             tooltip: "sub-regions of the internal transcribed spacer",
             type: "select",

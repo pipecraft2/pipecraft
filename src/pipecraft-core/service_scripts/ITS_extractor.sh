@@ -27,6 +27,7 @@
 ##########################################################
 
 #load variables
+echo ${organisms}
 organisms=$"-t ${organisms}"
 regions=$"--save_regions ${regions}"
 partial=$"--partial ${partial}"
