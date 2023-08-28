@@ -48,6 +48,8 @@ runtime=$((end-start))
 in=$(echo $OTU_table_file | sed -e 's/\/extraFiles\///')
 
 printf "# Used UNCROSS2 algorithm with f-parameter = $f_value and p-parameter = $p_value
+    f-parameter defines the expected cross-talk rate. Default is 0.01 (equivalent to 1%). A higher value enforces stricter filtering.
+    p-parameter controls the severity of tag-jump removal. It adjusts the exponent in the UNCROSS formula. Default is 1. Opt for e.g. 0.5 or 0.3 to steepen the curve.
 
 Input feature (OTU/ASV) table = $in.
 
