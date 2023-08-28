@@ -47,7 +47,7 @@ export default new Vuex.Store({
             tooltip:
               "demultiplex data to per-sample files based on specified index file. Note that for read1 and read2 will get .R1 and .R2 identifiers when demultiplexing paired-end data",
             scriptName: "demux_paired_end_data.sh",
-            imageName: "pipecraft/cutadapt:3.5",
+            imageName: "pipecraft/cutadapt:4.4",
             serviceName: "demultiplex",
             selected: false,
             showExtra: false,
@@ -175,7 +175,7 @@ export default new Vuex.Store({
           {
             tooltip: "remove primers sequences from the reads",
             scriptName: "cut_primers_paired_end_reads.sh",
-            imageName: "pipecraft/cutadapt:3.5",
+            imageName: "pipecraft/cutadapt:4.4",
             serviceName: "cutadapt",
             selected: false,
             showExtra: false,
@@ -2168,7 +2168,7 @@ export default new Vuex.Store({
       {
         tooltip: "remove primers sequences from the reads",
         scriptName: "cut_primers_paired_end_reads.sh",
-        imageName: "pipecraft/cutadapt:3.5",
+        imageName: "pipecraft/cutadapt:4.4",
         serviceName: "cut primers",
         manualLink:
           "https://pipecraft2-manual.readthedocs.io/en/stable/user_guide.html#cut-primers",
@@ -2896,7 +2896,7 @@ export default new Vuex.Store({
       {
         tooltip: "remove primers sequences from the reads",
         scriptName: "cut_primers_paired_end_reads.sh",
-        imageName: "pipecraft/cutadapt:3.5",
+        imageName: "pipecraft/cutadapt:4.4",
         serviceName: "cut primers",
         manualLink:
           "https://pipecraft2-manual.readthedocs.io/en/stable/user_guide.html#cut-primers",
@@ -4114,7 +4114,7 @@ export default new Vuex.Store({
           MIXED: "cut_mixed_primers_paired_end_reads.sh",
           SINGLE_END: "cut_primers_single_end_reads.sh",
         },
-        imageName: "pipecraft/cutadapt:3.5",
+        imageName: "pipecraft/cutadapt:4.4",
         serviceName: "cut primers",
         manualLink:
           "https://pipecraft2-manual.readthedocs.io/en/stable/user_guide.html#cut-primers",
