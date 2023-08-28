@@ -562,7 +562,7 @@ export default {
       } else {
         confJson = JSONfn.stringify(this.$store.state.selectedSteps);
       }
-      fs.writeFileSync(`${this.$store.state.inputDir}/config.json`, confJson);
+      fs.writeFileSync(`${this.$store.state.inputDir}/pipecraft2_config.json`, confJson);
     },
     createParamsFile(step) {
       let Hostname = step.serviceName.replaceAll(" ", "_");
