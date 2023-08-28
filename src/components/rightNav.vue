@@ -73,7 +73,7 @@
             <v-icon>mdi-book-information-variant</v-icon>
           </v-list-item-content>
         </template>
-        <span>Open the Documentation</span>
+        <span>Open PipeCraft2 user guide</span>
       </v-tooltip>
     </v-list-item>
     <v-list-item
