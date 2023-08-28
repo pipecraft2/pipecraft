@@ -157,7 +157,7 @@ params.hp_similarity = 0.999
 params.hp_iddef = 2
 
 // Reference-based chimera removal
-params.chimera_db = "/mnt/Dat2/DB/UNITE/Leho_Subset/UN95_chimera.udb"
+params.chimera_db = "/scripts/NextITS/test_data/Test_ChimeraDB.udb"
 params.chimera_rescueoccurrence = 2
 
 // De novo chimera identification (UCHIME1)
