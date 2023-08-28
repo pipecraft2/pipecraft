@@ -3779,7 +3779,7 @@ export default new Vuex.Store({
     NextITS: [
       {
         tooltip:
-          "NextITS is an automated pipeline for metabarcoding fungi and other eukaryotes with full-length ITS sequenced with PacBio. Amplicons obtained with Illumina are also supported.",
+          "Settings for STEP_1 (sequence filtering processes per sequencing run) in NextITS pipeline",
         scriptName: "",
         imageName: "vmikk/nextits:0.5.0",
         serviceName: "Step_1",
@@ -3945,7 +3945,7 @@ export default new Vuex.Store({
       },
       {
         tooltip:
-          "NextITS is an automated pipeline for metabarcoding fungi and other eukaryotes with full-length ITS sequenced with PacBio. Amplicons obtained with Illumina are also supported.",
+          "Settings for STEP_2 (clustering) in NextITS pipeline",
         scriptName: "",
         imageName: "vmikk/nextits:0.5.0",
         serviceName: "Step_2",
