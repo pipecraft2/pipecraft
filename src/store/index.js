@@ -4940,6 +4940,7 @@ export default new Vuex.Store({
     setDADAmode(state, payload) {
       state.data.dada2mode = payload;
       if (payload == "SINGLE_END") {
+        state.data.readType = 'single_end'
         state.DADA2_ASVs[3].selected = false;
         state.DADA2_ASVs[2].Inputs[0].value = "PacBioErrfun";
         state.DADA2_ASVs[2].Inputs[2].value = "FastqQuality";

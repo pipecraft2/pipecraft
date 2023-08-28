@@ -62,13 +62,8 @@
           >
           <v-tab
             :disabled="$store.state.data.readType == 'paired_end'"
-            @click="
-              $store.commit(
-                'setDADAmode',
-                $event.target.innerText.replace(/-/g, '_')
-              )
-            "
-            >SINGLE-END</v-tab
+            @click="$store.commit('setDADAmode', 'SINGLE_END')"
+            >PACBIO</v-tab
           >
         </v-tabs>
       </v-card-actions>
