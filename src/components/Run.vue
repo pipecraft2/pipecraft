@@ -590,7 +590,6 @@ export default {
             log = fs.createWriteStream("NextITS_log.txt");
           }
           let stdout = new streams.WritableStream();
-          // let step = this.$store.state.NextITS[0];
           let step = _.cloneDeep(this.$store.state.NextITS[0]);
           step.Inputs = step.Inputs.concat(this.$store.state.NextITS[1].Inputs);
           step.extraInputs = step.extraInputs.concat(
