@@ -465,13 +465,15 @@ export default {
               process.cwd()
             )}/src/pipecraft-core/service_scripts/NextFlowConfig.json`
           : `${process.resourcesPath}/src/pipecraft-core/service_scripts/NextFlowConfig.json`;
-      fs.writeFile(
-        NextFlowConfigPath,
-        JSON.stringify(nextFlowParams),
-        (error) => {
-          if (error) throw error;
-        }
-      );
+      if (element.serviceName == "Step_1") {
+        fs.writeFile(
+          NextFlowConfigPath,
+          JSON.stringify(nextFlowParams),
+          (error) => {
+            if (error) throw error;
+          }
+        );
+      }
       return envVariables;
     },
     getBinds_c(element, Input) {
@@ -562,7 +564,10 @@ export default {
       } else {
         confJson = JSONfn.stringify(this.$store.state.selectedSteps);
       }
-      fs.writeFileSync(`${this.$store.state.inputDir}/pipecraft2_config.json`, confJson);
+      fs.writeFileSync(
+        `${this.$store.state.inputDir}/pipecraft2_config.json`,
+        confJson
+      );
     },
     createParamsFile(step) {
       let Hostname = step.serviceName.replaceAll(" ", "_");

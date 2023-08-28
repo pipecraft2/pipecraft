@@ -139,8 +139,8 @@ params.primer_reverse = "CCTSCSCTTANTDATATGC"  // ITS4ngsUni
 params.primer_mismatches = 2
 // params.primer_mismatches_insertions = 1
 // params.primer_mismatches_deletions = 1
-params.primer_foverlap = params.primer_forward[0].length() - 2
-params.primer_roverlap = params.primer_reverse[0].length() - 2
+params.primer_foverlap = params.primer_forward.length() - 2
+params.primer_roverlap = params.primer_reverse.length() - 2
 
 // ITSx
 params.ITSx_evalue = 1e-1
@@ -705,13 +705,13 @@ process disambiguate {
     ## Disambiguate forward primer
     echo -e "Disambiguating forward primer"
     disambiguate_primers.R \
-      ${params.primer_forward[0]} \
+      ${params.primer_forward} \
       primer_F.fasta
 
     ## Disambiguate reverse primer
     echo -e "\nDisambiguating reverse primer"
     disambiguate_primers.R \
-      ${params.primer_reverse[0]} \
+      ${params.primer_reverse} \
       primer_R.fasta
 
     ## Reverse-complement primers
@@ -752,8 +752,8 @@ process primer_check {
     script:
     """
     echo -e "Input file: " ${input}
-    echo -e "Forward primer: " ${params.primer_forward[0]}
-    echo -e "Reverse primer: " ${params.primer_reverse[0]}
+    echo -e "Forward primer: " ${params.primer_forward}
+    echo -e "Reverse primer: " ${params.primer_reverse}
 
     ### Count number of pattern occurrences for each sequence
     count_primers (){
@@ -862,11 +862,11 @@ process primer_check {
     echo -e "\nReorienting sequences"
 
     ## Reverse-complement rev primer
-    RR=\$(rc.sh ${params.primer_reverse[0]})
+    RR=\$(rc.sh ${params.primer_reverse})
 
     ## Reorient sequences, discard sequences without both primers
     cutadapt \
-      -a ${params.primer_forward[0]}";required;min_overlap=${params.primer_foverlap}"..."\$RR"";required;min_overlap=${params.primer_roverlap}" \
+      -a ${params.primer_forward}";required;min_overlap=${params.primer_foverlap}"..."\$RR"";required;min_overlap=${params.primer_roverlap}" \
       --errors ${params.primer_mismatches} \
       --revcomp --rename "{header}" \
       --discard-untrimmed \
@@ -1055,16 +1055,16 @@ process trim_primers {
 
     """
     echo -e "Input sample: "   ${sampID}
-    echo -e "Forward primer: " ${params.primer_forward[0]}
-    echo -e "Reverse primer: " ${params.primer_reverse[0]}
+    echo -e "Forward primer: " ${params.primer_forward}
+    echo -e "Reverse primer: " ${params.primer_reverse}
 
     ## Reverse-complement rev priver
-    RR=\$(rc.sh ${params.primer_reverse[0]})
+    RR=\$(rc.sh ${params.primer_reverse})
     echo -e "Reverse primer RC: " "\$RR"
 
     echo -e "\nTrimming primers"
     cutadapt \
-      -a ${params.primer_forward[0]}";required;min_overlap=${params.primer_foverlap}"..."\$RR"";required;min_overlap=${params.primer_roverlap}" \
+      -a ${params.primer_forward}";required;min_overlap=${params.primer_foverlap}"..."\$RR"";required;min_overlap=${params.primer_roverlap}" \
       --errors ${params.primer_mismatches} \
       --revcomp --rename "{header}" \
       --cores ${task.cpus} \
@@ -1979,12 +1979,12 @@ process trim_primers_pe {
     
     """
     echo -e "Input sample: " ${sampID}
-    echo -e "Forward primer: " ${params.primer_forward[0]}
-    echo -e "Reverse primer: " ${params.primer_reverse[0]}
+    echo -e "Forward primer: " ${params.primer_forward}
+    echo -e "Reverse primer: " ${params.primer_reverse}
 
     ## Reverse-complement primers
-    FR=\$(rc.sh ${params.primer_forward[0]})
-    RR=\$(rc.sh ${params.primer_reverse[0]})
+    FR=\$(rc.sh ${params.primer_forward})
+    RR=\$(rc.sh ${params.primer_reverse})
     
     echo -e "Forward primer RC: " "\$FR"
     echo -e "Reverse primer RC: " "\$RR"
@@ -1995,7 +1995,7 @@ process trim_primers_pe {
     echo -e "..Forward strain"
 
     cutadapt \
-      -a ${params.primer_forward[0]}";required;min_overlap=${params.primer_foverlap}"..."\$RR"";required;min_overlap=${params.primer_roverlap}" \
+      -a ${params.primer_forward}";required;min_overlap=${params.primer_foverlap}"..."\$RR"";required;min_overlap=${params.primer_roverlap}" \
       --errors ${params.primer_mismatches} \
       --cores ${task.cpus} \
       --action=none \
@@ -2008,7 +2008,7 @@ process trim_primers_pe {
     echo -e "..Reverse strain"
 
     cutadapt \
-      -a ${params.primer_reverse[0]}";required;min_overlap=${params.primer_roverlap}"..."\$FR"";required;min_overlap=${params.primer_foverlap}" \
+      -a ${params.primer_reverse}";required;min_overlap=${params.primer_roverlap}"..."\$FR"";required;min_overlap=${params.primer_foverlap}" \
       --errors ${params.primer_mismatches} \
       --cores ${task.cpus} \
       --action=none \
@@ -2046,7 +2046,7 @@ process trim_primers_pe {
     if [ -s OK_R1.fastq.gz]; then
 
       cutadapt \
-        -a ${params.primer_forward[0]}";required;min_overlap=${params.primer_foverlap}"..."\$RR"";required;min_overlap=${params.primer_roverlap}" \
+        -a ${params.primer_forward}";required;min_overlap=${params.primer_foverlap}"..."\$RR"";required;min_overlap=${params.primer_roverlap}" \
         --errors ${params.primer_mismatches} \
         --cores ${task.cpus} \
         --action=trim \
