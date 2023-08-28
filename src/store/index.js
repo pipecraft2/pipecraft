@@ -3909,7 +3909,7 @@ export default new Vuex.Store({
         Inputs: [
           {
             name: "primer_forward",
-            value: [],
+            value: ["GTACACACCGCCCGTCG"],
             disabled: "never",
             tooltip: "specify forward primer",
             type: "chip",
@@ -3918,7 +3918,7 @@ export default new Vuex.Store({
           },
           {
             name: "primer_reverse",
-            value: [],
+            value: ["CCTSCSCTTANTDATATGC"],
             disabled: "never",
             tooltip: "specify reverse primer",
             type: "chip",
@@ -4599,27 +4599,27 @@ export default new Vuex.Store({
     ],
     customWorkflowInfo: {
       vsearch_OTUs: {
-        info: "vsearch OTUs workflow",
+        info: "vsearch OTUs workflow for for demultiplexed Illumina data",
         link: "https://github.com/torognes/vsearch",
         title: "vsearch OTUs workflow",
       },
       DADA2_ASVs: {
-        info: "FORWARD: [for Illumina PE data] select this when all reads of interest are expected to be in 5-3 orient. MIXED: [for Illumina PE data] select this when reads of interest are expected to be in both 5-3 and 3-5 orient. SINGE-END DATA: [for PacBio data] select this when working with single-end data (such as PacBio)",
+        info: "DADA2 ASVs workflow for for demultiplexed Illumina or PacBio data. FORWARD: [for Illumina paired-end data] select this when all reads of interest are expected to be in 5-3 orient. MIXED: [for Illumina paired-end data] select this when reads of interest are expected to be in both 5-3 and 3-5 orient. SINGE-END DATA: [for PacBio data] select this when working with PacBio data",
         // link: "https://benjjneb.github.io/dada2/tutorial.html",
         title: "DADA2 ASVs workflow",
       },
       UNOISE_ASVs: {
-        info: "vsearch workflow for forming ASVs (zOTUs) with UNOISE3",
+        info: "vsearch ASVs (zOTUs) workflow for for demultiplexed Illumina data",
         link: "https://github.com/torognes/vsearch",
         title: "UNOISE3 ASVs workflow",
       },
       Metaworks_COI: {
-        info: "MetaWorks ASVs workflow for demultiplexed PAIRED-END COI amplicons",
+        info: "MetaWorks ASVs workflow for demultiplexed Illumina COI amplicons (paired-end)",
         link: "https://terrimporter.github.io/MetaWorksSite/quickstart/",
         title: "MetaWorks COI ASVs",
       },
       NextITS: {
-        info: "NextITS pipeline for PacBio ITS amplicons",
+        info: "NextITS pipeline for demultiplexed PacBio ITS (single-end) amplicons",
         link: "https://github.com/vmikk/NextITS",
         title: "NextITS",
       },
