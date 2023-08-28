@@ -58,7 +58,7 @@
           </v-menu>
         </v-list-item>
       </template>
-      <span>Select and use individual tools</span>
+      <span>Quick Tools. Select and use individual tools</span>
     </v-tooltip>
     <v-divider class="mt-2 mb-2"></v-divider>
     <v-list-item
