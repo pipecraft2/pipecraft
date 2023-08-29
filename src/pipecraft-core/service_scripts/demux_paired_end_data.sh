@@ -31,7 +31,7 @@ if [ "$no_indels" = true ] ; then
 else
     no_indels=''
 fi
-minlen=$"--minimum-length ${min_seq_length}"
+minlen=$"--minimum-length 32"
 cores=$"--cores ${cores}"
 overlap=$"--overlap ${overlap}"
 

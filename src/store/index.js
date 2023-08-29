@@ -61,14 +61,6 @@ export default new Vuex.Store({
                 rules: [(v) => v >= 1 || "ERROR: specify values >= 1"],
               },
               {
-                name: "min_seq_length",
-                value: 32,
-                disabled: "never",
-                tooltip: "minimum length of the output sequence",
-                type: "numeric",
-                rules: [(v) => v >= 1 || "ERROR: specify values >= 1"],
-              },
-              {
                 name: "no_indels",
                 value: true,
                 disabled: "never",
@@ -186,14 +178,6 @@ export default new Vuex.Store({
                 disabled: "never",
                 tooltip:
                   "number of cores to use. For paired-end data in fasta format, set to 1 [default]. For fastq formats you may set the value to 0 to use all cores",
-                type: "numeric",
-                rules: [(v) => v >= 1 || "ERROR: specify values >= 1"],
-              },
-              {
-                name: "min_seq_length",
-                value: 32,
-                disabled: "never",
-                tooltip: "minimum length of the output sequence",
                 type: "numeric",
                 rules: [(v) => v >= 1 || "ERROR: specify values >= 1"],
               },
@@ -2186,14 +2170,6 @@ export default new Vuex.Store({
             rules: [(v) => v >= 1 || "ERROR: specify values >= 1"],
           },
           {
-            name: "min_seq_length",
-            value: 32,
-            disabled: "never",
-            tooltip: "minimum length of the output sequence",
-            type: "numeric",
-            rules: [(v) => v >= 1 || "ERROR: specify values >= 1"],
-          },
-          {
             name: "no_indels",
             value: true,
             disabled: "never",
@@ -2910,14 +2886,6 @@ export default new Vuex.Store({
             disabled: "never",
             tooltip:
               "number of cores to use. For paired-end data in fasta format, set to 1 [default]. For fastq formats you may set the value to 0 to use all cores",
-            type: "numeric",
-            rules: [(v) => v >= 1 || "ERROR: specify values >= 1"],
-          },
-          {
-            name: "min_seq_length",
-            value: 32,
-            disabled: "never",
-            tooltip: "minimum length of the output sequence",
             type: "numeric",
             rules: [(v) => v >= 1 || "ERROR: specify values >= 1"],
           },
@@ -3699,7 +3667,7 @@ export default new Vuex.Store({
           },
           {
             name: "cores",
-            value: 6,
+            value: 4,
             disabled: "never",
             tooltip: "number of cores to use (for vsearch)",
             type: "numeric",
@@ -4128,14 +4096,6 @@ export default new Vuex.Store({
             disabled: "never",
             tooltip:
               "number of cores to use. For paired-end data in fasta format, set to 1 [default]. For fastq formats you may set the value to 0 to use all cores",
-            type: "numeric",
-            rules: [(v) => v >= 1 || "ERROR: specify values >= 1"],
-          },
-          {
-            name: "min_seq_length",
-            value: 32,
-            disabled: "never",
-            tooltip: "minimum length of the output sequence",
             type: "numeric",
             rules: [(v) => v >= 1 || "ERROR: specify values >= 1"],
           },

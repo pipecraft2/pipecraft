@@ -491,7 +491,9 @@ if [[ $debugger != "true" ]]; then
     fi
 else 
     #compress files in /tempdir
-    pigz tempdir/*
+    if [[ -d "tempdir" ]]; then
+        pigz tempdir/*
+    fi
 fi
 if [[ $debugger != "true" ]]; then
     if [[ -d "tempdir2" ]]; then
@@ -583,7 +585,9 @@ if [[ $debugger != "true" ]]; then
     fi
 else 
     #compress files in /tempdir
-    pigz tempdir/*
+    if [[ -d "tempdir" ]]; then
+        pigz tempdir/*
+    fi
 fi
 }
 

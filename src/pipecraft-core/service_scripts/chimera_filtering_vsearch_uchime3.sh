@@ -198,7 +198,9 @@ if [[ $was_fastq == "true" ]]; then
         fi
     else 
         #compress files in /tempdir
-        pigz tempdir/*
+        if [[ -d tempdir ]]; then
+            pigz tempdir/*
+        fi
     fi
     #make stats
     cd $output_dir/chimeraFilt_input_to_FASTA

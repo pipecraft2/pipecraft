@@ -211,18 +211,20 @@ fi
 
 #Delete tempdirs
 if [[ $debugger != "true" ]]; then
-  if [[ -d tempdir ]]; then
-      rm -rf tempdir
-  fi
-  if [[ -d tempdir2 ]]; then
-      rm -rf tempdir2
-  fi
-  if [[ -f $output_dir/OTU_table_creation.log ]]; then
-      rm -f $output_dir/OTU_table_creation.log
-  fi
-else 
-  #compress files in /tempdir
-  pigz tempdir/*
+    if [[ -d tempdir ]]; then
+        rm -rf tempdir
+    fi
+    if [[ -d tempdir2 ]]; then
+        rm -rf tempdir2
+    fi
+    if [[ -f $output_dir/OTU_table_creation.log ]]; then
+        rm -f $output_dir/OTU_table_creation.log
+    fi
+    else 
+    #compress files in /tempdir
+    if [[ -d tempdir ]]; then
+        pigz tempdir/*
+    fi
 fi
 
 #Make README.txt file
