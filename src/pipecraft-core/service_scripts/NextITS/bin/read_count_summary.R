@@ -9,6 +9,7 @@
 #   --primer       Counts_4.PrimerCheck.txt \
 #   --primermulti  Counts_4.PrimerMultiArtifacts.txt \
 #   --itsx         Counts_5.ITSx_or_PrimTrim.txt \
+#   --homopolymer  Counts_5.Homopolymers.txt \
 #   --chimrefn     Counts_6.ChimRef_reads.txt \
 #   --chimrefu     Counts_6.ChimRef_uniqs.txt \
 #   --chimdenovo   Counts_7.ChimDenov.txt \
@@ -26,7 +27,7 @@
 start_time <- Sys.time()
 
 
-cat("Parsing input options and arguments...\n")
+cat("\nParsing input options and arguments...\n")
 
 suppressPackageStartupMessages(require(optparse))
 
@@ -39,6 +40,7 @@ option_list <- list(
   make_option("--primer",     action="store", default=NA, type='character', help="Counts of reads with both primers detected"),
   make_option("--primermulti",action="store", default=NA, type='character', help="Counts of multi-primer artifacts"),
   make_option("--itsx",       action="store", default=NA, type='character', help="Read counts after ITSx or primer removal"),
+  make_option("--homopolymer",action="store", default=NA, type='character', help="Homopolymer correction results"),
   make_option("--chimrefn",   action="store", default=NA, type='character', help="Number of reads for reference-based chimeras"),
   make_option("--chimrefu",   action="store", default=NA, type='character', help="Number of unique sequences detected as reference-based chimeras"),
   make_option("--chimdenovo", action="store", default=NA, type='character', help="Number of de novo chimeras"),
@@ -72,6 +74,7 @@ DEMUXED     <- opt$demuxed
 PRIMER      <- opt$primer
 PRIMERMULTI <- opt$primermulti
 ITSX        <- opt$itsx
+HOMOPOLY    <- opt$homopolymer
 CHIMREFN    <- opt$chimrefn
 CHIMREFU    <- opt$chimrefu
 CHIMDENOVO  <- opt$chimdenovo
@@ -88,6 +91,7 @@ cat(paste("Counts - Demux: " ,       DEMUXED, "\n", sep=""))
 cat(paste("Counts - PrimerCheck: " , PRIMER, "\n", sep=""))
 cat(paste("Counts - Primer Multi Artifacts: " ,                        PRIMERMULTI, "\n", sep=""))
 cat(paste("Counts - ITSx or Primer Trim: " ,                           ITSX, "\n", sep=""))
+cat(paste("Counts - Homopolymer correction results: " ,                HOMOPOLY, "\n", sep=""))
 cat(paste("Counts - Chimera Ref-based, reads: " ,                      CHIMREFN, "\n", sep=""))
 cat(paste("Counts - Chimera Ref-based, unique sequences: " ,           CHIMREFU, "\n", sep=""))
 cat(paste("Counts - Chimera de novo: " ,                               CHIMDENOVO, "\n", sep=""))
@@ -108,6 +112,7 @@ cat("\n")
 # PRIMER      <- "Counts_4.PrimerCheck.txt"
 # PRIMERMULTI <- "Counts_4.PrimerMultiArtifacts.txt"
 # ITSX        <- "Counts_5.ITSx_or_PrimTrim.txt"
+# HOMOPOLY    <- "Counts_5.Homopolymers.txt"
 # CHIMREFN    <- "Counts_6.ChimRef_reads.txt"
 # CHIMREFU    <- "Counts_6.ChimRef_uniqs.txt"
 # CHIMDENOVO  <- "Counts_7.ChimDenov.txt"
@@ -170,6 +175,9 @@ SEQKITCOUNTS$PRIMERMULTI <- fread(PRIMERMULTI)
 cat("..Loading ITSx or primer trim counts\n")
 CUSTOMCOUNTS$ITSX <- fread(ITSX)
 
+cat("..Loading homopolymer correction results\n")
+HOMOPOLY_data <- fread(HOMOPOLY)
+
 cat("..Loading ref-based chimera counts\n")
 CUSTOMCOUNTS$CHIMREFN <- fread(CHIMREFN)
 SEQKITCOUNTS$CHIMREFU <- fread(CHIMREFU)
@@ -217,16 +225,16 @@ seqkit_process <- function(x){
     x <- x[ , .(file, num_seqs) ]
 
     ## Remove file extensions
-    x[ , file := sub(pattern = ".fastq.gz",        replacement = "", x = file) ]
-    x[ , file := sub(pattern = ".fq.gz",           replacement = "", x = file) ]
-    x[ , file := sub(pattern = ".fa.gz",           replacement = "", x = file) ]
-    x[ , file := sub(pattern = ".full.fasta",      replacement = "", x = file) ]
-    x[ , file := sub(pattern = ".ITS1.fasta.gz",   replacement = "", x = file) ]
-    x[ , file := sub(pattern = ".ITS2.fasta.gz",   replacement = "", x = file) ]
-    x[ , file := sub(pattern = "_PrimerChecked$",  replacement = "", x = file) ]
-    x[ , file := sub(pattern = "_Mutiprimer$",     replacement = "", x = file) ]
-    x[ , file := sub(pattern = "_Chimera$",        replacement = "", x = file) ]
-    x[ , file := sub(pattern = "_RescuedChimera$", replacement = "", x = file) ]
+    x[ , file := sub(pattern = ".fastq.gz$",            replacement = "", x = file) ]
+    x[ , file := sub(pattern = ".fq.gz$",               replacement = "", x = file) ]
+    x[ , file := sub(pattern = ".fa.gz$",               replacement = "", x = file) ]
+    x[ , file := sub(pattern = ".full.fasta$",          replacement = "", x = file) ]
+    x[ , file := sub(pattern = ".ITS1.fasta.gz$",       replacement = "", x = file) ]
+    x[ , file := sub(pattern = ".ITS2.fasta.gz$",       replacement = "", x = file) ]
+    x[ , file := sub(pattern = "_PrimerChecked$",       replacement = "", x = file) ]
+    x[ , file := sub(pattern = "_Mutiprimer$",          replacement = "", x = file) ]
+    x[ , file := sub(pattern = "_Chimera$",             replacement = "", x = file) ]
+    x[ , file := sub(pattern = "_RescuedChimera$",      replacement = "", x = file) ]
     x[ , file := sub(pattern = "^Rescued_Chimeric_sequences.part_", replacement = "", x = file) ]
 
   }
@@ -243,9 +251,10 @@ custom_process <- function(x){
     setnames(x = x, old = "SampleID", new = "file")
 
     ## Remove file extensions
-    x[ , file := sub(pattern = ".full.fasta",         replacement = "", x = file) ]
-    x[ , file := sub(pattern = "_Chimera.fa",         replacement = "", x = file) ]
-    x[ , file := sub(pattern = "_RescuedChimera.fa$", replacement = "", x = file) ]
+    x[ , file := sub(pattern = ".full.fasta$",          replacement = "", x = file) ]
+    x[ , file := sub(pattern = "_ITS1_58S_ITS2.fasta$", replacement = "", x = file) ]
+    x[ , file := sub(pattern = "_Chimera.fa$",          replacement = "", x = file) ]
+    x[ , file := sub(pattern = "_RescuedChimera.fa$",   replacement = "", x = file) ]
     x[ , file := sub(pattern = "^Rescued_Chimeric_sequences.part_", replacement = "", x = file) ]
 
   }
@@ -256,6 +265,17 @@ custom_process <- function(x){
 cat("Processing data\n")
 SEQKITCOUNTS <- llply(.data = SEQKITCOUNTS, .fun = seqkit_process)
 CUSTOMCOUNTS <- llply(.data = CUSTOMCOUNTS, .fun = custom_process)
+
+cat("Estimating homopolymer stats\n")
+HOMOPOLY_counts <- HOMOPOLY_data[ , .(
+  N_UniqSequences_AfterITSx_or_PrimerTrimming = .N,
+  N_UniqSequences__AfterHomopolymerCorrection = length(unique(Target))
+  ),
+  by = "SampleID"
+  ]
+
+HOMOPOLY_counts[, HomopolymerCorrected_NumUniqSequences := 
+  N_UniqSequences_AfterITSx_or_PrimerTrimming - N_UniqSequences__AfterHomopolymerCorrection ]
 
 
 ## Rename columns
@@ -294,21 +314,52 @@ merge_dt <- function(x,y){ merge(x, y, by = "file", all = TRUE) }
 PER_SAMPLE_COUNTS_merged <- Reduce(f = merge_dt, x = COUNTS)
 
 
+## Estimate percentage of multiprimer artifacts
+cat("Estimating percentage of multiprimer artifacts\n")
+PER_SAMPLE_COUNTS_merged[ , 
+ MultiprimerArtifacts_Percent := round(
+  MultiprimerArtifacts_Reads / (PrimerChecked_Reads + MultiprimerArtifacts_Reads) * 100,
+  2)
+ ]
+
+## Add homopolymer stats
+cat("Adding homopolymer stats\n")
+PER_SAMPLE_COUNTS_merged <- merge(
+  x = PER_SAMPLE_COUNTS_merged, 
+  y = HOMOPOLY_counts,
+  by.x = "file", by.y = "SampleID", all.x = TRUE)
+
+
+
 ### ... update
 # .. replace NAs with zero
 # .. reorder columns
 # .. estimate percentages
 # .. add tag-jump summary
 # .. add final counts from the Seq table
+# .. add per-run positive / negative counts (based on default sample names)
 
 ## Prepare per-run stats
+cat("Preparing per-run stats\n")
 PER_RUN_COUNTS_merged <- data.table(
   Total_Number_Of_Reads = RAW$num_seqs,
-  Reads_Passed_QC = QC$num_seqs
+  Reads_Passed_QC       = QC$num_seqs,
+  Reads_Demultiplexed   = sum(PER_SAMPLE_COUNTS_merged$Demultiplexed_Reads, na.rm = TRUE),
+  Reads_PrimerChecked   = sum(PER_SAMPLE_COUNTS_merged$PrimerChecked_Reads, na.rm = TRUE),
+  UniqSequences_HomopolymerCorrected = sum(PER_SAMPLE_COUNTS_merged$HomopolymerCorrected_NumUniqSequences, na.rm = TRUE)
   )
+
+## Estimate percentage of reads passed primer checking
+cat("..Estimating per-run percentages\n")
+PER_RUN_COUNTS_merged[ , Percentage_Demultiplexed := 
+  round(Reads_Demultiplexed / Total_Number_Of_Reads * 100, 1) ]
+
+PER_RUN_COUNTS_merged[ , Percentage_Passed := 
+  round(Reads_PrimerChecked / Total_Number_Of_Reads * 100, 1) ]
 
 
 ## Export summary stats
+cat("Exporting results\n")
 write.xlsx(list(
   "per_sample" = PER_SAMPLE_COUNTS_merged,
   "per_run"    = PER_RUN_COUNTS_merged

@@ -26,7 +26,6 @@ workingDir=${workingDir}
 #load variables
 read_R1=${read_R1}
 read_R2=${read_R2}
-samp_ID=${samp_ID}
 maxEE=${maxEE}
 maxN=${maxN}
 truncQ=${truncQ}
@@ -62,8 +61,8 @@ Supported extensions: fastq, fq (and gz or zip compressed formats).
 fi
 
 #Check identifiers
-if [[ -z $read_R1 ]] || [[ -z $read_R2 ]] || [[ -z $samp_ID ]]; then
-    printf '%s\n' "ERROR]: 'read R1/R2' or 'samp_ID' are not specified.
+if [[ -z $read_R1 ]] || [[ -z $read_R2 ]] || [[ -z $read_R1 ]]; then
+    printf '%s\n' "ERROR]: 'read R1/R2' are not specified.
     >Quitting" >&2
     end_process
 fi
@@ -84,14 +83,15 @@ printf "# Running DADA2 filterAndTrim \n"
 Rlog=$(Rscript /scripts/submodules/dada2_PE_filterAndTrim.R 2>&1)
 echo $Rlog > $output_dir/dada2_PE_filterAndTrim.log 
 wait
-printf "\n DADA2 filterAndTrim completed \n\n"
+#format R-log file
+sed -i "s/;; /\n/g" $output_dir/dada2_PE_filterAndTrim.log 
 
 
 ### Synchronizing R1 and R2 reads if $matchIDs == "true" - WORK WITH SEQKIT for matchIDs = TRUE, because sometimes DADA2 CANNOT automatically identify paired-end headers
 if [[ $matchIDs == "true" ]] || [[ $matchIDs == "TRUE" ]]; then
     while read LINE; do
         #Read in R1 and R2 file names; without extension
-        samp_name=$(basename $LINE | awk -F\\${samp_ID} '{print$1}')
+        samp_name=$(basename $LINE | awk -F\\${read_R1} '{print$1}')
         #If outputs are not empty, then synchronize R1 and R2
         if [[ -s $output_dir/$samp_name\_R1.$extension ]]; then
             if [[ -s $output_dir/$samp_name\_R2.$extension ]]; then
@@ -115,17 +115,19 @@ fi
 #################################################
 ### COMPILE FINAL STATISTICS AND README FILES ###
 #################################################
-if [[ -d tempdir2 ]]; then
-    rm -rf tempdir2
+if [[ $debugger != "true" ]]; then
+    if [[ -d tempdir2 ]]; then
+        rm -rf tempdir2
+    fi
+    rm $output_dir/dada2_PE_filterAndTrim.log
 fi
-
 ### end pipe if no outputs were generated
 outfile_check=$(ls $output_dir/*.$extension 2>/dev/null | wc -l)
 if [[ $outfile_check != 0 ]]; then 
     qFilt_compleated=$"TRUE"
     export qFilt_compleated
 else 
-    printf '%s\n' "ERROR]: no output files generated after quality filtering ($output_dir). Adjust settings.
+    printf '%s\n' "ERROR]: no output files generated after quality filtering ($output_dir). Adjust settings or check sample identifier 'samp ID' so that all sample names would be unique.
     >Quitting" >&2
     end_process
 fi
@@ -142,7 +144,7 @@ Files in 'qualFiltered_out':
     # *.rds                    = R objects for dada2.
 
 Core command -> 
-filterAndTrim(inputR1, outputR1, inputR2, outputR2, maxN = $maxN, maxEE = c($maxEE, $maxEE), truncQ = $truncQ, truncLen= c($truncLen_R1, $truncLen_R2), maxLen = $maxLen, minLen = $minLen, minQ=$minQ, rm.phix = TRUE, multithread = TRUE)
+filterAndTrim(inputR1, outputR1, inputR2, outputR2, maxN = $maxN, maxEE = c($maxEE, $maxEE), truncQ = $truncQ, truncLen= c($truncLen_R1, $truncLen_R2), maxLen = $maxLen, minLen = $minLen, minQ=$minQ, rm.phix = TRUE)
 
 Total run time was $runtime sec.
 ##################################################################
@@ -156,10 +158,11 @@ Total run time was $runtime sec.
 ########################################################" > $output_dir/README.txt
 
 #Done
-printf "\nDONE\n"
-printf "Total time: $runtime sec.\n\n"
+printf "\nDONE "
+printf "Total time: $runtime sec.\n "
 
 #variables for all services
+echo "#variables for all services: "
 echo "workingDir=$output_dir"
 echo "fileFormat=$extension"
 echo "readType=paired_end"

@@ -198,7 +198,9 @@ if [[ $was_fastq == "true" ]]; then
         fi
     else 
         #compress files in /tempdir
-        pigz tempdir/*
+        if [[ -d tempdir ]]; then
+            pigz tempdir/*
+        fi
     fi
     #make stats
     cd $output_dir/chimeraFilt_input_to_FASTA
@@ -237,14 +239,11 @@ printf "\nSummary of sequence counts in 'seq_count_summary.txt'\n
 ##########################################################" >> $output_dir/README.txt
 
 #Done
-printf "\nDONE\n"
-printf "Data in directory '$output_dir'\n"
-printf "Summary of sequence counts in '$output_dir/seq_count_summary.txt'\n"
-printf "Check README.txt files in output directory for further information about the process.\n"
-printf "Total time: $runtime sec.\n\n"
+printf "\nDONE "
+printf "Total time: $runtime sec.\n "
 
 #variables for all services
+echo "#variables for all services: "
 echo "workingDir=$output_dir"
 echo "fileFormat=$extension"
-
 echo "readType=single_end"

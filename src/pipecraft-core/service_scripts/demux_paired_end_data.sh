@@ -31,7 +31,7 @@ if [ "$no_indels" = true ] ; then
 else
     no_indels=''
 fi
-minlen=$"--minimum-length ${min_seq_length}"
+minlen=$"--minimum-length 32"
 cores=$"--cores ${cores}"
 overlap=$"--overlap ${overlap}"
 
@@ -56,10 +56,9 @@ start=$(date +%s)
 ### Check if files with specified extension exist in the dir
 first_file_check
 ### Prepare working env and check paired-end data
-prepare_PE_env
+prepare_PE_env #checks also multiple R1/R2 occurrences
 ### Check barcodes file
 check_indexes_file
-
 ### Process file
 printf "Checking files ...\n"
 while read LINE; do
@@ -258,9 +257,8 @@ runtime=$((end-start))
 #Make README.txt file for demultiplexed reads
 printf "# Demultiplexing was performed using cutadapt (see 'Core command' below for the used settings).
 
-Files in 'demultiplex_out' directory represent per sample sequence files, 
-that were generated based on the specified indexes file ($oligos_file).
-[demultiplex_out/index_*fasta files(s) is $oligos_file but with added search window size for cutadapt].
+Files in 'demultiplex_out' directory represent per sample sequence files, that were generated based on the specified indexes file ($oligos_file).
+index_*fasta file(s) = $oligos_file but with added search window size for cutadapt.
 
 Paired-end data, has been demultiplexed taken into account that some sequences
 may be also in reverse complementary orientation (two rounds of cutadapt runs, see below).
@@ -290,13 +288,11 @@ Total run time was $runtime sec.
 ##################################################################" > $output_dir/README.txt
 
 ###Done, files in $output_dir folder
-printf "\nDONE\n"
-printf "Data in directory $output_dir\n"
-printf "Summary of sequence counts in 'seq_count_summary.txt'\n"
-printf "Check README.txt file in $output_dir for further information about the process.\n\n"
-printf "Total time: $runtime sec.\n\n"
+printf "\nDONE "
+printf "Total time: $runtime sec.\n "
 
 #variables for all services
+echo "#variables for all services: "
 echo "workingDir=$output_dir"
 echo "fileFormat=$extension"
 echo "dataFormat=demultiplexed"

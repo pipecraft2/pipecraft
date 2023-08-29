@@ -33,7 +33,7 @@
 
 #env variables
 workingDir=${workingDir}
-extension=$fileFormat && export fileFormat 
+extension=$fileFormat
 ## Load variables
 subset_IDs=${subset_IDs}
 min_otu_reads=${min_otu_reads}
@@ -60,7 +60,7 @@ else
     regex='[^/]*$'
     otu_table_temp=$(echo $table | grep -oP "$regex")
     otu_table=$(printf "/extraFiles/$otu_table_temp")
-    printf "\n input table = $otu_table \n"
+    printf "\n input table = $otu_table \n "
 fi
 
 #If specified, get OTUs subset
@@ -70,7 +70,7 @@ else
     regex='[^/]*$'
     subset_IDs_temp=$(echo $subset_IDs | grep -oP "$regex")
     otu_subset=$(printf "/extraFiles2/$subset_IDs_temp")
-    printf "\n subset = $otu_subset \n"
+    printf "\n subset = $otu_subset \n "
 fi
 
 ## Outputs
@@ -88,7 +88,7 @@ mkdir -p "$output_dir"
 start=$(date +%s)
 
 ## Prepare BIOM file
-printf "# Preparing BIOM file\n"
+printf "# Preparing BIOM file\n "
 checkerror=$(biom convert \
             -i "$otu_table" \
             -o "$output_biom" \
@@ -97,7 +97,7 @@ checkerror=$(biom convert \
 check_app_error
 
 ## rCLR and RPCA on an OTU table with all OTUs
-printf "# Running DEICODE on a full OTU table\n"
+printf "# Running DEICODE on a full OTU table\n "
 checkerror=$(deicode auto-rpca \
                     --in-biom "$output_biom" \
                     --min-feature-count "$min_otu_reads" \
@@ -111,18 +111,18 @@ output_rclr="$output_deicode_full"/rclr.tsv
 
 ## RPCA on a subset of OTU table
 if [[ $subset_IDs != "undefined" ]]; then
-    printf "# Preparing a subset of rCLR-transformed OTU table\n"
+    printf "# Preparing a subset of rCLR-transformed OTU table\n "
 
     Rscript /scripts/submodules/subset_otu_table.R \
       --input "$output_rclr" \
       --subset "$otu_subset" \
       --output "$otu_table_subs"
 
-    printf "# Running DEICODE on a subset of OTU table\n"
+    printf "# Running DEICODE on a subset of OTU table\n "
     python /scripts/submodules/rpca_script.py "$otu_table_subs" "$output_deicode_subs"
 
 else 
-    printf "# No OTU IDs specified\n"
+    printf "# No OTU IDs specified\n "
 fi
 
 #DONE
@@ -131,6 +131,7 @@ runtime=$((end-start))
 
 ###Make README.txt file
 printf "## DEICODE (Robust Aitchison PCA on sparse compositional metabarcoding data)
+
 # Step 1. rCLR
 #   Data transformation using centered log ratio on only non-zero values (no pseudo count added)
 # Step 2. RPCA
@@ -167,13 +168,11 @@ Total run time was $runtime sec.
 ##################################################################" > $output_dir/README.txt
 
 #Done
-printf "\nDONE\n"
-printf "Data in directory '$output_dir'\n"
-printf "Check README.txt files in output directory for further information about the process.\n"
-printf "Total time: $runtime sec.\n\n"
+printf "\nDONE "
+printf "Total time: $runtime sec.\n "
 
 #variables for all services
+echo "#variables for all services: "
 echo "workingDir=$output_dir"
 echo "fileFormat=$extension"
-
 echo "readType=single_end"

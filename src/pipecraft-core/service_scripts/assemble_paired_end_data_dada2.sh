@@ -21,7 +21,6 @@ workingDir=${workingDir}
 #load variables
 read_R1=${read_R1}
 read_R2=${read_R2}
-samp_ID=${samp_ID}
 minOverlap=${minOverlap}
 maxMismatch=${maxMismatch}
 trimOverhang=${trimOverhang}
@@ -69,8 +68,8 @@ Supported extensions: fastq, fq (and gz or zip compressed formats).
 fi
 
 #Check identifiers
-if [[ -z $read_R1 ]] || [[ -z $read_R2 ]] || [[ -z $samp_ID ]]; then
-    printf '%s\n' "ERROR]: 'read R1/R2' or 'samp_ID' are not specified.
+if [[ -z $read_R1 ]] || [[ -z $read_R2 ]]; then
+    printf '%s\n' "ERROR]: 'read R1/R2' are not specified.
     >Quitting" >&2
     end_process
 fi
@@ -103,11 +102,12 @@ printf "# Running DADA2 mergePairs \n"
 Rlog=$(Rscript /scripts/submodules/dada2_mergePairs.R 2>&1)
 echo $Rlog > $output_dir/denoise_assemble.log 
 wait
-printf "\n DADA2 mergePairs completed \n"
+#format R-log file
+sed -i "s/;; /\n/g" $output_dir/denoise_assemble.log
 
 # Rereplicate sequences per sample
 for file in $output_dir/*.fasta; do
-    samp_name=$(basename $file | awk -F "$samp_ID" '{print $1}')
+    samp_name=$(basename $file | awk -F "$read_R1" '{print $1}')
     echo $samp_name
     vsearch --rereplicate $file --fasta_width 0 --output $output_dir/$samp_name.fasta -relabel $samp_name.
     rm $file
@@ -120,6 +120,7 @@ if [[ $debugger != "true" ]]; then
     if [[ -d tempdir2 ]]; then
         rm -rf tempdir2
     fi
+    rm $output_dir/denoise_assemble.log
 fi
 end=$(date +%s)
 runtime=$((end-start))
@@ -157,10 +158,11 @@ Total run time was $runtime sec.
 ########################################################" > $output_dir/README.txt
 
 #Done
-printf "\nDONE\n"
-printf "Total time: $runtime sec.\n\n"
+printf "\nDONE "
+printf "Total time: $runtime sec.\n "
 
 #variables for all services
+echo "#variables for all services: "
 echo "workingDir=$output_dir"
 echo "fileFormat=$fileFormat"
 echo "readType=single_end"

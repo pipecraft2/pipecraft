@@ -12,7 +12,6 @@
     #Distributed under the GNU LESSER GENERAL PUBLIC LICENSE
     #https://github.com/benjjneb/dada2
 ##########################################################
-set -e
 #load variables
 collapseNoMismatch=${collapseNoMismatch}
 minOverlap=${minOverlap}
@@ -120,13 +119,11 @@ else
 fi
 
 #Done
-printf "\nDONE\n"
-printf "Data in directory '$output_dir'\n"
-printf "Check README_ASVtabFilt.txt files in output directory for further information about the process.\n"
-printf "Total time: $runtime sec.\n\n"
+printf "\nDONE "
+printf "Total time: $runtime sec.\n "
 
 #variables for all services
+echo "#variables for all services: "
 echo "workingDir=$output_dir"
 echo "fileFormat=fasta"
-
 echo "readType=single_end"

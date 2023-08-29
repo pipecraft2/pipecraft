@@ -27,6 +27,7 @@
 ##########################################################
 
 #load variables
+echo ${organisms}
 organisms=$"-t ${organisms}"
 regions=$"--save_regions ${regions}"
 partial=$"--partial ${partial}"
@@ -266,31 +267,67 @@ if [[ -d $output_dir/SSU ]]; then
     outfile_addition=$"SSU"
     subdir=$"SSU"
     clean_and_make_stats_multidir
+    if [[ -d $output_dir/SSU/full_and_partial ]]; then
+        outfile_addition=$"SSU.full_and_partial"
+        subdir=$"SSU/full_and_partial"
+        subdir=$(echo $subdir | sed -e "s/\//\\\\\//g")
+        clean_and_make_stats_multidir
+    fi
 fi
 if [[ -d $output_dir/ITS1 ]]; then
     outfile_addition=$"ITS1"
     subdir=$"ITS1"
     clean_and_make_stats_multidir
+    if [[ -d $output_dir/ITS1/full_and_partial ]]; then
+        outfile_addition=$"ITS1.full_and_partial"
+        subdir=$"ITS1/full_and_partial"
+        subdir=$(echo $subdir | sed -e "s/\//\\\\\//g")
+        clean_and_make_stats_multidir
+    fi
 fi
 if [[ -d $output_dir/5_8S ]]; then
     outfile_addition=$"5_8S"
     subdir=$"5_8S"
     clean_and_make_stats_multidir
+    if [[ -d $output_dir/5_8S/full_and_partial ]]; then
+        outfile_addition=$"5_8S.full_and_partial"
+        subdir=$"5_8S/full_and_partial"
+        subdir=$(echo $subdir | sed -e "s/\//\\\\\//g")
+        clean_and_make_stats_multidir
+    fi
 fi
 if [[ -d $output_dir/ITS2 ]]; then
     outfile_addition=$"ITS2"
     subdir=$"ITS2"
     clean_and_make_stats_multidir
+    if [[ -d $output_dir/ITS2/full_and_partial ]]; then
+        outfile_addition=$"ITS2.full_and_partial"
+        subdir=$"ITS2/full_and_partial"
+        subdir=$(echo $subdir | sed -e "s/\//\\\\\//g")
+        clean_and_make_stats_multidir
+    fi
 fi
 if [[ -d $output_dir/LSU ]]; then
     outfile_addition=$"LSU"
     subdir=$"LSU"
     clean_and_make_stats_multidir
+    if [[ -d $output_dir/LSU/full_and_partial ]]; then
+        outfile_addition=$"LSU.full_and_partial"
+        subdir=$"LSU/full_and_partial"
+        subdir=$(echo $subdir | sed -e "s/\//\\\\\//g")
+        clean_and_make_stats_multidir
+    fi
 fi
 if [[ -d $output_dir/full_ITS ]]; then
     outfile_addition=$"full"
     subdir=$"full_ITS"
     clean_and_make_stats_multidir
+    if [[ -d $output_dir/full_ITS/full_and_partial ]]; then
+        outfile_addition=$"full_ITS.full_and_partial"
+        subdir=$"full_ITS/full_and_partial"
+        subdir=$(echo $subdir | sed -e "s/\//\\\\\//g")
+        clean_and_make_stats_multidir
+    fi
 fi
 if [[ -d $output_dir/no_detections ]]; then
     outfile_addition=$"no_detections"
@@ -304,6 +341,11 @@ if [[ $was_fastq == "TRUE" ]]; then
     mv *.fasta $output_dir/ITSx_input_to_FASTA
 fi
 
+if [[ $debugger != "true" ]]; then
+    if [[ -d "tempdir2" ]]; then
+        rm -rf tempdir2
+    fi
+fi
 end=$(date +%s)
 runtime=$((end-start))
 
@@ -336,10 +378,11 @@ Total run time was $runtime sec.
 ##################################################################" > $output_dir/README.txt
 
 #Done
-printf "\nDONE\n"
-printf "Total time: $runtime sec.\n\n"
+printf "\nDONE "
+printf "Total time: $runtime sec.\n "
 
 #variables for all services
+echo "#variables for all services: "
 if [[ $region_for_clustering != "" ]]; then
     echo "workingDir=$output_dir/$region_for_clustering/$full_and_partial"
 else

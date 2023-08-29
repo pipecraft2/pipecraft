@@ -21,7 +21,7 @@
 #load variables
 extension=${fileFormat}  # KEEP THIS (removed in some other scripts)
 mismatches=$"-e ${mismatches}"
-min_length=$"--minimum-length ${min_seq_length}"
+min_length=$"--minimum-length 32"   # minimum len of the output sequence. FIXED to 32 (in order to avoid 0 len seqs) because cutadapt --minimum-length does not behave as expected
 overlap=$"--overlap ${min_overlap}"
 cores=$"--cores ${cores}"
 no_indels=$no_indels
@@ -41,6 +41,12 @@ output_dir=$"/input/primersCut_out"
 #############################
 if [[ $no_indels == "TRUE" ]]; then
     indels=$"--no-indels"
+fi
+# if keep_only_linked, then linked primers are REQUIRED (default = optional)
+if [[ $seqs_to_keep == "keep_only_linked" ]]; then
+    required_optional=$"required"
+else
+    required_optional=$"optional"
 fi
 start=$(date +%s)
 ### Check if files with specified extension exist in the dir
@@ -84,7 +90,7 @@ while read LINE; do
                 :
             else
                 echo ">primer$i" >> tempdir2/liked_fwd_revRC.fasta
-                echo "$fwd_primer...$rev_primer_RC" >> tempdir2/liked_fwd_revRC.fasta
+                echo "$fwd_primer;$required_optional...$rev_primer_RC;$required_optional" >> tempdir2/liked_fwd_revRC.fasta
                 ((i=i+1))
             fi
         done < tempdir2/rev_primer_RC.fasta
@@ -102,7 +108,7 @@ while read LINE; do
                 :
             else
                 echo ">primer$i" >> tempdir2/liked_rev_fwdRC.fasta
-                echo "$rev_primer...$fwd_primer_RC" >> tempdir2/liked_rev_fwdRC.fasta
+                echo "$rev_primer;$required_optional...$fwd_primer_RC;$required_optional" >> tempdir2/liked_rev_fwdRC.fasta
                 ((i=i+1))
             fi
         done < tempdir2/fwd_primer_RC.fasta
@@ -239,7 +245,7 @@ seqkit stats --threads 6 -T ../../*.$extension | awk -F'\t' 'BEGIN{OFS="\t";} NR
 sed -i "s/\..\/\..\///" /input/tempdir2/seq_count_before.txt
 
 #compile a track reads summary file (seq_count_summary.txt)
-printf "File\tReads\tProcessed_reads\n" > seq_count_summary.txt
+printf "File\tReads_in\tReads_out\n" > seq_count_summary.txt
 while read LINE; do
     file1=$(echo $LINE | awk '{print $1}')
     count1=$(echo $LINE | awk '{print $2}')
@@ -271,7 +277,7 @@ else
 fi
 
 #compile a track reads summary file (seq_count_summary.txt)
-printf "File\tReads\tProcessed_reads\n" > seq_count_summary.txt
+printf "File\tReads_in\tReads_out\n" > seq_count_summary.txt
 while read LINE; do
     file1=$(echo $LINE | awk '{print $1}')
     count1=$(echo $LINE | awk '{print $2}')
@@ -403,10 +409,11 @@ Total run time was $runtime sec.
 ##################################################################" >> $output_dir/README.txt
 
 #Done
-printf "\nDONE\n"
-printf "Total time: $runtime sec.\n\n"
+printf "\nDONE "
+printf "Total time: $runtime sec.\n "
 
 #variables for all services
+echo "#variables for all services: "
 echo "workingDir=$output_dir"
 echo "fileFormat=$extension"
 echo "readType=paired_end"

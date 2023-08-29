@@ -29,7 +29,7 @@ if [ "$no_indels" = true ] ; then
 else
     no_indels=''
 fi
-minlen=$"--minimum-length ${min_seq_length}"
+minlen=$"--minimum-length 32"
 cores=$"--cores ${cores}"
 overlap=$"--overlap ${overlap}"
 search_window=${search_window}
@@ -53,7 +53,15 @@ prepare_SE_env
 check_indexes_file
 
 ### Process file
-printf "Checking files ...\n"
+printf "Checking the input file ...\n"
+#Chech that only one $fileFormat file is in the WORRKING dir
+files=$(ls $workingDir | grep -c ".$fileFormat")
+if (( $files > 1 )); then
+    printf '%s\n' "ERROR]: please include only one $fileFormat file in the WORKDIR \n
+>Quitting" >&2
+    end_process
+fi
+
 for file in *.$fileFormat; do
     #Write file name without extension
     input=$(echo $file | sed -e "s/.$fileFormat//")
@@ -145,9 +153,8 @@ runtime=$((end-start))
 #Make README.txt file for demultiplexed reads
 printf "# Demultiplexing was performed using cutadapt (see 'Core command' below for the used settings).
 
-Files in 'demultiplex_out' directory represent per sample sequence files, 
-that were generated based on the specified indexes file (demultiplex_out/index_file.fasta).
-[demultiplex_out/index_file.fasta is $oligos_file but with added search window size for cutadapt].
+Files in 'demultiplex_out' directory represent per sample sequence files, that were generated based on the specified indexes file ($oligos_file).
+index_file.fasta = $oligos_file but with added search window size for cutadapt.
 
 Data, has been demultiplexed taken into account that some sequences
 may be also in reverse complementary orientation ('--revcomp' setting).
@@ -183,10 +190,11 @@ Total run time was $runtime sec.
 ##################################################################" > $output_dir/README.txt
 
 #Done
-printf "\nDemultiplexing DONE"
-printf "Total time: $runtime sec.\n"
+printf "\nDONE "
+printf "Total time: $runtime sec.\n "
 
 #variables for all services
+echo "#variables for all services: "
 echo "workingDir=$output_dir"
 echo "fileFormat=$extension"
 echo "readType=single_end"

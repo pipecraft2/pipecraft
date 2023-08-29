@@ -82,6 +82,7 @@ const path = require("path");
 const slash = require("slash");
 const Swal = require("sweetalert2");
 const streams = require("memory-streams");
+var _ = require("lodash");
 import * as Dockerode from "dockerode";
 import { pullImageAsync } from "dockerode-utils";
 import { imageExists } from "dockerode-utils";
@@ -167,11 +168,14 @@ export default {
           let startTime = Date.now();
           let steps2Run = this.$store.getters.steps2Run(name);
           this.autoSaveConfig();
-          let log = fs.createWriteStream(
-            `${this.$store.state.inputDir}/${name}_${new Date()
-              .toJSON()
-              .slice(0, 10)}.txt`
-          );
+          let log;
+          if (this.$store.state.data.debugger == true) {
+            log = fs.createWriteStream(
+              `${this.$store.state.inputDir}/Pipecraft_${name}_${new Date()
+                .toJSON()
+                .slice(0, 10)}.txt`
+            );
+          }
           for (let [i, step] of this.$store.state[name].entries()) {
             if (step.selected == true || step.selected == "always") {
               let dockerProps = await this.getDockerProps(step);
@@ -211,7 +215,9 @@ export default {
                 });
               console.log(result);
               if (result.StatusCode == 0) {
-                log.write(result.stdout.toString().replace(/[\n\r]/g, ""));
+                if (this.$store.state.data.debugger == true) {
+                  log.write(result.stdout.toString().replace(/[\n\r]/g, ""));
+                }
                 let newWorkingDir = this.getVariableFromLog(
                   result.stdout,
                   "workingDir"
@@ -231,15 +237,25 @@ export default {
                 this.$store.commit("addWorkingDir", newWorkingDir);
               } else {
                 if (result.StatusCode == 137) {
-                  log.write(result.stderr.toString().replace(/[\n\r]/g, ""));
+                  if (this.$store.state.data.debugger == true) {
+                    log.write(result.stderr.toString().replace(/[\n\r]/g, ""));
+                  }
                   Swal.fire("Workflow stopped");
                 } else {
                   let err;
                   if (!result.stderr) {
-                    log.write(result.stdout.toString().replace(/[\n\r]/g, ""));
+                    if (this.$store.state.data.debugger == true) {
+                      log.write(
+                        result.stdout.toString().replace(/[\n\r]/g, "")
+                      );
+                    }
                     err = result;
                   } else {
-                    log.write(result.stderr.toString().replace(/[\n\r]/g, ""));
+                    if (this.$store.state.data.debugger == true) {
+                      log.write(
+                        result.stderr.toString().replace(/[\n\r]/g, "")
+                      );
+                    }
                     err = result.stderr;
                   }
                   Swal.fire({
@@ -280,11 +296,16 @@ export default {
           let steps2Run = this.$store.getters.steps2Run("selectedSteps");
           console.log(`${this.$store.state.inputDir}`);
           this.autoSaveConfig();
-          let log = fs.createWriteStream(
-            `${this.$store.state.inputDir}/CustomWorkflow_${new Date()
-              .toJSON()
-              .slice(0, 10)}.txt`
-          );
+          let log;
+          if (this.$store.state.data.debugger == true) {
+            log = fs.createWriteStream(
+              `${
+                this.$store.state.inputDir
+              }/Pipecraft_CustomWorkflow_${new Date()
+                .toJSON()
+                .slice(0, 10)}.txt`
+            );
+          }
           for (let [i, step] of this.selectedSteps.entries()) {
             let selectedStep = this.findSelectedService(i);
             let dockerProps = await this.getDockerProps(selectedStep);
@@ -315,7 +336,9 @@ export default {
               });
             console.log(result);
             if (result.StatusCode == 0) {
-              log.write(result.stdout.toString().replace(/[\n\r]/g, ""));
+              if (this.$store.state.data.debugger == true) {
+                log.write(result.stdout.toString().replace(/[\n\r]/g, ""));
+              }
               let newWorkingDir = this.getVariableFromLog(
                 result.stdout,
                 "workingDir"
@@ -331,16 +354,22 @@ export default {
               this.$store.commit("addWorkingDir", newWorkingDir);
             } else {
               if (result.StatusCode == 137) {
-                log.write(result.stderr.toString().replace(/[\n\r]/g, ""));
+                if (this.$store.state.data.debugger == true) {
+                  log.write(result.stderr.toString().replace(/[\n\r]/g, ""));
+                }
                 Swal.fire("Workflow stopped");
               } else {
                 let err;
                 if (!result.stderr) {
-                  log.write(result.stdout.toString().replace(/[\n\r]/g, ""));
+                  if (this.$store.state.data.debugger == true) {
+                    log.write(result.stdout.toString().replace(/[\n\r]/g, ""));
+                  }
                   err = result;
                 } else {
                   err = result.stderr;
-                  log.write(result.stderr.toString().replace(/[\n\r]/g, ""));
+                  if (this.$store.state.data.debugger == true) {
+                    log.write(result.stderr.toString().replace(/[\n\r]/g, ""));
+                  }
                 }
                 Swal.fire({
                   title: "An error has occured while processing your data",
@@ -412,7 +441,9 @@ export default {
       let inputs = element.Inputs.concat(element.extraInputs);
       inputs.forEach((input) => {
         let varObj = {};
-        nextFlowParams[input.name] = input.value;
+        if (input.value != "undefined" && input.value != "") {
+          nextFlowParams[input.name] = input.value;
+        }
         varObj[input.name] = input.value;
         envVariables.push(stringify(varObj).replace(/(\r\n|\n|\r)/gm, ""));
       });
@@ -434,13 +465,15 @@ export default {
               process.cwd()
             )}/src/pipecraft-core/service_scripts/NextFlowConfig.json`
           : `${process.resourcesPath}/src/pipecraft-core/service_scripts/NextFlowConfig.json`;
-      fs.writeFile(
-        NextFlowConfigPath,
-        JSON.stringify(nextFlowParams),
-        (error) => {
-          if (error) throw error;
-        }
-      );
+      if (element.serviceName == "Step_1") {
+        fs.writeFile(
+          NextFlowConfigPath,
+          JSON.stringify(nextFlowParams),
+          (error) => {
+            if (error) throw error;
+          }
+        );
+      }
       return envVariables;
     },
     getBinds_c(element, Input) {
@@ -531,7 +564,10 @@ export default {
       } else {
         confJson = JSONfn.stringify(this.$store.state.selectedSteps);
       }
-      fs.writeFileSync(`${this.$store.state.inputDir}/config.json`, confJson);
+      fs.writeFileSync(
+        `${this.$store.state.inputDir}/pipecraft2_config.json`,
+        confJson
+      );
     },
     createParamsFile(step) {
       let Hostname = step.serviceName.replaceAll(" ", "_");
@@ -552,29 +588,31 @@ export default {
       return dockerProps;
     },
     async runNextITS() {
+      var writeLog = this.$store.state.data.debugger;
       this.confirmRun("NextITS").then(async (result) => {
         if (result.isConfirmed) {
-          this.updateRunInfo(0, 1, "NextITS", "NextITS");
-          let log = fs.createWriteStream("NextITS_log.txt");
+          this.$store.state.runInfo.active = true;
+          this.$store.state.runInfo.containerID = "Step_1";
+          let log;
+          if (this.$store.state.data.debugger == true) {
+            log = fs.createWriteStream("NextITS_log.txt");
+          }
           let stdout = new streams.WritableStream();
-          let step = this.$store.state.NextITS[0];
+          let step = _.cloneDeep(this.$store.state.NextITS[0]);
           step.Inputs = step.Inputs.concat(this.$store.state.NextITS[1].Inputs);
           step.extraInputs = step.extraInputs.concat(
             this.$store.state.NextITS[1].extraInputs
           );
           let props = this.createParamsFile(step);
           console.log(props);
-          await this.clearContainerConflicts("NextITS");
-          await this.imageCheck("vmikk/nextits:0.0.3");
+          await this.clearContainerConflicts("Step_1");
+          await this.clearContainerConflicts("Step_2");
+          await this.imageCheck("vmikk/nextits:0.5.0");
           let promise = new Promise((resolve, reject) => {
             dockerode
               .run(
-                "vmikk/nextits:0.0.3",
-                [
-                  "sh",
-                  "-c",
-                  `nextflow run /scripts/NextITS/main.nf -resume -params-file /scripts/NextFlowConfig.json --input /input/"$1"/*.fastq.gz --barcodes /input/"$1"/*.fasta --outdir /input/Results -work-dir /input/Results_wd -qs 8`,
-                ],
+                "vmikk/nextits:0.5.0",
+                ["sh", "-c", `/scripts/NextITS_Pipeline.sh`],
                 false,
                 props,
                 (err, data, container) => {
@@ -593,7 +631,9 @@ export default {
               .on("stream", (stream) => {
                 stream.on("data", function (data) {
                   console.log(data.toString().replace(/[\n\r]/g, ""));
-                  log.write(data.toString().replace(/[\n\r]/g, ""));
+                  if (writeLog == true) {
+                    log.write(data.toString().replace(/[\n\r]/g, ""));
+                  }
                   // term.write(data.toString().replace(/[\n\r]/g, "") + "\n");
                   stdout.write(data.toString().replace(/[\n\r]/g, "") + "\n");
                 });

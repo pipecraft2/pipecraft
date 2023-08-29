@@ -304,12 +304,15 @@ if [[ $id_float != 1 ]]; then
   wait
 fi # end of OTU clustering
 
-### remove ";sample=.*;" from OTU.fasta files
+### remove ";sample=.*;" and ";size=" from OTU.fasta files.
+    # removing ";size=" because OTU table does not have "size" annotations; so the files would fit to LULU
 if [[ -f $output_dir/OTUs.fasta ]]; then
   sed -i 's/;sample=.*;/;/' $output_dir/OTUs.fasta
+  sed -i 's/;size=.*//' $output_dir/OTUs.fasta
 fi
 if [[ -f $output_dir/zOTUs.fasta ]]; then
   sed -i 's/;sample=.*;/;/' $output_dir/zOTUs.fasta
+  sed -i 's/;size=.*//' $output_dir/zOTUs.fasta
 fi
 
 #################################################
@@ -334,35 +337,45 @@ fi
 
 #Delete tempdirs
 if [[ $debugger != "true" ]]; then
-  if [[ -d tempdir ]]; then
-      rm -rf tempdir
-  fi
-  if [[ -d tempdir2 ]]; then
-      rm -rf tempdir2
-  fi
-  if [[ -d tempdir_denoize ]]; then
-      rm -rf tempdir_denoize
-  fi
-  if [[ -d tempdir_chimera ]]; then
-      rm -rf tempdir_chimera
-  fi
-  if [[ -f $output_dir/zOTU_table_creation.log ]]; then
-      rm -f $output_dir/zOTU_table_creation.log
-  fi
-  if [[ -f $output_dir/OTU_table_creation.log ]]; then
-      rm -f $output_dir/OTU_table_creation.log
-  fi
-else 
-  #compress files in /tempdir
-  pigz tempdir/*
+    if [[ -d tempdir ]]; then
+        rm -rf tempdir
+    fi
+    if [[ -d tempdir2 ]]; then
+        rm -rf tempdir2
+    fi
+    if [[ -d tempdir_denoize ]]; then
+        rm -rf tempdir_denoize
+    fi
+    if [[ -d tempdir_chimera ]]; then
+        rm -rf tempdir_chimera
+    fi
+    if [[ -f $output_dir/zOTU_table_creation.log ]]; then
+        rm -f $output_dir/zOTU_table_creation.log
+    fi
+    if [[ -f $output_dir/OTU_table_creation.log ]]; then
+        rm -f $output_dir/OTU_table_creation.log
+    fi
+  else 
+    #compress files in /tempdir
+    if [[ -d tempdir ]]; then
+        pigz tempdir/*
+    fi
 fi
 
 #Make README.txt file
 size_zotu=$(grep -c "^>" $output_dir/zOTUs.fasta)
+nSeqs=$(awk 'BEGIN{FS=OFS="\t"}NR>1{for(i=2;i<=NF;i++) t+=$i; print t; t=0}' $output_dir/zOTU_table.txt | awk '{for(i=1;i<=NF;i++)$i=(a[i]+=$i)}END{print}')
+nCols=$(awk -F'\t' '{print NF; exit}' $output_dir/zOTU_table.txt)
+nSample=$(awk -v NUM=$nCols 'BEGIN {print (NUM-1)}') # -1 cuz 1st column is OTU_ID
+
 end=$(date +%s)
 runtime=$((end-start))
 
-printf "Sequence denoising formed $size_zotu zOTUs (zero-radius OTUs).
+printf "# Denoising was performed using UNOISE3.
+
+Number of zOTUs (zero-radius OTUs)    = $size_zotu
+Number of sequences in the zOTU table = $nSeqs
+Number of samples in the zOTU table   = $nSample
 
 Files in 'clustering_out' directory:
 # zOTUs.fasta    = FASTA formated denoized sequences (zOTUs.fasta). Headers are renamed according to sha1 algorithm in vsearch.
@@ -410,6 +423,7 @@ printf "\nTotal run time was $runtime sec.\n\n
 ##########################################################" >> $output_dir/README.txt
 
 #variables for all services
+echo "#variables for all services: "
 echo "workingDir=$output_dir"
 echo "fileFormat=$extension"
 echo "readType=single-end"

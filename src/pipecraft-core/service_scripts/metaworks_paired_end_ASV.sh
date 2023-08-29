@@ -5,52 +5,24 @@
 # OK! test if metaworks cut primers reorients the reads! YES, but only in v1.12
 # validate primers  ok - -> also for cut primers!
 
-# Kui 16S, siis kasutab built-in DB, muidu peab alla laadima.. TESTi 16S (ITS warcupi ei kasuta, AINT UNITE)
-# 16S Pro vs mt16S for euk. Test marker=?
-
 #genetic_code DISABLED when pseudogene_filt = FALSE
-#ITS region = DISABLED when other markers selected than ITS
 
-# Check if filename structure files are found in the folder. 
-# If trimmed size = 0 then stop right away.
+# If trimmed size = 0 then stop right away. -- if wrong primers, then trimmed 0 WITH NO WARNING!!! 
+# if error, check denoising LOG, maybe minsize = 8 is too high, nothing left? 
+
 ################################################################
-eval "$(conda shell.bash hook)"
-conda activate MetaWorks_v1.12.0
-
-set -e 
-
 #Source for functions
 source /scripts/submodules/framework.functions.sh
+### Check if files with specified extension exist in the dir 
+first_file_check
 
-cd /MetaWorks1.12.0
-
-extension=$fileFormat && export fileFormat  # must be gz files
-filename_structure=${filename_structure}
+#settings
 R1=$(echo $filename_structure | sed "s/R{read}/R1/")
 R2=$(echo $filename_structure | sed "s/R{read}/R2/")
 primers=$"/input/primers.in.fasta" #compiled below
-
 regex='[^/]*$'
 db=$(echo $database | grep -oP "$regex")
 database=$(basename $db)
-
-marker=${marker}
-quality_cutoff=${quality_cutoff}
-min_seq_len=${min_seq_len}
-minsize=${minsize}
-min_overlap=${min_overlap}
-match_fraction=${match_fraction}
-mismatch_fraction=${mismatch_fraction}
-qual_cutoff_3end=${qual_cutoff_3end}
-qual_cutoff_5end=${qual_cutoff_5end}
-primer_mismatch=${primer_mismatch}
-primer_overlap=${primer_overlap}
-maxNs=${maxNs}
-pseudogene_filtering=${pseudogene_filtering}
-genetic_code=${genetic_code}
-orf_len=${orf_len}
-
-
 if [[ $pseudogene_filtering == "TRUE" ]] || [[ $pseudogene_filtering == "true" ]]; then
     pseudogene_filtering=$"yes"
 else
@@ -58,19 +30,22 @@ else
 fi
 
 ### Check if input fq files are compressed. If not, then gz compress.
-check_compress=$(echo $extension | (awk 'BEGIN{FS=OFS="."} {print $NF}';))
+check_compress=$(echo $fileFormat | (awk 'BEGIN{FS=OFS="."} {print $NF}';))
     if [[ $check_compress == "gz" ]]; then
-        extension=$(echo $extension | (awk 'BEGIN{FS=OFS="."} {print $(NF-1), $NF}';))
+        extension=$(echo $fileFormat | (awk 'BEGIN{FS=OFS="."} {print $(NF-1), $NF}';))
+        printf "\n extension = $extension \n"
         export extension
     elif [[ $check_compress == "fastq" ]]; then
-        printf '%s\n' "WARNING]: Compressing fastq files for MetaWorks"
+        printf '%s\n' "NOTE]: Compressing fastq files for MetaWorks"
         pigz *.fastq
         extension=$"fastq.gz"
+        printf "\n extension = $extension \n"
         export extension
     elif [[ $check_compress == "fq" ]]; then
-        printf '%s\n' "WARNING]: Compressing fq files for MetaWorks"
+        printf '%s\n' "NOTE]: Compressing fq files for MetaWorks"
         pigz *.fq
         extension=$"fq.gz"
+        printf "\n extension = $extension \n"
         export extension
     else 
         printf '%s\n' "ERROR]: Please input fastq, fq (or .gz comressed) files for MetaWorks.
@@ -103,6 +78,11 @@ for fwd_primer in $fwd_primer_array; do
     done
 done
 
+#initiate conda env on container
+eval "$(conda shell.bash hook)"
+conda activate MetaWorks_v1.12.0
+set -e 
+cd /MetaWorks1.12.0
 
 #####################################
 ### Edit variables in config file ###
@@ -143,36 +123,36 @@ sed -i 's/rc: "No"/rc: "Yes"/' in.config_ESV.yaml
 sed -i "s/minsize: 8/minsize: $minsize/" in.config_ESV.yaml
 # Indicate number of threads to use (vsearch)
 sed -i "s/t: 15/t: 1/" in.config_ESV.yaml
+
 # Which marker classifier will you be using? Choose from ['16S', '18S_eukaryota', '18S_diatom', '12S_fish', '12S_vertebrate', 'ITS_fungi', '28S_fungi', 'rbcL_eukaryota', 'rbcL_diatom', 'rbcL_landPlant', 'ITS_plants', or 'COI']
-sed -i "s/marker: 'COI'/marker: '$marker'/" in.config_ESV.yaml
+#sed -i "s/marker: 'COI'/marker: '$marker'/" in.config_ESV.yaml #currently fixed to COI
 # ITSx extractor; choose from ['ITS1' or 'ITS2']
-sed -i "s/ITSpart: 'ITS2'/ITSpart: '$ITS_region'/" in.config_ESV.yaml
+#sed -i "s/ITSpart: 'ITS2'/ITSpart: '$ITS_region'/" in.config_ESV.yaml
 
 ### RDP
 # amount of memory to allocate to the RDP classifier here (replace default 8g with 16g):
 sed -i 's/memory: "-Xmx8g"/memory: "-Xmx16g"/' in.config_ESV.yaml
-# Do you want to use a custom-trained dataset? Choose from ['yes' or 'no'] - "no" only for 16S
-if [[ $marker == "16S" ]]; then
-    sed -i "s/custom: 'yes'/custom: 'no'/" in.config_ESV.yaml
-fi
+
 # specify database (database) if using a custom-trained reference set 
-sed -i "s/t: \"\/path\/to\/rRNAClassifier.properties\"/t: \"\/extraFiles2\/$database\"/" in.config_ESV.yaml
+sed -i "s/t: \"\/path\/to\/rRNAClassifier.properties\"/t: \"\/extraFiles4\/$database\"/" in.config_ESV.yaml
 
 ### Pseudogene filtering
 sed -i "s/pseudogene_filtering: 'yes'/pseudogene_filtering: '$pseudogene_filtering'/" in.config_ESV.yaml
 # minimum length of ORF
 sed -i "s/ml: 30/ml: $orf_len/" in.config_ESV.yaml
 
+### Grep search type [1 or 2] after RDP
+# (1) simple grep search (only taxon1 filter will be used) or 
+sed -i "s/taxon1: '-e Arthropoda'/taxon1: '-e Metazoa'/" in.config_ESV.yaml
 
-#copy config file to WD
+###########################################################################################
+###copy config file to WD
 cp in.config_ESV.yaml /input
-
-
 
 #run snakemake
 snakemake --jobs $cores --snakefile snakefile_ESV --configfile in.config_ESV.yaml
 
+echo "DONE"
 echo "workingDir=$workingDir"
 echo "fileFormat=$fileFormat"
-
 echo "readType=paired_end"

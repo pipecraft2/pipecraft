@@ -39,7 +39,7 @@
         ></v-card-text
       >
       <v-card-actions v-if="$route.params.workflowName.includes('DADA2')">
-        <v-tabs>
+        <v-tabs :value="$store.getters.dada2modeIndex">
           <v-tab
             :disabled="$store.state.data.readType == 'single_end'"
             @click="
@@ -62,13 +62,8 @@
           >
           <v-tab
             :disabled="$store.state.data.readType == 'paired_end'"
-            @click="
-              $store.commit(
-                'setDADAmode',
-                $event.target.innerText.replace(/-/g, '_')
-              )
-            "
-            >SINGLE-END</v-tab
+            @click="$store.commit('setDADAmode', 'SINGLE_END')"
+            >PACBIO</v-tab
           >
         </v-tabs>
       </v-card-actions>
@@ -163,7 +158,6 @@
               v-for="(input, i) in service.Inputs"
               :key="input.name"
               cols="12"
-              :disabled="true"
               :xl="input.type === 'combobox' ? 4 : 2"
               :lg="input.type === 'combobox' ? 6 : 3"
               :md="input.type === 'combobox' ? 8 : 4"

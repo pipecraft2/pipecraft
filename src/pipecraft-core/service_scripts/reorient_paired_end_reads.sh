@@ -183,10 +183,11 @@ Total run time was $runtime sec.
     #https://github.com/indraniel/fqgrep
 ##########################################################" > $output_dir/README.txt
 
-printf "\nDONE\n"
-printf "Total time: $runtime sec.\n\n"
+printf "\nDONE "
+printf "Total time: $runtime sec.\n "
 
 #variables for all services
+echo "#variables for all services: "
 echo "workingDir=/$output_dir"
 echo "fileFormat=$extension"
 echo "readType=paired_end"

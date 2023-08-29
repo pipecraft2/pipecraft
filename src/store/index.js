@@ -33,7 +33,7 @@ export default new Vuex.Store({
     data: {
       readType: "",
       fileFormat: "",
-      dada2mode: "",
+      dada2mode: "FORWARD",
       debugger: false,
     },
     env_variables: ["FOO=bar", "BAZ=quux"],
@@ -47,7 +47,7 @@ export default new Vuex.Store({
             tooltip:
               "demultiplex data to per-sample files based on specified index file. Note that for read1 and read2 will get .R1 and .R2 identifiers when demultiplexing paired-end data",
             scriptName: "demux_paired_end_data.sh",
-            imageName: "pipecraft/cutadapt:3.5",
+            imageName: "pipecraft/cutadapt:4.4",
             serviceName: "demultiplex",
             selected: false,
             showExtra: false,
@@ -57,14 +57,6 @@ export default new Vuex.Store({
                 value: 1,
                 disabled: "never",
                 tooltip: "number of cores to use",
-                type: "numeric",
-                rules: [(v) => v >= 1 || "ERROR: specify values >= 1"],
-              },
-              {
-                name: "min_seq_length",
-                value: 32,
-                disabled: "never",
-                tooltip: "minimum length of the output sequence",
                 type: "numeric",
                 rules: [(v) => v >= 1 || "ERROR: specify values >= 1"],
               },
@@ -175,7 +167,7 @@ export default new Vuex.Store({
           {
             tooltip: "remove primers sequences from the reads",
             scriptName: "cut_primers_paired_end_reads.sh",
-            imageName: "pipecraft/cutadapt:3.5",
+            imageName: "pipecraft/cutadapt:4.4",
             serviceName: "cutadapt",
             selected: false,
             showExtra: false,
@@ -186,14 +178,6 @@ export default new Vuex.Store({
                 disabled: "never",
                 tooltip:
                   "number of cores to use. For paired-end data in fasta format, set to 1 [default]. For fastq formats you may set the value to 0 to use all cores",
-                type: "numeric",
-                rules: [(v) => v >= 1 || "ERROR: specify values >= 1"],
-              },
-              {
-                name: "min_seq_length",
-                value: 32,
-                disabled: "never",
-                tooltip: "minimum length of the output sequence",
                 type: "numeric",
                 rules: [(v) => v >= 1 || "ERROR: specify values >= 1"],
               },
@@ -695,7 +679,7 @@ export default new Vuex.Store({
             Inputs: [
               {
                 name: "read_R1",
-                value: ["\\.R1"],
+                value: ["_R1"],
                 disabled: "single_end",
                 tooltip:
                   "applies only for paired-end data. Identifyer string that is common for all R1 reads. R1 reads must contain R1 strings in the file names; sample names must not contain R1! (e.g. when all R1 files have '.R1' string, then enter '\\.R1'. Note that backslash is only needed to escape dot regex; e.g. when all R1 files have '_R1' string, then enter '_R1'.)'",
@@ -704,22 +688,22 @@ export default new Vuex.Store({
               },
               {
                 name: "read_R2",
-                value: ["\\.R2"],
+                value: ["_R2"],
                 disabled: "single_end",
                 tooltip:
                   "applies only for paired-end data. Identifyer string that is common for all R2 reads. R2 reads must contain R2 strings in the file names; sample names must not contain R2! (e.g. when all R2 files have '.R2' string, then enter '\\.R2'. Note that backslash is only needed to escape dot regex; e.g. when all R2 files have '_R1' string, then enter '_R2'.)",
                 type: "chip",
                 rules: [(v) => v.length <= 1 || "ADD ONLY ONE IDENTIFIER"],
               },
-              {
-                name: "samp_ID",
-                value: ["\\."],
-                disabled: "single_end",
-                tooltip:
-                  "applies only for paired-end data. Identifyer string that separates the sample name from redundant charachters (e.g. file name = sample1.R1.fastq, then '\\.' would be the 'identifier string' (sample name = sample1)); note that backslash is only needed to escape dot regex (e.g. when file name = sample1_R1.fastq then specify as '_')",
-                type: "chip",
-                rules: [(v) => v.length <= 1 || "ADD ONLY ONE IDENTIFIER"],
-              },
+              // {
+              //   name: "samp_ID",
+              //   value: ["_"],
+              //   disabled: "single_end",
+              //   tooltip:
+              //     "applies only for paired-end data. Identifyer string that separates the sample name from redundant charachters (e.g. file name = sample1.R1.fastq, then '\\.' would be the 'identifier string' (sample name = sample1)); note that backslash is only needed to escape dot regex (e.g. when file name = sample1_R1.fastq then specify as '_')",
+              //   type: "chip",
+              //   rules: [(v) => v.length <= 1 || "ADD ONLY ONE IDENTIFIER"],
+              // },
               {
                 name: "maxEE",
                 value: 2,
@@ -811,7 +795,7 @@ export default new Vuex.Store({
             Inputs: [
               {
                 name: "read_R1",
-                value: ["\\.R1"],
+                value: ["_R1"],
                 disabled: "single_end",
                 tooltip:
                   "identifyer string that is common for all R1 reads. R1/R2 reads must contain R1/R2 strings in the file names; sample names must not contain R1/R2! (e.g. when all R1 files have '.R1' string, then enter '\\.R1'. Note that backslash is only needed to escape dot regex; e.g. when all R1 files have '_R1' string, then enter '_R1'.)",
@@ -947,7 +931,7 @@ export default new Vuex.Store({
             Inputs: [
               {
                 name: "read_R1",
-                value: ["\\.R1"],
+                value: ["_R1"],
                 disabled: "single_end",
                 tooltip:
                   "identifyer string that is common for all R1 reads. R1/R2 reads must contain R1/R2 strings in the file names; sample names must not contain R1/R2! (e.g. when all R1 files have '.R1' string, then enter '\\.R1'. Note that backslash is only needed to escape dot regex; e.g. when all R1 files have '_R1' string, then enter '_R1'.)",
@@ -956,22 +940,22 @@ export default new Vuex.Store({
               },
               {
                 name: "read_R2",
-                value: ["\\.R2"],
+                value: ["_R2"],
                 disabled: "single_end",
                 tooltip:
                   "identifyer string that is common for all R2 reads (e.g. when all R2 files have '.R2' string, then enter '\\.R2'. Note that backslash is only needed to escape dot regex; e.g. when all R2 files have '_R1' string, then enter '_R2'.)",
                 type: "chip",
                 rules: [(v) => v.length <= 1 || "ADD ONLY ONE IDENTIFIER"],
               },
-              {
-                name: "samp_ID",
-                value: ["\\."],
-                disabled: "never",
-                tooltip:
-                  "identifyer string that separates the sample name from redundant charachters (e.g. file name = sample1.R1.fastq, then '\\.' would be the 'identifier string' (sample name = sample1)); note that backslash is only needed to escape dot regex (e.g. when file name = sample1_R1.fastq then specify as '_')",
-                type: "chip",
-                rules: [(v) => v.length <= 1 || "ADD ONLY ONE IDENTIFIER"],
-              },
+              // {
+              //   name: "samp_ID",
+              //   value: ["_"],
+              //   disabled: "never",
+              //   tooltip:
+              //     "identifyer string that separates the sample name from redundant charachters (e.g. file name = sample1.R1.fastq, then '\\.' would be the 'identifier string' (sample name = sample1)); note that backslash is only needed to escape dot regex (e.g. when file name = sample1_R1.fastq then specify as '_')",
+              //   type: "chip",
+              //   rules: [(v) => v.length <= 1 || "ADD ONLY ONE IDENTIFIER"],
+              // },
               {
                 name: "minOverlap",
                 value: 12,
@@ -1830,6 +1814,51 @@ export default new Vuex.Store({
           },
           {
             tooltip:
+              "assign taxonomy with RDP Classifier against a selected database [SELECT WORKDIR that contains only ONE fasta file for the process]",
+            scriptName: "taxonomy_RDP.sh",
+            imageName: "pipecraft/metaworks:1.12.0",
+            serviceName: "RDP_classifier",
+            selected: false,
+            showExtra: false,
+            extraInputs: [
+              {
+                name: "mem",
+                value: 10,
+                disabled: "never",
+                tooltip:
+                  "default is 10GB. The amount of memory to allocate to the RDP classifier",
+                type: "numeric",
+                rules: [
+                  (v) => v >= 0 || "ERROR: specify values >0",
+                  (v) => v <= 300 || "ERROR: specify values <= 300",
+                ],
+              },
+            ],
+            Inputs: [
+              {
+                name: "database",
+                btnName: "select RDP db",
+                value: "undefined",
+                disabled: "never",
+                tooltip:
+                  "RDP-trained reference database for the RDP classifier. Click on the header to download trained reference databases the RDP classifier, link MetaWorks user guide: https://terrimporter.github.io/MetaWorksSite/#classifier_table",
+                type: "file",
+              },
+              {
+                name: "confidence",
+                value: 0.8,
+                disabled: "never",
+                tooltip: "default is 0.8. Assignment confidence cutoff used to determine the assignment count for each taxon. Range [0-1]",
+                type: "numeric",
+                rules: [
+                  (v) => v >= 0 || "ERROR: specify values >0",
+                  (v) => v <= 1 || "ERROR: specify values <= 1",
+                ],
+              },
+            ],
+          },
+          {
+            tooltip:
               "assign taxonomy with DADA2 'assignTaxonomy' function [SELECT WORKDIR that contains only ONE fasta file for the process]",
             scriptName: "taxonomy_dada2.sh",
             imageName: "pipecraft/vsearch_dada2:2",
@@ -1845,7 +1874,7 @@ export default new Vuex.Store({
                 value: "undefined",
                 disabled: "never",
                 tooltip:
-                  "Select a reference database fasta file for taxonomy annotation, Dowload databases at https://benjjneb.github.io/dada2/training.html",
+                  "Select a reference database fasta file for taxonomy annotation. Click on the header to download DADA2-formatted reference databases https://benjjneb.github.io/dada2/training.html",
                 type: "file",
               },
               {
@@ -1968,7 +1997,8 @@ export default new Vuex.Store({
                 btnName: "select file",
                 value: "undefined",
                 disabled: "never",
-                tooltip: "select fasta formatted ASVs sequence file",
+                tooltip:
+                  "select fasta formatted ASVs sequence file (ASV IDs must match with the ones in the ASVs table) [output will be in the directory as specified under 'SELECT WORKDIR']",
                 type: "file",
               },
               {
@@ -1977,7 +2007,8 @@ export default new Vuex.Store({
                 btnName: "select file",
                 value: "undefined",
                 disabled: "never",
-                tooltip: "select fasta formatted ASVs sequence file",
+                tooltip:
+                  "select ASVs_table file [1st col is ASVs ID, 2nd col must be 'Sequences' (default PipeCraft's output)]",
                 type: "file",
               },
               {
@@ -1990,6 +2021,43 @@ export default new Vuex.Store({
                 min: 0,
                 step: 0.01,
                 type: "slide",
+              },
+            ],
+          },
+          {
+            scriptName: "tag_jump_removal.sh",
+            tooltip: "using UNCROSS2 to filter out putative tag-jumps",
+            imageName: "vmikk/nextits:0.5.0",
+            serviceName: "filter_tag-jumps",
+            selected: false,
+            showExtra: false,
+            extraInputs: [],
+            Inputs: [
+              {
+                name: "OTU_table",
+                active: true,
+                btnName: "select file",
+                value: "undefined",
+                disabled: "never",
+                tooltip:
+                  "select TAB-DELIMITED OTU/ASV table [output will be in the directory as specified under 'SELECT WORKDIR']",
+                type: "file",
+              },
+              {
+                name: "f_value",
+                value: 0.01,
+                disabled: "never",
+                tooltip: "f-parameter of UNCROSS2, which defines the expected cross-talk rate. Default is 0.01 (equivalent to 1%). A higher value enforces stricter filtering",
+                type: "numeric",
+                rules: [(v) => v > 0 || "ERROR: specify values > 0"],
+              },
+              {
+                name: "p_value",
+                value: 1,
+                disabled: "never",
+                tooltip: "p-parameter, which controls the severity of tag-jump removal. It adjusts the exponent in the UNCROSS formula. Default is 1. Opt for 0.5 or 0.3 to steepen the curve",
+                type: "numeric",
+                rules: [(v) => v > 0 || "ERROR: specify values > 0"],
               },
             ],
           },
@@ -2027,14 +2095,22 @@ export default new Vuex.Store({
                 value: "undefined",
                 disabled: "never",
                 tooltip:
-                  "select fasta formatted sequence file containing your OTU/ASV reads",
+                  "select fasta formatted sequence file containing your OTU/ASV reads [output will be in the directory as specified under 'SELECT WORKDIR']",
                 type: "boolfile",
               },
               {
                 name: "min_len",
-                value: 300,
+                value: 309,
                 disabled: "never",
                 tooltip: "minimum length of an output sequence",
+                type: "numeric",
+                rules: [(v) => v >= 1 || "ERROR: specify values >= 1"],
+              },
+              {
+                name: "max_len",
+                value: 317,
+                disabled: "never",
+                tooltip: "maximum length of an output sequence",
                 type: "numeric",
                 rules: [(v) => v >= 1 || "ERROR: specify values >= 1"],
               },
@@ -2081,7 +2157,7 @@ export default new Vuex.Store({
                 value: "undefined",
                 disabled: "never",
                 tooltip:
-                  "select OTU/ASV table. If no file is selected, then PipeCraft will look OTU_table.txt or ASV_table.txt in the working directory",
+                  "select OTU/ASV table. If no file is selected, then PipeCraft will look OTU_table.txt or ASV_table.txt in the WORKDIR [output will be in the directory as specified under 'SELECT WORKDIR']",
                 type: "boolfile",
               },
               {
@@ -2121,7 +2197,7 @@ export default new Vuex.Store({
       {
         tooltip: "remove primers sequences from the reads",
         scriptName: "cut_primers_paired_end_reads.sh",
-        imageName: "pipecraft/cutadapt:3.5",
+        imageName: "pipecraft/cutadapt:4.4",
         serviceName: "cut primers",
         manualLink:
           "https://pipecraft2-manual.readthedocs.io/en/stable/user_guide.html#cut-primers",
@@ -2135,14 +2211,6 @@ export default new Vuex.Store({
             disabled: "never",
             tooltip:
               "number of cores to use. For paired-end data in fasta format, set to 1 [default]. For fastq formats you may set the value to 0 to use all cores",
-            type: "numeric",
-            rules: [(v) => v >= 1 || "ERROR: specify values >= 1"],
-          },
-          {
-            name: "min_seq_length",
-            value: 32,
-            disabled: "never",
-            tooltip: "minimum length of the output sequence",
             type: "numeric",
             rules: [(v) => v >= 1 || "ERROR: specify values >= 1"],
           },
@@ -2269,7 +2337,7 @@ export default new Vuex.Store({
         Inputs: [
           {
             name: "read_R1",
-            value: ["\\.R1"],
+            value: ["_R1"],
             disabled: "single_end",
             tooltip:
               "identifyer string that is common for all R1 reads. R1/R2 reads must contain R1/R2 strings in the file names; sample names must not contain R1/R2! (e.g. when all R1 files have '.R1' string, then enter '\\.R1'. Note that backslash is only needed to escape dot regex; e.g. when all R1 files have '_R1' string, then enter '_R1'.)",
@@ -2849,7 +2917,7 @@ export default new Vuex.Store({
       {
         tooltip: "remove primers sequences from the reads",
         scriptName: "cut_primers_paired_end_reads.sh",
-        imageName: "pipecraft/cutadapt:3.5",
+        imageName: "pipecraft/cutadapt:4.4",
         serviceName: "cut primers",
         manualLink:
           "https://pipecraft2-manual.readthedocs.io/en/stable/user_guide.html#cut-primers",
@@ -2863,14 +2931,6 @@ export default new Vuex.Store({
             disabled: "never",
             tooltip:
               "number of cores to use. For paired-end data in fasta format, set to 1 [default]. For fastq formats you may set the value to 0 to use all cores",
-            type: "numeric",
-            rules: [(v) => v >= 1 || "ERROR: specify values >= 1"],
-          },
-          {
-            name: "min_seq_length",
-            value: 32,
-            disabled: "never",
-            tooltip: "minimum length of the output sequence",
             type: "numeric",
             rules: [(v) => v >= 1 || "ERROR: specify values >= 1"],
           },
@@ -2997,7 +3057,7 @@ export default new Vuex.Store({
         Inputs: [
           {
             name: "read_R1",
-            value: ["\\.R1"],
+            value: ["_R1"],
             disabled: "single_end",
             tooltip:
               "identifyer string that is common for all R1 reads. R1/R2 reads must contain R1/R2 strings in the file names; sample names must not contain R1/R2! (e.g. when all R1 files have '.R1' string, then enter '\\.R1'. Note that backslash is only needed to escape dot regex; e.g. when all R1 files have '_R1' string, then enter '_R1'.)",
@@ -3105,7 +3165,7 @@ export default new Vuex.Store({
         Inputs: [
           {
             name: "maxee",
-            value: null,
+            value: 1,
             disabled: "never",
             tooltip:
               "maximum number of expected errors per sequence. Sequences with higher error rates will be discarded",
@@ -3289,13 +3349,10 @@ export default new Vuex.Store({
       {
         scriptName: "clustering_unoise.sh",
         tooltip:
-          "make zOTUs with vsearch --cluster_unoise (and optionally remove chimeras with --uchime3_denovo)",
+          "tick the checkbox to cluster reads with vsearch --cluster_unoise (and optionally remove chimeras with --uchime3_denovo)",
         imageName: "pipecraft/vsearch_dada2:2",
         serviceName: "unoise3",
-        manualLink:
-          "https://pipecraft2-manual.readthedocs.io/en/stable/user_guide.html#id22",
-        disabled: "never",
-        selected: "always",
+        selected: false,
         showExtra: false,
         extraInputs: [
           {
@@ -3320,7 +3377,8 @@ export default new Vuex.Store({
             name: "remove_chimeras",
             value: true,
             disabled: "never",
-            tooltip: "perform chimera removal with UCHIME3 de novo algoritm",
+            tooltip:
+              "perform chimera removal with UCHIME3 de novo algoritm",
             type: "bool",
           },
           {
@@ -3521,20 +3579,28 @@ export default new Vuex.Store({
     ],
     Metaworks_COI: [
       {
-        tooltip: "MetaWorks v1.12.0, ESV paired-end reads",
-        scriptName: "metaworks_paired_end_ESV2.sh",
+        tooltip: "MetaWorks v1.12.0 ASVs workflow for Illumina (paired-end) COI amplicons",
+        scriptName: "metaworks_paired_end_ASV.sh",
         imageName: "pipecraft/metaworks:1.12.0",
-        serviceName: "metaworks_ESV",
+        serviceName: "metaworks_COI",
         disabled: "never",
         selected: "always",
         showExtra: false,
         extraInputs: [
           {
+            name: "quality_cutoff",
+            value: 13,
+            disabled: "never",
+            tooltip: "Assemble paired-end reads setting. Phred score quality cutoff (default 20)",
+            type: "numeric",
+            rules: [(v) => v >= 0 || "ERROR: specify values >= 0"],
+          },
+          {
             name: "min_overlap",
             value: 25,
             disabled: "never",
             tooltip:
-              "minimum overlap (bp) length between R1 and R2 reads when merging reads",
+              "Assemble paired-end reads setting. Minimum overlap (bp) length between R1 and R2 reads when merging reads",
             type: "numeric",
             rules: [(v) => v >= 0 || "ERROR: specify values >= 0"],
           },
@@ -3543,7 +3609,7 @@ export default new Vuex.Store({
             value: 0.9,
             disabled: "never",
             tooltip:
-              "minimum fraction of matching overlap (default 0.90) when merging reads",
+              "Assemble paired-end reads setting. Minimum fraction of matching overlap (default 0.90) when merging reads",
             type: "numeric",
             rules: [(v) => v >= 0 || "ERROR: specify values >= 0"],
           },
@@ -3552,33 +3618,15 @@ export default new Vuex.Store({
             value: [0.02],
             disabled: "never",
             tooltip:
-              "maximum fraction of mismatches allowed in overlap (default 0.02) when merging reads",
+              "Assemble paired-end reads setting. Maximum fraction of mismatches allowed in overlap (default 0.02) when merging reads",
             type: "numeric",
             rules: [(v) => v >= 0 || "ERROR: specify values >= 0"],
-          },
-          {
-            name: "qual_cutoff_3end",
-            value: 20,
-            disabled: "never",
-            tooltip:
-              "phred quality score cutoffs at the 3' end during quality filtering",
-            type: "numeric",
-            rules: [(v) => v >= 1 || "ERROR: specify values >= 1"],
-          },
-          {
-            name: "qual_cutoff_5end",
-            value: 20,
-            disabled: "never",
-            tooltip:
-              "phred quality score cutoffs at the 5' end during quality filtering",
-            type: "numeric",
-            rules: [(v) => v >= 1 || "ERROR: specify values >= 1"],
           },
           {
             name: "primer_mismatch",
             value: 1,
             disabled: "never",
-            tooltip: "maximum number of mismatches when searching for primers",
+            tooltip: "CUT PRIMERS setting. Maximum number of mismatches when searching and clipping primers",
             type: "numeric",
             rules: [(v) => v >= 1 || "ERROR: specify values >= 1"],
           },
@@ -3587,7 +3635,34 @@ export default new Vuex.Store({
             value: 15,
             disabled: "never",
             tooltip:
-              "minimum overlap to primer sequence when searching for primers",
+              "CUT_PRIMERS setting. Minimum overlap to primer sequence when searching and clipping primers",
+            type: "numeric",
+            rules: [(v) => v >= 1 || "ERROR: specify values >= 1"],
+          },
+          {
+            name: "min_seq_len",
+            value: 150,
+            disabled: "never",
+            tooltip:
+              "CUT_PRIMERS setting. Minimum sequence length (bp) to retain after trimming primers",
+            type: "numeric",
+            rules: [(v) => v >= 0 || "ERROR: specify values >= 0"],
+          },
+          {
+            name: "qual_cutoff_3end",
+            value: 20,
+            disabled: "never",
+            tooltip:
+              "QUALITY FILT setting. Phred quality score cutoffs at the 3' end during quality filtering",
+            type: "numeric",
+            rules: [(v) => v >= 1 || "ERROR: specify values >= 1"],
+          },
+          {
+            name: "qual_cutoff_5end",
+            value: 20,
+            disabled: "never",
+            tooltip:
+              "QUALITY FILT setting. Phred quality score cutoffs at the 5' end during quality filtering",
             type: "numeric",
             rules: [(v) => v >= 1 || "ERROR: specify values >= 1"],
           },
@@ -3595,22 +3670,49 @@ export default new Vuex.Store({
             name: "maxNs",
             value: 0,
             disabled: "never",
-            tooltip: "maximum number of Ns in the read",
+            tooltip: "QUALITY FILT setting. Maximum number of Ns in the read",
             type: "numeric",
             rules: [(v) => v >= 1 || "ERROR: specify values >= 1"],
+          },
+          // denoise
+          {
+            name: "minsize",
+            value: 8,
+            disabled: "never",
+            tooltip:
+              "UNOISE denoising setting. minimum number of reads per cluster to retain (default 8)",
+            type: "numeric",
+            rules: [(v) => v >= 0 || "ERROR: specify values >= 0"],
+          },
+          {
+            name: "pseudogene_filtering",
+            value: true,
+            disabled: "never",
+            tooltip:
+              "Filter out putative pseudogenes based on unusually short/long open reading frames (uses ORFfinder)",
+            type: "bool",
+          },
+          {
+            name: "genetic_code",
+            items: ["1", "2", "5"],
+            value: "5",
+            disabled: "never",
+            tooltip:
+              "Pseudogene filtering setting. Genetic code translation table: 1 = standard code (use for rbcL); 2 = vertebrate mitochondrial (use for COI if targeting vertebrates); 5 = invertebrate mitochondrial (use for COI if targeting invertebrates)",
+            type: "select",
           },
           {
             name: "orf_len",
             value: 75,
             disabled: "never",
             tooltip:
-              "minimum length of an open reading frame (setting used in ORFfinder if pseudogene filtering is ON)",
+              "Pseudogene filtering setting. Minimum length of an open reading frame",
             type: "numeric",
             rules: [(v) => v >= 0 || "ERROR: specify values >= 0"],
           },
           {
             name: "cores",
-            value: 6,
+            value: 4,
             disabled: "never",
             tooltip: "number of cores to use (for vsearch)",
             type: "numeric",
@@ -3627,48 +3729,39 @@ export default new Vuex.Store({
             type: "chip",
             rules: [(v) => v.length <= 1 || "ADD ONLY ONE IDENTIFIER"],
           },
-          {
-            name: "database",
-            btnName: "select RDP db",
-            value: "undefined",
-            disabled: "never",
-            tooltip:
-              "select a compatible reference database for RDP classifier",
-            type: "file",
-          },
-          {
-            name: "marker",
-            items: [
-              "16S",
-              "18S_eukaryota",
-              "18S_diatom",
-              "12S_fish",
-              "12S_vertebrate",
-              "ITS_fungi",
-              "28S_fungi",
-              "rbcL_eukaryota",
-              "rbcL_diatom",
-              "rbcL_landPlant",
-              "ITS_plants",
-              "COI",
-            ],
-            value: "COI",
-            disabled: "never",
-            tooltip: "Which marker classifier will you be using?",
-            type: "select",
-          },
-          {
-            name: "ITS_region",
-            items: ["ITS1", "ITS2"],
-            value: "ITS2",
-            disabled: "never",
-            tooltip:
-              "when marker = ITS, specify which region to extract with ITSx (if using other marker, then this setting is ignored)",
-            type: "select",
-          },
+          // {
+          //   name: "marker",
+          //   items: [
+          //     "16S",
+          //     "18S_eukaryota",
+          //     "18S_diatom",
+          //     "12S_fish",
+          //     "12S_vertebrate",
+          //     "ITS_fungi",
+          //     "28S_fungi",
+          //     "rbcL_eukaryota",
+          //     "rbcL_diatom",
+          //     "rbcL_landPlant",
+          //     "ITS_plants",
+          //     "COI",
+          //   ],
+          //   value: "COI",
+          //   disabled: "never",
+          //   tooltip: "Which marker classifier will you be using?",
+          //   type: "select",
+          // },
+          // {
+          //   name: "ITS_region",
+          //   items: ["ITS1", "ITS2"],
+          //   value: "ITS2",
+          //   disabled: "never",
+          //   tooltip:
+          //     "when marker = ITS, specify which region to extract with ITSx (if using other marker, then this setting is ignored)",
+          //   type: "select",
+          // },
           {
             name: "forward_primers",
-            value: ["CCNGAYATRGCNTTYCCNCG"],
+            value: ["GGWACWGGWTGAACWGTWTAYCCYCC"],
             disabled: "never",
             tooltip: "specify forward primer (5'-3'); add up to 13 primers",
             type: "chip",
@@ -3677,7 +3770,7 @@ export default new Vuex.Store({
           },
           {
             name: "reverse_primers",
-            value: ["GTRATNGCNCCNGCNARNACNGG"],
+            value: ["TANACYTCNGGRTGNCCRAARAAYCA"],
             disabled: "never",
             tooltip: "specify reverse primer (3'-5'); add up to 13 primers",
             type: "chip",
@@ -3685,48 +3778,13 @@ export default new Vuex.Store({
             rules: [(v) => v.length <= 13 || "TOO MANY PRIMERS"],
           },
           {
-            name: "quality_cutoff",
-            value: 20,
-            disabled: "never",
-            tooltip: "phred score quality cutoff (default 19)",
-            type: "numeric",
-            rules: [(v) => v >= 0 || "ERROR: specify values >= 0"],
-          },
-          {
-            name: "min_seq_len",
-            value: 150,
+            name: "database",
+            btnName: "select RDP db",
+            value: "undefined",
             disabled: "never",
             tooltip:
-              "minimum sequence length (bp) to retain after trimming primers",
-            type: "numeric",
-            rules: [(v) => v >= 0 || "ERROR: specify values >= 0"],
-          },
-          // denoise
-          {
-            name: "minsize",
-            value: 8,
-            disabled: "never",
-            tooltip:
-              "minimum number of reads per cluster to retain (default 8)",
-            type: "numeric",
-            rules: [(v) => v >= 0 || "ERROR: specify values >= 0"],
-          },
-          {
-            name: "pseudogene_filtering",
-            value: true,
-            disabled: "never",
-            tooltip:
-              "if using protein encoding marker (ex. for COI, rbcL), filter out putative pseudogenes based on unusually short/long open reading frames (uses ORFfinder)",
-            type: "bool",
-          },
-          {
-            name: "genetic_code",
-            items: ["1", "2", "5"],
-            value: "5",
-            disabled: "never",
-            tooltip:
-              "genetic code translation table: 1 = standard code (use for rbcL); 2 = vertebrate mitochondrial (use for COI if targeting vertebrates); 5 = invertebrate mitochondrial (use for COI if targeting invertebrates)",
-            type: "select",
+              "RDP-trained reference database for the RDP classifier. Click on the header to download trained reference databases the RDP classifier, link MetaWorks user guide: https://terrimporter.github.io/MetaWorksSite/#classifier_table",
+            type: "file",
           },
         ],
       },
@@ -3734,10 +3792,10 @@ export default new Vuex.Store({
     NextITS: [
       {
         tooltip:
-          "NextITS is an automated pipeline for metabarcoding fungi and other eukaryotes with full-length ITS sequenced with PacBio. Amplicons obtained with Illumina are also supported.",
+          "Settings for STEP_1 (sequence filtering processes per sequencing run) in NextITS pipeline",
         scriptName: "",
-        imageName: "vmikk/nextits:0.0.3",
-        serviceName: "Step 1",
+        imageName: "vmikk/nextits:0.5.0",
+        serviceName: "Step_1",
         manualLink: "https://next-its.github.io/parameters/#step-1",
         disabled: "never",
         selected: "always",
@@ -3864,7 +3922,7 @@ export default new Vuex.Store({
         Inputs: [
           {
             name: "primer_forward",
-            value: [],
+            value: ["GTACACACCGCCCGTCG"],
             disabled: "never",
             tooltip: "specify forward primer",
             type: "chip",
@@ -3873,7 +3931,7 @@ export default new Vuex.Store({
           },
           {
             name: "primer_reverse",
-            value: [],
+            value: ["CCTSCSCTTANTDATATGC"],
             disabled: "never",
             tooltip: "specify reverse primer",
             type: "chip",
@@ -3891,7 +3949,7 @@ export default new Vuex.Store({
           {
             name: "its_region",
             items: ["full", "ITS1", "ITS2"],
-            value: "1",
+            value: "full",
             disabled: "never",
             tooltip: "sub-regions of the internal transcribed spacer",
             type: "select",
@@ -3900,10 +3958,10 @@ export default new Vuex.Store({
       },
       {
         tooltip:
-          "NextITS is an automated pipeline for metabarcoding fungi and other eukaryotes with full-length ITS sequenced with PacBio. Amplicons obtained with Illumina are also supported.",
+          "Settings for STEP_2 (clustering) in NextITS pipeline",
         scriptName: "",
-        imageName: "vmikk/nextits:0.0.3",
-        serviceName: "Step 2",
+        imageName: "vmikk/nextits:0.5.0",
+        serviceName: "Step_2",
         manualLink: "https://next-its.github.io/parameters/#step-2",
         disabled: "never",
         selected: "always",
@@ -4057,7 +4115,6 @@ export default new Vuex.Store({
             disabled: "never",
             tooltip: "Perform denoising with UNOISE algorithm",
             type: "bool",
-            depends_on: 'state.NextITS[1].Inputs[0].value == "unoise"',
           },
         ],
       },
@@ -4068,9 +4125,9 @@ export default new Vuex.Store({
         scriptName: {
           FORWARD: "cut_primers_paired_end_reads.sh",
           MIXED: "cut_mixed_primers_paired_end_reads.sh",
-          SINGLE_END: "cut_primers_single_end_dada2.sh",
+          SINGLE_END: "cut_primers_single_end_reads.sh",
         },
-        imageName: "pipecraft/cutadapt:3.5",
+        imageName: "pipecraft/cutadapt:4.4",
         serviceName: "cut primers",
         manualLink:
           "https://pipecraft2-manual.readthedocs.io/en/stable/user_guide.html#cut-primers",
@@ -4084,14 +4141,6 @@ export default new Vuex.Store({
             disabled: "never",
             tooltip:
               "number of cores to use. For paired-end data in fasta format, set to 1 [default]. For fastq formats you may set the value to 0 to use all cores",
-            type: "numeric",
-            rules: [(v) => v >= 1 || "ERROR: specify values >= 1"],
-          },
-          {
-            name: "min_seq_length",
-            value: 32,
-            disabled: "never",
-            tooltip: "minimum length of the output sequence",
             type: "numeric",
             rules: [(v) => v >= 1 || "ERROR: specify values >= 1"],
           },
@@ -4178,31 +4227,31 @@ export default new Vuex.Store({
         Inputs: [
           {
             name: "read_R1",
-            value: ["\\.R1"],
+            value: ["_R1"],
             disabled: "single_end",
             tooltip:
-              "[only for paired-end data] identifyer string that is common for all R1 reads. R1/R2 reads must contain R1/R2 strings in the file names; sample names must not contain R1/R2! (e.g. when all R1 files have '.R1' string, then enter '\\.R1'. Note that backslash is only needed to escape dot regex; e.g. when all R1 files have '_R1' string, then enter '_R1'.). When demultiplexing data during this workflow, then specify as '\\.R1'",
+              "[only for paired-end data] identifyer string that is common for all R1 reads. R1/R2 reads must contain R1/R2 strings in the file names; sample names must not contain R1/R2! (e.g. when all R1 files have '.R1' string, then enter '\\.R1'. Note that backslash is only needed to escape dot regex; e.g. when all R1 files have '_R1' string, then enter '_R1'.)",
             type: "chip",
             rules: [(v) => v.length <= 1 || "ADD ONLY ONE IDENTIFIER"],
           },
           {
             name: "read_R2",
-            value: ["\\.R2"],
+            value: ["_R2"],
             disabled: "single_end",
             tooltip:
-              "[only for paired-end data] identifyer string that is common for all R2 reads (e.g. when all R2 files have '.R2' string, then enter '\\.R2'. Note that backslash is only needed to escape dot regex; e.g. when all R2 files have '_R1' string, then enter '_R2'.). When demultiplexing data during this workflow, then specify as '\\.R2'",
+              "[only for paired-end data] identifyer string that is common for all R2 reads (e.g. when all R2 files have '.R2' string, then enter '\\.R2'. Note that backslash is only needed to escape dot regex; e.g. when all R2 files have '_R1' string, then enter '_R2'.)",
             type: "chip",
             rules: [(v) => v.length <= 1 || "ADD ONLY ONE IDENTIFIER"],
           },
-          {
-            name: "samp_ID",
-            value: ["\\."],
-            disabled: "single_end",
-            tooltip:
-              "[only for paired-end data] identifyer string that separates the sample name from redundant charachters (e.g. file name = sample1.R1.fastq, then '\\.' would be the 'identifier string' (sample name = sample1)); note that backslash is only needed to escape dot regex (e.g. when file name = sample1_R1.fastq then specify as '_')",
-            type: "chip",
-            rules: [(v) => v.length <= 1 || "ADD ONLY ONE IDENTIFIER"],
-          },
+          // {
+          //   name: "samp_ID",
+          //   value: ["_"],
+          //   disabled: "single_end",
+          //   tooltip:
+          //     "[only for paired-end data] identifyer string that separates the sample name from redundant charachters (e.g. file name = sample1.R1.fastq, then '\\.' would be the 'identifier string' (sample name = sample1)); note that backslash is only needed to escape dot regex (e.g. when file name = sample1_R1.fastq then specify as '_')",
+          //   type: "chip",
+          //   rules: [(v) => v.length <= 1 || "ADD ONLY ONE IDENTIFIER"],
+          // },
           {
             name: "maxEE",
             value: 2,
@@ -4517,8 +4566,7 @@ export default new Vuex.Store({
         scriptName: "taxonomy_dada2.sh",
         imageName: "pipecraft/vsearch_dada2:2",
         serviceName: "assign Taxonomy",
-        manualLink:
-          "https://pipecraft2-manual.readthedocs.io/en/stable/user_guide.html#assign-taxonomy-dada2",
+        manualLink: "https://pipecraft2-manual.readthedocs.io/en/stable/user_guide.html#assign-taxonomy-dada2",
         disabled: "never",
         selected: false,
         showExtra: false,
@@ -4530,7 +4578,7 @@ export default new Vuex.Store({
             value: "undefined",
             disabled: "never",
             tooltip:
-              "Select a reference database fasta file for taxonomy annotation, Dowload databases at https://benjjneb.github.io/dada2/training.html",
+              "Select a reference database fasta file for taxonomy annotation. Click on the header to download DADA2-formatted reference databases https://benjjneb.github.io/dada2/training.html",
             type: "file",
           },
           {
@@ -4555,33 +4603,42 @@ export default new Vuex.Store({
     ],
     customWorkflowInfo: {
       vsearch_OTUs: {
-        info: "vsearch OTUs workflow",
+        info: "vsearch OTUs workflow for for demultiplexed Illumina data",
         link: "https://github.com/torognes/vsearch",
         title: "vsearch OTUs workflow",
       },
       DADA2_ASVs: {
-        info: "FORWARD: [for Illumina PE data] select this when all reads of interest are expected to be in 5-3 orient. MIXED: [for Illumina PE data] select this when reads of interest are expected to be in both 5-3 and 3-5 orient. SINGE-END DATA: [for PacBio data] select this when working with single-end data (such as PacBio)",
+        info: "DADA2 ASVs workflow for for demultiplexed Illumina or PacBio data. FORWARD: [for Illumina paired-end data] select this when all reads of interest are expected to be in 5-3 orient. MIXED: [for Illumina paired-end data] select this when reads of interest are expected to be in both 5-3 and 3-5 orient. PACBIO: [for PacBio data] select this when working with PacBio data",
         // link: "https://benjjneb.github.io/dada2/tutorial.html",
         title: "DADA2 ASVs workflow",
       },
       UNOISE_ASVs: {
-        info: "vsearch workflow for forming ASVs (zOTUs) with UNOISE3",
+        info: "vsearch ASVs (zOTUs) workflow for for demultiplexed Illumina data",
         link: "https://github.com/torognes/vsearch",
         title: "UNOISE3 ASVs workflow",
       },
       Metaworks_COI: {
-        info: "MetaWorks ASVs workflow for demultiplexed PAIRED-END COI amplicons",
+        info: "MetaWorks ASVs workflow for demultiplexed Illumina COI amplicons (paired-end)",
         link: "https://terrimporter.github.io/MetaWorksSite/quickstart/",
         title: "MetaWorks COI ASVs",
       },
       NextITS: {
-        info: "NextITS pipeline for PacBio ITS amplicons",
+        info: "NextITS pipeline for demultiplexed PacBio ITS (single-end) amplicons",
         link: "https://github.com/vmikk/NextITS",
         title: "NextITS",
       },
     },
   },
   getters: {
+    dada2modeIndex: (state) => {
+      if (state.data.dada2mode == "FORWARD") {
+        return 0;
+      } else if (state.data.dada2mode == "MIXED") {
+        return 1;
+      } else if (state.data.dada2mode == "SINGLE_END") {
+        return 2;
+      }
+    },
     check_depends_on: (state) => (input) => {
       if (input.depends_on && state) {
         return !eval(input.depends_on);
@@ -4887,7 +4944,7 @@ export default new Vuex.Store({
     setDADAmode(state, payload) {
       state.data.dada2mode = payload;
       if (payload == "SINGLE_END") {
-        state.data.readType = "single_end";
+        state.data.readType = 'single_end'
         state.DADA2_ASVs[3].selected = false;
         state.DADA2_ASVs[2].Inputs[0].value = "PacBioErrfun";
         state.DADA2_ASVs[2].Inputs[2].value = "FastqQuality";

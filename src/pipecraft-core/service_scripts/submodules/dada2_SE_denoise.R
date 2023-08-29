@@ -26,8 +26,8 @@ detect_singletons = Sys.getenv('DETECT_SINGLETONS')
 band_size = as.numeric(Sys.getenv('BAND_SIZE'))
 
 
-cat("errorEstimationFunction = ", errorEstFun, "\n")
-cat("BAND_SIZE = ", band_size, "\n\n")
+cat(";; errorEstimationFunction = ", errorEstFun, "\n")
+cat(";; BAND_SIZE = ", band_size, "\n")
 
 #"FALSE" or "TRUE" to FALSE or TRUE for dada2
 if (pool == "false" || pool == "FALSE"){
@@ -55,8 +55,8 @@ setDadaOpt(OMEGA_A = omegaa, OMEGA_P = omegap, OMEGA_C = omegac, DETECT_SINGLETO
 path_results = Sys.getenv('output_dir')
 
 ### Denoise
-cat("| Working directory = ", workingDir)
-cat(" | Performing DADA2 denoising | ")
+cat(";; Working directory = ", workingDir)
+cat(";; Performing DADA2 denoising ;; ")
 #check for output dir and delete if needed
 if (dir.exists(path_results)) {
     unlink(path_results, recursive=TRUE)
@@ -70,7 +70,7 @@ sample_names = readRDS(file.path(workingDir, "sample_names.rds"))
 cat("sample names = ", sample_names, "\n")
 
 #Dereplicate
-dereplicated <- derepFastq(qFiltered, verbose = FALSE, qualityType = qualityType)
+dereplicated <- derepFastq(qFiltered, verbose = TRUE, qualityType = qualityType)
 saveRDS(dereplicated, (file.path(path_results, "dereplicated.rds")))
 
 #Learn errors
@@ -89,6 +89,7 @@ saveRDS(denoised, file.path(path_results, "denoised.rds"))
 
 ### WRITE PER-SAMPLE DENOISED and MERGED FASTA FILES
 #make sequence table
+cat(";; Writing per-sample denoised and merged fasta files")
 ASV_tab = makeSequenceTable(denoised)
 rownames(ASV_tab) = gsub(paste0(".", fileFormat), "", rownames(ASV_tab))
 #write RDS object
@@ -136,4 +137,4 @@ seq_count <- cbind(qfilt, sapply(denoised, getN))
 colnames(seq_count) <- c("input", "qualFiltered", "denoised")
 rownames(seq_count) <- sample_names
 write.csv(seq_count, file.path(path_results, "seq_count_summary.csv"), row.names = TRUE, quote = FALSE)
-print("DONE")
+cat(";; DONE")

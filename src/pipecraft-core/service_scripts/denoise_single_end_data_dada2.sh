@@ -25,26 +25,19 @@ justConcatenate=${justConcatenate}
 pool=${pool}
 qualityType=${qualityType}
 
-errorEstFun=${errorEstFun}
-band_size=${BAND_SIZE}
-omegaa=${OMEGA_A}
-omegap=${OMEGA_P}
-omegac=${OMEGA_C}
-detect_singletons=${DETECT_SINGLETONS}
-
 #Source for functions
 source /scripts/submodules/framework.functions.sh
 #output dirs
 output_dir=$"/input/denoised.dada2"
 export output_dir
 
-# ### Check that at least 2 samples are provided
-# files=$(ls $workingDir | grep -c ".$extension")
-# if (( $files < 2 )); then
-#     printf '%s\n' "ERROR]: please provide at least 2 samples for the ASVs workflow
-# >Quitting" >&2
-#     end_process
-# fi
+### Check that at least 2 samples are provided
+files=$(ls $workingDir | grep -c ".$fileFormat")
+if (( $files < 2 )); then
+    printf '%s\n' "ERROR]: please provide at least 2 samples for the ASVs workflow
+>Quitting" >&2
+    end_process
+fi
 
 #############################
 ### Start of the workflow ###
@@ -55,15 +48,19 @@ printf "# Running DADA2 denoising \n"
 Rlog=$(Rscript /scripts/submodules/dada2_SE_denoise.R 2>&1)
 echo $Rlog >> $output_dir/denoise.log 
 wait
-printf "\n DADA2 completed \n"
+#format R-log file
+sed -i "s/;; /\n/g" $output_dir/denoise.log
+
 
 #################################################
 ### COMPILE FINAL STATISTICS AND README FILES ###
 #################################################
-if [[ -d tempdir2 ]]; then
-    rm -rf tempdir2
+if [[ $debugger != "true" ]]; then
+    if [[ -d tempdir2 ]]; then
+        rm -rf tempdir2
+    fi
+    rm $output_dir/denoise.log
 fi
-
 end=$(date +%s)
 runtime=$((end-start))
 
@@ -81,10 +78,10 @@ Files in 'denoised_assembled.dada2':
 # *.rds                   = R objects for dada2.
 
 Core commands -> 
-setDadaOpt(OMEGA_A = $omegaa, OMEGA_P = $omegap, OMEGA_C = $omegac, DETECT_SINGLETONS = $detect_singletons, BAND_SIZE = $band_size)
+setDadaOpt(OMEGA_A = $OMEGA_A, OMEGA_P = $OMEGA_P, OMEGA_C = $OMEGA_C, DETECT_SINGLETONS = $DETECT_SINGLETONS, BAND_SIZE = $BAND_SIZE)
 dereplicate:  dereplicated <- derepFastq(input, qualityType = $qualityType)
-learn errors: errors = learnErrors(dereplicated, errorEstimationFunction = $errorEstFun, BAND_SIZE = $band_size)
-denoise:      denoised = dada(dereplicated, err = errors, BAND_SIZE = $band_size)
+learn errors: errors = learnErrors(dereplicated, errorEstimationFunction = $errorEstFun, BAND_SIZE = $BAND_SIZE)
+denoise:      denoised = dada(dereplicated, err = errors, BAND_SIZE = $BAND_SIZE)
 
 Total run time was $runtime sec.
 ##################################################################
@@ -95,11 +92,11 @@ Total run time was $runtime sec.
 ########################################################" > $output_dir/README.txt
 
 #Done
-printf "\nDONE\n"
-printf "Total time: $runtime sec.\n\n"
+printf "\nDONE "
+printf "Total time: $runtime sec.\n "
 
 #variables for all services
+echo "#variables for all services: "
 echo "workingDir=$output_dir"
 echo "fileFormat=fasta"
-
 echo "readType=single_end"

@@ -133,7 +133,7 @@ $cores \
 $otutype $output_dir/OTUs.temp.fasta \
 --uc $output_dir/OTUs.uc \
 --fasta_width 0 \
---sizein --sizeout"
+--sizein "
 
 checkerror=$(vsearch $seqsort \
 $output_dir/Glob_derep.fasta \
@@ -179,11 +179,14 @@ if [[ $remove_singletons == "true"  ]]; then
     --sizein --sizeout --fasta_width 0 \
     --output $output_dir/OTUs.fasta 2>&1)
     check_app_error
-
+    # remove ";sample=.*;" from OTU.fasta file.
     sed -i 's/;sample=.*;/;/' $output_dir/OTUs.fasta
+    # removing ";size=" because OTU table does not have "size" annotations; so the files would fit to LULU
+    sed -i 's/;size=.*//' $output_dir/OTUs.fasta 
     rm $output_dir/OTUs.temp.fasta
 else
     sed -e 's/;sample=.*;/;/' $output_dir/OTUs.temp.fasta > $output_dir/OTUs.fasta
+    sed -i 's/;size=.*//' $output_dir/OTUs.fasta
     rm $output_dir/OTUs.temp.fasta
 fi
 
@@ -208,26 +211,36 @@ fi
 
 #Delete tempdirs
 if [[ $debugger != "true" ]]; then
-  if [[ -d tempdir ]]; then
-      rm -rf tempdir
-  fi
-  if [[ -d tempdir2 ]]; then
-      rm -rf tempdir2
-  fi
-  if [[ -f $output_dir/OTU_table_creation.log ]]; then
-      rm -f $output_dir/OTU_table_creation.log
-  fi
-else 
-  #compress files in /tempdir
-  pigz tempdir/*
+    if [[ -d tempdir ]]; then
+        rm -rf tempdir
+    fi
+    if [[ -d tempdir2 ]]; then
+        rm -rf tempdir2
+    fi
+    if [[ -f $output_dir/OTU_table_creation.log ]]; then
+        rm -f $output_dir/OTU_table_creation.log
+    fi
+    else 
+    #compress files in /tempdir
+    if [[ -d tempdir ]]; then
+        pigz tempdir/*
+    fi
 fi
 
-size=$(grep -c "^>" $output_dir/OTUs.fasta)
+#Make README.txt file
+OTU_count=$(grep -c "^>" $output_dir/OTUs.fasta)
+nSeqs=$(awk 'BEGIN{FS=OFS="\t"}NR>1{for(i=2;i<=NF;i++) t+=$i; print t; t=0}' $output_dir/OTU_table.txt | awk '{for(i=1;i<=NF;i++)$i=(a[i]+=$i)}END{print}')
+nCols=$(awk -F'\t' '{print NF; exit}' $output_dir/OTU_table.txt)
+nSample=$(awk -v NUM=$nCols 'BEGIN {print (NUM-1)}') # -1 cuz 1st column is OTU_ID
+
 end=$(date +%s)
 runtime=$((end-start))
 
-#Make README.txt file
-printf "Clustering formed $size OTUs.
+printf "# Reads were clustered to OTUs using vsearch (see 'Core command' below for the used settings).
+
+Number of OTUs                       = $OTU_count
+Number of sequences in the OTU table = $nSeqs
+Number of samples in the OTU table   = $nSample
 
 Files in 'clustering_out' directory:
 # OTUs.fasta    = FASTA formated representative OTU sequences. OTU headers are renamed according to sha1 algorithm in vsearch.
@@ -254,10 +267,11 @@ printf "\nTotal run time was $runtime sec.\n\n
 ##########################################################" >> $output_dir/README.txt
 
 #Done
-printf "\nDONE\n"
-printf "Total time: $runtime sec.\n\n"
+printf "\nDONE "
+printf "Total time: $runtime sec.\n "
 
 #variables for all services
+echo "#variables for all services: "
 echo "workingDir=$output_dir"
 echo "fileFormat=$extension"
 echo "readType=single_end"

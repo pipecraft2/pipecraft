@@ -14,7 +14,6 @@ fileFormat = Sys.getenv('fileFormat')
 #load variables
 read_R1 = Sys.getenv('read_R1')
 read_R2 = Sys.getenv('read_R2')
-samp_ID = Sys.getenv('samp_ID')
 maxEE = as.numeric(Sys.getenv('maxEE'))
 maxN = as.numeric(Sys.getenv('maxN'))
 truncQ = as.numeric(Sys.getenv('truncQ'))
@@ -43,8 +42,8 @@ path_results = Sys.getenv('output_dir')
 fnFs = sort(list.files(pattern = read_R1, full.names = TRUE))
 fnRs = sort(list.files(pattern = read_R2, full.names = TRUE))
 #sample names
-sample_names = sapply(strsplit(basename(fnFs), samp_ID), `[`, 1)
-cat("sample names = ", sample_names, "\n")
+sample_names = sapply(strsplit(basename(fnFs), read_R1), `[`, 1)
+cat(";; sample names = ", sample_names, "\n")
 
 #filtered files path
 filtFs = file.path(path_results, paste0(sample_names, "_R1.", fileFormat))
@@ -53,6 +52,7 @@ names(filtFs) = sample_names
 names(filtRs) = sample_names
 
 #quality filter
+cat(";; Quality filtering with filterAndTrim function")
 qfilt = filterAndTrim(fnFs, filtFs, fnRs, filtRs, 
                     maxN = maxN, 
                     maxEE = c(maxEE, maxEE), 
@@ -81,5 +81,5 @@ sample_names = sapply(strsplit(basename(R1qf), "_R1."), `[`, 1)
 saveRDS(R1qf, file.path(path_results, "filtFs.rds"))
 saveRDS(R2qf, file.path(path_results, "filtRs.rds"))
 saveRDS(sample_names, file.path(path_results, "sample_names.rds"))
-print("everything ok")
+cat(";; DONE ")
 #DONE, proceed with quality_filtering_paired_end_dada2.sh to clean up make readme

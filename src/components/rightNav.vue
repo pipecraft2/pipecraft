@@ -58,9 +58,24 @@
           </v-menu>
         </v-list-item>
       </template>
-      <span>Select and use individual tools</span>
+      <span>Quick Tools. Select and use individual tools</span>
     </v-tooltip>
     <v-divider class="mt-2 mb-2"></v-divider>
+    <v-list-item class="mt-5" ripple link>
+      <v-tooltip left nudge-left="10">
+        <template v-slot:activator="{ on }">
+          <v-list-item-content
+            v-on="on"
+            @click="
+              openLink('https://pipecraft2-manual.readthedocs.io/en/latest/')
+            "
+          >
+            <v-icon>mdi-book-information-variant</v-icon>
+          </v-list-item-content>
+        </template>
+        <span>Open PipeCraft2 user guide</span>
+      </v-tooltip>
+    </v-list-item>
     <v-list-item
       class="mt-5"
       ripple
@@ -90,12 +105,13 @@
 
 <script>
 import os from "os";
+const { shell } = require("electron");
 const { dialog } = require("@electron/remote");
 const slash = require("slash");
 const fs = require("fs");
-var Docker = require("dockerode");
 var socketPath =
   os.platform() === "win32" ? "//./pipe/docker_engine" : "/var/run/docker.sock";
+var Docker = require("dockerode");
 var docker = new Docker({ socketPath: socketPath });
 var JSONfn = require("json-fn");
 
@@ -158,6 +174,9 @@ export default {
     }, 1000);
   },
   methods: {
+    openLink(value) {
+      shell.openExternal(value);
+    },
     addStep(item) {
       this.$store.commit("addStep", {
         step: item,
