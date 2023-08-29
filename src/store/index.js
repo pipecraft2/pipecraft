@@ -1823,10 +1823,10 @@ export default new Vuex.Store({
             extraInputs: [
               {
                 name: "mem",
-                value: 8,
+                value: 10,
                 disabled: "never",
                 tooltip:
-                  "default is 8GB. The amount of memory to allocate to the RDP classifier",
+                  "default is 10GB. The amount of memory to allocate to the RDP classifier",
                 type: "numeric",
                 rules: [
                   (v) => v >= 0 || "ERROR: specify values >0",
@@ -1836,8 +1836,8 @@ export default new Vuex.Store({
             ],
             Inputs: [
               {
-                name: "select_rdp_db",
-                btnName: "select file",
+                name: "database",
+                btnName: "select RDP db",
                 value: "undefined",
                 disabled: "never",
                 tooltip:

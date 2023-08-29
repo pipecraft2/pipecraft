@@ -10,7 +10,7 @@
 
 #load variables
 regex='[^/]*$'
-db1_temp=$(echo $select_rdp_db | grep -oP "$regex")
+db1_temp=$(echo $database | grep -oP "$regex")
 db1=$(printf "/extraFiles/$db1_temp")
 echo "db1 = $db1"
 confidence=$"--conf ${confidence}"  # default is 0.8. Assignment confidence cutoff used to determine the assignment count for each taxon. Range [0-1]
