@@ -1814,6 +1814,51 @@ export default new Vuex.Store({
           },
           {
             tooltip:
+              "assign taxonomy with RDP Classifier against a selected database [SELECT WORKDIR that contains only ONE fasta file for the process]",
+            scriptName: "taxonomy_RDP.sh",
+            imageName: "pipecraft/metaworks:1.12.0",
+            serviceName: "RDP_classifier",
+            selected: false,
+            showExtra: false,
+            extraInputs: [
+              {
+                name: "mem",
+                value: 8,
+                disabled: "never",
+                tooltip:
+                  "default is 8GB. The amount of memory to allocate to the RDP classifier",
+                type: "numeric",
+                rules: [
+                  (v) => v >= 0 || "ERROR: specify values >0",
+                  (v) => v <= 300 || "ERROR: specify values <= 300",
+                ],
+              },
+            ],
+            Inputs: [
+              {
+                name: "select_rdp_db",
+                btnName: "select file",
+                value: "undefined",
+                disabled: "never",
+                tooltip:
+                  "RDP-trained reference database for the RDP classifier. Click on the header to download trained reference databases the RDP classifier, link MetaWorks user guide: https://terrimporter.github.io/MetaWorksSite/#classifier_table",
+                type: "file",
+              },
+              {
+                name: "confidence",
+                value: 0.8,
+                disabled: "never",
+                tooltip: "default is 0.8. Assignment confidence cutoff used to determine the assignment count for each taxon. Range [0-1]",
+                type: "numeric",
+                rules: [
+                  (v) => v >= 0 || "ERROR: specify values >0",
+                  (v) => v <= 1 || "ERROR: specify values <= 1",
+                ],
+              },
+            ],
+          },
+          {
+            tooltip:
               "assign taxonomy with DADA2 'assignTaxonomy' function [SELECT WORKDIR that contains only ONE fasta file for the process]",
             scriptName: "taxonomy_dada2.sh",
             imageName: "pipecraft/vsearch_dada2:2",
@@ -1829,7 +1874,7 @@ export default new Vuex.Store({
                 value: "undefined",
                 disabled: "never",
                 tooltip:
-                  "Select a reference database fasta file for taxonomy annotation, Dowload databases at https://benjjneb.github.io/dada2/training.html",
+                  "Select a reference database fasta file for taxonomy annotation. Click on the header to download DADA2-formatted reference databases https://benjjneb.github.io/dada2/training.html",
                 type: "file",
               },
               {
@@ -3738,7 +3783,7 @@ export default new Vuex.Store({
             value: "undefined",
             disabled: "never",
             tooltip:
-              "select a compatible reference database for RDP classifier",
+              "RDP-trained reference database for the RDP classifier. Click on the header to download trained reference databases the RDP classifier, link MetaWorks user guide: https://terrimporter.github.io/MetaWorksSite/#classifier_table",
             type: "file",
           },
         ],
@@ -4521,8 +4566,7 @@ export default new Vuex.Store({
         scriptName: "taxonomy_dada2.sh",
         imageName: "pipecraft/vsearch_dada2:2",
         serviceName: "assign Taxonomy",
-        manualLink:
-          "https://pipecraft2-manual.readthedocs.io/en/stable/user_guide.html#assign-taxonomy-dada2",
+        manualLink: "https://pipecraft2-manual.readthedocs.io/en/stable/user_guide.html#assign-taxonomy-dada2",
         disabled: "never",
         selected: false,
         showExtra: false,
@@ -4534,7 +4578,7 @@ export default new Vuex.Store({
             value: "undefined",
             disabled: "never",
             tooltip:
-              "Select a reference database fasta file for taxonomy annotation, Dowload databases at https://benjjneb.github.io/dada2/training.html",
+              "Select a reference database fasta file for taxonomy annotation. Click on the header to download DADA2-formatted reference databases https://benjjneb.github.io/dada2/training.html",
             type: "file",
           },
           {
