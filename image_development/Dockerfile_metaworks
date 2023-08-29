@@ -22,10 +22,10 @@ RUN wget --quiet https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86
 ENV PATH=$CONDA_DIR/bin:$PATH
 
 # Install Metaworks
-RUN wget https://github.com/terrimporter/MetaWorks/releases/download/v1.11.2/MetaWorks1.11.2.zip
-RUN unzip MetaWorks1.11.2.zip
-RUN rm MetaWorks1.11.2.zip
-RUN cd MetaWorks1.11.2 && conda env create -f environment.yml
+RUN wget https://github.com/terrimporter/MetaWorks/releases/download/v1.12.0/MetaWorks1.12.0.zip
+RUN unzip MetaWorks1.12.0.zip
+RUN rm MetaWorks1.12.0.zip
+RUN cd MetaWorks1.12.0 && conda env create -f environment.yml
 
 # Install ORFfinder and seqkit
 RUN wget ftp://ftp.ncbi.nlm.nih.gov/genomes/TOOLS/ORFfinder/linux-i64/ORFfinder.gz
