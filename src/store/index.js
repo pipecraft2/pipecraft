@@ -1848,7 +1848,8 @@ export default new Vuex.Store({
                 name: "confidence",
                 value: 0.8,
                 disabled: "never",
-                tooltip: "default is 0.8. Assignment confidence cutoff used to determine the assignment count for each taxon. Range [0-1]",
+                tooltip:
+                  "default is 0.8. Assignment confidence cutoff used to determine the assignment count for each taxon. Range [0-1]",
                 type: "numeric",
                 rules: [
                   (v) => v >= 0 || "ERROR: specify values >0",
@@ -2047,7 +2048,8 @@ export default new Vuex.Store({
                 name: "f_value",
                 value: 0.01,
                 disabled: "never",
-                tooltip: "f-parameter of UNCROSS2, which defines the expected cross-talk rate. Default is 0.01 (equivalent to 1%). A higher value enforces stricter filtering",
+                tooltip:
+                  "f-parameter of UNCROSS2, which defines the expected cross-talk rate. Default is 0.01 (equivalent to 1%). A higher value enforces stricter filtering",
                 type: "numeric",
                 rules: [(v) => v > 0 || "ERROR: specify values > 0"],
               },
@@ -2055,7 +2057,8 @@ export default new Vuex.Store({
                 name: "p_value",
                 value: 1,
                 disabled: "never",
-                tooltip: "p-parameter, which controls the severity of tag-jump removal. It adjusts the exponent in the UNCROSS formula. Default is 1. Opt for 0.5 or 0.3 to steepen the curve",
+                tooltip:
+                  "p-parameter, which controls the severity of tag-jump removal. It adjusts the exponent in the UNCROSS formula. Default is 1. Opt for 0.5 or 0.3 to steepen the curve",
                 type: "numeric",
                 rules: [(v) => v > 0 || "ERROR: specify values > 0"],
               },
@@ -3377,8 +3380,7 @@ export default new Vuex.Store({
             name: "remove_chimeras",
             value: true,
             disabled: "never",
-            tooltip:
-              "perform chimera removal with UCHIME3 de novo algoritm",
+            tooltip: "perform chimera removal with UCHIME3 de novo algoritm",
             type: "bool",
           },
           {
@@ -3579,7 +3581,8 @@ export default new Vuex.Store({
     ],
     Metaworks_COI: [
       {
-        tooltip: "MetaWorks v1.12.0 ASVs workflow for Illumina (paired-end) COI amplicons",
+        tooltip:
+          "MetaWorks v1.12.0 ASVs workflow for Illumina (paired-end) COI amplicons",
         scriptName: "metaworks_paired_end_ASV.sh",
         imageName: "pipecraft/metaworks:1.12.0",
         serviceName: "metaworks_COI",
@@ -3591,7 +3594,8 @@ export default new Vuex.Store({
             name: "quality_cutoff",
             value: 13,
             disabled: "never",
-            tooltip: "Assemble paired-end reads setting. Phred score quality cutoff (default 20)",
+            tooltip:
+              "Assemble paired-end reads setting. Phred score quality cutoff (default 20)",
             type: "numeric",
             rules: [(v) => v >= 0 || "ERROR: specify values >= 0"],
           },
@@ -3626,7 +3630,8 @@ export default new Vuex.Store({
             name: "primer_mismatch",
             value: 1,
             disabled: "never",
-            tooltip: "CUT PRIMERS setting. Maximum number of mismatches when searching and clipping primers",
+            tooltip:
+              "CUT PRIMERS setting. Maximum number of mismatches when searching and clipping primers",
             type: "numeric",
             rules: [(v) => v >= 1 || "ERROR: specify values >= 1"],
           },
@@ -3957,8 +3962,7 @@ export default new Vuex.Store({
         ],
       },
       {
-        tooltip:
-          "Settings for STEP_2 (clustering) in NextITS pipeline",
+        tooltip: "Settings for STEP_2 (clustering) in NextITS pipeline",
         scriptName: "",
         imageName: "vmikk/nextits:0.5.0",
         serviceName: "Step_2",
@@ -4566,7 +4570,8 @@ export default new Vuex.Store({
         scriptName: "taxonomy_dada2.sh",
         imageName: "pipecraft/vsearch_dada2:2",
         serviceName: "assign Taxonomy",
-        manualLink: "https://pipecraft2-manual.readthedocs.io/en/stable/user_guide.html#assign-taxonomy-dada2",
+        manualLink:
+          "https://pipecraft2-manual.readthedocs.io/en/stable/user_guide.html#assign-taxonomy-dada2",
         disabled: "never",
         selected: false,
         showExtra: false,
@@ -4889,17 +4894,27 @@ export default new Vuex.Store({
     },
     blastSwitch(state, value) {
       if (value == "blastn") {
-        state.vsearch_OTUs[8].extraInputs[1].value = 11;
-        state.vsearch_OTUs[8].extraInputs[2].value = 2;
-        state.vsearch_OTUs[8].extraInputs[3].value = -3;
-        state.vsearch_OTUs[8].extraInputs[4].value = 5;
-        state.vsearch_OTUs[8].extraInputs[5].value = 2;
+        state.vsearch_OTUs[6].extraInputs[1].value = 11;
+        state.vsearch_OTUs[6].extraInputs[2].value = 2;
+        state.vsearch_OTUs[6].extraInputs[3].value = -3;
+        state.vsearch_OTUs[6].extraInputs[4].value = 5;
+        state.vsearch_OTUs[6].extraInputs[5].value = 2;
+        state.UNOISE_ASVs[5].extraInputs[1].value = 11;
+        state.UNOISE_ASVs[5].extraInputs[2].value = 2;
+        state.UNOISE_ASVs[5].extraInputs[3].value = -3;
+        state.UNOISE_ASVs[5].extraInputs[4].value = 5;
+        state.UNOISE_ASVs[5].extraInputs[5].value = 2;
       } else if (value == "megablast") {
-        state.vsearch_OTUs[8].extraInputs[1].value = 28;
-        state.vsearch_OTUs[8].extraInputs[2].value = 1;
-        state.vsearch_OTUs[8].extraInputs[3].value = -2;
-        state.vsearch_OTUs[8].extraInputs[4].value = 0;
-        state.vsearch_OTUs[8].extraInputs[5].value = undefined;
+        state.vsearch_OTUs[6].extraInputs[1].value = 28;
+        state.vsearch_OTUs[6].extraInputs[2].value = 1;
+        state.vsearch_OTUs[6].extraInputs[3].value = -2;
+        state.vsearch_OTUs[6].extraInputs[4].value = 0;
+        state.vsearch_OTUs[6].extraInputs[5].value = undefined;
+        state.UNOISE_ASVs[5].extraInputs[1].value = 28;
+        state.UNOISE_ASVs[5].extraInputs[2].value = 1;
+        state.UNOISE_ASVs[5].extraInputs[3].value = -2;
+        state.UNOISE_ASVs[5].extraInputs[4].value = 0;
+        state.UNOISE_ASVs[5].extraInputs[5].value = undefined;
       }
     },
     blastSwitch2(state, payload) {
@@ -4944,7 +4959,7 @@ export default new Vuex.Store({
     setDADAmode(state, payload) {
       state.data.dada2mode = payload;
       if (payload == "SINGLE_END") {
-        state.data.readType = 'single_end'
+        state.data.readType = "single_end";
         state.DADA2_ASVs[3].selected = false;
         state.DADA2_ASVs[2].Inputs[0].value = "PacBioErrfun";
         state.DADA2_ASVs[2].Inputs[2].value = "FastqQuality";

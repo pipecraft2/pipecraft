@@ -80,14 +80,17 @@
           </v-list-item-content>
         </template>
         <v-list style="padding: 0">
-          <v-subheader style="height: 40px">SELECT WORKFLOW</v-subheader>
+          <v-subheader style="height: 40px">SELECT PIPELINE</v-subheader>
           <v-divider></v-divider>
           <v-list-item
             ripple
             link
             v-for="(item, index) in $store.state.customWorkflowInfo"
             :key="index"
-            @click="push2premade(index)"
+            @click="
+              clearSelectedSteps();
+              push2premade(index);
+            "
           >
             <v-list-item-title>{{ index.replace("_", " ") }}</v-list-item-title>
           </v-list-item>
@@ -157,6 +160,9 @@ export default {
       if (this.$route.path != `/premade/${name}`) {
         this.$router.push(`/premade/${name}`);
       }
+    },
+    clearSelectedSteps() {
+      this.$store.state.selectedSteps = [];
     },
     async stopWorkflow() {
       var container = dockerode.getContainer(
