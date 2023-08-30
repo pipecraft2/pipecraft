@@ -10,7 +10,7 @@ output_dir = Sys.getenv('output_dir')
 ASV_table = Sys.getenv('ASV_table')
 
 ## Required inputs
-inp_ASVTAB = ASV_table         # ASV table file (tab delimited).
+inp_ASVTAB = ASV_table          # ASV table file (tab delimited).
                                 # First column header = "ASV", next columns = samples.
                                 # 2nd COLUMN is SEQUENCE!
                                 # NO SIZE ANNOTATION of ASVs.

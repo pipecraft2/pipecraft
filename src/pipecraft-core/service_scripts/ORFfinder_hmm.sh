@@ -71,6 +71,7 @@ check_app_error
 echo "# Sorting ORFfinder -outfmt 1 results | "
 in_name=$(basename $rep_seqs_file | awk -F "." '(NF=NF-1)' | sed -e 's/ /\./')
 
+#below parsing does not work if sequence IDs have _
 perl /MetaWorks1.12.0/perl_scripts/parse_orfs3.plx $output_dir/tempdir_filter_numts/ORFs.nt.fasta $output_dir/$in_name.ORFs.fasta
 
 checkerror=$(seqkit seq --quiet --name $output_dir/$in_name.ORFs.fasta \
@@ -154,7 +155,8 @@ runtime=$((end-start))
 
 #Make README.txt file for demultiplexed reads
 in=$(echo $in_name | sed -e 's/\/extraFiles\///')
-printf "# Used ORFfinder to identify open reading frames (ORFs), kept the longest ORF per sequence (>=$min_len bp) (see 'Core commands' below for the used settings).
+printf "# Used ORFfinder to remove putative pseudogenes and off-targets. 
+    (details in the MetaWorks user guide: https://terrimporter.github.io/MetaWorksSite/details/ - sequences are translated into every possible open reading frame (ORF) using ORFfinder, the longest ORF is reatined. Putative pseudogenes are removed as outliers with unusually small/large ORF lengths. Outliers are calcualted as follows: Sequence lengths shorter than the 25th percentile - 1.5*IQR (inter quartile range) are removed as putative pseudogenes (or sequences with errors that cause a frame-shift). Sequence lengths longer than the 75th percentile + 1.5*IQR are also removed as putative pseudogenes.
 
 Input file $in.$extension contained $input_seqs sequences.
 
@@ -165,14 +167,14 @@ Generated files:
 # $in.notORFs.list.txt = list of sequence identifiers of the above file.
 
 Core command -> 
-ORFfinder -in $rep_seqs_file_path -ml $min_len -g $genetic_code -s $start_codon -n $ignore_nested -strand $ \n" > $output_dir/README_ORFfinder.txt
+ORFfinder -in $rep_seqs_file_path -ml $min_len -g $genetic_code -s $start_codon -n $ignore_nested -strand $strand \n" > $output_dir/README_ORFfinder.txt
 
 if [[ $arthropod_hmm == "true" ]]; then
     HMMs=$(grep -c "^>" $output_dir/$in_name.ORFs.HMM.fasta)
     nonHMMs=$(grep -c "^>" $output_dir/$in_name.NUMTs.fasta)
 
     printf "\n# Also removed poorly matching sequences to a arthropod COI HMMs 
-        (details in the MetaWorks user guide: 'Outliers are calcualted as follows: sequence lengths shorter than the 25th percentile - 1.5*IQR (inter quartile range) are removed as putative pseudogenes (or sequences with errors that cause a frame-shift). Sequence lengths longer than the 75th percentile + 1.5*IQR are also removed as putative pseudogenes.' https://terrimporter.github.io/MetaWorksSite/details/)
+        (details in the MetaWorks user guide: https://terrimporter.github.io/MetaWorksSite/details/ - outliers are identified as follows: ORFs with scores lower than the 25th percentile - 1.5*IQR (inter quartile range) are removed as putative pseudogenes.
 # $in.ORFs.HMM.fasta     = filtered output by the ORFfinder + arthropod HMMs; contains $HMMs reads.
 # $in.ORFs.HMM.list.txt  = list of sequence identifiers of the above file.
 # $in.NUMTs.fasta        = putative pseudogenes/off-target ORFs + HMM outliers (i.e. all trashed sequences), contains $nonHMMs reads.

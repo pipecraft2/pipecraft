@@ -2041,7 +2041,7 @@ export default new Vuex.Store({
                 value: "undefined",
                 disabled: "never",
                 tooltip:
-                  "select TAB-DELIMITED OTU/ASV table [output will be in the directory as specified under 'SELECT WORKDIR']",
+                  "select TAB-DELIMITED OTU/ASV table, where the 1st column is the OTU/ASV IDs and the following columns represent samples; 2nd column may be Sequence column, with the colName 'Sequence' [output will be in the directory as specified under 'SELECT WORKDIR']",
                 type: "file",
               },
               {
@@ -2098,7 +2098,7 @@ export default new Vuex.Store({
                 value: "undefined",
                 disabled: "never",
                 tooltip:
-                  "select fasta formatted sequence file containing your OTU/ASV reads [output will be in the directory as specified under 'SELECT WORKDIR']",
+                  "select fasta formatted sequence file containing your OTU/ASV reads. Sequence IDs cannot contaon underlines '_' [output will be in the directory as specified under 'SELECT WORKDIR']",
                 type: "file",
               },
               {
@@ -2122,7 +2122,7 @@ export default new Vuex.Store({
                 value: 5,
                 disabled: "never",
                 tooltip:
-                  "5 = invertebrate mitochondrial code. Specify values from 1 to 33; see https://www.ncbi.nlm.nih.gov/Taxonomy/Utils/wprintgc.cgi",
+                  "5 = invertebrate mitochondrial code. Use 1 for rbcL. Specify values from 1 to 33; see https://www.ncbi.nlm.nih.gov/Taxonomy/Utils/wprintgc.cgi",
                 type: "numeric",
                 rules: [
                   (v) => v >= 1 || "ERROR: specify values >= 1",
