@@ -2067,7 +2067,7 @@ export default new Vuex.Store({
           {
             tooltip:
               "pseudogene fintering with ORFfinder (search open reading frames) and/or HMMs",
-            scriptName: "ORFfinder.sh",
+            scriptName: "ORFfinder_hmm.sh",
             imageName: "pipecraft/metaworks:1.12.0",
             serviceName: "filter_numts",
             selected: false,
@@ -2092,14 +2092,14 @@ export default new Vuex.Store({
             ],
             Inputs: [
               {
-                name: "rep_seqs_file",
+                name: "fasta_file",
                 active: false,
-                btnName: "select file",
+                btnName: "select fasta file",
                 value: "undefined",
                 disabled: "never",
                 tooltip:
                   "select fasta formatted sequence file containing your OTU/ASV reads [output will be in the directory as specified under 'SELECT WORKDIR']",
-                type: "boolfile",
+                type: "file",
               },
               {
                 name: "min_len",
@@ -2109,14 +2109,14 @@ export default new Vuex.Store({
                 type: "numeric",
                 rules: [(v) => v >= 1 || "ERROR: specify values >= 1"],
               },
-              {
-                name: "max_len",
-                value: 317,
-                disabled: "never",
-                tooltip: "maximum length of an output sequence",
-                type: "numeric",
-                rules: [(v) => v >= 1 || "ERROR: specify values >= 1"],
-              },
+              // {
+              //   name: "max_len",
+              //   value: 317,
+              //   disabled: "never",
+              //   tooltip: "maximum length of an output sequence",
+              //   type: "numeric",
+              //   rules: [(v) => v >= 1 || "ERROR: specify values >= 1"],
+              // },
               {
                 name: "genetic_code",
                 value: 5,
