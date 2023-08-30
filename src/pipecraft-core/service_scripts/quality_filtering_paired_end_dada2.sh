@@ -19,22 +19,22 @@
 
 #load env variables
 readType=${readType}
-extension=${fileFormat}
 dataFormat=${dataFormat}
 workingDir=${workingDir}
 
-#load variables
-read_R1=${read_R1}
-read_R2=${read_R2}
-maxEE=${maxEE}
-maxN=${maxN}
-truncQ=${truncQ}
-truncLen_R1=${truncLen}
-truncLen_R2=${truncLen_R2}
-minLen=${minLen}
-maxLen=${maxLen}
-minQ=${minQ}
-matchIDs=${matchIDs}
+### variables
+# read_R1     = identifyer string that is common for all R1 reads.
+# read_R2     = identifyer string that is common for all R2 reads.
+# maxEE       = discard sequences with more than the specified number of expected errors
+# maxN        = discard sequences with more than the specified number of Ns (ambiguous bases)
+# truncQ      = truncate reads at the first instance of a quality score less than or equal to truncQ
+# truncLen    = truncate reads after truncLen bases (applies to R1 reads when working with paired-end data)
+# truncLen_R2 = truncate R2 reads after truncLen bases
+# minLen      = remove reads with length less than minLen. minLen is enforced after all other trimming and truncation
+# maxLen      = remove reads with length greater than maxLen. maxLen is enforced on the raw reads
+# minQ        = after truncation, reads contain a quality score below minQ will be discarded
+# matchIDs    = If TRUE, then double-checking (with seqkit pair) that only paired reads that share ids are outputted
+                    #WORK WITH SEQKIT for matchIDs = TRUE, because sometimes DADA2 CANNOT automatically identify paired-end headers
 
 #Source for functions
 source /scripts/submodules/framework.functions.sh
@@ -51,7 +51,7 @@ first_file_check
 ### Prepare working env and check paired-end data
 prepare_PE_env
 ### Check file formatting for FASTQ 
-if [[ $extension == "fastq" ]] || [[ $extension == "fq" ]] || [[ $extension == "fastq.gz" ]] || [[ $extension == "fq.gz" ]]; then
+if [[ $fileFormat == "fastq" ]] || [[ $fileFormat == "fq" ]] || [[ $fileFormat == "fastq.gz" ]] || [[ $fileFormat == "fq.gz" ]]; then
     :
 else
     printf '%s\n' "ERROR]: $file formatting not supported here!
@@ -72,7 +72,6 @@ while read file; do
         :
     else
         printf '%s\n' "ERROR]: 'read R1/R2' identifiers are incorrectly specified.
-        Check also 'samp ID' setting.
         >Quitting" >&2
         end_process
     fi
@@ -93,17 +92,17 @@ if [[ $matchIDs == "true" ]] || [[ $matchIDs == "TRUE" ]]; then
         #Read in R1 and R2 file names; without extension
         samp_name=$(basename $LINE | awk -F\\${read_R1} '{print$1}')
         #If outputs are not empty, then synchronize R1 and R2
-        if [[ -s $output_dir/$samp_name\_R1.$extension ]]; then
-            if [[ -s $output_dir/$samp_name\_R2.$extension ]]; then
+        if [[ -s $output_dir/$samp_name\_R1.$fileFormat ]]; then
+            if [[ -s $output_dir/$samp_name\_R2.$fileFormat ]]; then
                 printf "\nSynchronizing $samp_name R1 and R2 reads\n"
                 cd $output_dir
-                checkerror=$(seqkit pair -1 $samp_name\_R1.$extension -2 $samp_name\_R2.$extension 2>&1)
+                checkerror=$(seqkit pair -1 $samp_name\_R1.$fileFormat -2 $samp_name\_R2.$fileFormat 2>&1)
                 check_app_error
 
-                rm $samp_name\_R1.$extension
-                rm $samp_name\_R2.$extension
-                mv $samp_name\_R1.paired.$extension $samp_name\_R1.$extension
-                mv $samp_name\_R2.paired.$extension $samp_name\_R2.$extension
+                rm $samp_name\_R1.$fileFormat
+                rm $samp_name\_R2.$fileFormat
+                mv $samp_name\_R1.paired.$fileFormat $samp_name\_R1.$fileFormat
+                mv $samp_name\_R2.paired.$fileFormat $samp_name\_R2.$fileFormat
                 cd ..
             fi
         else
@@ -122,12 +121,11 @@ if [[ $debugger != "true" ]]; then
     rm $output_dir/dada2_PE_filterAndTrim.log
 fi
 ### end pipe if no outputs were generated
-outfile_check=$(ls $output_dir/*.$extension 2>/dev/null | wc -l)
+outfile_check=$(ls $output_dir/*.$fileFormat 2>/dev/null | wc -l)
 if [[ $outfile_check != 0 ]]; then 
-    qFilt_compleated=$"TRUE"
-    export qFilt_compleated
+    :
 else 
-    printf '%s\n' "ERROR]: no output files generated after quality filtering ($output_dir). Adjust settings or check sample identifier 'samp ID' so that all sample names would be unique.
+    printf '%s\n' "ERROR]: no output files generated after quality filtering ($output_dir). Adjust settings or check sample identifier 'read_R1/R2' so that all sample names would be unique.
     >Quitting" >&2
     end_process
 fi
@@ -139,12 +137,12 @@ runtime=$((end-start))
 printf "# Quality filtering was performed using dada2 (see 'Core command' below for the used settings).
 
 Files in 'qualFiltered_out':
-    # *.$extension             = quality filtered sequences per sample.
+    # *.$fileFormat             = quality filtered sequences per sample.
     # seq_count_summary.csv    = summary of sequence counts per sample.
     # *.rds                    = R objects for dada2.
 
 Core command -> 
-filterAndTrim(inputR1, outputR1, inputR2, outputR2, maxN = $maxN, maxEE = c($maxEE, $maxEE), truncQ = $truncQ, truncLen= c($truncLen_R1, $truncLen_R2), maxLen = $maxLen, minLen = $minLen, minQ=$minQ, rm.phix = TRUE)
+filterAndTrim(inputR1, outputR1, inputR2, outputR2, maxN = $maxN, maxEE = c($maxEE, $maxEE), truncQ = $truncQ, truncLen = c($truncLen, $truncLen_R2), maxLen = $maxLen, minLen = $minLen, minQ=$minQ, rm.phix = TRUE)
 
 Total run time was $runtime sec.
 ##################################################################
@@ -164,6 +162,6 @@ printf "Total time: $runtime sec.\n "
 #variables for all services
 echo "#variables for all services: "
 echo "workingDir=$output_dir"
-echo "fileFormat=$extension"
+echo "fileFormat=$fileFormat"
 echo "readType=paired_end"
 
