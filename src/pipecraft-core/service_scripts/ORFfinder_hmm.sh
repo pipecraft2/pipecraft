@@ -1,6 +1,6 @@
 #!/bin/bash
 
-#Using ORFfinder to identify open reading frames.
+#Using ORFfinder to identify open reading frames + arthropod COI HMM based filtering
 # Input = fasta file.
 
 ##################################
@@ -31,6 +31,9 @@ source /scripts/submodules/framework.functions.sh
 ### Start of the workflow ###
 #############################
 start=$(date +%s)
+eval "$(conda shell.bash hook)"
+conda activate MetaWorks_v1.12.0
+
 # Check if rep_seqs is fasta
 extension=$(echo $rep_seqs | (awk 'BEGIN{FS=OFS="."} {print $NF}';))
 if [[ $extension == "fasta" ]] || [[ $extension == "fa" ]] || [[ $extension == "fas" ]]; then
@@ -44,6 +47,8 @@ fi
 
 ### Using ORFfinder to identify open reading frames
 echo "# Running ORFfinder | "
+    # -outfmt 0 = list of ORFs in FASTA format (aa)
+    # -outfmt 1 = CDS in FASTA format (nucl)
 checkerror=$(ORFfinder -in $rep_seqs_file \
     -ml $min_len \
     -g $genetic_code \
@@ -51,7 +56,7 @@ checkerror=$(ORFfinder -in $rep_seqs_file \
     -n $ignore_nested \
     -strand $strand \
     -outfmt 1 \
-    -out ORFfinder.temp 2>&1)
+    -out ORFs.nt.fasta 2>&1)
 check_app_error
 
 ### retain the longest ORF
@@ -66,13 +71,44 @@ check_app_error
 checkerror=$(seqkit seq --quiet --name $in_name.ORFs.fasta > $in_name.ORFs.list 2>&1)
 check_app_error
 
-
 #write putative pseudogenes to a file
 grep "^>" $in_name.ORFs.fasta | sed -e 's/>//' > headers.temp
 checkerror=$(seqkit grep --quiet -w 0 -v -f headers.temp $rep_seqs_file > $in_name.NUMTs.fasta 2>&1)
 check_app_error
 checkerror=$(seqkit seq --quiet -n $in_name.NUMTs.fasta > $in_name.NUMTs_names.txt 2>&1)
 check_app_error
+
+
+### HMM search
+if [[ $arthropod_hmm == "true" ]]; then
+    echo "# Running HMM scan | "
+    #  -ml $min_len removed here
+    checkerror=$(ORFfinder -in $rep_seqs_file \
+        -g $genetic_code \
+        -s $start_codon \
+        -n $ignore_nested \
+        -strand $strand \
+        -outfmt 0 \
+        -out ORFs.aa.fasta 2>&1)
+    check_app_error
+
+    #get filtered ORFs.aa.fasta
+    #perl perl_scripts/parse_orfs4.plx {input.nt} {input.aa} {output.nt2} {output.aa2}
+    #perl perl_scripts/parse_orfs4.plx ORFs.nt.fasta ORFs.aa.fasta ORFs.nt.fasta.filtered ORFs.aa.fasta.filtered
+    $in_name.ORFs.list
+    
+
+    #hmmscan
+    checkerror=$(hmmscan \
+                --tblout hmm.txt \
+                /MetaWorks1.12.0/bold.hmm \
+                ORFs.aa.fasta.filtered 2>&1)
+    check_app_error
+
+    #perl perl_scripts/filter_rdp.plx {input.hmmer} {input.orfs} {input.rdp} {config[marker]} >> {output}
+        #per script modified to print oout only list of "good" seq names (no input.rdp required)
+    perl perl perl_scripts/filter_rdp.plx hmm.txt ORFs.nt.fasta.filtered > hmm_ok.list 
+fi
 
 # count outputs
 input_seqs=$(grep -c "^>" $rep_seqs_file)

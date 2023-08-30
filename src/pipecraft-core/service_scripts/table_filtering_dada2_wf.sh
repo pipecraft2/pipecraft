@@ -38,6 +38,8 @@ printf "Filtering the ASV table ... \n"
 Rlog=$(Rscript /scripts/submodules/dada2_table_filtering_wf.R 2>&1)
 echo $Rlog > $output_dir/dada2_table_filtering.log 
 wait
+#format R-log file
+sed -i "s/;; /\n/g" $output_dir/dada2_table_filtering.log 
 
 # Count ASVs
 ASVs_collapsed=$(grep -c "^>" $output_dir/ASVs_collapsed.fasta)
@@ -66,6 +68,12 @@ if [[ -s $output_dir/ASVs_table_collapsed.txt ]]; then
     sed -i "1 s|^|ASV|" $output_dir/ASVs_table_collapsed.txt
 fi
 
+if [[ $debugger != "true" ]]; then
+    if [[ -d tempdir2 ]]; then
+        rm -rf tempdir2
+    fi
+    rm $output_dir/dada2_table_filtering.log
+fi
 
 #Make README.txt file
 end=$(date +%s)
@@ -73,37 +81,37 @@ runtime=$((end-start))
 if [[ $collapseNoMismatch == "true" ]]; then
     printf "# Filtering the of the dada2 ASV table.
 
-    Files in 'ASVs_out.dada2/filtered':
-    # ASVs_table_collapsed.txt = ASV table after collapsing identical ASVs. Contains $ASVs_collapsed ASVs
-    # ASVs_collapsed.fasta     = ASV sequences after collapsing identical ASVs. Contains $ASVs_collapsed ASVs
-    # ASV_table_collapsed.rds  = ASV table in RDS format after collapsing identical ASVs. 
+Files in 'ASVs_out.dada2/filtered':
+# ASVs_table_collapsed.txt = ASV table after collapsing identical ASVs. Contains $ASVs_collapsed ASVs
+# ASVs_collapsed.fasta     = ASV sequences after collapsing identical ASVs. Contains $ASVs_collapsed ASVs
+# ASV_table_collapsed.rds  = ASV table in RDS format after collapsing identical ASVs. 
 
-    # If length filtering was applied (if 'by length' setting > 0) [if collapseNoMismatch=true, then performed after collapsing identical ASVs]:
-    # ASV_table_lenFilt.txt = $ASVs_lenFilt_result_table
-    # ASVs_lenFilt.fasta    = $ASVs_lenFilt_result_fasta
+# If length filtering was applied (if 'by length' setting > 0) [if collapseNoMismatch=true, then performed after collapsing identical ASVs]:
+# ASV_table_lenFilt.txt = $ASVs_lenFilt_result_table
+# ASVs_lenFilt.fasta    = $ASVs_lenFilt_result_fasta
 
 
-    Total run time was $runtime sec.
-    ##################################################################
-    ###Third-party applications for this process [PLEASE CITE]:
-    #dada2 v1.28
-        #citation: Callahan, B., McMurdie, P., Rosen, M. et al. (2016) DADA2: High-resolution sample inference from Illumina amplicon data. Nat Methods 13, 581-583. https://doi.org/10.1038/nmeth.3869
-        #https://github.com/benjjneb/dada2
-    ########################################################" > $output_dir/README.txt
+Total run time was $runtime sec.
+##################################################################
+###Third-party applications for this process [PLEASE CITE]:
+#dada2 v1.28
+    #citation: Callahan, B., McMurdie, P., Rosen, M. et al. (2016) DADA2: High-resolution sample inference from Illumina amplicon data. Nat Methods 13, 581-583. https://doi.org/10.1038/nmeth.3869
+    #https://github.com/benjjneb/dada2
+########################################################" > $output_dir/README.txt
 else
     printf "# Filtering the of the dada2 ASV table.
 
-    Files in 'ASVs_out.dada2/filtered':
-    # ASV_table_lenFilt.txt = $ASVs_lenFilt_result_table
-    # ASVs_lenFilt.fasta    = $ASVs_lenFilt_result_fasta
+Files in 'ASVs_out.dada2/filtered':
+# ASV_table_lenFilt.txt = $ASVs_lenFilt_result_table
+# ASVs_lenFilt.fasta    = $ASVs_lenFilt_result_fasta
 
-    Total run time was $runtime sec.
-    ##################################################################
-    ###Third-party applications for this process [PLEASE CITE]:
-    #dada2 v1.28
-        #citation: Callahan, B., McMurdie, P., Rosen, M. et al. (2016) DADA2: High-resolution sample inference from Illumina amplicon data. Nat Methods 13, 581-583. https://doi.org/10.1038/nmeth.3869
-        #https://github.com/benjjneb/dada2
-    ########################################################" > $output_dir/README.txt
+Total run time was $runtime sec.
+##################################################################
+###Third-party applications for this process [PLEASE CITE]:
+#dada2 v1.28
+    #citation: Callahan, B., McMurdie, P., Rosen, M. et al. (2016) DADA2: High-resolution sample inference from Illumina amplicon data. Nat Methods 13, 581-583. https://doi.org/10.1038/nmeth.3869
+    #https://github.com/benjjneb/dada2
+########################################################" > $output_dir/README.txt
 fi
 
 #Done

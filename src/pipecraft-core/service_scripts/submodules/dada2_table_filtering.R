@@ -39,7 +39,7 @@ if (collapseNoMismatch == "true") {
     ###format and save ASV table and ASVs.fasta
     #sequence headers
     asv_seqs = colnames(ASV_tab_collapsed)
-    asv_size = colSums(ASV_tab_collapsed)
+    #asv_size = colSums(ASV_tab_collapsed)
     asv_headers = openssl::sha1(asv_seqs)
 
     #transpose sequence table
@@ -96,7 +96,7 @@ if (len_filt != 0) {
 
         #print ASV count
         print(paste0(";; < ", len_filt, " bp ASVs = ", short_ASV_count))
-        print(paste0(";; no. of ASVs in a length filtered table = ", dim(ASV_tab_lenFilt)[2]))
+        print(paste0(";; number of ASVs in a length filtered table = ", dim(ASV_tab_lenFilt)[2]))
         print("")
 
         #Proceed if NOT all ASVs were removed by length filtering
@@ -104,18 +104,16 @@ if (len_filt != 0) {
             ###format and save ASV table and ASVs.fasta
             #sequence headers with size
             asv_seqs = colnames(ASV_tab_lenFilt)
-            asv_size = colSums(ASV_tab_lenFilt)
-            asv_headers = vector(dim(ASV_tab_lenFilt)[2], mode="character")
-            for (i in 1:dim(ASV_tab_lenFilt)[2]) {
-                asv_headers[i] = paste(">ASV", i, ";size=", asv_size[i], sep="")
-            }
+            #asv_size = colSums(ASV_tab_lenFilt)
+            asv_headers = openssl::sha1(asv_seqs)
+
             #transpose sequence table
             tASV_tab_lenFilt = t(ASV_tab_lenFilt)
             #add sequences to 1st column
             tASV_tab_lenFilt = cbind(row.names(tASV_tab_lenFilt), tASV_tab_lenFilt)
             colnames(tASV_tab_lenFilt)[1] = "Sequence"
             #row names as sequence headers
-            row.names(tASV_tab_lenFilt) = sub(">", "", asv_headers)
+            row.names(tASV_tab_lenFilt) = asv_headers
 
             #write ASVs.fasta to path_out
             asv_fasta <- c(rbind(paste(">", asv_headers, sep=""), asv_seqs))
