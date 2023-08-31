@@ -33,6 +33,10 @@ async function createWindow() {
   });
   win.webContents.openDevTools();
   win.removeMenu();
+  win.webContents.on('new-window', function(e, url) {
+    e.preventDefault();
+    require('electron').shell.openExternal(url);
+  });
 
   if (process.env.WEBPACK_DEV_SERVER_URL) {
     // Load the url of the dev server if in development mode

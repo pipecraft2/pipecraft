@@ -565,7 +565,7 @@ export default {
         confJson = JSONfn.stringify(this.$store.state.selectedSteps);
       }
       fs.writeFileSync(
-        `${this.$store.state.inputDir}/pipecraft2_config.json`,
+        `${this.$store.state.inputDir}/pipecraft2_last_run_configuration.json`,
         confJson
       );
     },
@@ -588,6 +588,7 @@ export default {
       return dockerProps;
     },
     async runNextITS() {
+      this.autoSaveConfig();
       var writeLog = this.$store.state.data.debugger;
       this.confirmRun("NextITS").then(async (result) => {
         if (result.isConfirmed) {
