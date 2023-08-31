@@ -442,7 +442,11 @@ export default {
       inputs.forEach((input) => {
         let varObj = {};
         if (input.value != "undefined" && input.value != "") {
-          nextFlowParams[input.name] = input.value;
+          if (Array.isArray(input.value)) {
+            nextFlowParams[input.name] = input.value.join();
+          } else {
+            nextFlowParams[input.name] = input.value;
+          }
         }
         varObj[input.name] = input.value;
         envVariables.push(stringify(varObj).replace(/(\r\n|\n|\r)/gm, ""));

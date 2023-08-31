@@ -1,7 +1,7 @@
 #!/bin/bash
 
 #temp fix for [] removal in the /scripts/NextFlowConfig.json file 
-sed -i 's/\(\[\|\]\)//g' /scripts/NextFlowConfig.json
+#sed -i 's/\(\[\|\]\)//g' /scripts/NextFlowConfig.json
 
 ## Run Step-1 for all sequencing runs
 find /input/Input/ -type d -not -path /input/Input/ | sort \
