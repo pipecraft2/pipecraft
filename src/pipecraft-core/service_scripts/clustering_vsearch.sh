@@ -183,11 +183,11 @@ if [[ $remove_singletons == "true"  ]]; then
     sed -i 's/;sample=.*;/;/' $output_dir/OTUs.fasta
     # removing ";size=" because OTU table does not have "size" annotations; so the files would fit to LULU
     sed -i 's/;size=.*//' $output_dir/OTUs.fasta 
-    rm $output_dir/OTUs.temp.fasta
+    mv $output_dir/OTUs.temp.fasta tempdir/
 else
     sed -e 's/;sample=.*;/;/' $output_dir/OTUs.temp.fasta > $output_dir/OTUs.fasta
     sed -i 's/;size=.*//' $output_dir/OTUs.fasta
-    rm $output_dir/OTUs.temp.fasta
+    mv $output_dir/OTUs.temp.fasta tempdir/
 fi
 
 #################################################

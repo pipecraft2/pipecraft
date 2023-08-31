@@ -81,10 +81,15 @@ fi
 ### Start of the workflow ###
 #############################
 start=$(date +%s)
-first_file_check
-prepare_SE_env
-
-
+echo "output_dir = $output_dir"
+if [[ -d $output_dir ]]; then
+    rm -rf $output_dir
+fi
+mkdir $output_dir
+if [[ -d "tempdir" ]]; then
+    rm -rf tempdir
+fi
+mkdir -p tempdir
 
 ### Check the ASV table
 head -2 $ASV_table | awk 'NR>1{print $2}' | sed -e "s/^/>first_seq\n/" | seqkit seq --validate-seq -w 0
@@ -156,7 +161,7 @@ if [[ $remove_singletons == "TRUE"  ]]; then
     --output $output_dir/OTUs.fasta 2>&1)
     check_app_error
 
-    rm $output_dir/OTUs.temp.fasta
+    mv $output_dir/OTUs.temp.fasta tempdir/
 else
     checkerror=$(vsearch \
     --sortbysize $output_dir/OTUs.temp.fasta \
@@ -165,7 +170,7 @@ else
     --output $output_dir/OTUs.fasta 2>&1)
     check_app_error
 
-    rm $output_dir/OTUs.temp.fasta
+    mv $output_dir/OTUs.temp.fasta tempdir/
 fi
 
 

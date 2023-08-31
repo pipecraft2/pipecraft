@@ -1,21 +1,20 @@
 #!/bin/bash
 
 #Using UNCROSS2 to filter out putative tag-jumps.
-# Input = OTU_table
+# Input = OTU_table; TAB-DELIMITED OTU/ASV table, 
+                # where the 1st column is the OTU/ASV IDs and the following columns represent samples; 
+                # 2nd column may be Sequence column, with the colName 'Sequence'
 
-##################################
-###Third-party applications:
-#R data.table, ggplot2
-##################################
+##############################
+### Third-party applications:
+# R data.table, ggplot2
+##############################
 
 # $OTU_table = input OTU_table
 regex='[^/]*$'
 OTU_table_file_path=$(echo $OTU_table | grep -oP "$regex")
-OTU_table_temp=$(basename $OTU_table_file_path) #basename, needed for macOS
+OTU_table_temp=$(basename $OTU_table_file_path)
 OTU_table_file=$(printf "/extraFiles/$OTU_table_temp")
-
-# f_value = 
-# p_value = 
 
 #output dir
 output_dir=$"/input/"
@@ -47,15 +46,15 @@ runtime=$((end-start))
 #Make README.txt file for demultiplexed reads
 in=$(echo $OTU_table_file | sed -e 's/\/extraFiles\///')
 
-printf "# Used UNCROSS2 algorithm with f-parameter = $f_value and p-parameter = $p_value
-    f-parameter defines the expected cross-talk rate. Default is 0.01 (equivalent to 1%). A higher value enforces stricter filtering.
+printf "# Used UNCROSS2 algorithm with f-parameter = $f_value and p-parameter = $p_value 
+    f-parameter defines the expected cross-talk rate. Default is 0.01 (equivalent to 1%%). A higher value enforces stricter filtering.
     p-parameter controls the severity of tag-jump removal. It adjusts the exponent in the UNCROSS formula. Default is 1. Opt for e.g. 0.5 or 0.3 to steepen the curve.
 
 Input feature (OTU/ASV) table = $in.
 
 Generated files:
 # TagJumpFiltered_FeatureTable = output table where tag-jupms have been filtered out
-# TagJump_plot.pdf             = 
+# TagJump_plot.pdf             = illustration about the presence of tag-jumps based on the selected parameters
 # TagJump_stats.txt            = statistics about 
                                 Total_reads             : number of reads in the input table 
                                 Number_of_TagJump_Events: number of cases where tag-jumps were detected

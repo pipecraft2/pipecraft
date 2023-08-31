@@ -18,15 +18,15 @@ extension=${fileFormat}
 dataFormat=${dataFormat}
 workingDir=${workingDir}
 
-#load variables
-read_R1=${read_R1}
-read_R2=${read_R2}
-minOverlap=${minOverlap}
-maxMismatch=${maxMismatch}
-trimOverhang=${trimOverhang}
-justConcatenate=${justConcatenate}
-pool=${pool}
-qualityType=${qualityType}
+### variables
+# read_R1         = identifyer string that is common for all R1 reads.
+# read_R2         = identifyer string that is common for all R2 reads.
+# minOverlap      = the minimum length of the overlap required for merging the forward and reverse reads
+# maxMismatch     = the maximum mismatches allowed in the overlap region
+# trimOverhang    = if TRUE, overhangs in the alignment between the forwards and reverse read are trimmed off
+# justConcatenate = if TRUE, the forward and reverse-complemented reverse read are concatenated rather than merged, with a NNNNNNNNNN (10 Ns) spacer inserted between them
+# pool            = [true/false/pseudo] if pool = TRUE, the algorithm will pool together all samples prior to sample inference. If pool = 'pseudo', the algorithm will perform pseudo-pooling between individually processed samples.
+# qualityType     = [Auto/FastqQuality] Auto means to attempt to auto-detect the fastq quality encoding. This may fail for PacBio files with uniformly high quality scores, in which case use 'FastqQuality'
 
 errorEstFun=${errorEstFun}
 band_size=${BAND_SIZE}
@@ -78,7 +78,6 @@ while read file; do
         :
     else
         printf '%s\n' "ERROR]: 'read R1/R2' identifiers are incorrectly specified.
-        Check also 'samp ID' setting.
         >Quitting" >&2
         end_process
     fi

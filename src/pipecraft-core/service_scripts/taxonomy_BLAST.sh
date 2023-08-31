@@ -154,6 +154,9 @@ if [[ $debugger != "true" ]]; then
 	if [[ -d tempdir ]];then
 		rm -r tempdir
 	fi
+	if [[ -d tempdir2 ]];then
+		rm -r tempdir2
+	fi
 fi
 
 end=$(date +%s)
