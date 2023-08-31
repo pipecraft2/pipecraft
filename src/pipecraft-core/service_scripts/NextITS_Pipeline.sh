@@ -1,6 +1,6 @@
 #!/bin/bash
 
-#temp fix for [] removal in the /scripts/NextFlowConfig.json file 
+#temp fix for [] removal in the /scripts/NextFlowConfig.json file  -  DONE IN JAVA
 #sed -i 's/\(\[\|\]\)//g' /scripts/NextFlowConfig.json
 
 ## Run Step-1 for all sequencing runs
