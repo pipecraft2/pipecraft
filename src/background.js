@@ -31,7 +31,7 @@ async function createWindow() {
       enableRemoteModule: true,
     },
   });
-  win.webContents.openDevTools();
+  // win.webContents.openDevTools();
   win.removeMenu();
   win.webContents.on('new-window', function(e, url) {
     e.preventDefault();
