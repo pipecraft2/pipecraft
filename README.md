@@ -1,8 +1,8 @@
-<a href="url"><img src="https://user-images.githubusercontent.com/18046232/145723441-51c3cbd0-7caf-485c-92d3-dbe253f6a73f.png" align="center" height="210" width="210" ></a>
+# PipeCraft2 <img src='src/assets/PipeCraft2_logo.png' align="right" height="180" />
 
-## Release 0.1.4
+## Release 1.0.0
 
-Download: https://github.com/pipecraft2/pipecraft/releases/tag/v0.1.4
+Download: https://github.com/pipecraft2/pipecraft/releases/tag/v1.0.0
 
 ---
 
