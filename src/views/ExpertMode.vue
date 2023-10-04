@@ -191,7 +191,7 @@
 </template>
 
 <script>
-const pty = require("@electron/remote").require("node-pty");
+const pty = require("@electron/remote").require("node-pty-prebuilt-multiarch");
 const { clipboard } = require("electron");
 import os from "os";
 import "xterm/css/xterm.css";

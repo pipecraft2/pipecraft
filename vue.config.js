@@ -3,7 +3,11 @@ module.exports = {
   pluginOptions: {
     electronBuilder: {
       nodeIntegration: true,
-      externals: ["node-pty"],
+      externals: [
+        "dockerode",
+        "osx-temperature-sensor",
+        "node-pty-prebuilt-multiarch",
+      ],
       builderOptions: {
         publish: ["github"],
         win: {
@@ -13,7 +17,7 @@ module.exports = {
           target: "deb",
           icon: "build/icon.icns",
         },
-        mac: { target: "pkg", icon: "build/icon.icns" },
+        mac: { target: "dmg", icon: "build/icon.icns" },
         appx: {
           applicationId: "pipecraft",
         },

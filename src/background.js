@@ -31,11 +31,11 @@ async function createWindow() {
       enableRemoteModule: true,
     },
   });
-  // win.webContents.openDevTools();
+  win.webContents.openDevTools();
   win.removeMenu();
-  win.webContents.on('new-window', function(e, url) {
+  win.webContents.on("new-window", function (e, url) {
     e.preventDefault();
-    require('electron').shell.openExternal(url);
+    require("electron").shell.openExternal(url);
   });
 
   if (process.env.WEBPACK_DEV_SERVER_URL) {
