@@ -17,7 +17,7 @@ module.exports = {
           target: "deb",
           icon: "build/icon.icns",
         },
-        mac: { target: "dmg", icon: "build/icon.icns" },
+        mac: { target: "default", icon: "build/icon.icns" },
         appx: {
           applicationId: "pipecraft",
         },
