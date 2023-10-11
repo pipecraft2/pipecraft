@@ -3,11 +3,7 @@ module.exports = {
   pluginOptions: {
     electronBuilder: {
       nodeIntegration: true,
-      externals: [
-        "dockerode",
-        "osx-temperature-sensor",
-        "node-pty-prebuilt-multiarch",
-      ],
+      externals: ["dockerode", "node-pty-prebuilt-multiarch"],
       builderOptions: {
         publish: ["github"],
         win: {
