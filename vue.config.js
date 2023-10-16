@@ -10,8 +10,8 @@ module.exports = {
           icon: "build/icon.ico",
         },
         linux: {
-          target: "deb",
-          icon: "build/icon.icns",
+          target: "AppImage",
+          icon: "build/icon.png",
         },
         mac: { target: "default", icon: "build/icon.icns" },
         appx: {

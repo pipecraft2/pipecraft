@@ -23,6 +23,7 @@ async function createWindow() {
     width: 1200,
     height: 700,
     minWidth: 1200,
+    icon: `${process.resourcesPath}/src/pipecraft-core/icon32x32.png`,
     webPreferences: {
       // Use pluginOptions.nodeIntegration, leave this alone
       // See nklayman.github.io/vue-cli-plugin-electron-builder/guide/security.html#node-integration for more info
