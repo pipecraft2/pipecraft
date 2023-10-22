@@ -1,16 +1,64 @@
 "use strict";
 
-import { app, protocol, BrowserWindow } from "electron";
-import { createProtocol } from "vue-cli-plugin-electron-builder/lib";
-import installExtension, { VUEJS_DEVTOOLS } from "electron-devtools-installer";
 const isDevelopment = process.env.NODE_ENV !== "production";
 const log = require("electron-log");
+import { app, protocol, BrowserWindow, dialog, ipcMain } from "electron";
+import { createProtocol } from "vue-cli-plugin-electron-builder/lib";
+import installExtension, { VUEJS_DEVTOOLS } from "electron-devtools-installer";
 import * as remoteMain from "@electron/remote/main";
 import { autoUpdater } from "electron-updater";
 remoteMain.initialize();
-autoUpdater.logger = log;
+autoUpdater.logger = require("electron-log");
 autoUpdater.logger.transports.file.level = "info";
+autoUpdater.autoDownload = false;
+
+function update() {
+  autoUpdater.checkForUpdates();
+}
+
 log.info("App starting...");
+
+autoUpdater.on("checking-for-update", () => {
+  return log.info("Checking for update...");
+});
+autoUpdater.on("update-available", () => {
+  dialog
+    .showMessageBox({
+      type: "info",
+      title: "Found Updates",
+      message: "Found updates, do you want update now?",
+      buttons: ["Sure", "No"],
+    })
+    .then((button) => {
+      console.log(button);
+      if (button.response === 0) {
+        console.log(button);
+        autoUpdater.downloadUpdate();
+      }
+    });
+  return log.info("Update available.");
+});
+autoUpdater.on("update-not-available", () => {
+  return log.info("Update not available.");
+});
+autoUpdater.on("error", (err) => {
+  return log.info("Error in auto-updater. " + err);
+});
+autoUpdater.on("download-progress", (progressObj) => {
+  console.log(progressObj);
+  return log.info("downloading update");
+});
+autoUpdater.on("update-downloaded", () => {
+  log.info("Update downloaded");
+  dialog
+    .showMessageBox({
+      title: "Install Updates",
+      message: "Updates downloaded, application will be quit for update...",
+    })
+    .then(() => {
+      setImmediate(() => autoUpdater.quitAndInstall());
+    });
+});
 
 // Scheme must be registered before the app is ready
 protocol.registerSchemesAsPrivileged([
@@ -47,7 +95,6 @@ async function createWindow() {
     createProtocol("app");
     // Load the index.html when not in development
     win.loadURL("app://./index.html");
-    autoUpdater.checkForUpdates();
   }
 }
 
@@ -70,7 +117,6 @@ app.on("activate", () => {
 // initialization and is ready to create browser windows.
 // Some APIs can only be used after this event occurs.
 app.on("ready", async () => {
-  autoUpdater.checkForUpdatesAndNotify();
   if (isDevelopment && !process.env.IS_TEST) {
     // Install Vue Devtools
     try {
@@ -80,6 +126,11 @@ app.on("ready", async () => {
     }
   }
   createWindow();
+});
+
+ipcMain.on("update", () => {
+  update();
+  console.log("updating");
 });
 
 // Exit cleanly on request from parent process in development mode.

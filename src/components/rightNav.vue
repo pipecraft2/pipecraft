@@ -105,7 +105,7 @@
 
 <script>
 import os from "os";
-const { shell } = require("electron");
+const { shell, ipcRenderer } = require("electron");
 const { dialog } = require("@electron/remote");
 const slash = require("slash");
 const fs = require("fs");
@@ -153,6 +153,12 @@ export default {
             "Green = debugging mode ON; PipeCraft will retain all temporary files",
           action: this.debug,
         },
+        {
+          title: "update",
+          icon: "mdi-update",
+          tooltip: "Check for updates",
+          action: this.update,
+        },
       ],
     };
   },
@@ -174,6 +180,10 @@ export default {
     }, 1000);
   },
   methods: {
+    update(e) {
+      console.log(e);
+      ipcRenderer.send("update");
+    },
     openLink(value) {
       shell.openExternal(value);
     },
