@@ -36,6 +36,7 @@ autoUpdater.on("update-available", () => {
         autoUpdater.downloadUpdate();
       }
     });
+  mainWindow.webContents.send('update_available');
   return log.info("Update available.");
 });
 autoUpdater.on("update-not-available", () => {
