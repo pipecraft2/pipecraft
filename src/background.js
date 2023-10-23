@@ -20,7 +20,6 @@ function update() {
 log.info("App starting...");
 
 autoUpdater.on("checking-for-update", () => {
-  win.webContents.send("checking-for-update");
   return log.info("Checking for update...");
 });
 autoUpdater.on("update-available", () => {
@@ -44,6 +43,12 @@ autoUpdater.on("update-not-available", () => {
   return log.info("Update not available.");
 });
 autoUpdater.on("error", (err) => {
+  dialog.showMessageBox({
+    type: "error",
+    title: "Something went wrong",
+    message: `${err}`,
+  });
+  win.webContents.send("update-error", err);
   return log.info("Error in auto-updater. " + err);
 });
 autoUpdater.on("download-progress", (progressObj) => {
@@ -51,11 +56,12 @@ autoUpdater.on("download-progress", (progressObj) => {
   return log.info("downloading update");
 });
 autoUpdater.on("update-downloaded", () => {
+  win.webContents.send("update-downloaded");
   log.info("Update downloaded");
   dialog
     .showMessageBox({
       title: "Install Updates",
-      message: "Updates downloaded, application will be quit for update...",
+      message: "Updates downloaded, Pipecraft will restart to install updates.",
     })
     .then(() => {
       setImmediate(() => autoUpdater.quitAndInstall());

@@ -180,7 +180,11 @@ export default {
     };
   },
   mounted() {
-    ipcRenderer.on("update-error", () => {
+    ipcRenderer.on("update-downloaded", () => {
+      this.updating = false;
+    });
+    ipcRenderer.on("update-error", (err) => {
+      console.log(err);
       this.updating = false;
     });
   },
