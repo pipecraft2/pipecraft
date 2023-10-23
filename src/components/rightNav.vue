@@ -86,7 +86,23 @@
       <v-tooltip left nudge-left="10">
         <template v-slot:activator="{ on }">
           <v-list-item-content v-on="on" @click="item.action">
+            <v-progress-circular
+              v-if="item.title == 'update' && updating == true"
+              indeterminate
+              color="#1DE9B6"
+              size="32"
+              ><v-icon
+                :style="
+                  `/${item.title}` == $route.path ||
+                  (item.title == 'Debug' && $store.state.data.debugger == true)
+                    ? { color: '#1DE9B6' }
+                    : { color: 'white' }
+                "
+                >{{ item.icon }}</v-icon
+              ></v-progress-circular
+            >
             <v-icon
+              v-else
               :style="
                 `/${item.title}` == $route.path ||
                 (item.title == 'Debug' && $store.state.data.debugger == true)
@@ -119,6 +135,7 @@ export default {
   name: "rightNav",
   data() {
     return {
+      updating: false,
       nrOfSelectedSteps: (state) => state.selectedSteps.length + 1,
       dockerActive: "pending",
       items: [
@@ -162,6 +179,11 @@ export default {
       ],
     };
   },
+  mounted() {
+    ipcRenderer.on("update-error", () => {
+      this.updating = false;
+    });
+  },
   created() {
     var self = this;
     setInterval(async function () {
@@ -180,8 +202,8 @@ export default {
     }, 1000);
   },
   methods: {
-    update(e) {
-      console.log(e);
+    update() {
+      this.updating = true;
       ipcRenderer.send("update");
     },
     openLink(value) {

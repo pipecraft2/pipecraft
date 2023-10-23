@@ -11,6 +11,7 @@ remoteMain.initialize();
 autoUpdater.logger = require("electron-log");
 autoUpdater.logger.transports.file.level = "info";
 autoUpdater.autoDownload = false;
+var win;
 
 function update() {
   autoUpdater.checkForUpdates();
@@ -19,15 +20,16 @@ function update() {
 log.info("App starting...");
 
 autoUpdater.on("checking-for-update", () => {
+  win.webContents.send("checking-for-update");
   return log.info("Checking for update...");
 });
 autoUpdater.on("update-available", () => {
   dialog
     .showMessageBox({
-      type: "info",
+      type: "question",
       title: "Found Updates",
-      message: "Found updates, do you want update now?",
-      buttons: ["Sure", "No"],
+      message: "A newer version of pipecraft is available",
+      buttons: ["Update now", "Cancel"],
     })
     .then((button) => {
       console.log(button);
@@ -36,7 +38,6 @@ autoUpdater.on("update-available", () => {
         autoUpdater.downloadUpdate();
       }
     });
-  mainWindow.webContents.send('update_available');
   return log.info("Update available.");
 });
 autoUpdater.on("update-not-available", () => {
@@ -68,7 +69,7 @@ protocol.registerSchemesAsPrivileged([
 
 async function createWindow() {
   // Create the browser window.
-  const win = new BrowserWindow({
+  win = new BrowserWindow({
     width: 1200,
     height: 700,
     minWidth: 1200,
