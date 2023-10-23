@@ -40,6 +40,13 @@ autoUpdater.on("update-available", () => {
   return log.info("Update available.");
 });
 autoUpdater.on("update-not-available", () => {
+  dialog.showMessageBox({
+    type: "question",
+    title: "No updates found",
+    message: "Pipecraft is up to date",
+    buttons: ["Ok"],
+  });
+  win.webContents.send("update-not-available", err);
   return log.info("Update not available.");
 });
 autoUpdater.on("error", (err) => {

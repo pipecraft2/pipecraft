@@ -187,6 +187,10 @@ export default {
       console.log(err);
       this.updating = false;
     });
+    ipcRenderer.on("update-not-available", (err) => {
+      console.log(err);
+      this.updating = false;
+    });
   },
   created() {
     var self = this;
