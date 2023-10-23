@@ -183,11 +183,10 @@ export default {
     ipcRenderer.on("update-downloaded", () => {
       this.updating = false;
     });
-    ipcRenderer.on("update-error", (err) => {
-      console.log(err);
+    ipcRenderer.on("update-not-available", () => {
       this.updating = false;
     });
-    ipcRenderer.on("update-not-available", (err) => {
+    ipcRenderer.on("update-error", (err) => {
       console.log(err);
       this.updating = false;
     });

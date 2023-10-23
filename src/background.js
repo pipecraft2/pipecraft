@@ -46,10 +46,11 @@ autoUpdater.on("update-not-available", () => {
     message: "Pipecraft is up to date",
     buttons: ["Ok"],
   });
-  win.webContents.send("update-not-available", err);
+  win.webContents.send("update-not-available");
   return log.info("Update not available.");
 });
 autoUpdater.on("error", (err) => {
+  console.log(err);
   dialog.showMessageBox({
     type: "error",
     title: "Something went wrong",
