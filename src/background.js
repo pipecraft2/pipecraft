@@ -12,6 +12,9 @@ autoUpdater.logger = require("electron-log");
 autoUpdater.logger.transports.file.level = "info";
 autoUpdater.autoDownload = false;
 var win;
+const createDesktopShortcut = require('create-desktop-shortcuts');
+const fs = require("fs");
+
 
 function update() {
   autoUpdater.checkForUpdates();
@@ -142,6 +145,26 @@ app.on("ready", async () => {
     }
   }
   createWindow();
+  if (process.env.APPIMAGE.includes('AppImage')) {
+    fs.copyFile(`${process.resourcesPath}/src/pipecraft-core/icon32x32.png`, "/var/tmp/icon32x32.png", (err) => {
+      if (err) {
+        console.log("Error Found:", err);
+      }
+    });
+    createDesktopShortcut({
+      onlyCurrentOS: true,
+      verbose: true,
+      linux: {
+        filePath: `${process.env.APPIMAGE}`,
+        name: 'Pipecraft',
+        description: 'My app description',
+        icon: `/var/tmp/icon32x32.png`,
+        type: 'Application',
+        terminal: false,
+        chmod: true,
+      },
+    })
+  }
 });
 
 ipcMain.on("update", () => {
