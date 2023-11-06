@@ -18,3 +18,4 @@ RUN apt-get update -y \
     && python3 get-pip.py \
     && python3 -m pip install cutadapt==4.4 \
     && apt-get remove wget -y curl -y
+#ADD src/pipecraft-core/service_scripts/submodules /bin/submodules

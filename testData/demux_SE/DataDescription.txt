@@ -1,0 +1,25 @@
+SE.fastq
+========
+Single-end data. Contains artificial 164 bp sequences.
+Sequence headers denote in which sample the seq should be demultiplexed in.
+
+@seq1_fc_samp1:
+seq1  = just a seq name
+fc    = forward orient sequence
+samp1 = sequence belongs to sample 1
+-----------------------------------------------------------------------
+
+indexFile_paired.fasta
+======================
+index file used for demultiplexing.
+dual index strategy
+
+indexFile_single.fasta
+======================
+index file used for demultiplexing.
+single index strategy
+
+primers.txt
+===========
+artificial "primer" strings after the indexes,
+may be used for testing reorienting or cutting primers.
