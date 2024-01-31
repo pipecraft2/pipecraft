@@ -20,7 +20,6 @@ trimOverhang = Sys.getenv('trimOverhang')
 justConcatenate = Sys.getenv('justConcatenate')
 pool = Sys.getenv('pool')
 qualityType = Sys.getenv('qualityType')
-errorEstFun = Sys.getenv('errorEstFun')
 band_size = as.numeric(Sys.getenv('BAND_SIZE'))
 #setDadaOpt() settings
 omegaa = as.numeric(Sys.getenv('OMEGA_A'))
@@ -28,7 +27,6 @@ omegap = as.numeric(Sys.getenv('OMEGA_P'))
 omegac= as.numeric(Sys.getenv('OMEGA_C'))
 detect_singletons = Sys.getenv('DETECT_SINGLETONS')
 band_size = as.numeric(Sys.getenv('BAND_SIZE'))
-
 
 
 #"FALSE" or "TRUE" to FALSE or TRUE for dada2
@@ -59,7 +57,6 @@ if (detect_singletons == "true" || detect_singletons == "TRUE"){
 
 #Set DADA options
 setDadaOpt(OMEGA_A = omegaa, OMEGA_P = omegap, OMEGA_C = omegac, DETECT_SINGLETONS = detect_singletons, BAND_SIZE = band_size)
-cat(";; errorEstimationFunction = ", errorEstFun, "\n")
 cat(";; BAND_SIZE = ", band_size, "\n")  
 
 #output path
@@ -74,8 +71,8 @@ cat(";; sample names = ", sample_names, "\n")
 
 #Learn the error rates
 cat(";; Performing DADA2 denoising ;; ")
-errF = learnErrors(fnFs, errorEstimationFunction = errorEstFun, multithread = TRUE)
-errR = learnErrors(fnRs, errorEstimationFunction = errorEstFun, multithread = TRUE)
+errF = learnErrors(fnFs, multithread = TRUE)
+errR = learnErrors(fnRs, multithread = TRUE)
 
 #Error rate figures
 pdf(file.path(path_results, "Error_rates_R1.pdf"))

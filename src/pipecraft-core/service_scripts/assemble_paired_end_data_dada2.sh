@@ -11,7 +11,7 @@
     #Distributed under the GNU LESSER GENERAL PUBLIC LICENSE
     #https://github.com/benjjneb/dada2
 ##########################################################
-
+set -e 
 #load env variables
 readType=${readType}
 extension=${fileFormat}
@@ -28,7 +28,6 @@ workingDir=${workingDir}
 # pool            = [true/false/pseudo] if pool = TRUE, the algorithm will pool together all samples prior to sample inference. If pool = 'pseudo', the algorithm will perform pseudo-pooling between individually processed samples.
 # qualityType     = [Auto/FastqQuality] Auto means to attempt to auto-detect the fastq quality encoding. This may fail for PacBio files with uniformly high quality scores, in which case use 'FastqQuality'
 
-errorEstFun=${errorEstFun}
 band_size=${BAND_SIZE}
 omegaa=${OMEGA_A}
 omegap=${OMEGA_P}
@@ -43,7 +42,7 @@ output_dir=$"/input/denoised_assembled.dada2"
 ### Check that at least 2 samples are provided
 files=$(ls $workingDir | grep -c "$extension")
 if [[ $files < 4 ]]; then
-    printf '%s\n' "ERROR]: please provide at least 2 samples for the ASVs workflow
+    printf '%s\n' "ERROR]: please provide at least 2 samples for denoising
 >Quitting" >&2
     end_process
 fi
@@ -140,8 +139,8 @@ Files in 'denoised_assembled.dada2':
 
 Core commands -> 
 setDadaOpt(OMEGA_A = $omegaa, OMEGA_P = $omegap, OMEGA_C = $omegac, DETECT_SINGLETONS = $detect_singletons, BAND_SIZE = $band_size)
-learn errors: errF = learnErrors(fnFs, errorEstimationFunction = $errorEstFun)
-              errR = learnErrors(fnRs, errorEstimationFunction = $errorEstFun)
+learn errors: errF = learnErrors(fnFs, errorEstimationFunction = loessErrfun)
+              errR = learnErrors(fnRs, errorEstimationFunction = loessErrfun)
 dereplicate:  derepFs = derepFastq(fnFs, qualityType = $qualityType)
               derepRs = derepFastq(fnRs, qualityType = $qualityType)
 denoise:      dadaFs = dada(derepFs, err = errF, pool = $pool)

@@ -838,7 +838,7 @@ export default new Vuex.Store({
           },
           {
             tooltip:
-              "assemble paired-end reads with DADA2 'mergePairs' function. This step performs also dada denoising! Note that only FASTA is outputted!",
+              "denoise and assemble paired-end reads with DADA2 'mergePairs' and 'dada' functions. Note that only FASTA is outputted!",
             scriptName: "assemble_paired_end_data_dada2.sh",
             imageName: "pipecraft/vsearch_dada2:2",
             serviceName: "DADA2_denoise_and_merge",
@@ -880,15 +880,6 @@ export default new Vuex.Store({
                   "default = 16. Banding for Needleman-Wunsch alignments. Default sets here = 16 for Illumina and 32 for PacBio",
                 type: "numeric",
                 rules: [(v) => v >= -1 || "ERROR: specify values >= -1"],
-              },
-              {
-                name: "errorEstFun",
-                items: ["PacBioErrfun", "loessErrfun"],
-                value: "loessErrfun",
-                disabled: "never",
-                tooltip:
-                  "DADA2 errorEstimationFunction. 'loessErrfun' for Illumina data; 'PacBioErrfun' for PacBio data",
-                type: "select",
               },
               {
                 name: "OMEGA_A",
