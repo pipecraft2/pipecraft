@@ -2077,7 +2077,8 @@ export default new Vuex.Store({
                 items: ["plus", "minus", "both"],
                 value: "both",
                 disabled: "never",
-                tooltip: "output open reading frames (ORFs) on specified strand only",
+                tooltip:
+                  "output open reading frames (ORFs) on specified strand only",
                 type: "select",
               },
             ],
@@ -4961,11 +4962,13 @@ export default new Vuex.Store({
         state.data.readType = "single_end";
         state.DADA2_ASVs[3].selected = false;
         state.DADA2_ASVs[2].Inputs[0].value = "PacBioErrfun";
+        state.DADA2_ASVs[2].extraInputs[0].value = 32;
         state.DADA2_ASVs[2].Inputs[2].value = "FastqQuality";
       } else {
         state.DADA2_ASVs[3].selected = "always";
         state.DADA2_ASVs[2].Inputs[0].value = "loessErrfun";
         state.DADA2_ASVs[2].Inputs[2].value = "Auto";
+        state.DADA2_ASVs[2].extraInputs[0].value = 16;
       }
       if (payload == "MIXED") {
         state.DADA2_ASVs[0].selected = "always";

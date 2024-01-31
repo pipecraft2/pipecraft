@@ -41,7 +41,10 @@
       <v-card-actions v-if="$route.params.workflowName.includes('DADA2')">
         <v-tabs :value="$store.getters.dada2modeIndex">
           <v-tab
-            :disabled="$store.state.data.readType == 'single_end'"
+            :disabled="
+              $store.state.data.readType == 'single_end' &&
+              $store.state.inputDir != ''
+            "
             @click="
               $store.commit(
                 'setDADAmode',
@@ -51,7 +54,10 @@
             >FORWARD</v-tab
           >
           <v-tab
-            :disabled="$store.state.data.readType == 'single_end'"
+            :disabled="
+              $store.state.data.readType == 'single_end' &&
+              $store.state.inputDir != ''
+            "
             @click="
               $store.commit(
                 'setDADAmode',

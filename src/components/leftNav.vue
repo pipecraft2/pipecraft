@@ -122,7 +122,6 @@
 
 <script>
 // var path = require("path");
-const si = require("systeminformation");
 const Swal = require("sweetalert2");
 const slash = require("slash");
 const { dialog } = require("@electron/remote");
@@ -172,9 +171,6 @@ export default {
       this.$store.commit("resetRunInfo");
     },
     folderSelect() {
-      si.cpu()
-        .then((data) => console.log(data))
-        .catch((error) => console.error(error));
       Swal.mixin({
         input: "select",
         confirmButtonText: "Next &rarr;",

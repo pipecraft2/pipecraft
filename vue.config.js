@@ -3,17 +3,17 @@ module.exports = {
   pluginOptions: {
     electronBuilder: {
       nodeIntegration: true,
-      externals: ["node-pty"],
+      externals: ["dockerode", "node-pty-prebuilt-multiarch"],
       builderOptions: {
         publish: ["github"],
         win: {
           icon: "build/icon.ico",
         },
         linux: {
-          target: "deb",
-          icon: "build/icon.icns",
+          target: "AppImage",
+          icon: "build/icon.png",
         },
-        mac: { target: "pkg", icon: "build/icon.icns" },
+        mac: { target: "default", icon: "build/icon.icns" },
         appx: {
           applicationId: "pipecraft",
         },
