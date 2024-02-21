@@ -91,13 +91,16 @@ learn errors: errF = learnErrors(fnFs, errorEstimationFunction = $errorEstFun)
 dereplicate:  derepFs = derepFastq(fnFs, qualityType = $qualityType)
               derepRs = derepFastq(fnRs, qualityType = $qualityType)
 denoise:      dadaFs = dada(derepFs, err = errF, pool = $pool)
-              dadaRs = dada(derepRs, err = errR, pool = $pool)" > $output_dir/README.txt
+              dadaRs = dada(derepRs, err = errR, pool = $pool)
+              
+    Total run time was $runtime sec for denoising.
+    " > $output_dir/README.txt
 fi
 if [[ -z $omegaa ]]; then
     printf "
 assemble:     mergePairs(dadaFs, derepFs, dadaRs, derepRs, maxMismatch = $maxMismatch, minOverlap = $minOverlap, justConcatenate = $justConcatenate, trimOverhang = $trimOverhang)
 
-Total run time was $runtime sec.
+Total run time was $runtime sec for merging pairs.
 ##################################################################
 ###Third-party applications for this process [PLEASE CITE]:
 #dada2 v1.28

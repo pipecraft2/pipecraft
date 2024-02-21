@@ -187,7 +187,7 @@ fi
 #count merged units and curated units
 curated_units=$(grep -c "^>" $output_dir/lulu_out_RepSeqs.fasta)
 merged_units=$(wc -l $output_dir/discarded_units.lulu | awk '{print $1}')
-if [[ $merged_units == 0 ]]; then
+if (( $merged_units == 0 )); then
     info=$"No output table generated; OTU/ASV counts remained the same with the selected settings."
     rm $output_dir/discarded_units.lulu
     rm $output_dir/lulu_out_RepSeqs.fasta

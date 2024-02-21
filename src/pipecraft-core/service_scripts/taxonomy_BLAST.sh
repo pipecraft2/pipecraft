@@ -64,7 +64,7 @@ d1=$(echo $db1 | awk 'BEGIN{FS=OFS="."}{print $NF}') #get the extension
 #make blast database if db is not formatted for BLAST
 db_dir=$(dirname $db1)
 check_db_presence=$(ls -1 $db_dir/*.nhr 2>/dev/null | wc -l)
-if [[ $check_db_presence != 0 ]]; then
+if (( $check_db_presence != 0 )); then
 	if [[ $d1 == "fasta" ]] || [[ $d1 == "fa" ]] || [[ $d1 == "fas" ]] || [[ $d1 == "fna" ]] || [[ $d1 == "ffn" ]]; then
 		database=$"-db $db1"
 	elif [[ $d1 == "ndb" ]] || [[ $d1 == "nhr" ]] || [[ $d1 == "nin" ]] || [[ $d1 == "not" ]] || [[ $d1 == "nsq" ]] || [[ $d1 == "ntf" ]] || [[ $d1 == "nto" ]]; then

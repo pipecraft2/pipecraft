@@ -41,7 +41,7 @@ output_dir=$"/input/denoised_assembled.dada2"
 
 ### Check that at least 2 samples are provided
 files=$(ls $workingDir | grep -c "$extension")
-if [[ $files < 4 ]]; then
+if (( $files < 4 )); then
     printf '%s\n' "ERROR]: please provide at least 2 samples for denoising
 >Quitting" >&2
     end_process

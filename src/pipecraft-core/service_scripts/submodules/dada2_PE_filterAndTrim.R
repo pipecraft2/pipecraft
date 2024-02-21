@@ -71,7 +71,7 @@ saveRDS(qfilt, file.path(path_results, "quality_filtered.rds"))
 getN <- function(x) sum(getUniques(x))
 seq_count <- cbind(qfilt)
 colnames(seq_count) <- c("input", "qualFiltered")
-rownames(seq_count) <- sample_names
+rownames(seq_count) <- sapply(strsplit(rownames(qfilt), read_R1), `[`, 1)
 write.csv(seq_count, file.path(path_results, "seq_count_summary.csv"), row.names = TRUE, quote = FALSE)
 
 #save R objects for assembly process

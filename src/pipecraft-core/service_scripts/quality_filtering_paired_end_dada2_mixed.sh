@@ -133,7 +133,7 @@ function quality_filtering_paired_end_dada2 () {
 
     ### end pipe if no outputs were generated
     outfile_check=$(ls $output_dir/*.$fileFormat 2>/dev/null | wc -l)
-    if [[ $outfile_check != 0 ]]; then 
+    if (( $outfile_check != 0 )); then 
         :
     else 
         printf '%s\n' "ERROR]: no output files generated after quality filtering ($output_dir). Adjust settings or check sample identifier 'read_R1/R2' so that all sample names would be unique.

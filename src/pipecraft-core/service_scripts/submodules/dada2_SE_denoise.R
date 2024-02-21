@@ -135,6 +135,6 @@ getN <- function(x) sum(getUniques(x))
 
 seq_count <- cbind(qfilt, sapply(denoised, getN))
 colnames(seq_count) <- c("input", "qualFiltered", "denoised")
-rownames(seq_count) <- sample_names
+#rownames(seq_count) <- sample_names
 write.csv(seq_count, file.path(path_results, "seq_count_summary.csv"), row.names = TRUE, quote = FALSE)
 cat(";; DONE")
