@@ -66,11 +66,6 @@ while read LINE; do
     inputR1=$(echo $LINE | sed -e "s/.$fileFormat//")
     inputR2=$(echo $inputR1 | sed -e 's/R1/R2/')
 
-    #If input is compressed, then decompress (keeping the compressed file, but overwriting if filename exists!)
-    check_gz_zip_PE
-    ### Check input formats (fastq/fasta supported)
-    check_extension_fastx
-
     ### Check if dual indexes or single indexes and prepare workflow accordingly
     if [[ $tag == "dual" ]]; then
         #dual indexes
@@ -106,10 +101,10 @@ while read LINE; do
         #assign demux variables
         indexes_file_round1=$"-g file:$output_dir/index_fwd.fasta -G file:$output_dir/index_rev.fasta"
         indexes_file_round2=$"-g file:index_fwd.fasta -G file:index_rev.fasta"
-        outR1=$"-o $output_dir/round1-{name1}-{name2}.R1.$extension"
-        outR2=$"-p $output_dir/round1-{name1}-{name2}.R2.$extension"
-        outR2_round2=$"-o round2-{name1}-{name2}.R2.$extension"
-        outR1_round2=$"-p round2-{name1}-{name2}.R1.$extension"
+        outR1=$"-o $output_dir/round1-{name1}-{name2}.R1.$fileFormat"
+        outR2=$"-p $output_dir/round1-{name1}-{name2}.R2.$fileFormat"
+        outR2_round2=$"-o round2-{name1}-{name2}.R2.$fileFormat"
+        outR1_round2=$"-p round2-{name1}-{name2}.R1.$fileFormat"
         input_for_round2_R1=$"round1-unknown-unknown.R1"
         input_for_round2_R2=$"round1-unknown-unknown.R2"
     else
@@ -124,10 +119,10 @@ while read LINE; do
         #assign demux variables
         indexes_file_round1=$"-g file:$output_dir/index_file.fasta"
         indexes_file_round2=$"-g file:index_file.fasta"
-        outR1=$"-o $output_dir/round1-{name}.R1.$extension"
-        outR2=$"-p $output_dir/round1-{name}.R2.$extension"
-        outR2_round2=$"-o round2-{name}.R2.$extension"
-        outR1_round2=$"-p round2-{name}.R1.$extension"
+        outR1=$"-o $output_dir/round1-{name}.R1.$fileFormat"
+        outR2=$"-p $output_dir/round1-{name}.R2.$fileFormat"
+        outR2_round2=$"-o round2-{name}.R2.$fileFormat"
+        outR1_round2=$"-p round2-{name}.R1.$fileFormat"
         input_for_round2_R1=$"round1-unknown.R1"
         input_for_round2_R2=$"round1-unknown.R2"
     fi
@@ -147,7 +142,7 @@ while read LINE; do
     $cores \
     $outR1 \
     $outR2 \
-    $inputR1.$extension $inputR2.$extension 2>&1)
+    $inputR1.$fileFormat $inputR2.$fileFormat 2>&1)
     check_app_error
 
     #Round2 demux (RC; R1 and R2 position switched!)
@@ -161,22 +156,22 @@ while read LINE; do
     $cores \
     $outR2_round2 \
     $outR1_round2 \
-    $input_for_round2_R2.$extension $input_for_round2_R1.$extension 2>&1)
+    $input_for_round2_R2.$fileFormat $input_for_round2_R1.$fileFormat 2>&1)
     check_app_error
     
     #Remove round1 unknowns and remane final unknowns
-    rm $input_for_round2_R2.$extension
-    rm $input_for_round2_R1.$extension
-    if [[ -f round2-unknown.R1.$extension ]]; then
-        mv round2-unknown.R1.$extension unknown.R1.$extension
-        mv round2-unknown.R2.$extension unknown.R2.$extension
-    elif [[ -f round2-unknown-unknown.R1.$extension ]]; then
-        mv round2-unknown-unknown.R1.$extension unknown.R1.$extension
-        mv round2-unknown-unknown.R2.$extension unknown.R2.$extension
+    rm $input_for_round2_R2.$fileFormat
+    rm $input_for_round2_R1.$fileFormat
+    if [[ -f round2-unknown.R1.$fileFormat ]]; then
+        mv round2-unknown.R1.$fileFormat unknown.R1.$fileFormat
+        mv round2-unknown.R2.$fileFormat unknown.R2.$fileFormat
+    elif [[ -f round2-unknown-unknown.R1.$fileFormat ]]; then
+        mv round2-unknown-unknown.R1.$fileFormat unknown.R1.$fileFormat
+        mv round2-unknown-unknown.R2.$fileFormat unknown.R2.$fileFormat
     fi
 
     ### Merge demux outputs from round1 and round2
-    ls | grep "R1.$extension" | grep "round1-" > demux_R1_list.txt #ls | grep "R1.$extension" | grep "round1-" | grep -v "unknown" > demux_R1_list.txt
+    ls | grep "R1.$fileFormat" | grep "round1-" > demux_R1_list.txt
     while read DEMUXFILES; do
         R1=$(echo $DEMUXFILES | sed -e 's/round1-//' )
         R2=$(echo $DEMUXFILES | sed -e 's/round1-//' | sed -e 's/R1/R2/' )
@@ -200,12 +195,12 @@ done < tempdir2/paired_end_files.txt
 
 # Make patterns file for assigning sample names to files if using DUAL indexes
 if [[ $tag = "dual" ]]; then
-    ls $output_dir | grep ".R1.$extension" | \
-    sed -e "s/\.R1\.$extension//" | \
+    ls $output_dir | grep ".R1.$fileFormat" | \
+    sed -e "s/\.R1\.$fileFormat//" | \
     grep -E -v "round2|round1|unknown" > tempdir2/demux_files.txt
 
     #Assign sample names
-    export extension
+    export fileFormat
     $run_python_module
 
     # Move un-named combination fastq files to separate folder
@@ -246,8 +241,8 @@ clean_and_make_stats_demux
 # Add seq count in unnamed_index_combinations to seq_count_summary.txt
 cd $output_dir
 if [[ -d unnamed_index_combinations ]]; then
-  unnamed_index_combinations_count=$(cat unnamed_index_combinations/*.R1.$extension | seqkit stats --threads 6 -T  | awk -F'\t' 'BEGIN{OFS="\t";} FNR == 2 {print $4}')
-  printf "\n Number of sequences in 'unnamed_index_combinations' dir (*.R1.$extension): $unnamed_index_combinations_count" >> seq_count_summary.txt
+  unnamed_index_combinations_count=$(cat unnamed_index_combinations/*.R1.$fileFormat | seqkit stats --threads 6 -T  | awk -F'\t' 'BEGIN{OFS="\t";} FNR == 2 {print $4}')
+  printf "\n Number of sequences in 'unnamed_index_combinations' dir (*.R1.$fileFormat): $unnamed_index_combinations_count" >> seq_count_summary.txt
 fi
 cd ..
 
@@ -294,6 +289,6 @@ printf "Total time: $runtime sec.\n "
 #variables for all services
 echo "#variables for all services: "
 echo "workingDir=$output_dir"
-echo "fileFormat=$extension"
+echo "fileFormat=$fileFormat"
 echo "dataFormat=demultiplexed"
 echo "readType=paired_end"

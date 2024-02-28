@@ -65,10 +65,6 @@ fi
 for file in *.$fileFormat; do
     #Write file name without extension
     input=$(echo $file | sed -e "s/.$fileFormat//")
-    #If input is compressed, then decompress (keeping the compressed file, but overwriting if filename exists!)
-    check_gz_zip_SE
-    ### Check input formats (fastq/fasta supported)
-    check_extension_fastx
 
     ### Check if dual indexes or single indexes and prepare workflow accordingly
     if grep -q "\..." tempdir2/ValidatedBarcodesFileForDemux.fasta.temp; then
@@ -104,7 +100,7 @@ for file in *.$fileFormat; do
         #REV indexes are 5'-3' orientation for cutadapt search 
         mv tempdir2/index_file.fasta $output_dir #move edited indexes file with window size into output_dir 
         indexes_file_in=$"-g file:$output_dir/index_file.fasta"
-        out=$"-o $output_dir/{name}.$extension"
+        out=$"-o $output_dir/{name}.$fileFormat"
     else
         #single indexes
         # Add search window size to indexes 
@@ -115,7 +111,7 @@ for file in *.$fileFormat; do
         mv tempdir2/index_file.fasta $output_dir
         #assign demux variables
         indexes_file_in=$"-g file:$output_dir/index_file.fasta" 
-        out=$"-o $output_dir/{name}.$extension"
+        out=$"-o $output_dir/{name}.$fileFormat"
     fi
 
     ############################
@@ -128,18 +124,13 @@ for file in *.$fileFormat; do
     $error_rate \
     $no_indels \
     --revcomp \
-    --untrimmed-output $output_dir/unknown.$extension \
+    --untrimmed-output $output_dir/unknown.$fileFormat \
     $overlap \
     $minlen \
     $cores \
     $out \
-    $input.$extension 2>&1)
+    $input.$fileFormat 2>&1)
     check_app_error
-done
-
-#Remove 'rc' string from seq if the indexes were found on reverse complementary strand
-for file in $output_dir/*.$extension; do
-    awk -i inplace '{ gsub(/ rc$/, "") }; { print }' $file
 done
 
 #################################################
@@ -159,7 +150,8 @@ index_file.fasta = $oligos_file but with added search window size for cutadapt.
 Data, has been demultiplexed taken into account that some sequences
 may be also in reverse complementary orientation ('--revcomp' setting).
 Sequences where reverse complementary indexes have been found 
-were reverse complemented, so all the sequences are in uniform orientation in the files.
+were reverse complemented (and sequence name appended with 'rc'), 
+so all the sequences are in uniform orientation in the files.
 
 Sequence orientation in 'demultiplex_out' reflects the indexes orientation: i.e. 
 1) if only single-end indexes have been specified, and these indexes are attached to 3'-end of a sequence,
@@ -196,5 +188,5 @@ printf "Total time: $runtime sec.\n "
 #variables for all services
 echo "#variables for all services: "
 echo "workingDir=$output_dir"
-echo "fileFormat=$extension"
+echo "fileFormat=$fileFormat"
 echo "readType=single_end"
