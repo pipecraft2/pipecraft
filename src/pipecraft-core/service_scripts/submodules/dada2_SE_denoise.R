@@ -68,13 +68,16 @@ dir.create(path_results)
 qFiltered = readRDS(file.path(workingDir, "qFiltered.rds"))
 sample_names = readRDS(file.path(workingDir, "sample_names.rds"))
 cat("sample names = ", sample_names, "\n")
-
-#Dereplicate
-dereplicated <- derepFastq(qFiltered, verbose = TRUE, qualityType = qualityType)
-saveRDS(dereplicated, (file.path(path_results, "dereplicated.rds")))
+names(qFiltered) = sample_names
 
 #Learn errors
-errors = learnErrors(dereplicated, errorEstimationFunction = errorEstFun, BAND_SIZE = band_size, multithread = TRUE, verbose = TRUE)
+set.seed(100)
+errors = learnErrors(qFiltered,
+            errorEstimationFunction = errorEstFun,
+            BAND_SIZE = band_size,
+            multithread = TRUE,
+            verbose = TRUE,
+            randomize = TRUE)
 saveRDS(errors, file.path(path_results, "errors.rds"))
 
 #Error rate figures
@@ -82,8 +85,22 @@ pdf(file.path(path_results, "Error_rates.pdf"))
     print( plotErrors(errors) )
 dev.off()
 
-#Denoise
-denoised = dada(dereplicated, err = errors, BAND_SIZE = band_size, multithread = TRUE, verbose = TRUE)
+# Infer sequence variants
+denoised = vector("list", length(sample_names))
+names(denoised) = sample_names
+for(sam in sample_names) {
+  cat("Processing:", sam, "\n")
+  #Dereplicate
+  dereplicated = derepFastq(qFiltered[[sam]],
+                verbose = TRUE,
+                qualityType = qualityType)
+  #Denoise
+  denoised[[sam]] = dada(dereplicated,
+                err = errors,
+                BAND_SIZE = band_size,
+                multithread = TRUE,
+                verbose = TRUE)
+}
 saveRDS(denoised, file.path(path_results, "denoised.rds"))
 
 
@@ -91,7 +108,6 @@ saveRDS(denoised, file.path(path_results, "denoised.rds"))
 #make sequence table
 cat(";; Writing per-sample denoised and merged fasta files")
 ASV_tab = makeSequenceTable(denoised)
-rownames(ASV_tab) = gsub(paste0(".", fileFormat), "", rownames(ASV_tab))
 #write RDS object
 saveRDS(ASV_tab, (file.path(path_results, "ASVs_table.denoised.rds")))
 
@@ -135,6 +151,8 @@ getN <- function(x) sum(getUniques(x))
 
 seq_count <- cbind(qfilt, sapply(denoised, getN))
 colnames(seq_count) <- c("input", "qualFiltered", "denoised")
-#rownames(seq_count) <- sample_names
-write.csv(seq_count, file.path(path_results, "seq_count_summary.csv"), row.names = TRUE, quote = FALSE)
+write.csv(seq_count, 
+            file.path(path_results, "seq_count_summary.csv"),
+            row.names = TRUE,
+            quote = FALSE)
 cat(";; DONE")
