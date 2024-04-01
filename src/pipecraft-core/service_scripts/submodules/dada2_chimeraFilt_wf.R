@@ -10,13 +10,13 @@ library("base")
 cat("DADA2 version = ", base::toString(packageVersion("dada2")), "\n")
 
 #load env variables
-readType = Sys.getenv('readType')
-fileFormat = Sys.getenv('fileFormat')
-dataFormat = Sys.getenv('dataFormat')
-workingDir = Sys.getenv('workingDir')
+readType = Sys.getenv("readType")
+fileFormat = Sys.getenv("fileFormat")
+dataFormat = Sys.getenv("dataFormat")
+workingDir = Sys.getenv("workingDir")
 
 #load variables
-method = Sys.getenv('method')
+method = Sys.getenv("method")
 
 #check for output dir and delete if needed
 if (dir.exists("/input/chimeraFiltered_out.dada2")) {
