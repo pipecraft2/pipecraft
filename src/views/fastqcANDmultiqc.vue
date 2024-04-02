@@ -190,10 +190,10 @@ export default {
         console.log(output);
         console.log(`Pull complete`);
       }
-      gotImg = await imageExists(dockerode, "ewels/multiqc");
+      gotImg = await imageExists(dockerode, "ewels/multiqc:1.8");
       if (gotImg === false) {
         console.log(`Pulling image ewels/multiqc`);
-        let output = await pullImageAsync(dockerode, "ewels/multiqc");
+        let output = await pullImageAsync(dockerode, "ewels/multiqc:1.8");
         console.log(output);
         console.log(`Pull complete`);
       }
