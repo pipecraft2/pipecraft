@@ -70,7 +70,7 @@ fi
 #################################################################
 function first_file_check () {
 count=$(ls -1 *.$fileFormat 2>/dev/null | wc -l)
-if [[ $count != 0 ]]; then 
+if (( $count != 0 )); then 
     :
 else
     printf '%s\n' "ERROR]: cannot find files with specified extension '$fileFormat'
@@ -82,7 +82,7 @@ fi
 
 function first_file_check_clustering () {
 count=$(ls -1 *.$fileFormat 2>/dev/null | wc -l)
-if [[ $count != 0 ]]; then 
+if (( $count != 0 )); then 
     :
 else
     printf '%s\n' "ERROR]: cannot find input ($fileFormat files).
@@ -304,42 +304,39 @@ function clean_and_make_stats_demux () {
 #Delete empty output files
 find $output_dir -empty -type f -delete
 # Count input reads
-if [[ $extension == "fastq" ]] || [[ $extension == "fq" ]] || [[ $extension == "fasta" ]] || [[ $extension == "fa" ]] || [[ $extension == "fas" ]]; then
-    touch tempdir2/seq_count.txt
-    if [[ -f tempdir2/paired_end_files.txt ]]; then
-        while read LINE; do
-            seqkit stats --threads 6 -T $LINE | awk -F'\t' 'BEGIN{OFS="\t";} FNR == 2 {print $1,$4}' >> tempdir2/seq_count.txt
-        done < tempdir2/paired_end_files.txt
-    else
-        while read LINE; do
-            seqkit stats --threads 6 -T $LINE | awk -F'\t' 'BEGIN{OFS="\t";} FNR == 2 {print $1,$4}' >> tempdir2/seq_count.txt
-        done < tempdir2/files_in_folder.txt
-    fi
+touch tempdir2/seq_count.txt
+if [[ -f tempdir2/paired_end_files.txt ]]; then
+    while read LINE; do
+        seqkit stats --threads 6 -T $LINE | awk -F'\t' 'BEGIN{OFS="\t";} FNR == 2 {print $1,$4}' >> tempdir2/seq_count.txt
+    done < tempdir2/paired_end_files.txt
+else
+    while read LINE; do
+        seqkit stats --threads 6 -T $LINE | awk -F'\t' 'BEGIN{OFS="\t";} FNR == 2 {print $1,$4}' >> tempdir2/seq_count.txt
+    done < tempdir2/files_in_folder.txt
 fi
 
 ### Count reads after the process
-if [[ $extension == "fastq" ]] || [[ $extension == "fq" ]] || [[ $extension == "fasta" ]] || [[ $extension == "fa" ]] || [[ $extension == "fas" ]]; then
-    touch tempdir2/seq_count_after.txt
-    outfile_check=$(ls $output_dir/*.$extension 2>/dev/null | wc -l)
-    if [[ $outfile_check != 0 ]]; then
-        if [[ -f tempdir2/paired_end_files.txt ]]; then
-            for file in $output_dir/*R1.$extension; do
-                seqkit stats --threads 6 -T $file | awk -F'\t' 'BEGIN{OFS="\t";} FNR == 2 {print $1,$4}' | sed -e 's/demultiplex_out\///' >> tempdir2/seq_count_after.txt
-                #sum all demux seqs (column 2)
-                demux_sum=$(awk -F'\t' '{sum+=$2;} END{print sum;}' tempdir2/seq_count_after.txt)
-            done
-        else
-            for file in $output_dir/*.$extension; do
-                seqkit stats --threads 6 -T $file | awk -F'\t' 'BEGIN{OFS="\t";} FNR == 2 {print $1,$4}' | sed -e 's/demultiplex_out\///' >> tempdir2/seq_count_after.txt
-                #sum all demux seqs (column 2)
-                demux_sum=$(awk -F'\t' '{sum+=$2;} END{print sum;}' tempdir2/seq_count_after.txt)
-            done
-        fi
+touch tempdir2/seq_count_after.txt
+outfile_check=$(ls $output_dir/*.$fileFormat 2>/dev/null | wc -l)
+if (( $outfile_check != 0 )); then
+    if [[ -f tempdir2/paired_end_files.txt ]]; then
+        for file in $output_dir/*R1.$fileFormat; do
+            seqkit stats --threads 6 -T $file | awk -F'\t' 'BEGIN{OFS="\t";} FNR == 2 {print $1,$4}' | sed -e 's/demultiplex_out\///' >> tempdir2/seq_count_after.txt
+            #sum all demux seqs (column 2)
+            demux_sum=$(awk -F'\t' '{sum+=$2;} END{print sum;}' tempdir2/seq_count_after.txt)
+        done
     else
-        printf '%s\n' "ERROR]: no output files generated ($output_dir). Adjust settings." >&2
-        end_process
+        for file in $output_dir/*.$fileFormat; do
+            seqkit stats --threads 6 -T $file | awk -F'\t' 'BEGIN{OFS="\t";} FNR == 2 {print $1,$4}' | sed -e 's/demultiplex_out\///' >> tempdir2/seq_count_after.txt
+            #sum all demux seqs (column 2)
+            demux_sum=$(awk -F'\t' '{sum+=$2;} END{print sum;}' tempdir2/seq_count_after.txt)
+        done
     fi
+else
+    printf '%s\n' "ERROR]: no output files generated ($output_dir). Check index file and settings." >&2
+    end_process
 fi
+
 
 ### Compile a track reads summary file
 printf "Input file:\n" > $output_dir/seq_count_summary.txt
@@ -348,7 +345,7 @@ while read LINE; do
     count1=$(echo $LINE | awk '{print $2}')
     printf "$file1\t$count1\n" >> $output_dir/seq_count_summary.txt    
 done < tempdir2/seq_count.txt
-printf "\nSUM of demultiplexed sequences\t$demux_sum" >> $output_dir/seq_count_summary.txt 
+printf "\nSUM of demultiplexed sequences (including 'unknown.$fileFormat'; see below)\t$demux_sum" >> $output_dir/seq_count_summary.txt 
 printf "\n\nSamples\tNumber_of_seqs\n" >> $output_dir/seq_count_summary.txt
 while read LINE; do
     file1=$(echo $LINE | awk '{print $1}')
@@ -363,10 +360,6 @@ if [[ -f tempdir2/paired_end_files.txt ]]; then
     printf "\n[paired R2 file has the same number of sequencs as corresponding R1 file]\n" >> $output_dir/seq_count_summary.txt
 fi 
 
-#Delete decompressed files if original set of files were compressed
-if [[ $check_compress == "gz" ]] || [[ $check_compress == "zip" ]]; then
-    rm *.$extension
-fi
 #remove tempdir2
 if [[ $debugger != "true" ]]; then
     if [[ -d "tempdir2" ]]; then
@@ -394,7 +387,7 @@ output_dir_for_sed=$(echo $output_dir | sed -e "s/\//\\\\\//g")
 if [[ $extension == "fastq" ]] || [[ $extension == "fq" ]] || [[ $extension == "fasta" ]] || [[ $extension == "fa" ]] || [[ $extension == "fas" ]]; then
     touch tempdir2/seq_count_after.txt
     outfile_check=$(ls $output_dir/*.$extension 2>/dev/null | wc -l)
-    if [[ $outfile_check != 0 ]]; then 
+    if (( $outfile_check != 0 )); then 
         seqkit stats --threads 6 -T $output_dir/*.$extension | awk -F'\t' 'BEGIN{OFS="\t";} NR!=1 {print $1,$4}' | sed -e "s/$output_dir_for_sed//" >> tempdir2/seq_count_after.txt
     else 
         printf '%s\n' "ERROR]: no output files generated ($output_dir). Adjust settings." >&2
@@ -446,7 +439,7 @@ touch tempdir2/seq_count_before.txt
 seqkit stats --threads 6 -T *.$extension | awk -F'\t' 'BEGIN{OFS="\t";} NR!=1 {print $1,$4}' >> tempdir2/seq_count_before.txt
 touch tempdir2/seq_count_after.txt
 outfile_check=$(ls $output_dir/*.$extension 2>/dev/null | wc -l)
-if [[ $outfile_check != 0 ]]; then
+if (( $outfile_check != 0 )); then
     seqkit stats --threads 6 -T $output_dir/*.$extension | awk -F'\t' 'BEGIN{OFS="\t";} NR!=1 {print $1,$4}' >> tempdir2/seq_count_after.txt
 else
     printf '%s\n' "ERROR]: no output files generated ($output_dir). Check settings!" >&2
@@ -481,7 +474,7 @@ if [[ $check_compress == "gz" ]] || [[ $check_compress == "zip" ]]; then
 fi
 #Remove mothur logfiles
 mothur_logfiles=$(ls -1 *.logfile 2>/dev/null | wc -l)
-if [[ $mothur_logfiles != 0 ]]; then 
+if (( $mothur_logfiles != 0 )); then 
     rm mothur.*.logfile 
 fi
 #Delete tempdir
@@ -517,7 +510,7 @@ if [[ $extension == "fastq" ]] || [[ $extension == "fq" ]]; then
     done
     touch tempdir2/seq_count_after.txt
     outfile_check=$(ls $output_dir/$subdir/*.$extension 2>/dev/null | wc -l)
-    if [[ $outfile_check != 0 ]]; then 
+    if (( $outfile_check != 0 )); then 
         for file in $output_dir/$subdir/*.$outfile_addition.$extension; do
             size=$(echo $(cat $file | wc -l) / 4 | bc)
             printf "$file\t$size\n" >> tempdir2/seq_count_after.txt
@@ -532,7 +525,7 @@ if [[ $extension == "fasta" ]] || [[ $extension == "fa" ]] || [[ $extension == "
     done
     touch tempdir2/seq_count_after.txt
     outfile_check=$(ls $output_dir/$subdir/*.$extension 2>/dev/null | wc -l)
-    if [[ $outfile_check != 0 ]]; then 
+    if (( $outfile_check != 0 )); then 
         for file in $output_dir/$subdir/*.$outfile_addition.$extension; do
             size=$(grep -c "^>" $file)
             printf "$file\t$size\n" >> tempdir2/seq_count_after.txt
@@ -575,7 +568,7 @@ if [[ $check_compress == "gz" ]] || [[ $check_compress == "zip" ]]; then
 fi
 #Remove mothur logfiles
 mothur_logfiles=$(ls -1 *.logfile 2>/dev/null | wc -l)
-if [[ $mothur_logfiles != 0 ]]; then 
+if (( $mothur_logfiles != 0 )); then 
     rm mothur.*.logfile 
 fi
 #Delete tempdir

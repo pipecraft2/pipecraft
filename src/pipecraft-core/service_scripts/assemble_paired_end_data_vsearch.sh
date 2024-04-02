@@ -32,7 +32,7 @@ output_dir=$"/input/assembled_out"
 
 ## Check read_R1; correct read identifier specified?
 count=$(ls -1 *$read_R1* 2>/dev/null | wc -l)
-if [[ $count != 0 ]] && [[ ! -z $read_R1 ]]; then 
+if (( $count != 0 )) && [[ ! -z $read_R1 ]]; then 
     :
 else
     printf '%s\n' "ERROR]: cannot find R1 and R2 files based on the specified identifier '$read_R1 '

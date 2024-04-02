@@ -1,9 +1,10 @@
 #!/usr/bin/env Rscript
 
-#DADA2 denoising and merging paired-end data, for DADA2 full workflow.
+#DADA2 denoising and merging paired-end data with loessErrfun, for DADA2 full workflow.
+# PacBioErrfun is not included here.
 
 #load dada2
-library('dada2')
+library("dada2")
 
 #print DADA2 version
 cat("DADA2 version = ", base::toString(packageVersion("dada2")), "\n")
@@ -21,7 +22,7 @@ trimOverhang = Sys.getenv('trimOverhang')
 justConcatenate = Sys.getenv('justConcatenate')
 pool = Sys.getenv('pool')
 qualityType = Sys.getenv('qualityType')
-errorEstFun = Sys.getenv('errorEstFun')
+errorEstFun = "loessErrfun"
 
 #setDadaOpt() settings
 omegaa = as.numeric(Sys.getenv('OMEGA_A'))
@@ -75,46 +76,53 @@ if (pool != ""){
     #create output dir
     dir.create(path_results)
 
-    #filtered files path
-    filtFs = readRDS(file.path(workingDir, "filtFs.rds"))
-    filtRs = readRDS(file.path(workingDir, "filtRs.rds"))
-    sample_names = readRDS(file.path(workingDir, "sample_names.rds"))
-    cat(";; sample names = ", sample_names, "\n")
-
     #copy rds files to denoised_assembled.dada2 (for making seq_count_summary)
     file.copy(file.path(workingDir, "sample_names.rds"), path_results)
     file.copy(file.path(workingDir, "quality_filtered.rds"), path_results)
 
-    #Learn the error rates
+    #filtered files path
+    filtFs = readRDS(file.path(workingDir, "filtFs.rds"))
+    filtRs = readRDS(file.path(workingDir, "filtRs.rds"))
+    sample_names = readRDS(file.path(workingDir, "sample_names.rds"))
+    cat(";; sample names = ", sample_names, ";; ")
+    names(filtFs) = sample_names
+    names(filtRs) = sample_names
+
+
+    # Denoise based on errorEstimationFunction
     if (errorEstFun == "loessErrfun"){
-        errF = learnErrors(filtFs, errorEstimationFunction = loessErrfun, multithread = TRUE)
-        errR = learnErrors(filtRs, errorEstimationFunction = loessErrfun, multithread = TRUE)
+        set.seed(100)
+        #Learn R1 error rates
+        errF = learnErrors(filtFs, errorEstimationFunction = loessErrfun, nbases = 1e8, multithread = TRUE) # nolint
+        saveRDS(errF, (file.path(path_results, "errF.rds")))
+        #Learn R2 error rates
+        errR = learnErrors(filtRs, errorEstimationFunction = loessErrfun, nbases = 1e8, multithread = TRUE, randomize = TRUE) # nolint
+        saveRDS(errR, (file.path(path_results, "errR.rds")))
+        #Error rate figures
+        cat(";; ")
+        pdf(file.path(path_results, "Error_rates_R1.pdf"))
+          print( plotErrors(errF) )
+        dev.off()
+        pdf(file.path(path_results, "Error_rates_R2.pdf"))
+          print( plotErrors(errR) )
+        dev.off()
+
+        # Sample inference and merger of paired-end reads
+        mergers = vector("list", length(sample_names))
+        names(mergers) = sample_names
+        for(sample in sample_names) {
+          cat(";; Processing:", sample, "\n")
+          derepF = derepFastq(filtFs[[sample]])
+          ddF = dada(derepF, err = errF, multithread = TRUE)
+          derepR = derepFastq(filtRs[[sample]])
+          ddR = dada(derepR, err = errR, multithread = TRUE)
+          merger = mergePairs(ddF, derepF, ddR, derepR)
+          mergers[[sample]] = merger
+        }
+        rm(derepF); rm(derepR)
+        gc()
+        saveRDS(mergers, (file.path(path_results, "mergers.rds")))
     }
-    if (errorEstFun == "PacBioErrfun"){
-        errF = learnErrors(filtFs, errorEstimationFunction = PacBioErrfun, multithread = TRUE)
-        errR = learnErrors(filtRs, errorEstimationFunction = PacBioErrfun, multithread = TRUE)
-    }
-
-    #Error rate figures
-    cat(";; ")
-    pdf(file.path(path_results, "Error_rates_R1.pdf"))
-      print( plotErrors(errF) )
-    dev.off()
-    pdf(file.path(path_results, "Error_rates_R2.pdf"))
-      print( plotErrors(errR) )
-    dev.off()
-
-    #dereplicate
-    derepFs = derepFastq(filtFs, qualityType = qualityType)
-    derepRs = derepFastq(filtRs, qualityType = qualityType)
-    saveRDS(derepFs, (file.path(path_results, "derepFs.rds")))
-    saveRDS(derepRs, (file.path(path_results, "derepRs.rds")))
-
-    #denoise
-    dadaFs = dada(derepFs, err = errF, pool = pool, multithread = TRUE)
-    dadaRs = dada(derepRs, err = errR, pool = pool, multithread = TRUE)
-    saveRDS(dadaFs, (file.path(path_results, "dadaFs.rds")))
-    saveRDS(dadaRs, (file.path(path_results, "dadaRs.rds")))
 }
 
 ### Merge denoised paired-end reads
@@ -122,23 +130,13 @@ if (pool == ""){
     cat(";; Working directory = ", workingDir)
     cat(";; Merging data with mergePairs ")
     #load denoised data
-    dadaFs = readRDS(file.path(path_results, "dadaFs.rds"))
-    dadaRs = readRDS(file.path(path_results, "dadaRs.rds"))
-    derepFs = readRDS(file.path(path_results, "derepFs.rds"))
-    derepRs = readRDS(file.path(path_results, "derepRs.rds"))
-
-    #merge paired-end reads
-    merge = mergePairs(dadaFs, derepFs, dadaRs, derepRs, 
-                            maxMismatch = maxMismatch,
-                            minOverlap = minOverlap,
-                            justConcatenate = justConcatenate,
-                            trimOverhang = trimOverhang)
+    mergers = readRDS(file.path(path_results, "mergers.rds"))
 
     ### WRITE PER-SAMPLE DENOISED and MERGED FASTA FILES
     #make sequence table
     cat(";; Writing per-sample denoised and merged fasta files ")
-    ASV_tab = makeSequenceTable(merge)
-    rownames(ASV_tab) = gsub("_R1.*", "", rownames(ASV_tab))
+    ASV_tab = makeSequenceTable(mergers)
+    #rownames(ASV_tab) = gsub("_R1.*", "", rownames(ASV_tab)) #no need when doing "names(mergers) = sample_names" above
     
     #write RDS object
     saveRDS(ASV_tab, (file.path(path_results, "ASVs_table.denoised.rds")))
@@ -174,7 +172,7 @@ if (pool == ""){
     }
 
     #seq count summary
-    getN <- function(x) sum(getUniques(x))
+    getN = function(x) sum(getUniques(x))
     sample_names = readRDS(file.path(workingDir, "sample_names.rds"))
     qfilt = readRDS(file.path(workingDir, "quality_filtered.rds"))
 
@@ -182,9 +180,11 @@ if (pool == ""){
         row_sub = apply(qfilt, 1, function(row) all(row !=0 ))
         qfilt = qfilt[row_sub, ]
 
-    seq_count <- cbind(qfilt, sapply(dadaFs, getN), sapply(dadaRs, getN), sapply(merge, getN))
-    colnames(seq_count) <- c("input", "qualFiltered", "denoised_R1", "denoised_R2", "merged")
-    rownames(seq_count) <- sample_names
+    #seq_count = cbind(qfilt, sapply(dadaFs, getN), sapply(dadaRs, getN), sapply(merge, getN))
+    #colnames(seq_count) = c("input", "qualFiltered", "denoised_R1", "denoised_R2", "merged")
+    seq_count = cbind(qfilt, sapply(mergers, getN))
+    colnames(seq_count) = c("input", "qualFiltered", "merged")
+    rownames(seq_count) = sample_names
     write.csv(seq_count, file.path(path_results, "seq_count_summary.csv"), row.names = TRUE, quote = FALSE)
 
     unlink(c("sample_names.rds", "quality_filtered.rds")) #not needed here anymore, present in qualFiltered_out dir

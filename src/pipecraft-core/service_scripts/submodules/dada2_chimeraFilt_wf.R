@@ -10,13 +10,13 @@ library("base")
 cat("DADA2 version = ", base::toString(packageVersion("dada2")), "\n")
 
 #load env variables
-readType = Sys.getenv('readType')
-fileFormat = Sys.getenv('fileFormat')
-dataFormat = Sys.getenv('dataFormat')
-workingDir = Sys.getenv('workingDir')
+readType = Sys.getenv("readType")
+fileFormat = Sys.getenv("fileFormat")
+dataFormat = Sys.getenv("dataFormat")
+workingDir = Sys.getenv("workingDir")
 
 #load variables
-method = Sys.getenv('method')
+method = Sys.getenv("method")
 
 #check for output dir and delete if needed
 if (dir.exists("/input/chimeraFiltered_out.dada2")) {
@@ -53,7 +53,7 @@ for (i in 1:nrow(ASV_tab.nochim)){
 ASV_counts = data.frame(no_of_ASVs_list, check.names = FALSE, row.names = "")
 colnames(ASV_counts) = sample_names
 seq_count <- cbind(rowSums(ASV_tab), rowSums(ASV_tab.nochim), t(ASV_counts))
-colnames(seq_count) <- c("input(merged)", "chimeraFiltered", "no.of ASVs")
+colnames(seq_count) <- c("input(denoised)", "chimeraFiltered", "no.of ASVs")
 rownames(seq_count) <- sample_names
 write.csv(seq_count, file.path(path_results, "seq_count_summary.csv"), row.names = TRUE, quote = FALSE)
 

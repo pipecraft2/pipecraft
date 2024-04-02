@@ -234,7 +234,7 @@ cd $output_dir/fwd_orient
 #count reads before and after the process
 touch seq_count_after.txt
 outfile_check=$(ls *.$extension 2>/dev/null | wc -l)
-if [[ $outfile_check != 0 ]]; then
+if (( $outfile_check != 0 )); then
     seqkit stats --threads 6 -T *.$extension | awk -F'\t' 'BEGIN{OFS="\t";} NR!=1 {print $1,$4}' >> seq_count_after.txt
 else
     printf '%s\n' "ERROR]: no fwd_orient output files generated ($output_dir). Not mixed orientation input?" >&2
@@ -269,7 +269,7 @@ cd $output_dir/rev_orient
 #count reads before and after the process
 touch seq_count_after.txt
 outfile_check=$(ls *.$extension 2>/dev/null | wc -l)
-if [[ $outfile_check != 0 ]]; then
+if (( $outfile_check != 0 )); then
     seqkit stats --threads 6 -T *.$extension | awk -F'\t' 'BEGIN{OFS="\t";} NR!=1 {print $1,$4}' >> seq_count_after.txt
 else
     printf '%s\n' "ERROR]: no rev_orient output files generated ($output_dir). Not mixed orientation input?" >&2
@@ -301,7 +301,7 @@ cd $output_dir/untrimmed
 #count reads before and after the process
 touch seq_count_after.txt
 outfile_check=$(ls *.$extension 2>/dev/null | wc -l)
-if [[ $outfile_check != 0 ]]; then
+if (( $outfile_check != 0 )); then
     seqkit stats --threads 6 -T *.$extension | awk -F'\t' 'BEGIN{OFS="\t";} NR!=1 {print $1,$4}' >> seq_count_after.txt
 
     #compile a track reads summary file (seq_count_summary.txt)
