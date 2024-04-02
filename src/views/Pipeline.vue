@@ -45,31 +45,21 @@
               $store.state.data.readType == 'single_end' &&
               $store.state.inputDir != ''
             "
-            @click="
-              $store.commit(
-                'setDADAmode',
-                $event.target.innerText.replace(/-/g, '_')
-              )
-            "
-            >FORWARD</v-tab
+            @click="$store.commit('setDADAmode', 'FORWARD')"
+            >PAIRED-END FORWARD</v-tab
           >
           <v-tab
             :disabled="
               $store.state.data.readType == 'single_end' &&
               $store.state.inputDir != ''
             "
-            @click="
-              $store.commit(
-                'setDADAmode',
-                $event.target.innerText.replace(/-/g, '_')
-              )
-            "
-            >MIXED</v-tab
+            @click="$store.commit('setDADAmode', 'MIXED')"
+            >PAIRED-END MIXED</v-tab
           >
           <v-tab
             :disabled="$store.state.data.readType == 'paired_end'"
             @click="$store.commit('setDADAmode', 'SINGLE_END')"
-            >PACBIO</v-tab
+            >SINGLE-READ</v-tab
           >
         </v-tabs>
       </v-card-actions>
@@ -103,7 +93,7 @@
               :disabled="Object.values(inputData).includes(service.disabled)"
             >
               <v-checkbox
-                :disabled="Object.values(inputData).includes(service.disabled)"
+                :disabled="Object.values(inputData).includes(service.disabled) || $store.state.runInfo.active == true"
                 v-if="service.selected != 'always'"
                 hide-details="true"
                 @change="check_one($event, index)"

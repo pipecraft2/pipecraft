@@ -82,7 +82,7 @@ export default new Vuex.Store({
               {
                 name: "index_file_example",
                 value:
-                  "https://pipecraft2-manual.readthedocs.io/en/stable/user_guide.html#indexes-file-example-fasta-formatted",
+                  "https://pipecraft2-manual.readthedocs.io/en/latest/quicktools.html#indexes-file-example-fasta-formatted",
                 disabled: "never",
                 type: "link",
                 tooltip: "link to PipeCraft2 manual page, index file examples",
@@ -2038,10 +2038,13 @@ export default new Vuex.Store({
               {
                 name: "f_value",
                 value: 0.01,
+                max: 1,
+                min: 0,
+                step: 0.01,
                 disabled: "never",
                 tooltip:
                   "f-parameter of UNCROSS2, which defines the expected cross-talk rate. Default is 0.01 (equivalent to 1%). A higher value enforces stricter filtering",
-                type: "numeric",
+                type: "slide",
                 rules: [(v) => v > 0 || "ERROR: specify values > 0"],
               },
               {
@@ -2203,7 +2206,7 @@ export default new Vuex.Store({
         imageName: "pipecraft/cutadapt:4.4",
         serviceName: "cut primers",
         manualLink:
-          "https://pipecraft2-manual.readthedocs.io/en/stable/user_guide.html#cut-primers",
+          "https://pipecraft2-manual.readthedocs.io/en/latest/quicktools.html#cut-primers",
         disabled: "never",
         selected: false,
         showExtra: false,
@@ -2288,7 +2291,7 @@ export default new Vuex.Store({
         imageName: "pipecraft/vsearch_dada2:2",
         serviceName: "merge reads",
         manualLink:
-          "https://pipecraft2-manual.readthedocs.io/en/stable/user_guide.html#merge-vsearch",
+          "https://pipecraft2-manual.readthedocs.io/en/latest/quicktools.html#merge-vsearch",
         selected: "always",
         disabled: "single_end",
         showExtra: false,
@@ -2387,7 +2390,7 @@ export default new Vuex.Store({
         imageName: "pipecraft/vsearch_dada2:2",
         serviceName: "quality filtering",
         manualLink:
-          "https://pipecraft2-manual.readthedocs.io/en/stable/user_guide.html#qfilt-vsearch",
+          "https://pipecraft2-manual.readthedocs.io/en/latest/quicktools.html#qfilt-vsearch",
         disabled: "never",
         selected: "always",
         showExtra: false,
@@ -2495,7 +2498,7 @@ export default new Vuex.Store({
         imageName: "pipecraft/vsearch_dada2:2",
         serviceName: "chimera filtering",
         manualLink:
-          "https://pipecraft2-manual.readthedocs.io/en/stable/user_guide.html#chimera-filtering",
+          "https://pipecraft2-manual.readthedocs.io/en/latest/quicktools.html#chimera-filtering",
         disabled: "never",
         selected: "always",
         showExtra: false,
@@ -2578,7 +2581,7 @@ export default new Vuex.Store({
         imageName: "pipecraft/itsx:1.1.3",
         serviceName: "itsx",
         manualLink:
-          "https://pipecraft2-manual.readthedocs.io/en/stable/user_guide.html#id17",
+          "https://pipecraft2-manual.readthedocs.io/en/latest/quicktools.html#id17",
         disabled: "never",
         selected: false,
         showExtra: false,
@@ -2718,7 +2721,7 @@ export default new Vuex.Store({
         imageName: "pipecraft/vsearch_dada2:2",
         serviceName: "clustering",
         manualLink:
-          "https://pipecraft2-manual.readthedocs.io/en/stable/user_guide.html#clustering-vsearch",
+          "https://pipecraft2-manual.readthedocs.io/en/latest/quicktools.html#clustering-vsearch",
         disabled: "never",
         selected: "always",
         showExtra: false,
@@ -2822,7 +2825,7 @@ export default new Vuex.Store({
         imageName: "pipecraft/blast:2.14",
         serviceName: "assign taxonomy",
         manualLink:
-          "https://pipecraft2-manual.readthedocs.io/en/stable/user_guide.html#blast-camacho-et-al-2009",
+          "https://pipecraft2-manual.readthedocs.io/en/latest/quicktools.html#blast-camacho-et-al-2009",
         selected: false,
         showExtra: false,
         extraInputs: [
@@ -2923,7 +2926,7 @@ export default new Vuex.Store({
         imageName: "pipecraft/cutadapt:4.4",
         serviceName: "cut primers",
         manualLink:
-          "https://pipecraft2-manual.readthedocs.io/en/stable/user_guide.html#cut-primers",
+          "https://pipecraft2-manual.readthedocs.io/en/latest/quicktools.html#cut-primers",
         disabled: "never",
         selected: false,
         showExtra: false,
@@ -3008,7 +3011,7 @@ export default new Vuex.Store({
         imageName: "pipecraft/vsearch_dada2:2",
         serviceName: "merge reads",
         manualLink:
-          "https://pipecraft2-manual.readthedocs.io/en/stable/user_guide.html#merge-vsearch",
+          "https://pipecraft2-manual.readthedocs.io/en/latest/quicktools.html#merge-vsearch",
         selected: "always",
         disabled: "single_end",
         showExtra: false,
@@ -3107,7 +3110,7 @@ export default new Vuex.Store({
         imageName: "pipecraft/vsearch_dada2:2",
         serviceName: "quality filtering",
         manualLink:
-          "https://pipecraft2-manual.readthedocs.io/en/stable/user_guide.html#qfilt-vsearch",
+          "https://pipecraft2-manual.readthedocs.io/en/latest/quicktools.html#qfilt-vsearch",
         disabled: "never",
         selected: "always",
         showExtra: false,
@@ -3215,7 +3218,7 @@ export default new Vuex.Store({
         imageName: "pipecraft/itsx:1.1.3",
         serviceName: "itsx",
         manualLink:
-          "https://pipecraft2-manual.readthedocs.io/en/stable/user_guide.html#id17",
+          "https://pipecraft2-manual.readthedocs.io/en/latest/quicktools.html#id17",
         disabled: "never",
         selected: false,
         showExtra: false,
@@ -3485,7 +3488,7 @@ export default new Vuex.Store({
         imageName: "pipecraft/blast:2.14",
         serviceName: "assign taxonomy",
         manualLink:
-          "https://pipecraft2-manual.readthedocs.io/en/stable/user_guide.html#blast-camacho-et-al-2009",
+          "https://pipecraft2-manual.readthedocs.io/en/latest/quicktools.html#blast-camacho-et-al-2009",
         selected: false,
         showExtra: false,
         extraInputs: [
@@ -4134,7 +4137,7 @@ export default new Vuex.Store({
         imageName: "pipecraft/cutadapt:4.4",
         serviceName: "cut primers",
         manualLink:
-          "https://pipecraft2-manual.readthedocs.io/en/stable/user_guide.html#cut-primers",
+          "https://pipecraft2-manual.readthedocs.io/en/latest/quicktools.html#cut-primers",
         disabled: "never",
         selected: false,
         showExtra: false,
@@ -4223,7 +4226,7 @@ export default new Vuex.Store({
         imageName: "pipecraft/vsearch_dada2:2",
         serviceName: "quality filtering",
         manualLink:
-          "https://pipecraft2-manual.readthedocs.io/en/stable/user_guide.html#quality-filtering",
+          "https://pipecraft2-manual.readthedocs.io/en/latest/quicktools.html#quality-filtering",
         disabled: "never",
         selected: "always",
         showExtra: false,
@@ -4348,7 +4351,7 @@ export default new Vuex.Store({
         imageName: "pipecraft/vsearch_dada2:2",
         serviceName: "denoise",
         manualLink:
-          "https://pipecraft2-manual.readthedocs.io/en/stable/user_guide.html#dada2-denoise",
+          "https://pipecraft2-manual.readthedocs.io/en/latest/quicktools.html#dada2-denoise",
         selected: "always",
         disabled: "never",
         showExtra: false,
@@ -4447,7 +4450,7 @@ export default new Vuex.Store({
         imageName: "pipecraft/vsearch_dada2:2",
         serviceName: "merge Pairs",
         manualLink:
-          "https://pipecraft2-manual.readthedocs.io/en/stable/user_guide.html#assemble-paired-end-reads",
+          "https://pipecraft2-manual.readthedocs.io/en/latest/quicktools.html#assemble-paired-end-reads",
         selected: "always",
         disabled: "single_end",
         showExtra: false,
@@ -4498,7 +4501,7 @@ export default new Vuex.Store({
         imageName: "pipecraft/vsearch_dada2:2",
         serviceName: "chimera filtering",
         manualLink:
-          "https://pipecraft2-manual.readthedocs.io/en/stable/user_guide.html#chimera-filtering",
+          "https://pipecraft2-manual.readthedocs.io/en/latest/quicktools.html#chimera-filtering",
         disabled: "never",
         selected: "always",
         showExtra: false,
@@ -4521,7 +4524,7 @@ export default new Vuex.Store({
         imageName: "pipecraft/vsearch_dada2:2",
         serviceName: "filter ASV table",
         manualLink:
-          "https://pipecraft2-manual.readthedocs.io/en/stable/user_guide.html#dada2-table-filtering",
+          "https://pipecraft2-manual.readthedocs.io/en/latest/quicktools.html#dada2-table-filtering",
         disabled: "never",
         selected: false,
         showExtra: false,
@@ -4571,7 +4574,7 @@ export default new Vuex.Store({
         imageName: "pipecraft/vsearch_dada2:2",
         serviceName: "assign Taxonomy",
         manualLink:
-          "https://pipecraft2-manual.readthedocs.io/en/stable/user_guide.html#assign-taxonomy-dada2",
+          "https://pipecraft2-manual.readthedocs.io/en/latest/quicktools.html#assign-taxonomy-dada2",
         disabled: "never",
         selected: false,
         showExtra: false,
@@ -4957,7 +4960,7 @@ export default new Vuex.Store({
         payload.value;
     },
     setDADAmode(state, payload) {
-      state.data.dada2mode = payload;
+      console.log(payload)
       if (payload == "SINGLE_END") {
         state.data.readType = "single_end";
         state.DADA2_ASVs[3].selected = false;

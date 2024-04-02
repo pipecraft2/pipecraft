@@ -17,7 +17,6 @@
     <v-tooltip left nudge-left="10">
       <template v-slot:activator="{ on }">
         <v-list-item
-          :disabled="$store.state.runInfo.active"
           v-on="on"
           class="mt-5"
           ripple
@@ -47,6 +46,7 @@
                 link
                 v-for="(item, index) in $store.state.steps"
                 :key="index"
+                :disabled="$store.state.runInfo.active && $store.state.runInfo.containerID != item.stepName"
                 @click="
                   push2route(item.stepName, index),
                     addStep(item, nrOfSelectedSteps)
@@ -126,7 +126,7 @@ const { dialog } = require("@electron/remote");
 const slash = require("slash");
 const fs = require("fs");
 var socketPath =
-  os.platform() === "win32" ? "//./pipe/docker_engine" : "/var/run/docker.sock";
+  os.platform() === "win32" ? "//./pipe/docker_engine" : "/home/fulgrim/.docker/desktop/docker.sock";
 var Docker = require("dockerode");
 var docker = new Docker({ socketPath: socketPath });
 var JSONfn = require("json-fn");
