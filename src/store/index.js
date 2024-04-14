@@ -2196,6 +2196,65 @@ export default new Vuex.Store({
               },
             ],
           },
+          {
+            tooltip:
+              "metaMATE (metabarcoding Multiple Abundance Threshold Evaluator) analyses a set of amplicons derived through metabarcoding of a mitochondrial coding locus to determine putative NUMT and other erroneous sequences",
+            scriptName: "xx.sh",
+            imageName: "pipecraft/metamate:1",
+            serviceName: "metaMATE",
+            selected: false,
+            showExtra: false,
+            extraInputs: [],
+            Inputs: [
+              {
+                name: "table",
+                active: false,
+                btnName: "select file",
+                value: "undefined",
+                disabled: "never",
+                tooltip:
+                  "select OTU/ASV table. If no file is selected, then PipeCraft will look OTU_table.txt or ASV_table.txt in the WORKDIR [output will be in the directory as specified under 'SELECT WORKDIR']",
+                type: "boolfile",
+              },
+              {
+                name: "OTUs",
+                value: "undefined",
+                btnName: "select fasta",
+                disabled: "never",
+                tooltip:
+                  "select your fasta formatted OTUs/ASVs file for filtering",
+                type: "file",
+              },
+              {
+                name: "setting_x",
+                value: 1,
+                disabled: "never",
+                tooltip:
+                  "tooltip",
+                type: "numeric",
+                rules: [(v) => v >= 1 || "ERROR: specify values >= 1"],
+              },
+              {
+                name: "setting_y",
+                value: true,
+                disabled: "never",
+                tooltip:
+                  "setting_y",
+                type: "bool",
+              },
+              {
+                name: "setting_z",
+                value: [],
+                disabled: "never",
+                tooltip: 
+                  "setting_z",
+                type: "chip",
+                iupac: true,
+                rules: [(v) => v.length <= 13 || "TOO MANY INPUTS"],
+              },
+              
+            ],
+          },
         ],
       },
     ],
