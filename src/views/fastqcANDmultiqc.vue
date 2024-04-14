@@ -190,10 +190,10 @@ export default {
         console.log(output);
         console.log(`Pull complete`);
       }
-      gotImg = await imageExists(dockerode, "ewels/multiqc");
+      gotImg = await imageExists(dockerode, "ewels/multiqc:1.10");
       if (gotImg === false) {
-        console.log(`Pulling image ewels/multiqc`);
-        let output = await pullImageAsync(dockerode, "ewels/multiqc");
+        console.log(`Pulling image ewels/multiqc:1.10`);
+        let output = await pullImageAsync(dockerode, "ewels/multiqc:1.10");
         console.log(output);
         console.log(`Pull complete`);
       }
@@ -238,7 +238,7 @@ export default {
       stderr = new streams.WritableStream();
       console.log("starting multiqc");
       let result2 = await dockerode
-        .run("ewels/multiqc", [], [stdout, stderr], {
+        .run("ewels/multiqc:1.10", [], [stdout, stderr], {
           Tty: false,
           WorkingDir: "/input",
           HostConfig: {
