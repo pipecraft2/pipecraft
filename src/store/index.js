@@ -4516,6 +4516,37 @@ export default new Vuex.Store({
         ],
       },
       {
+        scriptName: "tag_jump_removal.sh",
+        tooltip: "using UNCROSS2 to filter out putative tag-jumps",
+        imageName: "vmikk/nextits:0.5.0",
+        serviceName: "filter tag-jumps",
+        manualLink:
+          "https://pipecraft2-manual.readthedocs.io/en/latest/pre-defined_pipelines.html#tag-jump-correction",
+        selected: false,
+        showExtra: false,
+        extraInputs: [],
+        Inputs: [
+          {
+            name: "f_value",
+            value: 0.01,
+            disabled: "never",
+            tooltip:
+              "f-parameter of UNCROSS2, which defines the expected cross-talk rate. Default is 0.01 (equivalent to 1%). A higher value enforces stricter filtering",
+            type: "numeric",
+            rules: [(v) => v > 0 || "ERROR: specify values > 0"],
+          },
+          {
+            name: "p_value",
+            value: 1,
+            disabled: "never",
+            tooltip:
+              "p-parameter, which controls the severity of tag-jump removal. It adjusts the exponent in the UNCROSS formula. Default is 1. Opt for 0.5 or 0.3 to steepen the curve",
+            type: "numeric",
+            rules: [(v) => v > 0 || "ERROR: specify values > 0"],
+          },
+        ],
+      },
+      {
         tooltip: "Collaplse identical ASVs or/and filter ASVs by length",
         scriptName: "table_filtering_dada2_wf.sh",
         imageName: "pipecraft/vsearch_dada2:2",
