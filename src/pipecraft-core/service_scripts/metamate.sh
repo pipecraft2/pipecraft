@@ -14,31 +14,62 @@
 ##########################################################
 
 #load variables
-find_or_dump=${find_or_dump}   # find, dump or find_and_dump
-specifications=${specifications} # file
-reference_seqs=${reference_seqs} # file
-table=${table} # file 
-rep_seqs=${rep_seqs} # file
-genetic_code=${genetic_code} # integer
-length=${length} # integer
-
-find_results=${find_results} # file
-result_index=${result_index} # integer
+find_or_dump=${find_or_dump}       # find, dump or find_and_dump
+specifications=${specifications}   # file
+reference_seqs=${reference_seqs}   # file
+table=${table}                     # file 
+rep_seqs=${rep_seqs}               # file
+genetic_code=${genetic_code}       # integer
+length=${length}                   # integer
+find_results=${find_results}       # file
+result_index=${result_index}       # integer
 NA_abund_thresh=${NA_abund_thresh} # float
-base_variation=${base_variation} # integer
+base_variation=${base_variation}   # integer
+cores=${cores}                     # integer
 
-
-echo $find_or_dump
-echo $specifications
-echo $rep_seqs
-echo $table
-
+# modify the path to the input files
 regex='[^/]*$'
 specifications=$(echo $specifications | grep -oP "$regex")
 specifications=$(basename $specifications) #basename, needed for macOS
-specifications=$(printf "/extraFiles/$specifications")
+specifications=$(printf "/extraFiles2/$specifications")
 
-printf "\n new specifications = $specifications\n"
+reference_seqs=$(echo $reference_seqs | grep -oP "$regex")
+reference_seqs=$(basename $reference_seqs)
+reference_seqs=$(printf "/extraFiles3/$reference_seqs")
+
+table=$(echo $table | grep -oP "$regex")
+table=$(basename $table)
+table=$(printf "/extraFiles4/$table")
+
+rep_seqs=$(echo $rep_seqs | grep -oP "$regex")
+rep_seqs=$(basename $rep_seqs)
+rep_seqs=$(printf "/extraFiles5/$rep_seqs")
+
+find_results=$(echo $find_results | grep -oP "$regex")
+find_results=$(basename $find_results)
+find_results=$(printf "/extraFiles8/$find_results")
+
+printf "\n specifications file = $specifications\n"
+printf "reference seqs file = $reference_seqs\n"
+printf "table file = $table\n"
+printf "rep seqs file = $rep_seqs\n"
+printf "find results file = $find_results\n"
+###############################
+# Source for functions
+source /scripts/submodules/framework.functions.sh
+#output dir
+output_dir=$"/input/metamate_out"
+
+# activate metamate conda env in the container 
+eval "$(conda shell.bash hook)"
+conda activate metamate
+
+
+# if perfoming clade binning, then ERROR when processing more than 65,536 ASVs
+ASVcount=$(grep -c "^>" $rep_seqs)
+if (( $ASVcount > 65536 )); then
+    
+fi
 
 # FIND
 # python3 metamate.py find \
@@ -48,15 +79,15 @@ printf "\n new specifications = $specifications\n"
 #     -R $reference_seqs \
 #     --expectedlength 418 \
 #     --basevariation 0 \
-#     --table 5 \
-#     -t 16 \
-#     -o metamate_find \
+#     --table $genetic_code \
+#     -t $cores \
+#     -o $output_dir \
 #     --overwrite
     
 # DUMP 
 # python3 metamate.py dump \
 #     -A $rep_seqs \
-#     -M $table \
+#     -C metamate_find/resultcache \
 #     -o metamate_dump/output \
 #     --overwrite \
 #     -i $result_index

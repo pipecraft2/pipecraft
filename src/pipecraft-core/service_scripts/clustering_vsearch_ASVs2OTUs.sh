@@ -14,6 +14,9 @@
     #Distributed under the GNU General Public License version 3 by the Free Software Foundation
     #https://github.com/torognes/vsearch
 ##########################################################
+# Source for functions
+source /scripts/submodules/framework.functions.sh
+
 #load ASV_fasta
 ASV_fasta=${ASV_fasta}
 if [[ $ASV_fasta == "undefined" ]]; then
@@ -51,8 +54,7 @@ maxaccepts=$"--maxaccepts ${maxaccepts}"    # pos integer
 mask=$"--qmask ${mask}"                     # list: --qmask dust, --qmask none
 cores=$"--threads ${cores}"                 # pos integer
 ###############################
-# Source for functions
-source /scripts/submodules/framework.functions.sh
+
 #output dir
 output_dir=$"/input/ASVs2OTUs_out"
 export output_dir
