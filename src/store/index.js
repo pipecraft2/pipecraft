@@ -4864,7 +4864,7 @@ export default new Vuex.Store({
           if (input.selected === true || input.selected == "always") {
             input.Inputs.forEach((input) => {
               if (
-                input.type == "file" ||
+                input.type == "file" && (input.depends_on == undefined || eval(input.depends_on)) || 
                 input.type == "chip" ||
                 (input.type == "boolfile" && input.active == true)
               ) {
@@ -4892,7 +4892,7 @@ export default new Vuex.Store({
           if (step.selected == true || step.selected == "always") {
             step.Inputs.forEach((input) => {
               if (
-                input.type == "file" ||
+                input.type == "file" && (input.depends_on == undefined || eval(input.depends_on)) ||
                 input.type == "chip" ||
                 (input.type == "boolfile" && input.active == true)
               ) {
