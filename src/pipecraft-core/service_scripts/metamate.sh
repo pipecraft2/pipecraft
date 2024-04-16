@@ -1,9 +1,9 @@
 #!/bin/bash
 
-# metaMATE (https://github.com/tjcreedy/metamate) software for 
-#  removel of nuclear pseudogenes and sequencing artefacts from mitochondrial metabarcode data
+# metaMATE v0.4.0 (https://github.com/tjcreedy/metamate) software for 
+ #  removel of nuclear pseudogenes and sequencing artefacts from mitochondrial metabarcode data
 
-# Input = fasta file of the OTUs/ASVs and the OTU/ASV table. 
+# Input = fasta file of the OTUs/ASVs and the OTU/ASV table.
 
 ##########################################################
 ###Third-party applications:
@@ -65,11 +65,14 @@ eval "$(conda shell.bash hook)"
 conda activate metamate
 
 
-# if perfoming clade binning, then ERROR when processing more than 65,536 ASVs
+# if perfoming clade binning, then WARNING when processing more than 65,536 ASVs
 ASVcount=$(grep -c "^>" $rep_seqs)
 if (( $ASVcount > 65536 )); then
-    
+    printf '%s\n' "WARNING]: clade binning NOT performed, because the input ASVs limit is 65,536 for that.
+Current input has $ASVcount ASVs."
 fi
+
+/Files/metamate/metamate/metamate.py
 
 # FIND
 # python3 metamate.py find \
