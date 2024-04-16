@@ -2199,60 +2199,126 @@ export default new Vuex.Store({
           {
             tooltip:
               "metaMATE (metabarcoding Multiple Abundance Threshold Evaluator) analyses a set of amplicons derived through metabarcoding of a mitochondrial coding locus to determine putative NUMT and other erroneous sequences",
-            scriptName: "xx.sh",
+            scriptName: "metamate.sh",
             imageName: "pipecraft/metamate:1",
             serviceName: "metaMATE",
             selected: false,
             showExtra: false,
-            extraInputs: [],
-            Inputs: [
+            extraInputs: [
               {
-                name: "table",
-                active: false,
-                btnName: "select file",
-                value: "undefined",
+                name: "base_variation",
+                value: 3,
                 disabled: "never",
                 tooltip:
-                  "select OTU/ASV table. If no file is selected, then PipeCraft will look OTU_table.txt or ASV_table.txt in the WORKDIR [output will be in the directory as specified under 'SELECT WORKDIR']",
-                type: "boolfile",
+                  "find setting; allowed variation in the expected amplicon length in base pairs (metaMATE setting --basevariation)",
+                type: "numeric",
+                rules: [
+                  (v) => v >= 0 || "ERROR: specify values >= 0",
+                  (v) => v <= 9999 || "ERROR: specify values <= 9999",
+                ],
+              },
+            ],
+            Inputs: [
+              {
+                name: "find_or_dump",
+                items: ["find", "dump", "find and dump"],
+                value: "find",
+                disabled: "never",
+                tooltip:
+                  "find or dump functionality of metamate",
+                type: "select",
               },
               {
-                name: "OTUs",
+                name: "specifications",
+                value: "undefined",
+                btnName: "select file",
+                disabled: "never",
+                tooltip:
+                  "find setting; select specifications file for metaMATE find function; see example see https://github.com/tjcreedy/metamate/blob/main/specifications.txt",
+                type: "file",
+              },
+              {
+                name: "reference_seqs",
                 value: "undefined",
                 btnName: "select fasta",
                 disabled: "never",
                 tooltip:
-                  "select your fasta formatted OTUs/ASVs file for filtering",
+                  "find setting; zzz",
                 type: "file",
               },
               {
-                name: "setting_x",
+                name: "table",
+                active: false,
+                btnName: "select table",
+                value: "undefined",
+                disabled: "never",
+                tooltip:
+                  "find setting; select your OTU/ASV table",
+                type: "file",
+              },
+              {
+                name: "rep_seqs",
+                value: "undefined",
+                btnName: "select fasta",
+                disabled: "never",
+                tooltip:
+                  "find/dump setting; select your fasta formatted OTUs/ASVs file for filtering",
+                type: "file",
+              },
+              {
+                name: "genetic_code",
+                value: 5,
+                disabled: "never",
+                tooltip:
+                  "find setting; 5 = invertebrate mitochondrial code. Use 1 for rbcL. Specify values from 1 to 33 (metaMATE setting --table)",
+                type: "numeric",
+                rules: [
+                  (v) => v >= 1 || "ERROR: specify values >= 1",
+                  (v) => v <= 34 || "ERROR: specify values <= 34",
+                ],
+              },
+              {
+                name: "length",
+                value: 418,
+                disabled: "never",
+                tooltip:
+                  "find setting; the expected length of the target amplicon (metaMATE setting --expectedlength); allow variations with 'base_variation' setting",
+                type: "numeric",
+                rules: [
+                  (v) => v >= 1 || "ERROR: specify values >= 1",
+                  (v) => v <= 9999 || "ERROR: specify values <= 9999",
+                ],
+              },
+
+              {
+                name: "find_results",
+                value: "undefined",
+                btnName: "select file",
+                disabled: "never",
+                tooltip:
+                  "dump setting; select results file for dump from metaMATE find",
+                type: "file",
+              },
+              {
+                name: "result_index",
                 value: 1,
                 disabled: "never",
                 tooltip:
-                  "tooltip",
+                  "dump setting; which filtering to apply (metaMATE setting --resultindex)",
                 type: "numeric",
                 rules: [(v) => v >= 1 || "ERROR: specify values >= 1"],
               },
               {
-                name: "setting_y",
-                value: true,
+                name: "NA_abund_thresh",
+                value: 0.05,
                 disabled: "never",
                 tooltip:
-                  "setting_y",
-                type: "bool",
+                  "dump setting; 0.05=5%; the allowed abundance threshold of non-validated (putative artefactual) OTUs/ASVs",
+                max: 1,
+                min: 0,
+                step: 0.01,
+                type: "slide",
               },
-              {
-                name: "setting_z",
-                value: [],
-                disabled: "never",
-                tooltip: 
-                  "setting_z",
-                type: "chip",
-                iupac: true,
-                rules: [(v) => v.length <= 13 || "TOO MANY INPUTS"],
-              },
-              
             ],
           },
         ],
