@@ -2216,6 +2216,8 @@ export default new Vuex.Store({
                   (v) => v >= 0 || "ERROR: specify values >= 0",
                   (v) => v <= 9999 || "ERROR: specify values <= 9999",
                 ],
+                depends_on:
+                'state.selectedSteps[0].services[4].Inputs[0].value == "find" || state.selectedSteps[0].services[4].Inputs[0].value == "find and dump"',
               },
             ],
             Inputs: [
@@ -2236,6 +2238,8 @@ export default new Vuex.Store({
                 tooltip:
                   "find setting; select specifications file for metaMATE find function; see example see https://github.com/tjcreedy/metamate/blob/main/specifications.txt",
                 type: "file",
+                depends_on:
+                'state.selectedSteps[0].services[4].Inputs[0].value == "find" || state.selectedSteps[0].services[4].Inputs[0].value == "find and dump"',
               },
               {
                 name: "reference_seqs",
@@ -2245,6 +2249,8 @@ export default new Vuex.Store({
                 tooltip:
                   "find setting; zzz",
                 type: "file",
+                depends_on:
+                'state.selectedSteps[0].services[4].Inputs[0].value == "find" || state.selectedSteps[0].services[4].Inputs[0].value == "find and dump"',
               },
               {
                 name: "table",
@@ -2255,6 +2261,8 @@ export default new Vuex.Store({
                 tooltip:
                   "find setting; select your OTU/ASV table",
                 type: "file",
+                depends_on:
+                'state.selectedSteps[0].services[4].Inputs[0].value == "find" || state.selectedSteps[0].services[4].Inputs[0].value == "find and dump"',
               },
               {
                 name: "rep_seqs",
@@ -2264,6 +2272,8 @@ export default new Vuex.Store({
                 tooltip:
                   "find/dump setting; select your fasta formatted OTUs/ASVs file for filtering",
                 type: "file",
+                depends_on:
+                'state.selectedSteps[0].services[4].Inputs[0].value == "find" || state.selectedSteps[0].services[4].Inputs[0].value == "find and dump"',
               },
               {
                 name: "genetic_code",
@@ -2276,6 +2286,8 @@ export default new Vuex.Store({
                   (v) => v >= 1 || "ERROR: specify values >= 1",
                   (v) => v <= 34 || "ERROR: specify values <= 34",
                 ],
+                depends_on:
+                'state.selectedSteps[0].services[4].Inputs[0].value == "find" || state.selectedSteps[0].services[4].Inputs[0].value == "find and dump"',
               },
               {
                 name: "length",
@@ -2288,6 +2300,8 @@ export default new Vuex.Store({
                   (v) => v >= 1 || "ERROR: specify values >= 1",
                   (v) => v <= 9999 || "ERROR: specify values <= 9999",
                 ],
+                depends_on:
+                'state.selectedSteps[0].services[4].Inputs[0].value == "find" || state.selectedSteps[0].services[4].Inputs[0].value == "find and dump"',
               },
 
               {
@@ -2298,6 +2312,8 @@ export default new Vuex.Store({
                 tooltip:
                   "dump setting; select results file for dump from metaMATE find",
                 type: "file",
+                depends_on:
+                'state.selectedSteps[0].services[4].Inputs[0].value == "dump" || state.selectedSteps[0].services[4].Inputs[0].value == "find and dump"',
               },
               {
                 name: "result_index",
@@ -2307,6 +2323,8 @@ export default new Vuex.Store({
                   "dump setting; which filtering to apply (metaMATE setting --resultindex)",
                 type: "numeric",
                 rules: [(v) => v >= 1 || "ERROR: specify values >= 1"],
+                depends_on:
+                'state.selectedSteps[0].services[4].Inputs[0].value == "dump"',
               },
               {
                 name: "NA_abund_thresh",
@@ -2318,6 +2336,8 @@ export default new Vuex.Store({
                 min: 0,
                 step: 0.01,
                 type: "slide",
+                depends_on:
+                'state.selectedSteps[0].services[4].Inputs[0].value == "dump" || state.selectedSteps[0].services[4].Inputs[0].value == "find and dump"',
               },
             ],
           },
