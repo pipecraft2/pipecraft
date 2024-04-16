@@ -2219,6 +2219,14 @@ export default new Vuex.Store({
                 depends_on:
                 'state.selectedSteps[0].services[4].Inputs[0].value == "find" || state.selectedSteps[0].services[4].Inputs[0].value == "find and dump"',
               },
+              {
+                name: "cores",
+                value: 6,
+                disabled: "never",
+                tooltip: "number of cores to use",
+                type: "numeric",
+                rules: [(v) => v >= 1 || "ERROR: specify values >= 1"],
+              },
             ],
             Inputs: [
               {
