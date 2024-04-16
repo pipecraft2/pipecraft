@@ -2315,20 +2315,21 @@ export default new Vuex.Store({
               {
                 name: "find_results",
                 value: "undefined",
-                btnName: "select file",
+                btnName: "select csv",
                 disabled: "never",
                 tooltip:
                   "dump setting; select results file for dump from metaMATE find",
                 type: "file",
                 depends_on:
-                'state.selectedSteps[0].services[4].Inputs[0].value == "dump" || state.selectedSteps[0].services[4].Inputs[0].value == "find and dump"',
+                'state.selectedSteps[0].services[4].Inputs[0].value == "dump" || \
+                 state.selectedSteps[0].services[4].Inputs[0].value == "find and dump"',
               },
               {
                 name: "result_index",
                 value: 1,
                 disabled: "never",
                 tooltip:
-                  "dump setting; which filtering to apply (metaMATE setting --resultindex)",
+                  "dump setting; specify the result index from the results.csv file (1st column) ('find' output)",
                 type: "numeric",
                 rules: [(v) => v >= 1 || "ERROR: specify values >= 1"],
                 depends_on:
