@@ -2235,7 +2235,7 @@ export default new Vuex.Store({
                 value: "find",
                 disabled: "never",
                 tooltip:
-                  "find or dump functionality of metamate",
+                  "find or dump functionality of metamate. Settings not relevant to either find or dump are disabled",
                 type: "select",
               },
               {
@@ -2255,7 +2255,7 @@ export default new Vuex.Store({
                 btnName: "select fasta",
                 disabled: "never",
                 tooltip:
-                  "find setting; zzz",
+                  "find setting; sequences file (fasta) that represent known species that are likely to occur in the dataset",
                 type: "file",
                 depends_on:
                 'state.selectedSteps[0].services[4].Inputs[0].value == "find" || state.selectedSteps[0].services[4].Inputs[0].value == "find and dump"',
@@ -2345,7 +2345,7 @@ export default new Vuex.Store({
                 step: 0.01,
                 type: "slide",
                 depends_on:
-                'state.selectedSteps[0].services[4].Inputs[0].value == "dump" || state.selectedSteps[0].services[4].Inputs[0].value == "find and dump"',
+                'state.selectedSteps[0].services[4].Inputs[0].value == "find and dump"',
               },
             ],
           },
