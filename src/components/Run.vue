@@ -489,15 +489,17 @@ export default {
       let serviceInputs = element.Inputs.concat(element.extraInputs);
       serviceInputs.forEach((input, index) => {
         if (
-          input.type == "file" ||
+          input.type == "file" && (input.depends_on == undefined || !this.$store.getters.check_depends_on(input)) ||
           (input.type == "boolfile" && input.active == true)
         ) {
           let correctedPath = path.dirname(slash(input.value));
           if (index == 0) {
             let bind = `${correctedPath}:/extraFiles`;
+            console.log(bind)
             Binds.push(bind);
           } else {
             let bind = `${correctedPath}:/extraFiles${index + 1}`;
+            console.log(bind)
             Binds.push(bind);
           }
         }
@@ -517,7 +519,7 @@ export default {
       );
       serviceInputs.forEach((input, index) => {
         if (
-          input.type == "file" ||
+          input.type == "file" || 
           (input.type == "boolfile" && input.active == true)
         ) {
           let correctedPath = path.dirname(slash(input.value));

@@ -125,4 +125,10 @@ dependencies:
   - xz=5.2.6=h166bdaf_0
   - zlib=1.2.13=hd590300_5
   - zstd=1.5.5=hfc55251_0
+  - r-data.table=1.15.2
+  - r-ape=5.7
+  - r-getopt=1.20.4
+  - fastcluster=1.2.6
+  - seqkit=2.8.1
+  - r-cluster=2.1.6
 prefix: /opt/miniconda3/envs/test_env
