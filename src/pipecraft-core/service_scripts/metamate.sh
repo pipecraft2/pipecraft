@@ -129,7 +129,7 @@ if [[ $find_or_dump == "dump" ]] || [[ $find_or_dump == "find_and_dump" ]]; then
             read -r result_index < $output_dir/selected_result_index.txt
             printf " - selcted result_index = $result_index\n"
 
-            # if no results correspond with the NA_abund_thresh, then get the next best
+            # if no results correspond with the NA_abund_thresh, then get the next best 
 
             # run metaMATE-dump
             checkerror=$(python3 /metamate/metamate/metamate.py dump \
@@ -202,7 +202,7 @@ Files in 'metamate_out' directory:
   https://github.com/tjcreedy/metamate/blob/main/analyse_results_draft.R
 
 $warn
-
+Total run time was $runtime sec.
 ##################################################################
 ###Third-party applications for this process [PLEASE CITE]:
 #metaMATE v0.4.0
@@ -234,6 +234,8 @@ Added files to 'metamate_out' directory:
 # selected_result_index.txt = if present, then this file contains the selected resultindex for results.csv file for metaMATE-dump
 
 # -> more info about the outputs: https://github.com/tjcreedy/metamate?tab=readme-ov-file#outputs 
+
+Total run time was $runtime sec.
 
 ##################################################################
 ###Third-party applications for this process [PLEASE CITE]:
