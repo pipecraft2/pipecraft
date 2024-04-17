@@ -2220,6 +2220,17 @@ export default new Vuex.Store({
                 'state.selectedSteps[0].services[4].Inputs[0].value == "find" || state.selectedSteps[0].services[4].Inputs[0].value == "find_and_dump"',
               },
               {
+                name: "taxgroups",
+                active: false,
+                btnName: "select file",
+                value: "undefined",
+                disabled: "never",
+                tooltip:
+                  "find setting (optional); if sequence binning is to be performed on a per-taxon basis (as in specifications file) \
+                  then specify the taxon grouping file",
+                type: "boolfile",
+              },
+              {
                 name: "cores",
                 value: 6,
                 disabled: "never",
@@ -2312,7 +2323,7 @@ export default new Vuex.Store({
                 value: 1,
                 disabled: "never",
                 tooltip:
-                  "dump setting; specify the result index from the 'results.csv' file (1st column) (this is 'metaMATE-find' output located in metamate_out folder)",
+                  "dump setting; specify the result index from the 'results.csv' file (1st column) (this is 'metaMATE-find' output located in 'metamate_out' folder)",
                 type: "numeric",
                 rules: [(v) => v >= 1 || "ERROR: specify values >= 0"],
                 depends_on:
@@ -2323,7 +2334,12 @@ export default new Vuex.Store({
                 value: 0.05,
                 disabled: "never",
                 tooltip:
-                  "find_and_dump setting; the allowed abundance threshold of non-validated (putative artefactual) OTUs/ASVs, 0.05=5%",
+                  "find_and_dump setting; if performing simultaneous find and dump, then automatically filter the input sequences with \
+                  the allowed abundance threshold of non-validated (putative artefactual) OTUs/ASVs. \
+                  E.g. if NA_abund_thresh = 0.05, then for metaMATE-dump, select the result_index that corresponds to \
+                  setting with the highest accuracy score (column 'accuracy_score' in the results.csv) among settings \
+                  where the ratio of non-validated ASVs/OTUs is <5% \
+                  (column 'nonauthentic_retained_estimate_p' in the results.csv)",
                 max: 1,
                 min: 0,
                 step: 0.01,
