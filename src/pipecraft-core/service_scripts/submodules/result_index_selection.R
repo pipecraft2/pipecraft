@@ -9,11 +9,6 @@ NA_abund_thresh = Sys.getenv('NA_abund_thresh')
 output_dir = Sys.getenv('output_dir')
 find_results = read.csv(file.path(output_dir, "results.csv"))
 
-## count ASVs, vaASNs and NUMTs
-#ASVs_total = find_results$asvs_total[1]
-#vaASVs_total = find_results$verifiedauthentic_total_observed[1]
-#NUMTs_total = find_results$verifiednonauthentic_total_observed[1]
-
 ## filter results based on NA_abund_thresh 
 filtered_data = find_results[find_results$nonauthentic_retained_estimate_p <= NA_abund_thresh, ] 
 # sort based on accuracy_score

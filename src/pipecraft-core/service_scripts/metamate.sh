@@ -163,12 +163,18 @@ if [[ $debugger != "true" ]]; then
     if [[ -d tempdir2 ]]; then
         rm -rf tempdir2
     fi
+    if [[ -e $output_dir/result_index_selection.log ]]; then
+        rm $output_dir/result_index_selection.log
+    fi
+
 fi
 #basename of rep_seqs
 rep_seqs=$(basename $rep_seqs)
 
 # rm metaMATE formatted ASV table - not needed
-rm $output_dir/${rep_seqs%.*}_ASVcounts.csv 
+if [[ -e $output_dir/${rep_seqs%.*}_ASVcounts.csv ]]; then 
+    rm $output_dir/${rep_seqs%.*}_ASVcounts.csv 
+fi
 
 #Make README.txt file
 if (( $ASVcount > 65536 )); then
