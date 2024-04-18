@@ -2246,16 +2246,18 @@ export default new Vuex.Store({
                 value: "find",
                 disabled: "never",
                 tooltip:
-                  "find or dump functionality of metaMATE. Settings not relevant to either find or dump are disabled. If using 'find_and_dump', then dump follows automatically the find function to filter ASVs/OTUs based on the allowed abundance threshold of non-validated (putative artefactual) OTUs/ASVs ['NA abund thresh' setting]",
+                  "find or dump functionality of metaMATE. Settings not relevant to either find or dump are disabled. \
+                  'dump' expects the output folder 'metamate_out' with resultcache file. \
+                  If using 'find_and_dump', then dump follows automatically the find function to filter ASVs/OTUs based on the allowed abundance threshold of non-validated (putative artefactual) OTUs/ASVs ['NA abund thresh' setting]",
                 type: "select",
               },
               {
                 name: "specifications",
-                value: "undefined",
+                value: "/metamate/specifications.txt",
                 btnName: "select file",
                 disabled: "never",
                 tooltip:
-                  "find setting; select specifications file for metaMATE-find function; see example see https://github.com/tjcreedy/metamate/blob/main/specifications.txt",
+                  "find setting; select specifications file for metaMATE-find function. By default, using the 'default' metaMATE specifications file: https://github.com/tjcreedy/metamate/blob/main/specifications.txt",
                 type: "file",
                 depends_on:
                 'state.selectedSteps[0].services[4].Inputs[0].value == "find" || state.selectedSteps[0].services[4].Inputs[0].value == "find_and_dump"',
@@ -2266,7 +2268,8 @@ export default new Vuex.Store({
                 btnName: "select fasta",
                 disabled: "never",
                 tooltip:
-                  "find setting; sequences file (fasta) that represent known species that are likely to occur in the dataset",
+                  "find setting; sequences file (fasta) that represent known species that are likely to occur in the dataset. \
+                  Can be the same fasta formatted database file that was/would be used for the taxonomy assignment.",
                 type: "file",
                 depends_on:
                 'state.selectedSteps[0].services[4].Inputs[0].value == "find" || state.selectedSteps[0].services[4].Inputs[0].value == "find_and_dump"',

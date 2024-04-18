@@ -24,13 +24,16 @@ length=${length}                   # integer
 result_index=${result_index}       # integer
 NA_abund_thresh=${NA_abund_thresh} # float
 base_variation=${base_variation}   # integer
+taxgroups=${taxgroups}             # file
 cores=${cores}                     # integer
 
 # modify the path to the input files
 regex='[^/]*$'
-specifications=$(echo $specifications | grep -oP "$regex")
-specifications=$(basename $specifications) #basename, needed for macOS
-specifications=$(printf "/extraFiles2/$specifications")
+if [[ $specifications != "/metamate/specifications.txt" ]]; then
+    specifications=$(echo $specifications | grep -oP "$regex")
+    specifications=$(basename $specifications) #basename, needed for macOS
+    specifications=$(printf "/extraFiles2/$specifications")
+fi
 
 reference_seqs=$(echo $reference_seqs | grep -oP "$regex")
 reference_seqs=$(basename $reference_seqs)
@@ -44,11 +47,21 @@ rep_seqs=$(echo $rep_seqs | grep -oP "$regex")
 rep_seqs=$(basename $rep_seqs)
 rep_seqs=$(printf "/extraFiles5/$rep_seqs")
 
+if [[ $taxgroups != "undefined" ]]; then
+    taxgroups=$(echo $taxgroups | grep -oP "$regex")
+    taxgroups=$(basename $taxgroups) #basename, needed for macOS
+    taxgroups=$(printf "/extraFiles2/$taxgroups")
+    taxgroups=$"--taxgroups $taxgroups"
+else 
+    taxgroups=$""
+fi
+
 printf "\n specifications file = $specifications\n"
 printf "reference seqs file = $reference_seqs\n"
 printf "table file = $table\n"
 printf "rep seqs file = $rep_seqs\n"
 printf "find_or_dump = $find_or_dump\n"
+printf "taxgroups = $taxgroups\n"
 
 ###############################
 # Source for functions
@@ -61,19 +74,53 @@ echo "output_dir = $output_dir"
 eval "$(conda shell.bash hook)"
 conda activate metamate
 
-# if perfoming clade binning, then WARNING when processing more than 65,536 ASVs
-ASVcount=$(grep -c "^>" $rep_seqs)
-if (( $ASVcount > 65536 )); then
-    printf '%s\n' "WARNING]: clade binning NOT performed, because the input ASVs limit is 65,536 for that.
-Current input has $ASVcount ASVs."
-fi
-
 #############################
 ### Start of the workflow ###
 #############################
 start=$(date +%s)
+
+# quick check of the rep_seqs file
+if ! grep -q "^>" $rep_seqs; then
+    printf '%s\n' "ERROR]: rep_seqs file is not a FASTA file.
+    Please provide a fasta.
+    >Quitting" >&2
+    end_process
+fi
+
+# if perfoming clade binning, then WARNING when processing more than 65,536 ASVs
+ASVcount=$(grep -c "^>" $rep_seqs)
+if (( $ASVcount > 65536 )); then
+    printf '%s\n' "WARNING]: clade binning NOT performed, because the input ASVs limit is 65,536 for that.
+    Current input has $ASVcount ASVs."
+fi
+
+# quick check that the number of ASVs/OTUs match between $rep_seqs and $table files
+num_lines=$(wc -l < $table)
+ASVcount_in_table=$((num_lines - 1))
+if [[ $ASVcount != $ASVcount_in_table ]]; then
+    printf '%s\n' "ERROR]: number of ASVs/OTUs do not match between the specified rep_seqs and table files.
+Not corresponding files submitted or the table format is wrong. Expected input table format = samples in COLUMNs and ASVs/OTUs in ROWs.
+>Quitting" >&2
+    end_process
+fi
+
 ## metaMATE-find
 if [[ $find_or_dump == "find" ]] || [[ $find_or_dump == "find_and_dump" ]]; then
+
+    # quick check of the specifications file, has to contain "library" | "total" | "clade" | "taxon"
+    if ! grep -q -e "library" -e "total" -e "clade" -e "taxon" $specifications; then
+        printf '%s\n' "ERROR]: specifications file seems to be wrong. Does not contain any of the terms (library, total, clade, taxon).
+        >Quitting" >&2
+        end_process
+    fi
+
+    # quick check of the reference_seqs file
+    if ! grep -q "^>" $reference_seqs; then
+        printf '%s\n' "ERROR]: reference_seqs file is not a FASTA file.
+        Please provide a fasta.
+        >Quitting" >&2
+        end_process
+    fi
 
     # remove old $output_dir if exists
     if [[ -d $output_dir ]]; then
@@ -82,15 +129,16 @@ if [[ $find_or_dump == "find" ]] || [[ $find_or_dump == "find_and_dump" ]]; then
 
     printf "# Running metaMATE-find\n"
     checkerror=$(python3 /metamate/metamate/metamate.py find \
-        -A $rep_seqs \
-        -M $table \
-        -S $specifications \
-        -R $reference_seqs \
+        --asvs $rep_seqs \
+        --readmap $table \
+        --specification $specifications \
+        --references $reference_seqs \
+        $taxgroups \
         --expectedlength $length \
         --basesvariation $base_variation \
         --table $genetic_code \
-        -t $cores \
-        -o $output_dir \
+        --threads $cores \
+        --output $output_dir \
         --overwrite 2>&1)
     check_app_error
 fi
@@ -107,11 +155,11 @@ if [[ $find_or_dump == "dump" ]] || [[ $find_or_dump == "find_and_dump" ]]; then
         if [[ $find_or_dump == "dump" ]]; then
             printf "# Running metaMATE-dump\n"
             checkerror=$(python3 /metamate/metamate/metamate.py dump \
-            -A $rep_seqs \
-            -C $output_dir/resultcache \
-            -o $output_dir/${dump_seqs%.*}_metaMATE.filt \
+            --asvs $rep_seqs \
+            --resultcache $output_dir/resultcache \
+            --output $output_dir/${dump_seqs%.*}_metaMATE.filt \
             --overwrite \
-            -i $result_index 2>&1)
+            --resultindex $result_index 2>&1)
             check_app_error
 
         # if find_or_dump == "find_and_dump"
@@ -133,11 +181,11 @@ if [[ $find_or_dump == "dump" ]] || [[ $find_or_dump == "find_and_dump" ]]; then
 
             # run metaMATE-dump
             checkerror=$(python3 /metamate/metamate/metamate.py dump \
-            -A $rep_seqs \
-            -C $output_dir/resultcache \
-            -o $output_dir/${dump_seqs%.*}_metaMATE.filt \
+            --asvs $rep_seqs \
+            --resultcache $output_dir/resultcache \
+            --output $output_dir/${dump_seqs%.*}_metaMATE.filt \
             --overwrite \
-            -i $result_index 2>&1)
+            --resultindex $result_index 2>&1)
             check_app_error
         fi
 
@@ -150,10 +198,10 @@ if [[ $find_or_dump == "dump" ]] || [[ $find_or_dump == "find_and_dump" ]]; then
         awk -v var="$output_dir/${dump_seqs%.*}" 'NR==1; NR>1 {print $0 | "grep -Fwf "var"_metaMATE.filt.list"}' $table > $output_dir/${out_table%.*}_metaMATE.filt.txt
     else 
         printf '%s\n' "ERROR]: cannot find the $output_dir (metaMATE-find output) to start metaMATE-dump.
-Please check that the correct working directory is specified or run metaMATE 'find' first. Do not use metamate_out as working directory for dump.
+Please check that the correct working directory is specified or run metaMATE-find first. Do not use metamate_out as working directory for metaMATE-dump.
 >Quitting" >&2
     end_process
-    fi   
+    fi
 fi
 
 #################################################
@@ -203,6 +251,7 @@ Files in 'metamate_out' directory:
 
 $warn
 Total run time was $runtime sec.
+
 ##################################################################
 ###Third-party applications for this process [PLEASE CITE]:
 #metaMATE v0.4.0
