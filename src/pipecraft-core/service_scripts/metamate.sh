@@ -1,5 +1,5 @@
 #!/bin/bash
-set -e 
+
 # metaMATE v0.4.0 (https://github.com/tjcreedy/metamate) software for 
  #  removel of nuclear pseudogenes and sequencing artefacts from mitochondrial metabarcode data
 
@@ -23,7 +23,7 @@ genetic_code=${genetic_code}       # integer
 length=${length}                   # integer
 result_index=${result_index}       # integer
 NA_abund_thresh=${NA_abund_thresh} # float
-base_variation=${base_variation}   # integer
+bases_variation=${bases_variation}   # integer
 taxgroups=${taxgroups}             # file
 cores=${cores}                     # integer
 
@@ -133,13 +133,13 @@ if [[ $find_or_dump == "find" ]] || [[ $find_or_dump == "find_and_dump" ]]; then
         --readmap $table \
         --specification $specifications \
         --references $reference_seqs \
-        $taxgroups \
         --expectedlength $length \
-        --basesvariation $base_variation \
+        --basesvariation $bases_variation \
+        --onlyvarybycodon \
         --table $genetic_code \
         --threads $cores \
         --output $output_dir \
-        --overwrite 2>&1)
+        --overwrite $taxgroups 2>&1)
     check_app_error
 fi
 
@@ -257,8 +257,8 @@ Total run time was $runtime sec.
 #metaMATE v0.4.0
     #citation: Andújar, C., Creedy, T.J., Arribas, P., López, H., Salces-Castellano, A., Pérez-Delgado, A.J., Vogler, A.P. and Emerson, B.C. (2021), Validated removal of nuclear pseudogenes and sequencing artefacts from mitochondrial metabarcode data. Mol Ecol Resour, 21: 1772-1787. https://doi.org/10.1111/1755-0998.13337
     #https://github.com/tjcreedy/metamate
-########################################################" > $output_dir/README.metaMATE_find.txt
-fi 
+########################################################" > $output_dir/README.metaMATE-find.txt
+fi
 
 if [[ $find_or_dump == "dump" ]] || [[ $find_or_dump == "find_and_dump" ]]; then
     #count input ASVs
@@ -291,7 +291,11 @@ Total run time was $runtime sec.
 #metaMATE v0.4.0
     #citation: Andújar, C., Creedy, T.J., Arribas, P., López, H., Salces-Castellano, A., Pérez-Delgado, A.J., Vogler, A.P. and Emerson, B.C. (2021), Validated removal of nuclear pseudogenes and sequencing artefacts from mitochondrial metabarcode data. Mol Ecol Resour, 21: 1772-1787. https://doi.org/10.1111/1755-0998.13337
     #https://github.com/tjcreedy/metamate
-########################################################" > $output_dir/README.metaMATE_dump.txt
+########################################################" > $output_dir/README.metaMATE-dump.txt
+fi
+
+if [[ -e $output_dir/next_best_set.csv ]]; then
+    sed -i "7i\# next_best_set.csv = contains the next best filtering settings as the metaMATE-find results.csv file did not contain NA_abund_thresh of <= $NA_abund_thresh ('nonauthentic_retained_estimate_p')." $output_dir/README.metaMATE-dump.txt
 fi
 
 #Done

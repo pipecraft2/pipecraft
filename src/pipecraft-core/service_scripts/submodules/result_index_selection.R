@@ -21,7 +21,8 @@ if (nrow(filtered_data) == 0) {
      # sort based on accuracy_score
     sorted_filtered = filtered_data[order(-filtered_data$accuracy_score), ]
     # get the result with the highest accuracy_score
-    metamate_selected_threshold <- sorted_filtered[1,]
+    metamate_selected_threshold = sorted_filtered[1,]
+    write.csv(metamate_selected_threshold, file.path(output_dir, "next_best_set.csv"), quote = F)
     # the result_index of the NA_abund_thresh with the highest accuracy_score
     result_index = metamate_selected_threshold[,1]
     write(result_index, file.path(output_dir, "selected_result_index.txt"))
@@ -29,7 +30,7 @@ if (nrow(filtered_data) == 0) {
     # sort based on accuracy_score
     sorted_filtered = filtered_data[order(-filtered_data$accuracy_score), ]
     # get the result with the highest accuracy_score
-    metamate_selected_threshold <- sorted_filtered[1,]
+    metamate_selected_threshold = sorted_filtered[1,]
     # the result_index of the NA_abund_thresh with the highest accuracy_score
     result_index = metamate_selected_threshold[,1]
     write(result_index, file.path(output_dir, "selected_result_index.txt"))

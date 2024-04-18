@@ -2206,15 +2206,15 @@ export default new Vuex.Store({
             showExtra: false,
             extraInputs: [
               {
-                name: "base_variation",
-                value: 3,
+                name: "bases_variation",
+                value: 0,
                 disabled: "never",
                 tooltip:
                   "find setting; allowed variation in the expected amplicon length in base pairs (metaMATE setting --basevariation)",
                 type: "numeric",
                 rules: [
                   (v) => v >= 0 || "ERROR: specify values >= 0",
-                  (v) => v <= 9999 || "ERROR: specify values <= 9999",
+                  (v) => v <= 9999 || "ERROR: specify values <= 999",
                 ],
                 depends_on:
                 'state.selectedSteps[0].services[4].Inputs[0].value == "find" || state.selectedSteps[0].services[4].Inputs[0].value == "find_and_dump"',
