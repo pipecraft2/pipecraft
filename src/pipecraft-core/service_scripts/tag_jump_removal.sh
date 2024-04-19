@@ -10,14 +10,24 @@
 # R data.table, ggplot2
 ##############################
 
-# $OTU_table = input OTU_table
-regex='[^/]*$'
-OTU_table_file_path=$(echo $OTU_table | grep -oP "$regex")
-OTU_table_temp=$(basename $OTU_table_file_path)
-OTU_table_file=$(printf "/extraFiles/$OTU_table_temp")
+# read input ASVs/OTUs table
+# if [[ -n $OTU_table ]] && [[ -n $f_value ]] && [[ -n $p_value ]]; then
+    regex='[^/]*$'
+    OTU_table_file_path=$(echo $OTU_table | grep -oP "$regex")
+    OTU_table_temp=$(basename $OTU_table_file_path)
+    OTU_table_file=$(printf "/extraFiles/$OTU_table_temp")
+    printf "\n running UNCROSS2 as a standalone process, input = $OTU_table_file\n"
+    #output dir
+    output_dir=$"/input/"
 
-#output dir
-output_dir=$"/input/"
+# elif [[ -n $f_value ]] && [[ -n $p_value ]]; then
+#     OTU_table_file=$"/input/ASVs_out.dada2/ASVs_table.txt"
+#     printf "\n running UNCROSS2 withing pre-compiled pipeline, input = $OTU_table_file\n"
+#     #output dir
+#     output_dir=$"/input/ASVs_out.dada2/"
+# fi
+
+
 # Source for functions
 source /scripts/submodules/framework.functions.sh
 

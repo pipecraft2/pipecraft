@@ -150,7 +150,6 @@ while read file; do
 done < tempdir2/files_in_folder.txt
 }
 
-
 ####################################################
 ### Check SINGLE-END data and pepare working env ###
 ####################################################
@@ -178,6 +177,71 @@ while read file; do
 done < tempdir2/files_in_folder.txt
 }
 
+############################################
+### Prepare primers file for CUT PRIMERS ###
+############################################
+function prepare_primers () {
+# Primer arrays
+fwd_primer_array=$(echo $fwd_tempprimer | sed 's/,/ /g' | sed 's/I/N/g')
+rev_primer_array=$(echo $rev_tempprimer | sed 's/,/ /g' | sed 's/I/N/g')
+# Forward primer(s) to fasta file
+i=1
+for primer in $fwd_primer_array; do
+    echo ">fwd_primer$i" >> tempdir2/fwd_primer.fasta
+    echo $primer >> tempdir2/fwd_primer.fasta
+    ((i=i+1))
+done
+# Reverse primer(s) to fasta file
+i=1
+for primer in $rev_primer_array; do
+    echo ">rev_primer$i" >> tempdir2/rev_primer.fasta
+    echo $primer >> tempdir2/rev_primer.fasta
+    ((i=i+1))
+done
+# Reverse complement FWD and REV primers
+checkerror=$(seqkit seq --quiet -t dna -r -p tempdir2/fwd_primer.fasta >> tempdir2/fwd_primer_RC.fasta 2>&1)
+check_app_error
+checkerror=$(seqkit seq --quiet -t dna -r -p tempdir2/rev_primer.fasta >> tempdir2/rev_primer_RC.fasta 2>&1)
+check_app_error
+
+# Make linked primer files
+i=1
+while read LINE; do
+    fwd_primer=$(echo $LINE | grep -v ">")
+    if [ -z "$fwd_primer" ]; then
+        :
+    else
+        while read LINE; do
+            rev_primer_RC=$(echo $LINE | grep -v ">")
+            if [ -z "$rev_primer_RC" ]; then
+                :
+            else
+                echo ">primer$i" >> tempdir2/liked_fwd_revRC.fasta
+                echo "$fwd_primer;$required_optional...$rev_primer_RC;$required_optional" >> tempdir2/liked_fwd_revRC.fasta
+                ((i=i+1))
+            fi
+        done < tempdir2/rev_primer_RC.fasta
+    fi
+done < tempdir2/fwd_primer.fasta
+i=1
+while read LINE; do
+    rev_primer=$(echo $LINE | grep -v ">")
+    if [ -z "$rev_primer" ]; then
+        :
+    else
+        while read LINE; do
+            fwd_primer_RC=$(echo $LINE | grep -v ">")
+            if [ -z "$fwd_primer_RC" ]; then
+                :
+            else
+                echo ">primer$i" >> tempdir2/liked_rev_fwdRC.fasta
+                echo "$rev_primer;$required_optional...$fwd_primer_RC;$required_optional" >> tempdir2/liked_rev_fwdRC.fasta
+                ((i=i+1))
+            fi
+        done < tempdir2/fwd_primer_RC.fasta
+    fi
+done < tempdir2/rev_primer.fasta
+}
 
 #######################################################################
 ### Check if single-end files are compressed (decompress and check) ###

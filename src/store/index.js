@@ -718,7 +718,7 @@ export default new Vuex.Store({
                 value: 0,
                 disabled: "never",
                 tooltip:
-                  "discard sequences with more than the specified number of N’s (ambiguous bases)",
+                  "discard sequences with more than the specified number of N's (ambiguous bases)",
                 type: "numeric",
                 rules: [(v) => v >= 0 || "ERROR: specify values >= 0"],
               },
@@ -4406,15 +4406,6 @@ export default new Vuex.Store({
             type: "chip",
             rules: [(v) => v.length <= 1 || "ADD ONLY ONE IDENTIFIER"],
           },
-          // {
-          //   name: "samp_ID",
-          //   value: ["_"],
-          //   disabled: "single_end",
-          //   tooltip:
-          //     "[only for paired-end data] identifyer string that separates the sample name from redundant charachters (e.g. file name = sample1.R1.fastq, then '\\.' would be the 'identifier string' (sample name = sample1)); note that backslash is only needed to escape dot regex (e.g. when file name = sample1_R1.fastq then specify as '_')",
-          //   type: "chip",
-          //   rules: [(v) => v.length <= 1 || "ADD ONLY ONE IDENTIFIER"],
-          // },
           {
             name: "maxEE",
             value: 2,
@@ -4674,37 +4665,37 @@ export default new Vuex.Store({
           },
         ],
       },
-      {
-        scriptName: "tag_jump_removal.sh",
-        tooltip: "using UNCROSS2 to filter out putative tag-jumps",
-        imageName: "vmikk/nextits:0.5.0",
-        serviceName: "filter tag-jumps",
-        manualLink:
-          "https://pipecraft2-manual.readthedocs.io/en/latest/pre-defined_pipelines.html#tag-jump-correction",
-        selected: false,
-        showExtra: false,
-        extraInputs: [],
-        Inputs: [
-          {
-            name: "f_value",
-            value: 0.01,
-            disabled: "never",
-            tooltip:
-              "f-parameter of UNCROSS2, which defines the expected cross-talk rate. Default is 0.01 (equivalent to 1%). A higher value enforces stricter filtering",
-            type: "numeric",
-            rules: [(v) => v > 0 || "ERROR: specify values > 0"],
-          },
-          {
-            name: "p_value",
-            value: 1,
-            disabled: "never",
-            tooltip:
-              "p-parameter, which controls the severity of tag-jump removal. It adjusts the exponent in the UNCROSS formula. Default is 1. Opt for 0.5 or 0.3 to steepen the curve",
-            type: "numeric",
-            rules: [(v) => v > 0 || "ERROR: specify values > 0"],
-          },
-        ],
-      },
+      // {
+      //   scriptName: "tag_jump_removal.sh",
+      //   tooltip: "using UNCROSS2 to filter out putative tag-jumps",
+      //   imageName: "vmikk/nextits:0.5.0",
+      //   serviceName: "filter tag-jumps",
+      //   manualLink:
+      //     "https://pipecraft2-manual.readthedocs.io/en/latest/pre-defined_pipelines.html#tag-jump-correction",
+      //   selected: false,
+      //   showExtra: false,
+      //   extraInputs: [],
+      //   Inputs: [
+      //     {
+      //       name: "f_value",
+      //       value: 0.01,
+      //       disabled: "never",
+      //       tooltip:
+      //         "f-parameter of UNCROSS2, which defines the expected cross-talk rate. Default is 0.01 (equivalent to 1%). A higher value enforces stricter filtering",
+      //       type: "numeric",
+      //       rules: [(v) => v > 0 || "ERROR: specify values > 0"],
+      //     },
+      //     {
+      //       name: "p_value",
+      //       value: 1,
+      //       disabled: "never",
+      //       tooltip:
+      //         "p-parameter, which controls the severity of tag-jump removal. It adjusts the exponent in the UNCROSS formula. Default is 1. Opt for 0.5 or 0.3 to steepen the curve",
+      //       type: "numeric",
+      //       rules: [(v) => v > 0 || "ERROR: specify values > 0"],
+      //     },
+      //   ],
+      // },
       {
         tooltip: "Collaplse identical ASVs or/and filter ASVs by length",
         scriptName: "table_filtering_dada2_wf.sh",
@@ -4818,7 +4809,7 @@ export default new Vuex.Store({
       //   title: "MetaWorks COI ASVs",
       // },
       NextITS: {
-        info: "NextITS pipeline for demultiplexed PacBio ITS (single-end) amplicons",
+        info: "NextITS pipeline for demultiplexed PacBio ITS (single-end) amplicons. Please see the special requirement (folder structure) for the data input from the PipeCraft user guide",
         link: "https://github.com/vmikk/NextITS",
         title: "NextITS",
       },
