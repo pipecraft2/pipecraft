@@ -323,7 +323,6 @@ done
 
 #Done
 printf "\nDONE "
-printf "Total time: $runtime sec.\n "
 
 #variables for all services
 echo "#variables for all services: "

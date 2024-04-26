@@ -1,11 +1,11 @@
 {
-  "name": "pipecraft_v1.0.2",
-  "version": "1.0.2",
+  "name": "PipeCraft_v1.1.0",
+  "version": "1.1.0",
   "private": true,
   "author": {
     "name": "Martin Metsoja",
     "email": "martin.metsoja@gmail.com",
-    "url": "https://github.com/SuvalineVana/pipecraft"
+    "url": "https://github.com/pipecraft2/pipecraft"
   },
   "scripts": {
     "serve": "vue-cli-service serve",

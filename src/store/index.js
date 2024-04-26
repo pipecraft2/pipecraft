@@ -877,7 +877,7 @@ export default new Vuex.Store({
                 value: 16,
                 disabled: "never",
                 tooltip:
-                  "default = 16. Banding for Needleman-Wunsch alignments. Default sets here = 16 for Illumina and 32 for PacBio",
+                  "default = 16. Banding for Needleman-Wunsch alignments.",
                 type: "numeric",
                 rules: [(v) => v >= -1 || "ERROR: specify values >= -1"],
               },
@@ -4508,7 +4508,7 @@ export default new Vuex.Store({
             value: 16,
             disabled: "never",
             tooltip:
-              "default = 16. Banding for Needleman-Wunsch alignments. Default sets here = 16 for Illumina and 32 for PacBio",
+              "default = 16 for loessErrfun and 32 for PacBioErrfun. Banding for Needleman-Wunsch alignments.",
             type: "numeric",
             rules: [(v) => v >= 0 || "ERROR: specify values >= 0"],
           },
