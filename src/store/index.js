@@ -2217,7 +2217,7 @@ export default new Vuex.Store({
                   (v) => v <= 9999 || "ERROR: specify values <= 999",
                 ],
                 depends_on:
-                'state.selectedSteps[0].services[4].Inputs[0].value == "find" || state.selectedSteps[0].services[4].Inputs[0].value == "find_and_dump"',
+                  'state.selectedSteps[0].services[4].Inputs[0].value == "find" || state.selectedSteps[0].services[4].Inputs[0].value == "find_and_dump"',
               },
               {
                 name: "taxgroups",
@@ -2260,7 +2260,7 @@ export default new Vuex.Store({
                   "find setting; select specifications file for metaMATE-find function. By default, using the 'default' metaMATE specifications file: https://github.com/tjcreedy/metamate/blob/main/specifications.txt",
                 type: "file",
                 depends_on:
-                'state.selectedSteps[0].services[4].Inputs[0].value == "find" || state.selectedSteps[0].services[4].Inputs[0].value == "find_and_dump"',
+                  'state.selectedSteps[0].services[4].Inputs[0].value == "find" || state.selectedSteps[0].services[4].Inputs[0].value == "find_and_dump"',
               },
               {
                 name: "reference_seqs",
@@ -2272,7 +2272,7 @@ export default new Vuex.Store({
                   Can be the same fasta formatted database file that was/would be used for the taxonomy assignment.",
                 type: "file",
                 depends_on:
-                'state.selectedSteps[0].services[4].Inputs[0].value == "find" || state.selectedSteps[0].services[4].Inputs[0].value == "find_and_dump"',
+                  'state.selectedSteps[0].services[4].Inputs[0].value == "find" || state.selectedSteps[0].services[4].Inputs[0].value == "find_and_dump"',
               },
               {
                 name: "table",
@@ -2305,7 +2305,7 @@ export default new Vuex.Store({
                   (v) => v <= 34 || "ERROR: specify values <= 34",
                 ],
                 depends_on:
-                'state.selectedSteps[0].services[4].Inputs[0].value == "find" || state.selectedSteps[0].services[4].Inputs[0].value == "find_and_dump"',
+                  'state.selectedSteps[0].services[4].Inputs[0].value == "find" || state.selectedSteps[0].services[4].Inputs[0].value == "find_and_dump"',
               },
               {
                 name: "length",
@@ -2319,7 +2319,7 @@ export default new Vuex.Store({
                   (v) => v <= 9999 || "ERROR: specify values <= 9999",
                 ],
                 depends_on:
-                'state.selectedSteps[0].services[4].Inputs[0].value == "find" || state.selectedSteps[0].services[4].Inputs[0].value == "find_and_dump"',
+                  'state.selectedSteps[0].services[4].Inputs[0].value == "find" || state.selectedSteps[0].services[4].Inputs[0].value == "find_and_dump"',
               },
               {
                 name: "result_index",
@@ -2330,7 +2330,7 @@ export default new Vuex.Store({
                 type: "numeric",
                 rules: [(v) => v >= 1 || "ERROR: specify values >= 0"],
                 depends_on:
-                'state.selectedSteps[0].services[4].Inputs[0].value == "dump"',
+                  'state.selectedSteps[0].services[4].Inputs[0].value == "dump"',
               },
               {
                 name: "NA_abund_thresh",
@@ -2348,7 +2348,7 @@ export default new Vuex.Store({
                 step: 0.01,
                 type: "slide",
                 depends_on:
-                'state.selectedSteps[0].services[4].Inputs[0].value == "find_and_dump"',
+                  'state.selectedSteps[0].services[4].Inputs[0].value == "find_and_dump"',
               },
             ],
           },
@@ -4858,7 +4858,8 @@ export default new Vuex.Store({
           if (input.selected === true || input.selected == "always") {
             input.Inputs.forEach((input) => {
               if (
-                input.type == "file" && (input.depends_on == undefined || eval(input.depends_on)) || 
+                (input.type == "file" &&
+                  (input.depends_on == undefined || eval(input.depends_on))) ||
                 input.type == "chip" ||
                 (input.type == "boolfile" && input.active == true)
               ) {
@@ -4886,7 +4887,8 @@ export default new Vuex.Store({
           if (step.selected == true || step.selected == "always") {
             step.Inputs.forEach((input) => {
               if (
-                input.type == "file" && (input.depends_on == undefined || eval(input.depends_on)) ||
+                (input.type == "file" &&
+                  (input.depends_on == undefined || eval(input.depends_on))) ||
                 input.type == "chip" ||
                 (input.type == "boolfile" && input.active == true)
               ) {
@@ -5138,7 +5140,8 @@ export default new Vuex.Store({
         payload.value;
     },
     setDADAmode(state, payload) {
-      console.log(payload)
+      console.log(payload);
+      state.data.dada2mode = payload;
       if (payload == "SINGLE_END") {
         state.data.readType = "single_end";
         state.DADA2_ASVs[3].selected = false;
@@ -5146,12 +5149,14 @@ export default new Vuex.Store({
         state.DADA2_ASVs[2].extraInputs[0].value = 32;
         state.DADA2_ASVs[2].Inputs[2].value = "FastqQuality";
       } else {
+        state.data.dada2mode = "FORWARD";
         state.DADA2_ASVs[3].selected = "always";
         state.DADA2_ASVs[2].Inputs[0].value = "loessErrfun";
         state.DADA2_ASVs[2].Inputs[2].value = "Auto";
         state.DADA2_ASVs[2].extraInputs[0].value = 16;
       }
       if (payload == "MIXED") {
+        state.data.dada2mode = "MIXED";
         state.DADA2_ASVs[0].selected = "always";
       } else {
         state.DADA2_ASVs[0].selected = false;
