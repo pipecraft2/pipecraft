@@ -68,13 +68,15 @@ for seqrun in $DIRS; do
     cd $seqrun
     
     if [[ $multiDir == "TRUE" ]]; then
-        ### Check if the dir has the specified file extension; if not then reset the loop and check the next dir
+        ### Check if the dir has the specified file extension; if not then ERROR
         count=$(ls -1 *.$fileFormat 2>/dev/null | wc -l)
         if [[ $count != 0 ]]; then
             printf "\n$ ---- Processing samples in $seqrun\n"
         else
-            cd ..
-            break 2
+            printf '%s\n' "ERROR]: cannot find files with specified extension '$fileFormat' in dir $seqrun.
+            Please check the extension of your files and specify again.
+            >Quitting" >&2
+            end_process
         fi
         #output dir
         output_dir=$"/input/multiRunDir/$seqrun/primersCut_out"
@@ -168,9 +170,8 @@ for seqrun in $DIRS; do
             -p $output_dir/$inputR2.$extension \
             $output_dir/$inputR1.round1.$extension $output_dir/$inputR2.round1.$extension 2>&1)
             check_app_error
-            if [[ $debugger != "true" ]]; then
-                rm $output_dir/$inputR1.round1.$extension $output_dir/$inputR2.round1.$extension
-            fi
+            #rm round1 files
+            rm $output_dir/$inputR1.round1.$extension $output_dir/$inputR2.round1.$extension
 
         elif [[ $seqs_to_keep == "keep_only_linked" ]]; then
             checkerror=$(cutadapt --quiet \

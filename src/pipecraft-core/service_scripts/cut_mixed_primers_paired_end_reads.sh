@@ -68,13 +68,15 @@ for seqrun in $DIRS; do
     cd $seqrun
 
     if [[ $multiDir == "TRUE" ]]; then
-        ### Check if the dir has the specified file extension; if not then reset the loop and check the next dir
+        ### Check if the dir has the specified file extension; if not then ERROR
         count=$(ls -1 *.$fileFormat 2>/dev/null | wc -l)
         if [[ $count != 0 ]]; then
             printf "\n$ ---- Processing samples in $seqrun\n"
         else
-            cd ..
-            break 2
+            printf '%s\n' "ERROR]: cannot find files with specified extension '$fileFormat' in dir $seqrun.
+            Please check the extension of your files and specify again.
+            >Quitting" >&2
+            end_process
         fi
         #output dir
         output_dir=$"/input/multiRunDir/$seqrun/primersCut_out"

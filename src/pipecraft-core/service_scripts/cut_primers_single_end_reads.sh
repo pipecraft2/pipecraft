@@ -17,7 +17,7 @@
     #https://bioinf.shenwei.me/seqkit/
 #pigz v2.4
 ##########################################################
-
+echo "--- cut_primers_single_end_reads.sh ---"
 #load variables
 extension=${fileFormat}  # KEEP THIS (removed in some other scripts)
 mismatches=$"-e ${mismatches}"
@@ -43,135 +43,133 @@ fi
 
 #Source for functions
 source /scripts/submodules/framework.functions.sh
-#output dir
-output_dir=$"/input/primersCut_out"
 
-start=$(date +%s)
-### Check if files with specified extension exist in the dir
-first_file_check
-### Prepare working env and check single-end data
-prepare_SE_env
-
-### Prepare primers
-# Primer arrays
-fwd_primer_array=$(echo $fwd_tempprimer | sed 's/,/ /g' | sed 's/I/N/g')
-rev_primer_array=$(echo $rev_tempprimer | sed 's/,/ /g' | sed 's/I/N/g')
-# Forward primer(s) to fasta file
-i=1
-for primer in $fwd_primer_array; do
-    echo ">fwd_primer$i" >> tempdir2/fwd_primer.fasta
-    echo $primer >> tempdir2/fwd_primer.fasta
-    ((i=i+1))
-done
-# Reverse primer(s) to fasta file
-i=1
-for primer in $rev_primer_array; do
-    echo ">rev_primer$i" >> tempdir2/rev_primer.fasta
-    echo $primer >> tempdir2/rev_primer.fasta
-    ((i=i+1))
-done
-# Reverse complement REV primers
-checkerror=$(seqkit seq --quiet -t dna -r -p tempdir2/rev_primer.fasta >> tempdir2/rev_primer_RC.fasta 2>&1)
-check_app_error
-# Make linked primers files
-i=1
-while read LINE; do
-    fwd_primer=$(echo $LINE | grep -v ">")
-    if [ -z "$fwd_primer" ]; then
-        :
-    else
-        while read LINE; do
-            rev_primer_RC=$(echo $LINE | grep -v ">")
-            if [ -z "$rev_primer_RC" ]; then
-                :
-            else
-                echo ">primer$i" >> tempdir2/liked_fwd_revRC.fasta
-                echo "$fwd_primer;$required_optional...$rev_primer_RC;$required_optional" >> tempdir2/liked_fwd_revRC.fasta
-                ((i=i+1))
-            fi
-        done < tempdir2/rev_primer_RC.fasta
-    fi
-done < tempdir2/fwd_primer.fasta
+# Check if I need to work with multiple or with a single sequencing run
+if [[ -d "/input/multiRunDir" ]]; then
+  echo "Working with multiple sequencing runs in multiRunDir"
+  cd /input/multiRunDir
+  # read in directories (sequencing sets) to work with. Skip directories renamed as "skip_*"
+    DIRS=$(find . -maxdepth 1 -mindepth 1 -type d | grep -v "tempdir2" | grep -v "tempdir" | grep -v "skip_")
+    echo "runs = $DIRS"
+    multiDir=$"TRUE"
+    export multiDir
+else
+  echo "Working with individual sequencing run"
+  DIRS=$(pwd)
+fi
 
 #############################
 ### Start of the workflow ###
 #############################
-### Read through each fastq/fasta file in folder
-for file in *.$fileFormat; do
-    #Write file name without extension
-    input=$(echo $file | sed -e "s/.$fileFormat//")
-    ## Preparing files
-    printf "\n____________________________________\n"
-    printf "Checking $input ...\n"
+### looping through multiple sequencing runs (dirs in multiRunDir) if the $WD=multiRunDir, otherwise just doing single seqrun analyses
+for seqrun in $DIRS; do
+    start=$(date +%s)
+    cd $seqrun
 
-    ### Check input formats (only fastq/fasta supported)
-    check_extension_fastxgz
+    if [[ $multiDir == "TRUE" ]]; then
+        ### Check if the dir has the specified file extension; if not then ERROR
+        count=$(ls -1 *.$fileFormat 2>/dev/null | wc -l)
+        if [[ $count != 0 ]]; then
+            printf "\n$ ---- Processing samples in $seqrun\n"
+        else
+            printf '%s\n' "ERROR]: cannot find files with specified extension '$fileFormat' in dir $seqrun.
+            Please check the extension of your files and specify again.
+            >Quitting" >&2
+            end_process
+        fi
+        #output dir
+        output_dir=$"/input/multiRunDir/$seqrun/primersCut_out"
+        ### Prepare working env and check single-end data
+        prepare_SE_env
+        # prepare primers
+        prepare_primers
+    else
+        #output dir
+        output_dir=$"/input/primersCut_out"
+        # Check if files with specified extension exist in the dir
+        first_file_check
+        ### Prepare working env and check single-end data
+        prepare_SE_env
+        # prepare primers
+        prepare_primers
+    fi
 
-    ##############################
-    ### Start clipping primers ###
-    ##############################
-    printf "\n# Clipping primers from $input \n"
-    printf " forward primer(s): $fwd_tempprimer\n"
-    printf " reverse primer(s): $rev_tempprimer\n"
+    ### Read through each fastq/fasta file in folder
+    for file in *.$fileFormat; do
+        #Write file name without extension
+        input=$(echo $file | sed -e "s/.$fileFormat//")
+        ## Preparing files
+        printf "\n____________________________________\n"
+        printf "Checking $input ...\n"
 
-    #If discard_untrimmed = TRUE, then assigns outputs and make outdir
+        ### Check input formats (fastq/fasta/gz supported)
+        check_extension_fastxgz
+
+        ##############################
+        ### Start clipping primers ###
+        ##############################
+        printf "\n# Clipping primers from $input \n"
+        printf " forward primer(s): $fwd_tempprimer\n"
+        printf " reverse primer(s): $rev_tempprimer\n"
+
+        #If discard_untrimmed = TRUE, then assigns outputs and make outdir
+        if [[ $discard_untrimmed == "TRUE" ]]; then
+            mkdir -p $output_dir/untrimmed
+            untrimmed_output=$"--untrimmed-output $output_dir/untrimmed/$input.untrimmed.$extension"
+        fi
+
+        ### Clip primers with cutadapt
+            # --revcomp compared RC seq strands, so no need to specify RC primers
+        if [[ $seqs_to_keep == "keep_all" ]]; then
+            checkerror=$(cutadapt --quiet --revcomp \
+            $mismatches \
+            $min_length \
+            $overlap \
+            $indels \
+            $cores \
+            $untrimmed_output \
+            -g file:tempdir2/liked_fwd_revRC.fasta \
+            -g file:tempdir2/fwd_primer.fasta \
+            -a file:tempdir2/rev_primer_RC.fasta \
+            -o $output_dir/$input.$extension \
+            $input.$extension 2>&1)
+            check_app_error
+
+        elif [[ $seqs_to_keep == "keep_only_linked" ]]; then
+            checkerror=$(cutadapt --quiet --revcomp \
+            $mismatches \
+            $min_length \
+            $overlap \
+            $indels \
+            $cores \
+            $untrimmed_output \
+            -g file:tempdir2/liked_fwd_revRC.fasta \
+            -o $output_dir/$input.$extension \
+            $input.$extension 2>&1)
+            check_app_error
+        fi
+    done
+
+    #################################################
+    ### COMPILE FINAL STATISTICS AND README FILES ###
+    #################################################
+    printf "\nCleaning up and compiling final stats files ...\n"
+    #file identifier string after the process
+    clean_and_make_stats
+    end=$(date +%s)
+    runtime=$((end-start))
+
+    #Make README.txt file for untrimmed seqs
     if [[ $discard_untrimmed == "TRUE" ]]; then
-        mkdir -p $output_dir/untrimmed
-        untrimmed_output=$"--untrimmed-output $output_dir/untrimmed/$input.untrimmed.$extension"
-    fi
-
-    ### Clip primers with cutadapt
-        # --revcomp compared RC seq strands, so no need to specify RC primers
-    if [[ $seqs_to_keep == "keep_all" ]]; then
-        checkerror=$(cutadapt --quiet --revcomp \
-        $mismatches \
-        $min_length \
-        $overlap \
-        $indels \
-        $cores \
-        $untrimmed_output \
-        -g file:tempdir2/liked_fwd_revRC.fasta \
-        -g file:tempdir2/fwd_primer.fasta \
-        -a file:tempdir2/rev_primer_RC.fasta \
-        -o $output_dir/$input.$extension \
-        $input.$extension 2>&1)
-        check_app_error
-
-    elif [[ $seqs_to_keep == "keep_only_linked" ]]; then
-        checkerror=$(cutadapt --quiet --revcomp \
-        $mismatches \
-        $min_length \
-        $overlap \
-        $indels \
-        $cores \
-        $untrimmed_output \
-        -g file:tempdir2/liked_fwd_revRC.fasta \
-        -o $output_dir/$input.$extension \
-        $input.$extension 2>&1)
-        check_app_error
-    fi
-done
-
-#################################################
-### COMPILE FINAL STATISTICS AND README FILES ###
-#################################################
-printf "\nCleaning up and compiling final stats files ...\n"
-#file identifier string after the process
-clean_and_make_stats
-end=$(date +%s)
-runtime=$((end-start))
-
-#Make README.txt file for untrimmed seqs
-if [[ $discard_untrimmed == "TRUE" ]]; then
-    printf "Files in /untrimmed folder represent seqs that did not contain specified primer strings.
+        printf "Files in /untrimmed folder represent seqs that did not contain specified primer strings.
 Forward primer(s) [has to be 5'-3']: $fwd_tempprimer
 Reverse primer(s) [has to be 3'-5']: $rev_tempprimer
 [If primers were not specified in orientations noted above, please run this step again].\n
 If no files in this folder, then all sequences were passed to files in $output_dir directory" > $output_dir/untrimmed/README.txt
-fi
+    fi
 
-#Make README.txt file for PrimerClipped reads
-printf "# Primers were removed using cutadapt (see 'Core command' below for the used settings).
+    #Make README.txt file for PrimerClipped reads
+    printf "# Primers were removed using cutadapt (see 'Core command' below for the used settings).
 
 Files in $output_dir folder represent sequences from where the PCR primers were recognized and clipped.
 Forward primer(s) [has to be 5'-3']: $fwd_tempprimer
@@ -187,13 +185,13 @@ If no outputs were generated into $output_dir, check your specified primer strin
 
 Core command -> \n" > $output_dir/README.txt
 
-if [[ $seqs_to_keep == "keep_all" ]]; then
-        printf "seqs_to_keep == "keep_all"; cutadapt --revcomp $mismatches $min_length $overlap $indels $untrimmed_output -g liked_forwardPrimer_and_reverseComplementReversePrimer -g forwardPrimer -a reverseComplementReversePrimer -o output input \n" >> $output_dir/README.txt
-elif [[ $seqs_to_keep == "keep_only_linked" ]]; then
-    printf "seqs_to_keep == "keep_only_linked"; cutadapt --revcomp $mismatches $min_length $overlap $indels $untrimmed_output -g liked_forwardPrimer_and_reverseComplementReversePrimer -o output input \n" >> $output_dir/README.txt
-fi
+    if [[ $seqs_to_keep == "keep_all" ]]; then
+            printf "seqs_to_keep == "keep_all"; cutadapt --revcomp $mismatches $min_length $overlap $indels $untrimmed_output -g liked_forwardPrimer_and_reverseComplementReversePrimer -g forwardPrimer -a reverseComplementReversePrimer -o output input \n" >> $output_dir/README.txt
+    elif [[ $seqs_to_keep == "keep_only_linked" ]]; then
+        printf "seqs_to_keep == "keep_only_linked"; cutadapt --revcomp $mismatches $min_length $overlap $indels $untrimmed_output -g liked_forwardPrimer_and_reverseComplementReversePrimer -o output input \n" >> $output_dir/README.txt
+    fi
 
-printf "\nSummary of sequence counts in 'seq_count_summary.txt'
+    printf "\nSummary of sequence counts in 'seq_count_summary.txt'
 
 Total run time was $runtime sec.
 
@@ -207,12 +205,23 @@ Total run time was $runtime sec.
     #https://bioinf.shenwei.me/seqkit/
 ##################################################################" >> $output_dir/README.txt
 
+
+    ### if working with multiRunDir then cd ..
+    if [[ $multiDir == "TRUE" ]]; then 
+        cd ..
+    fi
+done
+
 #Done
 printf "\nDONE "
 printf "Total time: $runtime sec.\n "
 
 #variables for all services
 echo "#variables for all services: "
-echo "workingDir=$output_dir"
+if [[ $multiDir == "TRUE" ]]; then  
+    echo "workingDir=/input/multiRunDir"
+else
+    echo "workingDir=$output_dir"
+fi
 echo "fileFormat=$extension"
 echo "readType=single_end"
