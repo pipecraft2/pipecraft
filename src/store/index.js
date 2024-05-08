@@ -35,6 +35,8 @@ export default new Vuex.Store({
       fileFormat: "",
       dada2mode: "FORWARD",
       debugger: false,
+      pipeline: "",
+      service: "",
     },
     env_variables: ["FOO=bar", "BAZ=quux"],
     selectedSteps: [],

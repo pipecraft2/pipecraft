@@ -31,6 +31,8 @@ max_length=$max_length
 maxee_rate=$maxee_rate
 truncqual=${truncqual}
 truncee=${truncee}
+echo $pipeline 
+echo $service
 
 #Source for functions
 source /scripts/submodules/framework.functions.sh
