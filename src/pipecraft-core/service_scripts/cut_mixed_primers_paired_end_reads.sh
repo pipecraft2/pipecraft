@@ -17,7 +17,6 @@
     #https://bioinf.shenwei.me/seqkit/
 #pigz v2.4
 ##########################################################
-echo " -- cut_mixed_primers_paired_end_reads.sh -- "
 
 #load variables
 extension=${fileFormat}  # KEEP THIS (removed in some other scripts)
@@ -72,13 +71,15 @@ for seqrun in $DIRS; do
         ### Check if the dir has the specified file extension; if not then reset the loop and check the next dir
         count=$(ls -1 *.$fileFormat 2>/dev/null | wc -l)
         if [[ $count != 0 ]]; then
-            printf "\n$ ---- Processing samples in $sequencing_run\n"
+            printf "\n$ ---- Processing samples in $seqrun\n"
         else
             cd ..
             break 2
         fi
         #output dir
         output_dir=$"/input/multiRunDir/$seqrun/primersCut_out"
+        tempdir2=$"/input/multiRunDir/$seqrun/tempdir2"
+        input_files_path=$"/input/multiRunDir/$seqrun"
         ### Prepare working env and check paired-end data
         prepare_PE_env
         # prepare primers
@@ -86,6 +87,8 @@ for seqrun in $DIRS; do
     else
         #output dir
         output_dir=$"/input/primersCut_out"
+        tempdir2=$"/input/tempdir2"
+        input_files_path=$"/input"
         # Check if files with specified extension exist in the dir
         first_file_check
         # Prepare working env and check paired-end data
@@ -219,29 +222,30 @@ for seqrun in $DIRS; do
         printf '%s\n' "ERROR]: no fwd_orient output files generated ($output_dir). Not mixed orientation input?" >&2
         end_process
     fi
-    touch /input/tempdir2/seq_count_before.txt
-    seqkit stats --threads 6 -T ../../*.$extension | awk -F'\t' 'BEGIN{OFS="\t";} NR!=1 {print $1,$4}' >> /input/tempdir2/seq_count_before.txt
-    sed -i "s/\..\/\..\///" /input/tempdir2/seq_count_before.txt
+    touch $tempdir2/seq_count_before.txt
+    seqkit stats --threads 6 -T $input_files_path/*.$extension | awk -F'\t' 'BEGIN{OFS="\t";} NR!=1 {print $1,$4}' >> $tempdir2/seq_count_before.txt
 
     #compile a track reads summary file (seq_count_summary.txt)
     printf "File\tReads_in\tReads_out\n" > seq_count_summary.txt
     while read LINE; do
-        file1=$(echo $LINE | awk '{print $1}')
-        count1=$(echo $LINE | awk '{print $2}')
+        file1=$(basename $LINE) # get only the file name
+        count1=$(echo $LINE | awk '{print $2}') # get the seq count
         while read LINE2; do
-            file2=$(echo $LINE2 | awk '{print $1}')
+            file2=$(basename $LINE2)
             count2=$(echo $LINE2 | awk '{print $2}')
             if [[ "$file1" == "$file2" ]]; then
                 printf "$file1\t$count1\t$count2\n" >> seq_count_summary.txt
             fi
         done < seq_count_after.txt
-        #Report file where no sequences were reoriented (i.e. the output was 0)
+        #Report file where no sequences were outputted (i.e. the output was 0)
         grep -Fq $file1 seq_count_after.txt
         if [[ $? != 0 ]]; then
             printf "$file1\t$count1\t0\n" >> seq_count_summary.txt
         fi
-    done < /input/tempdir2/seq_count_before.txt
-    rm seq_count_after.txt
+    done < $tempdir2/seq_count_before.txt
+    if [[ $debugger != "true" ]]; then
+        rm seq_count_after.txt
+    fi
 
     ### stats for rev_orient
     cd $output_dir/rev_orient 
@@ -258,10 +262,10 @@ for seqrun in $DIRS; do
     #compile a track reads summary file (seq_count_summary.txt)
     printf "File\tReads_in\tReads_out\n" > seq_count_summary.txt
     while read LINE; do
-        file1=$(echo $LINE | awk '{print $1}')
+        file1=$(basename $LINE)
         count1=$(echo $LINE | awk '{print $2}')
         while read LINE2; do
-            file2=$(echo $LINE2 | awk '{print $1}')
+            file2=$(basename $LINE2)
             count2=$(echo $LINE2 | awk '{print $2}')
             if [[ "$file1" == "$file2" ]]; then
                 printf "$file1\t$count1\t$count2\n" >> seq_count_summary.txt
@@ -272,8 +276,10 @@ for seqrun in $DIRS; do
         if [[ $? != 0 ]]; then
             printf "$file1\t$count1\t0\n" >> seq_count_summary.txt
         fi
-    done < /input/tempdir2/seq_count_before.txt
-    rm seq_count_after.txt
+    done < $tempdir2/seq_count_before.txt
+    if [[ $debugger != "true" ]]; then
+        rm seq_count_after.txt
+    fi
 
     ### stats for untrimmed
     cd $output_dir/untrimmed 
@@ -286,10 +292,10 @@ for seqrun in $DIRS; do
         #compile a track reads summary file (seq_count_summary.txt)
         printf "File\tInput_reads\tUntrimmed_reads\n" > seq_count_summary.txt
         while read LINE; do
-            file1=$(echo $LINE | awk '{print $1}')
+            file1=$(basename $LINE)
             count1=$(echo $LINE | awk '{print $2}')
             while read LINE2; do
-                file2=$(echo $LINE2 | awk '{print $1}')
+                file2=$(basename $LINE2)
                 count2=$(echo $LINE2 | awk '{print $2}')
                 if [[ "$file1" == "$file2" ]]; then
                     printf "$file1\t$count1\t$count2\n" >> seq_count_summary.txt
@@ -300,13 +306,16 @@ for seqrun in $DIRS; do
             if [[ $? != 0 ]]; then
                 printf "$file1\t$count1\t0\n" >> seq_count_summary.txt
             fi
-        done < /input/tempdir2/seq_count_before.txt
-        rm seq_count_after.txt
+        done < $tempdir2/seq_count_before.txt
+        if [[ $debugger != "true" ]]; then
+            rm seq_count_after.txt
+        fi
     fi
-
-    #Delete tempdir
-    if [[ -d "/input/tempdir2" ]]; then
-        rm -rf /input/tempdir2
+    # rm tempdir2
+    if [[ $debugger != "true" ]]; then
+        if [[ -d "$tempdir2" ]]; then
+            rm -rf $tempdir2
+        fi
     fi
 
     end=$(date +%s)
@@ -324,68 +333,74 @@ for seqrun in $DIRS; do
     #Make README.txt file for PrimerClipped reads
     printf "# Primers from mixed orient sequences were removed using cutadapt (see 'Core command' below for the used settings).
 
-    Files in 'primersCut_out/fwd_orient' folder represent forward orient sequences from where the PCR primers were recognized and clipped (R1 files started with forward primer and R2 files with reverse_complement of reverse primer).
-    Files in 'primersCut_out/rev_orient' folder represent reverse_complement sequences from where the PCR primers were recognized and clipped (R1 files started with reverse primer and R2 files with reverse_complement of forward primer).
+Files in 'primersCut_out/fwd_orient' folder represent forward orient sequences from where the PCR primers were recognized and clipped (R1 files started with forward primer and R2 files with reverse_complement of reverse primer).
+Files in 'primersCut_out/rev_orient' folder represent reverse_complement sequences from where the PCR primers were recognized and clipped (R1 files started with reverse primer and R2 files with reverse_complement of forward primer).
 
-    Primers:
-    Forward primer(s) [has to be 5'-3']: $fwd_tempprimer
-    Reverse primer(s) [has to be 3'-5']: $rev_tempprimer
-    [If primers were not specified in orientations noted above, please run this step again].
+Primers:
+Forward primer(s) [has to be 5'-3']: $fwd_tempprimer
+Reverse primer(s) [has to be 3'-5']: $rev_tempprimer
+[If primers were not specified in orientations noted above, please run this step again].
 
-    Output R1 and R2 reads are synchronized for merging paired-end data. 
+Output R1 and R2 reads are synchronized for merging paired-end data. 
 
-    If no outputs were generated into $output_dir, check your specified primer strings and adjust settings.
+If no outputs were generated into $output_dir, check your specified primer strings and adjust settings.
 
-    Core commands -> \n" > $output_dir/README.txt
+Core commands -> \n" > $output_dir/README.txt
 
     if [[ $seqs_to_keep == "keep_all" ]]; then
         printf "# when R1 starts with REV primer. seqs_to_keep == "keep_all"
-    cutadapt $mismatches $min_length $overlap $indels --untrimmed-output fwd_untrimmed/inputR1 --untrimmed-paired-output fwd_untrimmed/inputR2 --pair-filter=$pair_filter \
-    -g ForwardPrimer \
-    -G /ReversePrimer \
-    -o fwd_orient/inputR1. \
-    -p fwd_orient/inputR2 \
-    inputR1 inputR2 
+cutadapt $mismatches $min_length $overlap $indels --untrimmed-output fwd_untrimmed/inputR1 --untrimmed-paired-output fwd_untrimmed/inputR2 --pair-filter=$pair_filter \
+-g ForwardPrimer \
+-G /ReversePrimer \
+-o fwd_orient/inputR1. \
+-p fwd_orient/inputR2 \
+inputR1 inputR2 
 
-    # when R1 starts with REV primer
-    cutadapt $mismatches $min_length $overlap $indels $untrimmed_output $untrimmed_paired_output --pair-filter=$pair_filter \
-    -G ForwardPrimer \
-    -g ReversePrimer \
-    -o rev_orient/inputR1 \
-    -p rev_orient/inputR2 \
-    fwd_untrimmed/inputR1 fwd_untrimmed/inputR2 \n" >> $output_dir/README.txt
+# when R1 starts with REV primer
+cutadapt $mismatches $min_length $overlap $indels $untrimmed_output $untrimmed_paired_output --pair-filter=$pair_filter \
+-G ForwardPrimer \
+-g ReversePrimer \
+-o rev_orient/inputR1 \
+-p rev_orient/inputR2 \
+fwd_untrimmed/inputR1 fwd_untrimmed/inputR2 \n" >> $output_dir/README.txt
 
     elif [[ $seqs_to_keep == "keep_only_linked" ]]; then
         printf "# when R1 starts with FWD primer. seqs_to_keep == "keep_only_linked"
-    cutadapt $mismatches $min_length $overlap $indels --untrimmed-output $output_dir/fwd_untrimmed/$inputR1.$extension --untrimmed-paired-output $output_dir/fwd_untrimmed/$inputR2.$extension --pair-filter=$pair_filter \
-    -g liked_forwardPrimer_and_reverseComplementReversePrimer \
-    -G liked_reversePrimer_and_reverseComplementForwardPrimer \
-    -o fwd_orient/inputR1 \
-    -p fwd_orient/inputR2 \
-    inputR1 inputR2
+cutadapt $mismatches $min_length $overlap $indels --untrimmed-output $output_dir/fwd_untrimmed/$inputR1.$extension --untrimmed-paired-output $output_dir/fwd_untrimmed/$inputR2.$extension --pair-filter=$pair_filter \
+-g liked_forwardPrimer_and_reverseComplementReversePrimer \
+-G liked_reversePrimer_and_reverseComplementForwardPrimer \
+-o fwd_orient/inputR1 \
+-p fwd_orient/inputR2 \
+inputR1 inputR2
 
-    # when R1 starts with REV primer
-    cutadapt $mismatches $min_length $overlap $indels $cores $untrimmed_output $untrimmed_paired_output --pair-filter=$pair_filter \
-    -G liked_forwardPrimer_and_reverseComplementReversePrimer \
-    -g liked_reversePrimer_and_reverseComplementForwardPrimer \
-    -o rev_orient/inputR1 \
-    -p rev_orient/inputR2 \
-    fwd_untrimmed/inputR1 fwd_untrimmed/inputR2. \n" >> $output_dir/README.txt
+# when R1 starts with REV primer
+cutadapt $mismatches $min_length $overlap $indels $cores $untrimmed_output $untrimmed_paired_output --pair-filter=$pair_filter \
+-G liked_forwardPrimer_and_reverseComplementReversePrimer \
+-g liked_reversePrimer_and_reverseComplementForwardPrimer \
+-o rev_orient/inputR1 \
+-p rev_orient/inputR2 \
+fwd_untrimmed/inputR1 fwd_untrimmed/inputR2. \n" >> $output_dir/README.txt
     fi
 
     printf "\nSummary of sequence counts in 'seq_count_summary.txt'
 
-    Total run time was $runtime sec.
+Total run time was $runtime sec.
 
-    ##########################################################
-    ###Third-party applications used for this process [PLEASE CITE]:
-    #cutadapt v4.4 for cutting the primers
-        #citation: Martin, Marcel (2011) Cutadapt removes adapter sequences from high-throughput sequencing reads. EMBnet.journal, 17(1), 10-12.
-        #https://cutadapt.readthedocs.io/en/stable/index.html
-    #seqkit v2.3.0 for generating reverse complementary primer strings
-        #citation: Shen W, Le S, Li Y, Hu F (2016) SeqKit: A Cross-Platform and Ultrafast Toolkit for FASTA/Q File Manipulation. PLOS ONE 11(10): e0163962. https://doi.org/10.1371/journal.pone.0163962
-        #https://bioinf.shenwei.me/seqkit/
-    ##################################################################" >> $output_dir/README.txt
+##########################################################
+###Third-party applications used for this process [PLEASE CITE]:
+#cutadapt v4.4 for cutting the primers
+   #citation: Martin, Marcel (2011) Cutadapt removes adapter sequences from high-throughput sequencing reads. EMBnet.journal, 17(1), 10-12.
+   #https://cutadapt.readthedocs.io/en/stable/index.html
+#seqkit v2.3.0 for generating reverse complementary primer strings
+    #citation: Shen W, Le S, Li Y, Hu F (2016) SeqKit: A Cross-Platform and Ultrafast Toolkit for FASTA/Q File Manipulation. PLOS ONE 11(10): e0163962. https://doi.org/10.1371/journal.pone.0163962
+    #https://bioinf.shenwei.me/seqkit/
+##################################################################" >> $output_dir/README.txt
+
+
+    ### if working with multiRunDir then cd /input/multiRunDir
+    if [[ $multiDir == "TRUE" ]]; then 
+        cd /input/multiRunDir
+    fi
 done 
 
 #Done

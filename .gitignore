@@ -3,6 +3,7 @@ node_modules
 desktop.ini
 /dist
 /test_data
+/testData
 /src/pipecraft-core/service_scripts/NextFlowConfig.json
 
 
