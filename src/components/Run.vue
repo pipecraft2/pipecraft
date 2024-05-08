@@ -168,6 +168,7 @@ export default {
           let startTime = Date.now();
           let steps2Run = this.$store.getters.steps2Run(name);
           this.autoSaveConfig();
+          this.$store.state.data.pipeline = name.replace(/ /g, "_");
           let log;
           if (this.$store.state.data.debugger == true) {
             log = fs.createWriteStream(
@@ -178,6 +179,10 @@ export default {
           }
           for (let [i, step] of this.$store.state[name].entries()) {
             if (step.selected == true || step.selected == "always") {
+              this.$store.state.data.service = step.serviceName.replace(
+                / /g,
+                "_"
+              );
               let dockerProps = await this.getDockerProps(step);
               this.updateRunInfo(i, steps2Run, dockerProps.name, name);
               await this.imageCheck(step.imageName);
@@ -307,8 +312,15 @@ export default {
                 .slice(0, 10)}.txt`
             );
           }
+          this.$store.state.data.pipeline =
+            `quick_tools_${this.selectedSteps.stepName}`.replace(/ /g, "_");
           for (let [i, step] of this.selectedSteps.entries()) {
             let selectedStep = this.findSelectedService(i);
+
+            this.$store.state.data.service = selectedStep.serviceName.replace(
+              / /g,
+              "_"
+            );
             let dockerProps = await this.getDockerProps(selectedStep);
             console.log(dockerProps);
             this.updateRunInfo(i, steps2Run, dockerProps.name, "workflow");
@@ -428,6 +440,8 @@ export default {
         readType: this.$store.state.data.readType,
         debugger: this.$store.sate.data.debugger,
         dada2mode: this.$store.state.data.dada2mode,
+        pipeline: this.$store.state.data.pipeline,
+        service: this.$store.state.data.service,
       };
       Object.entries(dataInfo).forEach(([key, value]) => {
         let varObj = {};
@@ -458,6 +472,8 @@ export default {
         readType: this.$store.state.data.readType,
         debugger: this.$store.state.data.debugger,
         dada2mode: this.$store.state.data.dada2mode,
+        pipeline: this.$store.state.data.pipeline,
+        service: this.$store.state.data.service,
       };
       Object.entries(dataInfo).forEach(([key, value]) => {
         let varObj = {};
