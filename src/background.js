@@ -139,31 +139,33 @@ app.on("ready", async () => {
   if (isDevelopment && !process.env.IS_TEST) {
     // Install Vue Devtools
     try {
-      await installExtension(VUEJS_DEVTOOLS);
+      await installExtension("iaajmlceplecbljialhhkmedjlpdblhp");
     } catch (e) {
       console.error("Vue Devtools failed to install:", e.toString());
     }
   }
   createWindow();
-  if (process.env.APPIMAGE.includes('AppImage')) {
-    fs.copyFile(`${process.resourcesPath}/src/pipecraft-core/icon32x32.png`, "/var/tmp/icon32x32.png", (err) => {
-      if (err) {
-        console.log("Error Found:", err);
-      }
-    });
-    createDesktopShortcut({
-      onlyCurrentOS: true,
-      verbose: true,
-      linux: {
-        filePath: `${process.env.APPIMAGE}`,
-        name: 'Pipecraft',
-        description: 'My app description',
-        icon: `/var/tmp/icon32x32.png`,
-        type: 'Application',
-        terminal: false,
-        chmod: true,
-      },
-    })
+  if (isDevelopment != true) {
+    if (process.env.APPIMAGE.includes('AppImage')) {
+      fs.copyFile(`${process.resourcesPath}/src/pipecraft-core/icon32x32.png`, "/var/tmp/icon32x32.png", (err) => {
+        if (err) {
+          console.log("Error Found:", err);
+        }
+      });
+      createDesktopShortcut({
+        onlyCurrentOS: true,
+        verbose: true,
+        linux: {
+          filePath: `${process.env.APPIMAGE}`,
+          name: 'Pipecraft',
+          description: 'My app description',
+          icon: `/var/tmp/icon32x32.png`,
+          type: 'Application',
+          terminal: false,
+          chmod: true,
+        },
+      })
+    }
   }
 });
 

@@ -6,7 +6,8 @@ Download: https://github.com/pipecraft2/pipecraft/releases/tag/v1.0.0
 
 ---
 
-**USER GUIDE**: https://pipecraft2-manual.rtfd.io
+**USER GUIDE**: https://pipecraft2-manual.readthedocs.io/en/latest/
+
 
 ---
 
