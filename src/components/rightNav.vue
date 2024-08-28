@@ -1,6 +1,6 @@
 <template>
   <v-list dense>
-    <v-list-item>
+    <v-list-item @click="push2ResourceManager">
       <v-tooltip left nudge-left="10">
         <template v-slot:activator="{ on }">
           <v-list-item-content v-on="on">
@@ -16,12 +16,7 @@
     <v-divider class="mt-2 mb-2"></v-divider>
     <v-tooltip left nudge-left="10">
       <template v-slot:activator="{ on }">
-        <v-list-item
-          v-on="on"
-          class="mt-5"
-          ripple
-          link
-        >
+        <v-list-item v-on="on" class="mt-5" ripple link>
           <v-menu tile dark left nudge-left="15" offset-x>
             <template v-slot:activator="{ on, attrs }">
               <v-list-item-content v-on="on" v-bind="attrs">
@@ -46,7 +41,10 @@
                 link
                 v-for="(item, index) in $store.state.steps"
                 :key="index"
-                :disabled="$store.state.runInfo.active && $store.state.runInfo.containerID != item.stepName"
+                :disabled="
+                  $store.state.runInfo.active &&
+                  $store.state.runInfo.containerID != item.stepName
+                "
                 @click="
                   push2route(item.stepName, index),
                     addStep(item, nrOfSelectedSteps)
@@ -125,12 +123,16 @@ const { shell, ipcRenderer } = require("electron");
 const { dialog } = require("@electron/remote");
 const slash = require("slash");
 const fs = require("fs");
-const DockerDesktopLinux = !fs.existsSync('/var/run/docker.sock')
-console.log(DockerDesktopLinux)
-console.log(os. homedir())
+const DockerDesktopLinux = !fs.existsSync("/var/run/docker.sock");
+console.log(DockerDesktopLinux);
+console.log(os.homedir());
 var socketPath =
-  os.platform() === "win32" ? "//./pipe/docker_engine" : DockerDesktopLinux ? `${os. homedir()}/.docker/desktop/docker.sock` : "/var/run/docker.sock";
-console.log(socketPath)
+  os.platform() === "win32"
+    ? "//./pipe/docker_engine"
+    : DockerDesktopLinux
+    ? `${os.homedir()}/.docker/desktop/docker.sock`
+    : "/var/run/docker.sock";
+console.log(socketPath);
 var Docker = require("dockerode");
 var docker = new Docker({ socketPath: socketPath });
 var JSONfn = require("json-fn");
@@ -203,6 +205,7 @@ export default {
         .then(() => {
           if (self.dockerActive != "#1DE9B6") {
             self.$store.commit("updateDockerStatus", "running");
+            self.$store.dispatch("fetchDockerInfo");
           }
           return "#1DE9B6";
         })
@@ -286,6 +289,17 @@ export default {
     push2expert() {
       if (this.$route.path != "/ExpertMode") {
         this.$router.push("/ExpertMode");
+      }
+    },
+    push2ResourceManager() {
+      if (this.$route.path != "/ResourceManager") {
+        if (this.$store.state.dockerStatus == "running") {
+          this.$store.dispatch("fetchDockerInfo");
+        } else {
+          this.$store.commit("setMemTotal", 1 * 1024 ** 3);
+          this.$store.commit("setNCPU", 1);
+        }
+        this.$router.push("/ResourceManager");
       }
     },
     push2route(stepName) {

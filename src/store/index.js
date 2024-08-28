@@ -2,11 +2,26 @@ import Vue from "vue";
 import Vuex from "vuex";
 import router from "../router/index.js";
 var _ = require("lodash");
+import os from "os";
+import fs from "fs";
+const DockerDesktopLinux = !fs.existsSync("/var/run/docker.sock");
+var socketPath =
+  os.platform() === "win32"
+    ? "//./pipe/docker_engine"
+    : DockerDesktopLinux
+    ? `${os.homedir()}/.docker/desktop/docker.sock`
+    : "/var/run/docker.sock";
+
+var Docker = require("dockerode");
+var docker = new Docker({ socketPath: socketPath });
+///const CPU = os.cpus().length;
+///const MEM = Number((os.totalmem() / 1024 ** 3).toFixed(0));
 
 Vue.use(Vuex);
 
 export default new Vuex.Store({
   state: {
+    dockerInfo: { NCPU: 1, MemTotal: 1073741824 },
     dockerStatus: "",
     Qcheck: {
       fileExtension: "",
@@ -4818,6 +4833,11 @@ export default new Vuex.Store({
     },
   },
   getters: {
+    /*     getDockerInfo: async (state) => {
+      docker.info().then((info) => {
+        state.dockerInfo = info;
+      });
+    }, */
     dada2modeIndex: (state) => {
       if (state.data.dada2mode == "FORWARD") {
         return 0;
@@ -4910,6 +4930,15 @@ export default new Vuex.Store({
     },
   },
   mutations: {
+    setNCPU(state, value) {
+      state.dockerInfo.NCPU = value;
+    },
+    setMemTotal(state, value) {
+      state.dockerInfo.MemTotal = value;
+    },
+    setDockerInfo(state, info) {
+      state.dockerInfo = info;
+    },
     activatePullLoader(state) {
       state.pullLoader.active = true;
     },
@@ -5217,6 +5246,15 @@ export default new Vuex.Store({
       state.data.debugger = !state.data.debugger;
     },
   },
-  actions: {},
+  actions: {
+    async fetchDockerInfo({ commit }) {
+      try {
+        const info = await docker.info();
+        commit("setDockerInfo", info);
+      } catch (error) {
+        console.error("Failed to fetch Docker info:", error);
+      }
+    },
+  },
   modules: {},
 });

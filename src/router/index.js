@@ -5,6 +5,7 @@ import Step from "../views/Step.vue";
 import Pipeline from "../views/Pipeline.vue";
 import fastqcANDmultiqc from "../views/fastqcANDmultiqc.vue";
 import ExpertMode from "../views/ExpertMode.vue";
+import ResourceManager from "../views/ResourceManager.vue";
 
 Vue.use(VueRouter);
 
@@ -25,6 +26,10 @@ const routes = [
   {
     path: "/ExpertMode",
     component: ExpertMode,
+  },
+  {
+    path: "/ResourceManager",
+    component: ResourceManager,
   },
 ];
 
