@@ -293,11 +293,12 @@ export default {
     },
     push2ResourceManager() {
       if (this.$route.path != "/ResourceManager") {
-        if (this.$store.state.dockerStatus == "running") {
+        if (this.$store.state.dockerStatus == "running" && this.$store.state.OStype != "Linux") {
+          console.log('Linux')
           this.$store.dispatch("fetchDockerInfo");
         } else {
-          this.$store.commit("setMemTotal", 1 * 1024 ** 3);
-          this.$store.commit("setNCPU", 1);
+          this.$store.commit("setMemTotal", this.$store.state.dockerInfo.MemTotal);
+          this.$store.commit("setNCPU", this.$store.state.dockerInfo.NCPU);
         }
         this.$router.push("/ResourceManager");
       }

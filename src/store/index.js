@@ -5249,12 +5249,17 @@ export default new Vuex.Store({
     },
   },
   actions: {
-    async fetchDockerInfo({ commit }) {
-      try {
-        const info = await docker.info();
-        commit("setDockerInfo", info);
-      } catch (error) {
-        console.error("Failed to fetch Docker info:", error);
+    async fetchDockerInfo({ commit, state }) {
+      if (state.OStype === 'Linux') {
+        state.dockerInfo.NCPU = os.cpus().length
+        state.dockerInfo.MemTotal = os.totalmem()
+      } else {
+        try {
+          const info = await docker.info();
+          commit("setDockerInfo", info);
+        } catch (error) {
+          console.error("Failed to fetch Docker info:", error);
+        }
       }
     },
   },

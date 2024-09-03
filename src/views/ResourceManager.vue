@@ -68,7 +68,7 @@
         height="100"
       ></v-slider>
       <div style="display: flex; justify-content: center">
-        <v-btn
+        <v-btn v-if="this.$store.state.OStype != 'Linux'"
           @click="
             $store.state.OStype === 'Darwin'
               ? restartDockerMacOS()

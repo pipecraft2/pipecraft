@@ -156,6 +156,8 @@ export default {
         Volumes: {},
         HostConfig: {
           Binds: Binds,
+          Memory: this.$store.state.dockerInfo.MemTotal,
+          NanoCpus: this.$store.state.dockerInfo.NCPU * 1e9,
         },
         Env: envVariables,
       };
@@ -607,6 +609,8 @@ export default {
         Volumes: {},
         HostConfig: {
           Binds: Binds,
+          Memory: this.$store.state.dockerInfo.MemTotal,
+          NanoCpus: this.$store.state.dockerInfo.NCPU * 1e9,
         },
         Env: envVariables,
       };
