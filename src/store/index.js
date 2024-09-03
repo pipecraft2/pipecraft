@@ -14,8 +14,6 @@ var socketPath =
 
 var Docker = require("dockerode");
 var docker = new Docker({ socketPath: socketPath });
-///const CPU = os.cpus().length;
-///const MEM = Number((os.totalmem() / 1024 ** 3).toFixed(0));
 
 Vue.use(Vuex);
 
@@ -23,6 +21,7 @@ export default new Vuex.Store({
   state: {
     dockerInfo: { NCPU: 1, MemTotal: 1073741824 },
     dockerStatus: "",
+    OStype: "",
     Qcheck: {
       fileExtension: "",
       folderPath: "",
@@ -4930,6 +4929,9 @@ export default new Vuex.Store({
     },
   },
   mutations: {
+    setOsType(state, osType) {
+      state.OStype = osType;
+    },
     setNCPU(state, value) {
       state.dockerInfo.NCPU = value;
     },

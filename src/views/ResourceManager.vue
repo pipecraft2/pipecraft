@@ -70,8 +70,13 @@
       <div style="display: flex; justify-content: center">
         <v-btn
           @click="
-            editSettings();
-            restartDocker();
+            $store.state.OStype === 'Darwin'
+              ? restartDockerMacOS()
+              : $store.state.OStype === 'Linux'
+              ? restartDockerLinux()
+              : $store.state.OStype === 'Windows_NT'
+              ? restartDockerWin()
+              : null
           "
           style="margin: auto"
           class="ma-5"
@@ -94,8 +99,14 @@ const CPU = os.cpus().length;
 const MEM = Number((os.totalmem() / 1024 ** 3).toFixed(0));
 console.log(CPU, MEM);
 const homeDir = require("os").homedir();
+console.log(homeDir);
 // Path to the .wslconfig file
 const wslConfigPath = path.join(homeDir, ".wslconfig");
+const dockerSettingsPath = [
+  `${homeDir}/Library/Group Containers/group.com.docker/settings.json`,
+  "/Library/Group Containers/group.com.docker/settings.json",
+].find(fs.existsSync);
+console.log(dockerSettingsPath);
 
 const createNumberList = (start, end) =>
   Array.from({ length: end - start + 1 }, (_, i) => start + i);
@@ -165,13 +176,28 @@ export default {
         });
       });
     },
-    async editSettings() {
-      console.log("editing settings");
+    updateDockerSettings(memory, processors) {
+      fs.readFile(dockerSettingsPath, "utf-8", (err, data) => {
+        if (err) {
+          console.error(`error reading file ${dockerSettingsPath}`);
+          return;
+        }
+        let settingsJSON = JSON.parse(data);
+        settingsJSON.cpus = processors;
+        settingsJSON.memoryMiB = memory;
+        const updatedSettings = JSON.stringify(settingsJSON, null, 2);
+        fs.writeFile(dockerSettingsPath, updatedSettings, "utf-8", (err) => {
+          if (err) {
+            console.error(`Error writing file ${dockerSettingsPath}`);
+            return;
+          }
+          console.log(
+            `Settings file updated: CPUs: ${processors}, RAM: ${memory}`
+          );
+        });
+      });
     },
-    async restartDocker2() {
-      console.log("restarting Docker");
-    },
-    restartDocker() {
+    restartDockerWin() {
       this.updateWslConfig(`${this.memtotal}GB`, this.ncpu);
       const commands = [
         'Stop-Process -Name "Docker*Desktop" -Force',
@@ -194,6 +220,30 @@ export default {
           }
         );
       });
+    },
+    restartDockerMacOS() {
+      console.log("starting edit", Math.round(this.memory * 1024));
+      this.updateDockerSettings(Math.round(this.memtotal * 1024), this.ncpu);
+      const commands = [
+        "osascript -e 'quit app \"Docker\"'",
+        "pkill -f Docker",
+        "sleep 3 && open --background -a Docker",
+      ];
+
+      commands.forEach((command) => {
+        exec(command, (error, stdout, stderr) => {
+          if (error) {
+            console.error(`Error executing command: ${command}`, error);
+            return;
+          }
+          console.log(`Command executed: ${command}`);
+          console.log(`stdout: ${stdout}`);
+          console.log(`stderr: ${stderr}`);
+        });
+      });
+    },
+    restartDockerLinux() {
+      console.log("in development");
     },
   },
   components: {},
