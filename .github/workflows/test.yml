@@ -32,7 +32,7 @@ jobs:
 
       - name: Run bioinformatics tests
         run: |
-          node testData/cutadapt_test.js
+          yarn test
 
       - name: Clean up
         run: docker system prune -f

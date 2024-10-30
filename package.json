@@ -15,11 +15,14 @@
     "electron:serve": "vue-cli-service electron:serve",
     "install_pipe": "yarn install --ignore-optional --ignore-platform",
     "postinstall": "electron-builder install-app-deps",
-    "postuninstall": "electron-builder install-app-deps"
+    "postuninstall": "electron-builder install-app-deps",
+    "test": "jest"
   },
   "main": "background.js",
   "dependencies": {
     "@electron/remote": "^2.0.1",
+    "@vue/test-utils": "^2.4.6",
+    "babel-jest": "^29.7.0",
     "core-js": "^3.6.5",
     "create-desktop-shortcuts": "^1.10.1",
     "dockerode": "^3.2.1",
@@ -38,6 +41,7 @@
     "sockjs": "^0.3.21",
     "sweetalert2": "^10.15.5",
     "vue": "^2.6.11",
+    "vue-jest": "^3.0.7",
     "vue-router": "^3.2.0",
     "vuedraggable": "^2.24.3",
     "vuetify": "^2.4.0",
