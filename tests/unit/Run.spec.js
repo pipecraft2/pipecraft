@@ -13,7 +13,7 @@ localVue.use(Vuex);
 localVue.use(VueRouter);
 
 const router = new VueRouter({
-  routes: [{ path: "/pipecraft/1", component: Run }],
+  routes: [{ path: "/run/:id", component: Run }],
 });
 
 describe("Run.vue", () => {

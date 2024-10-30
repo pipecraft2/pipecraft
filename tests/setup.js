@@ -4,7 +4,6 @@ import Vuetify from "vuetify"; // Ensure it's imported
 Vue.use(Vuetify);
 
 // Mock electron's ipcRenderer
-
 global.electron = {
   ipcRenderer: {
     send: jest.fn(),
