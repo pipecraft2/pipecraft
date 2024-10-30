@@ -70,7 +70,7 @@
 <script>
 const slash = require("slash");
 var path = require("path");
-const { dialog } = require("@electron/remote");
+import { dialog } from "@electron/remote";
 
 export default {
   computed: {

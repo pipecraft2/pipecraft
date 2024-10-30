@@ -83,7 +83,7 @@ const slash = require("slash");
 const Swal = require("sweetalert2");
 const streams = require("memory-streams");
 var _ = require("lodash");
-import * as Dockerode from "dockerode";
+import Dockerode from "dockerode";
 import { pullImageAsync } from "dockerode-utils";
 import { imageExists } from "dockerode-utils";
 import { ipcRenderer } from "electron";

@@ -94,7 +94,7 @@
 <script>
 import { pullImageAsync } from "dockerode-utils";
 import { imageExists } from "dockerode-utils";
-import * as Dockerode from "dockerode";
+import Dockerode from "dockerode";
 import os from "os";
 const shell = require("electron").shell;
 const { dialog } = require("@electron/remote");
