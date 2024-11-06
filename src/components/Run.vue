@@ -98,6 +98,16 @@ var stderr = new streams.WritableStream();
 const isDevelopment = process.env.NODE_ENV !== "production";
 const fs = require("fs");
 var JSONfn = require("json-fn");
+let userId, groupId;
+if (os.platform() === 'win32') {
+  // Windows-specific logic
+  userId = 'default';
+  groupId = 'default';
+} else {
+  // Unix-like system logic
+  userId = process.getuid();
+  groupId = process.getgid();
+}
 
 export default {
   name: "Run",
@@ -152,6 +162,7 @@ export default {
       let dockerProps = {
         Tty: false,
         WorkingDir: WorkingDir,
+        User: `${userId}:${groupId}`,
         name: Hostname,
         Volumes: {},
         HostConfig: {
@@ -604,6 +615,7 @@ export default {
       let dockerProps = {
         Tty: false,
         WorkingDir: WorkingDir,
+        User: `${userId}:${groupId}`,
         name: Hostname,
         platform: "linux/amd64",
         Volumes: {},

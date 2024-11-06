@@ -1,0 +1,12 @@
+# Use an official Python runtime as a parent image
+FROM python:3.11
+
+
+# Install the required packages
+RUN apt-get update && apt-get install -y build-essential git 
+
+# Clone the repository
+RUN git clone https://github.com/millanp95/iDeLUCS.git
+
+# Install the package and its dependencies
+RUN pip install idelucs
