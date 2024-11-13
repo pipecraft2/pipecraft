@@ -1,33 +1,39 @@
 # PipeCraft2 <img src='src/assets/PipeCraft2_logo.png' align="right" height="180" />
 
-## Release 1.0.0
+PipeCraft2 is a user-friendly GUI software for metabarcoding data analysis. It provides:
+- Ready-to-run pipelines for common metabarcoding workflows
+- Individual analysis modules for custom workflows
+- Integration with popular bioinformatics tools
 
-Download: https://github.com/pipecraft2/pipecraft/releases/tag/v1.0.0
+## Quick Start
 
----
+### For Users
 
-**USER GUIDE**: https://pipecraft2-manual.readthedocs.io/en/latest/
+📥 [Download Latest Release (v1.0.0)](https://github.com/pipecraft2/pipecraft/releases/tag/v1.0.0)
 
+📚 [User Guide](https://pipecraft2-manual.readthedocs.io/en/latest/)
 
----
+### For Developers
 
-## For developers
+Pre-built Docker images available on [DockerHub](https://hub.docker.com/u/pipecraft).
 
-Dockerhub: https://hub.docker.com/u/pipecraft
+#### Prerequisites
 
-### Prerequisites:
+- [NodeJS](https://nodejs.org/en/download/) (make sure to install `build tools` on Windows, or `build-essential` on Ubuntu)
+- [Yarn package manager](https://classic.yarnpkg.com/en/docs/install/#windows-stable)
+- [Docker](https://www.docker.com/get-started)
+- [Git](https://git-scm.com/downloads)
 
-NodeJS https://nodejs.org/en/download/ (make sure you lets node install build tools on windows and build-essential on ubuntu)
-Yarn (https://classic.yarnpkg.com/en/docs/install/#windows-stable)  
-Docker: windows(https://www.docker.com/get-started)
-ubuntu and based distros `bash curl -fsSL https://get.docker.com -o get-docker.sh sudo sh get-docker.sh `
-https://docs.docker.com/engine/install/linux-postinstall/  
-Git (https://git-scm.com/downloads)
+#### Installation
 
 ```bash
+# Clone the repository
 git clone https://github.com/pipecraft2/pipecraft
 cd pipecraft
+
+# Install dependencies and setup PipeCraft
 yarn run install_pipe
+
+# Start PipeCraft in development mode
 yarn electron:serve
 ```
-
