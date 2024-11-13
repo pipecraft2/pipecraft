@@ -17,6 +17,8 @@ PipeCraft2 is a user-friendly GUI software for metabarcoding data analysis. It p
 
 Pre-built Docker images available on [DockerHub](https://hub.docker.com/u/pipecraft).
 
+📚 [Developer Guide](https://pipecraft2-manual.readthedocs.io/en/1.0.0/for_developers.html)
+
 #### Prerequisites
 
 - [NodeJS](https://nodejs.org/en/download/) (make sure to install `build tools` on Windows, or `build-essential` on Ubuntu)
