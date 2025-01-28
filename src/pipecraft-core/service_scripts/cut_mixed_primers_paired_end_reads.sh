@@ -1,8 +1,10 @@
 #!/bin/bash
 
-# REMOVE PRIMERS from paired-end reads
-# Degenerate primers are allowed using IUPAC codes. Reverse complementary strings will be also searched.
+# REMOVE PRIMERS from paired-end reads, amplicons are expected to be MIXED oriented (5'-3' and 3'-5').  
+# Degenerate primers are allowed using IUPAC codes.
 # Input = paired-end fastq or paired-end fasta files. If using fasta, then cores must = 1
+    # Using this only in the DADA2 paired-end pipeline where amplicons are MIXED oriented  - outputs the required structure for quality_filtering_paired_end_dada2_mixed.sh.
+    # Output = files in primersCut_out/fwd_orient and primersCut_out/rev_orient dirs.
 
 ##########################################################
 ###Third-party applications:
@@ -51,15 +53,18 @@ fi
 # Check if I need to work with multiple or with a single sequencing run
 if [[ -d "/input/multiRunDir" ]]; then
   echo "Working with multiple sequencing runs in multiRunDir"
+  echo "Process = cut primers (from MIXED amplicons)"
   cd /input/multiRunDir
   # read in directories (sequencing sets) to work with. Skip directories renamed as "skip_*"
-    DIRS=$(find . -maxdepth 1 -mindepth 1 -type d | grep -v "tempdir2" | grep -v "tempdir" | grep -v "skip_")
-    echo "runs = $DIRS"
+    DIRS=$(find . -maxdepth 1 -mindepth 1 -type d | grep -v "tempdir" | grep -v "skip_" | sed -e "s/^\.\///")
+    echo "Working in dirs:"
+    echo $DIRS
     multiDir=$"TRUE"
     export multiDir
 else
-  echo "Working with individual sequencing run"
-  DIRS=$(pwd)
+    echo "Working with individual sequencing run"
+    echo "Process = cut primers (from MIXED amplicons)"
+    DIRS=$(pwd)
 fi
 
 ### looping through multiple sequencing runs (dirs in multiRunDir) if the $WD=multiRunDir, otherwise just doing single seqrun analyses
@@ -79,9 +84,9 @@ for seqrun in $DIRS; do
             end_process
         fi
         #output dir
-        output_dir=$"/input/multiRunDir/$seqrun/primersCut_out"
-        tempdir2=$"/input/multiRunDir/$seqrun/tempdir2"
-        input_files_path=$"/input/multiRunDir/$seqrun"
+        output_dir=$"/input/multiRunDir/${seqrun%%/*}/primersCut_out"
+        tempdir2=$"/input/multiRunDir/${seqrun%%/*}/tempdir2"
+        input_files_path=$"/input/multiRunDir/${seqrun%%/*}"
         ### Prepare working env and check paired-end data
         prepare_PE_env
         # prepare primers
@@ -410,6 +415,11 @@ printf "\nDONE "
 
 #variables for all services
 echo "#variables for all services: "
-echo "workingDir=$output_dir"
+if [[ $multiDir == "TRUE" ]]; then
+    workingDir=$"/input/multiRunDir"
+    echo "workingDir=$workingDir"
+else
+    echo "workingDir=$output_dir"
+fi
 echo "fileFormat=$extension"
 echo "readType=paired_end"

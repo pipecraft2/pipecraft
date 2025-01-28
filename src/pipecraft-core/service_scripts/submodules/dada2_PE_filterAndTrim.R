@@ -13,7 +13,7 @@ fileFormat = Sys.getenv('fileFormat')
 
 #load variables
 read_R1 = Sys.getenv('read_R1')
-read_R2 = Sys.getenv('read_R2')
+read_R2 = gsub("R1", "R2", read_R1)
 maxEE = as.numeric(Sys.getenv('maxEE'))
 maxN = as.numeric(Sys.getenv('maxN'))
 truncQ = as.numeric(Sys.getenv('truncQ'))
@@ -62,7 +62,7 @@ qfilt = filterAndTrim(fnFs, filtFs, fnRs, filtRs,
                     minLen = minLen, 
                     minQ = minQ, 
                     rm.phix = TRUE, 
-                    matchIDs = "FALSE",
+                    matchIDs = FALSE,
                     compress = compress, 
                     multithread = TRUE)
 saveRDS(qfilt, file.path(path_results, "quality_filtered.rds"))

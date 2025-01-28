@@ -20,7 +20,6 @@ workingDir=${workingDir}
 
 ### variables
 # read_R1         = identifyer string that is common for all R1 reads.
-# read_R2         = identifyer string that is common for all R2 reads.
 # minOverlap      = the minimum length of the overlap required for merging the forward and reverse reads
 # maxMismatch     = the maximum mismatches allowed in the overlap region
 # trimOverhang    = if TRUE, overhangs in the alignment between the forwards and reverse read are trimmed off
@@ -67,8 +66,8 @@ Supported extensions: fastq, fq (and gz or zip compressed formats).
 fi
 
 #Check identifiers
-if [[ -z $read_R1 ]] || [[ -z $read_R2 ]]; then
-    printf '%s\n' "ERROR]: 'read R1/R2' are not specified.
+if [[ -z $read_R1 ]]; then
+    printf '%s\n' "ERROR]: 'read_R1' is not specified.
     >Quitting" >&2
     end_process
 fi
@@ -118,7 +117,7 @@ if [[ $debugger != "true" ]]; then
     if [[ -d tempdir2 ]]; then
         rm -rf tempdir2
     fi
-    rm $output_dir/denoise_assemble.log
+   # rm $output_dir/denoise_assemble.log
 fi
 end=$(date +%s)
 runtime=$((end-start))

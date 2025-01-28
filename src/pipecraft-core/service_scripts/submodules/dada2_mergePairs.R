@@ -13,7 +13,7 @@ fileFormat = Sys.getenv('fileFormat')
 
 #load  variables
 read_R1 = Sys.getenv('read_R1')
-read_R2 = Sys.getenv('read_R2')
+read_R2 = gsub("R1", "R2", read_R1)
 minOverlap = as.numeric(Sys.getenv('minOverlap'))
 maxMismatch = as.numeric(Sys.getenv('maxMismatch'))
 trimOverhang = Sys.getenv('trimOverhang')

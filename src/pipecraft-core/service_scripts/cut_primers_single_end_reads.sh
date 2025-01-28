@@ -46,11 +46,12 @@ source /scripts/submodules/framework.functions.sh
 
 # Check if I need to work with multiple or with a single sequencing run
 if [[ -d "/input/multiRunDir" ]]; then
-  echo "Working with multiple sequencing runs in multiRunDir"
+  echo "Cut primers from single-end reads, input = multiple sequencing runs in multiRunDir"
   cd /input/multiRunDir
   # read in directories (sequencing sets) to work with. Skip directories renamed as "skip_*"
-    DIRS=$(find . -maxdepth 1 -mindepth 1 -type d | grep -v "tempdir2" | grep -v "tempdir" | grep -v "skip_")
-    echo "runs = $DIRS"
+    DIRS=$(find . -maxdepth 1 -mindepth 1 -type d | grep -v "tempdir" | grep -v "skip_" | sed -e "s/^\.\///")
+    echo "working in dirs:"
+    echo $DIRS
     multiDir=$"TRUE"
     export multiDir
 else
@@ -78,7 +79,7 @@ for seqrun in $DIRS; do
             end_process
         fi
         #output dir
-        output_dir=$"/input/multiRunDir/$seqrun/primersCut_out"
+        output_dir=$"/input/multiRunDir/${seqrun%%/*}/primersCut_out"
         ### Prepare working env and check single-end data
         prepare_SE_env
         # prepare primers
@@ -218,8 +219,11 @@ printf "Total time: $runtime sec.\n "
 
 #variables for all services
 echo "#variables for all services: "
-if [[ $multiDir == "TRUE" ]]; then  
-    echo "workingDir=/input/multiRunDir"
+if [[ $multiDir == "TRUE" ]]; then
+    workingDir=$"/input/multiRunDir"
+    echo "workingDir=$workingDir"
+    # var for multiRunDir pipe
+    printf "cut_SE_primers" > $workingDir/prev_step.temp
 else
     echo "workingDir=$output_dir"
 fi

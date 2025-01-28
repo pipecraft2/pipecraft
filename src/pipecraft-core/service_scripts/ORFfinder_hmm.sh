@@ -17,8 +17,8 @@
     rep_seqs_file=$(printf "/extraFiles/$rep_seqs_temp")
     echo "rep_seqs_file = $rep_seqs_file"
 
-# min_len       = positive integer. minimum length of the output sequence
-# max_len       = positive integer. maximum length of the output sequence - NOT IMPLEMENTED
+# min_length       = positive integer. minimum length of the output sequence
+# max_length       = positive integer. maximum length of the output sequence - NOT IMPLEMENTED
 # genetic_code  = positive integer. genetic code for translation. 5 = invertebrate mitochondrial code. Specify values from 1 to 33
 # start_codon   = list [0, 1 or 2]. 0 = ATG only; 1 = ATG and alternative initation codons; 2 = any sense codon
 # ignore_nested = bool. TRUE = ignore nested ORFs (completely placed within another)
@@ -58,7 +58,7 @@ echo "# Running ORFfinder | "
     # -outfmt 0 = list of ORFs in FASTA format (aa)
     # -outfmt 1 = CDS in FASTA format (nucl)
 checkerror=$(ORFfinder -in $rep_seqs_file \
-    -ml $min_len \
+    -ml $min_length \
     -g $genetic_code \
     -s $start_codon \
     -n $ignore_nested \
@@ -91,7 +91,7 @@ echo "# ORFfinder DONE | "
 ### HMM search
 if [[ $arthropod_hmm == "true" ]]; then
     echo "# Running HMM scan | "
-    #  -ml $min_len removed here
+    #  -ml $min_length removed here
     checkerror=$(ORFfinder -in $rep_seqs_file \
         -g $genetic_code \
         -s $start_codon \
@@ -167,7 +167,7 @@ Generated files:
 # $in.notORFs.list.txt = list of sequence identifiers of the above file.
 
 Core command -> 
-ORFfinder -in $rep_seqs_file_path -ml $min_len -g $genetic_code -s $start_codon -n $ignore_nested -strand $strand \n" > $output_dir/README_ORFfinder.txt
+ORFfinder -in $rep_seqs_file_path -ml $min_length -g $genetic_code -s $start_codon -n $ignore_nested -strand $strand \n" > $output_dir/README_ORFfinder.txt
 
 if [[ $arthropod_hmm == "true" ]]; then
     HMMs=$(grep -c "^>" $output_dir/$in_name.ORFs.HMM.fasta)

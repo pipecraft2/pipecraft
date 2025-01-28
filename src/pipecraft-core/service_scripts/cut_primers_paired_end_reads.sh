@@ -53,8 +53,9 @@ if [[ -d "/input/multiRunDir" ]]; then
   echo "Working with multiple sequencing runs in multiRunDir"
   cd /input/multiRunDir
   # read in directories (sequencing sets) to work with. Skip directories renamed as "skip_*"
-    DIRS=$(find . -maxdepth 1 -mindepth 1 -type d | grep -v "tempdir2" | grep -v "tempdir" | grep -v "skip_")
-    echo "runs = $DIRS"
+    DIRS=$(find . -maxdepth 1 -mindepth 1 -type d | grep -v "tempdir" | grep -v "skip_" | sed -e "s/^\.\///")
+    echo "working in dirs:"
+    echo $DIRS
     multiDir=$"TRUE"
     export multiDir
 else
@@ -79,7 +80,7 @@ for seqrun in $DIRS; do
             end_process
         fi
         #output dir
-        output_dir=$"/input/multiRunDir/$seqrun/primersCut_out"
+        output_dir=$"/input/multiRunDir/${seqrun%%/*}/primersCut_out"
         ### Prepare working env and check paired-end data
         prepare_PE_env
         # prepare primers
@@ -211,9 +212,7 @@ for seqrun in $DIRS; do
             -p $output_dir/$inputR2.$extension \
             $output_dir/$inputR1.round1.$extension $output_dir/$inputR2.round1.$extension 2>&1)
             check_app_error
-            if [[ $debugger != "true" ]]; then
-                rm $output_dir/$inputR1.round1.$extension $output_dir/$inputR2.round1.$extension
-            fi
+            rm $output_dir/$inputR1.round1.$extension $output_dir/$inputR2.round1.$extension
         fi
     done < tempdir2/paired_end_files.txt
 
@@ -331,6 +330,13 @@ printf "\nDONE "
 
 #variables for all services
 echo "#variables for all services: "
-echo "workingDir=$output_dir"
+if [[ $multiDir == "TRUE" ]]; then
+    workingDir=$"/input/multiRunDir"
+    echo "workingDir=$workingDir"
+    # var for multiRunDir pipe
+    printf "cut_primers" > $workingDir/prev_step.temp
+else
+    echo "workingDir=$output_dir"
+fi
 echo "fileFormat=$extension"
 echo "readType=paired_end"

@@ -15,57 +15,103 @@
 #load env variables
 readType=${readType}
 extension=${fileFormat}
-dataFormat=${dataFormat}
 workingDir=${workingDir}
-
-#load variables
-maxEE=${maxEE}
-maxN=${maxN}
-truncQ=${truncQ}
-truncLen_R1=${truncLen}
-minLen=${minLen}
-maxLen=${maxLen}
-minQ=${minQ}
 
 #Source for functions
 source /scripts/submodules/framework.functions.sh
-#output dir
-output_dir=$"/input/qualFiltered_out"
-export output_dir
+
+## Check if I need to work with multiple or with a single sequencing run
+# if working with multiRunDir, and the previous step was CUT PRIMERS
+if [[ -f "$workingDir/prev_step.temp" ]]; then
+    prev_step=$(cat $workingDir/prev_step.temp) # for checking previous step (output from cut_primers_paired_end_reads.sh)
+fi
+if [[ $pipeline == "DADA2_ASVs" ]] && [[ $prev_step == "cut_SE_primers" ]]; then
+    echo "DADA2 single-end pipeline with multiple sequencing runs in multiRunDir"
+    echo "Process = quality filtering (after cut primers)"
+    cd /input/multiRunDir
+    # read in directories (sequencing sets) to work with. Skip directories renamed as "skip_*"
+    DIRS=$(find . -maxdepth 2 -mindepth 1 -type d | grep "primersCut_out" | grep -v "skip_" | grep -v "tempdir" | sed -e "s/^\.\///")
+    echo "working in dirs:"
+    echo $DIRS
+    multiDir=$"TRUE"
+    export multiDir
+    rm $workingDir/prev_step.temp
+# if working with multiRunDir, but the previous step was not CUT PRIMERS
+elif [[ -d "/input/multiRunDir" ]] && [[ $prev_step != "cut_SE_primers" ]]; then
+    echo "DADA2 single-end pipeline with multiple sequencing runs in multiRunDir"
+    echo "Process = quality filtering"
+    cd /input/multiRunDir
+    # read in directories (sequencing sets) to work with. Skip directories renamed as "skip_*" [replacing ^./ with sed]
+    DIRS=$(find . -maxdepth 1 -mindepth 1 -type d | grep -v "tempdir" | grep -v "skip_" | sed -e "s/^\.\///")
+    echo "working in dirs:"
+    echo $DIRS
+    multiDir=$"TRUE"
+    export multiDir
+# if working with individual run (within Quick Tools or pipeline)
+else
+    echo "Working with individual sequencing run"
+    echo "Process = quality filtering"
+    DIRS=$(pwd)
+fi
+
 #############################
 ### Start of the workflow ###
 #############################
-start=$(date +%s)
-### Check if files with specified extension exist in the dir
-first_file_check
-### Prepare working env and check single-end data
-prepare_SE_env
+### looping through multiple sequencing runs (dirs in multiRunDir) if the $WD=multiRunDir, otherwise just doing single seqrun analyses
+for seqrun in $DIRS; do
+    start=$(date +%s)
+    cd $seqrun
 
-### Process samples with dada2 filterAndTrim function in R
-printf "# Running DADA2 filterAndTrim \n"
-Rlog=$(Rscript /scripts/submodules/dada2_SE_filterAndTrim.R 2>&1)
-echo $Rlog > $output_dir/qFilt.log 
-wait
-printf "\n DADA2 filterAndTrim completed \n"
-
-#format R-log file
-sed -i "s/;; /\n/g" $output_dir/qFilt.log 
-
-#################################################
-### COMPILE FINAL STATISTICS AND README FILES ###
-#################################################
-if [[ $debugger != "true" ]]; then
-    if [[ -d tempdir2 ]]; then
-        rm -rf tempdir2
+    if [[ $multiDir == "TRUE" ]]; then
+        ### Check if the dir has the specified file extension; if not then ERROR
+        count=$(ls -1 *.$fileFormat 2>/dev/null | wc -l)
+        if [[ $count == 0 ]]; then
+            printf '%s\n' "ERROR]: cannot find files with specified extension '$fileFormat' in dir $seqrun.
+            Please check the extension of your files and specify again.
+            >Quitting" >&2
+            end_process
+        fi
+        #output dir
+        output_dir=$"/input/multiRunDir/${seqrun%%/*}/qualFiltered_out"
+        export output_dir
+        ### Prepare working env and check single-end data
+        prepare_SE_env
+    else
+        #output dir
+        output_dir=$"/input/qualFiltered_out"
+        export output_dir
+        # Check if files with specified extension exist in the dir
+        first_file_check
+        ### Prepare working env and check single-end data
+        prepare_SE_env
     fi
-    rm $output_dir/qFilt.log 
-fi
 
-end=$(date +%s)
-runtime=$((end-start))
 
-#Make README.txt file
-printf "# Quality filtering was performed using dada2 (see 'Core command' below for the used settings).
+    ### Process samples with dada2 filterAndTrim function in R
+    printf "# Running DADA2 filterAndTrim in $seqrun\n"
+    Rlog=$(Rscript /scripts/submodules/dada2_SE_filterAndTrim.R 2>&1)
+    echo $Rlog > $output_dir/qFilt.log 
+    wait
+    printf "\n DADA2 filterAndTrim completed \n"
+
+    #format R-log file
+    sed -i "s/;; /\n/g" $output_dir/qFilt.log 
+
+    #################################################
+    ### COMPILE FINAL STATISTICS AND README FILES ###
+    #################################################
+    if [[ $debugger != "true" ]]; then
+        if [[ -d tempdir2 ]]; then
+            rm -rf tempdir2
+        fi
+        #rm $output_dir/qFilt.log 
+    fi
+
+    end=$(date +%s)
+    runtime=$((end-start))
+
+    #Make README.txt file
+    printf "# Quality filtering was performed using dada2 (see 'Core command' below for the used settings).
 
 Files in 'qualFiltered_out':
     # *.$extension             = quality filtered sequences per sample.
@@ -73,7 +119,7 @@ Files in 'qualFiltered_out':
     # *.rds                    = R objects for dada2.
 
 Core command -> 
-filterAndTrim(inputR1, outputR1, maxN = $maxN, maxEE = $maxEE, truncQ = $truncQ, truncLen = $truncLen_R1, maxLen = $maxLen, minLen = $minLen, minQ = $minQ, rm.phix = TRUE)
+filterAndTrim(inputR1, outputR1, maxN = $maxN, maxEE = $maxEE, truncQ = $truncQ, truncLen = $truncLen, maxLen = $maxLen, minLen = $minLen, minQ = $minQ, rm.phix = TRUE)
 
 Total run time was $runtime sec.
 ##################################################################
@@ -83,13 +129,23 @@ Total run time was $runtime sec.
     #https://github.com/benjjneb/dada2
 ########################################################" > $output_dir/README.txt
 
+    ### if working with multiRunDir then cd /input/multiRunDir
+    if [[ $multiDir == "TRUE" ]]; then 
+        cd /input/multiRunDir
+    fi
+done
+
 #Done
 printf "\nDONE "
-printf "Total time: $runtime sec.\n "
 
 #variables for all services
 echo "#variables for all services: "
-echo "workingDir=$output_dir"
+if [[ $multiDir == "TRUE" ]]; then
+    workingDir=$"/input/multiRunDir"
+    echo "workingDir=$workingDir"
+else
+    echo "workingDir=$output_dir"
+fi
 echo "fileFormat=$extension"
 echo "readType=single_end"
 

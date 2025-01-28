@@ -15,12 +15,12 @@
 
 #load variables
 fastq_minoverlen="--fastq_minovlen ${min_overlap}"
-fastq_minmergelen="--fastq_minmergelen ${min_lenght}"
+fastq_minmergelen="--fastq_minmergelen ${min_length}"
 fastq_allowmergestagger=${allow_merge_stagger}
 include_R1=$include_only_R1
 fastq_maxdiffs="--fastq_maxdiffs ${max_diffs}"
 fastq_maxns="--fastq_maxns ${max_Ns}"
-fastq_maxmergelen="--fastq_maxmergelen ${max_len}"
+fastq_maxmergelen="--fastq_maxmergelen ${max_length}"
 fastq_qmax=$fastq_qmax
 notmerged_files=$keep_disjointed
 read_R1=${read_R1}
@@ -133,7 +133,7 @@ If include only R1 = TRUE, then the unassembled R1 reads have been added to the 
 This may be relevant when working with e.g. ITS2 sequences, because ITS2 region in some taxa is too long for assembly, 
 therefore discarded completely after assembly process. Thus, including also unassembled R1 reads, partial ITS2 sequences 
 for these taxa will be represented in the final output. 
-If include only R1 option = TRUE, then other specified options (lenght, max error rate etc.) have not been 
+If include only R1 option = TRUE, then other specified options (length, max error rate etc.) have not been 
 applied to R1 reads in the 'assembled' file. Thus, additional quality filtering (if this was done before assembling) 
 should be run on the 'assembled' data.\n
 NOTE RUNNING THE PROCESS SEVERAL TIMES IN THE SAME DIRECTORY WILL OVERWRITE ALL THE OUTPUTS!

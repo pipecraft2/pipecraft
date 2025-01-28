@@ -267,7 +267,7 @@ export default new Vuex.Store({
                 value: null,
                 disabled: "never",
                 tooltip:
-                  "discard sequences with more than the specified number of bases. Note that if 'trunc length' setting is specified, then 'max length' SHOULD NOT be lower than 'trunc lenght' (otherwise all reads are discared) [empty field = no action taken]",
+                  "discard sequences with more than the specified number of bases. Note that if 'trunc length' setting is specified, then 'max length' SHOULD NOT be lower than 'trunc length' (otherwise all reads are discared) [empty field = no action taken]",
                 type: "numeric",
                 rules: [
                   (v) =>
@@ -356,7 +356,7 @@ export default new Vuex.Store({
                 value: 32,
                 disabled: "never",
                 tooltip:
-                  "minimum length of the filtered output sequence. Note that if 'trunc length' setting is specified, then 'min length' SHOULD BE lower than 'trunc lenght' (otherwise all reads are discared)",
+                  "minimum length of the filtered output sequence. Note that if 'trunc length' setting is specified, then 'min length' SHOULD BE lower than 'trunc length' (otherwise all reads are discared)",
                 type: "numeric",
                 rules: [(v) => v >= 1 || "ERROR: specify values >= 1"],
               },
@@ -365,7 +365,7 @@ export default new Vuex.Store({
                 value: null,
                 disabled: "never",
                 tooltip:
-                  "truncate sequences to the specified length. Shorter sequences are discarded; thus if specified, check that 'min length' setting is lower than 'trunc length' ('min lenght' therefore has basically no effect) [empty field = no action taken]",
+                  "truncate sequences to the specified length. Shorter sequences are discarded; thus if specified, check that 'min length' setting is lower than 'trunc length' ('min length' therefore has basically no effect) [empty field = no action taken]",
                 type: "numeric",
                 rules: [
                   (v) =>
@@ -688,15 +688,6 @@ export default new Vuex.Store({
                 type: "chip",
                 rules: [(v) => v.length <= 1 || "ADD ONLY ONE IDENTIFIER"],
               },
-              {
-                name: "read_R2",
-                value: ["_R2"],
-                disabled: "single_end",
-                tooltip:
-                  "applies only for paired-end data. Identifyer string that is common for all R2 reads. R2 reads must contain R2 strings in the file names; sample names must not contain R2! (e.g. when all R2 files have '.R2' string, then enter '\\.R2'. Note that backslash is only needed to escape dot regex; e.g. when all R2 files have '_R1' string, then enter '_R2'.)",
-                type: "chip",
-                rules: [(v) => v.length <= 1 || "ADD ONLY ONE IDENTIFIER"],
-              },
               // {
               //   name: "samp_ID",
               //   value: ["_"],
@@ -764,12 +755,12 @@ export default new Vuex.Store({
                 value: 0,
                 disabled: "never",
                 tooltip:
-                  "discard sequences with more than the specified number of N’s",
+                  "discard sequences with more than the specified number of N's",
                 type: "numeric",
                 rules: [(v) => v >= 0 || "ERROR: specify values >= 0"],
               },
               {
-                name: "max_len",
+                name: "max_length",
                 value: 600,
                 disabled: "never",
                 tooltip: "maximum length of the merged sequence",
@@ -813,7 +804,7 @@ export default new Vuex.Store({
                 rules: [(v) => v >= 1 || "ERROR: specify values >= 1"],
               },
               {
-                name: "min_lenght",
+                name: "min_length",
                 value: 32,
                 disabled: "never",
                 tooltip: "minimum length of the merged sequence",
@@ -928,15 +919,6 @@ export default new Vuex.Store({
                 disabled: "single_end",
                 tooltip:
                   "identifyer string that is common for all R1 reads. R1/R2 reads must contain R1/R2 strings in the file names; sample names must not contain R1/R2! (e.g. when all R1 files have '.R1' string, then enter '\\.R1'. Note that backslash is only needed to escape dot regex; e.g. when all R1 files have '_R1' string, then enter '_R1'.)",
-                type: "chip",
-                rules: [(v) => v.length <= 1 || "ADD ONLY ONE IDENTIFIER"],
-              },
-              {
-                name: "read_R2",
-                value: ["_R2"],
-                disabled: "single_end",
-                tooltip:
-                  "identifyer string that is common for all R2 reads (e.g. when all R2 files have '.R2' string, then enter '\\.R2'. Note that backslash is only needed to escape dot regex; e.g. when all R2 files have '_R1' string, then enter '_R2'.)",
                 type: "chip",
                 rules: [(v) => v.length <= 1 || "ADD ONLY ONE IDENTIFIER"],
               },
@@ -1691,7 +1673,7 @@ export default new Vuex.Store({
               },
               {
                 name: "by_length",
-                value: 249,
+                value: 239,
                 disabled: "never",
                 tooltip:
                   "discard ASVs from the ASV table that are shorter than specified value (in base pairs). Value 0 means OFF; no filtering by length.",
@@ -1873,7 +1855,7 @@ export default new Vuex.Store({
               },
               {
                 name: "minBoot",
-                value: 50,
+                value: 80,
                 disabled: "never",
                 tooltip:
                   "the minimum bootstrap confidence for assigning a taxonomic level",
@@ -2020,7 +2002,7 @@ export default new Vuex.Store({
           },
           {
             scriptName: "tag_jump_removal.sh",
-            tooltip: "using UNCROSS2 to filter out putative tag-jumps",
+            tooltip: "filter out putative tag-jumps in the ASVs table (using UNCROSS2)",
             imageName: "vmikk/nextits:0.5.0",
             serviceName: "filter_tag-jumps",
             selected: false,
@@ -2039,13 +2021,13 @@ export default new Vuex.Store({
               },
               {
                 name: "f_value",
-                value: 0.01,
+                value: 0.03,
                 max: 1,
                 min: 0,
                 step: 0.01,
                 disabled: "never",
                 tooltip:
-                  "f-parameter of UNCROSS2, which defines the expected cross-talk rate. Default is 0.01 (equivalent to 1%). A higher value enforces stricter filtering",
+                  "f-parameter of UNCROSS2, which defines the expected tag-jumps rate. Default is 0.03 (equivalent to 3%). A higher value enforces stricter filtering",
                 type: "slide",
                 rules: [(v) => v > 0 || "ERROR: specify values > 0"],
               },
@@ -2099,7 +2081,7 @@ export default new Vuex.Store({
                 type: "file",
               },
               {
-                name: "min_len",
+                name: "min_length",
                 value: 309,
                 disabled: "never",
                 tooltip: "minimum length of an output sequence",
@@ -2107,7 +2089,7 @@ export default new Vuex.Store({
                 rules: [(v) => v >= 1 || "ERROR: specify values >= 1"],
               },
               // {
-              //   name: "max_len",
+              //   name: "max_length",
               //   value: 317,
               //   disabled: "never",
               //   tooltip: "maximum length of an output sequence",
@@ -2209,7 +2191,7 @@ export default new Vuex.Store({
             extraInputs: [
               {
                 name: "bases_variation",
-                value: 0,
+                value: 9,
                 disabled: "never",
                 tooltip:
                   "find setting; allowed variation in the expected amplicon length in base pairs (metaMATE setting --basevariation)",
@@ -2300,7 +2282,7 @@ export default new Vuex.Store({
                 value: 5,
                 disabled: "never",
                 tooltip:
-                  "find setting; 5 = invertebrate mitochondrial code. Use 1 for rbcL. Specify values from 1 to 33 (metaMATE setting --table)",
+                  "find setting; 5 = invertebrate mitochondrial code. Use 1 for rbcL. Specify values from 1 to 33",
                 type: "numeric",
                 rules: [
                   (v) => v >= 1 || "ERROR: specify values >= 1",
@@ -2335,6 +2317,18 @@ export default new Vuex.Store({
                   'state.selectedSteps[0].services[4].Inputs[0].value == "dump"',
               },
               {
+                name: "abundance_filt",
+                value: true,
+                disabled: "never",
+                tooltip:
+                  "if FALSE, then NA_abund_thresh is ineffective, and no filtering is done based on the ASV abundances, \
+                  i.e., filter only based on length, basesvariation and genetic_code. \
+                  If TRUE, then NA_abund_thresh will be applied.",
+                type: "bool",
+                depends_on:
+                  'state.selectedSteps[0].services[4].Inputs[0].value == "find_and_dump"',
+              },
+              {
                 name: "NA_abund_thresh",
                 value: 0.05,
                 disabled: "never",
@@ -2350,13 +2344,18 @@ export default new Vuex.Store({
                 step: 0.01,
                 type: "slide",
                 depends_on:
-                  'state.selectedSteps[0].services[4].Inputs[0].value == "find_and_dump"',
+                // Disable if abundance_filt is false
+                  'state.selectedSteps[0].services[4].Inputs[0].value == "find_and_dump" && state.selectedSteps[0].services[4].Inputs[8].value === true'
               },
             ],
           },
         ],
       },
     ],
+    // ############################# 
+    // ### pre-compile pipelines ###
+    // #############################
+    // # vsearch OTUs
     vsearch_OTUs: [
       {
         tooltip: "remove primers sequences from the reads",
@@ -2473,7 +2472,7 @@ export default new Vuex.Store({
             rules: [(v) => v >= 0 || "ERROR: specify values >= 0"],
           },
           {
-            name: "max_len",
+            name: "max_length",
             value: 600,
             disabled: "never",
             tooltip: "maximum length of the merged sequence",
@@ -2517,7 +2516,7 @@ export default new Vuex.Store({
             rules: [(v) => v >= 1 || "ERROR: specify values >= 1"],
           },
           {
-            name: "min_lenght",
+            name: "min_length",
             value: 32,
             disabled: "never",
             tooltip: "minimum length of the merged sequence",
@@ -2566,7 +2565,7 @@ export default new Vuex.Store({
             value: null,
             disabled: "never",
             tooltip:
-              "discard sequences with more than the specified number of bases. Note that if 'trunc length' setting is specified, then 'max length' SHOULD NOT be lower than 'trunc lenght' (otherwise all reads are discared)",
+              "discard sequences with more than the specified number of bases. Note that if 'trunc length' setting is specified, then 'max length' SHOULD NOT be lower than 'trunc length' (otherwise all reads are discared)",
             type: "numeric",
             rules: [
               (v) =>
@@ -2630,7 +2629,7 @@ export default new Vuex.Store({
             value: 32,
             disabled: "never",
             tooltip:
-              "minimum length of the filtered output sequence. Note that if 'trunc length' setting is specified, then 'min length' SHOULD BE lower than 'trunc lenght' (otherwise all reads are discared)",
+              "minimum length of the filtered output sequence. Note that if 'trunc length' setting is specified, then 'min length' SHOULD BE lower than 'trunc length' (otherwise all reads are discared)",
             type: "numeric",
             rules: [(v) => v >= 1 || "ERROR: specify values >= 1"],
           },
@@ -2639,7 +2638,7 @@ export default new Vuex.Store({
             value: null,
             disabled: "never",
             tooltip:
-              "truncate sequences to the specified length. Shorter sequences are discarded; thus if specified, check that 'min length' setting is lower than 'trunc length' ('min lenght' therefore has basically no effect)",
+              "truncate sequences to the specified length. Shorter sequences are discarded; thus if specified, check that 'min length' setting is lower than 'trunc length' ('min length' therefore has basically no effect)",
             type: "numeric",
             rules: [
               (v) =>
@@ -2977,106 +2976,9 @@ export default new Vuex.Store({
           },
         ],
       },
-      {
-        tooltip: "assign taxonomy with BLAST against a selected database",
-        scriptName: "taxonomy_BLAST.sh",
-        imageName: "pipecraft/blast:2.14",
-        serviceName: "assign taxonomy",
-        manualLink:
-          "https://pipecraft2-manual.readthedocs.io/en/latest/quicktools.html#blast-camacho-et-al-2009",
-        selected: false,
-        showExtra: false,
-        extraInputs: [
-          {
-            name: "e_value",
-            value: 10,
-            disabled: "never",
-            tooltip:
-              "a parameter that describes the number of hits one can expect to see by chance when searching a database of a particular size. The lower the e-value the more 'significant' the match is",
-            type: "numeric",
-            default: 10,
-            rules: [(v) => v >= 0 || "ERROR: specify values >= 0"],
-          },
-          {
-            name: "word_size",
-            value: 11,
-            disabled: "never",
-            tooltip:
-              "the size of the initial word that must be matched between the database and the query sequence",
-            type: "numeric",
-            rules: [(v) => v >= 1 || "ERROR: specify values >= 1"],
-          },
-          {
-            name: "reward",
-            value: 2,
-            disabled: "never",
-            tooltip: "reward for a match",
-            type: "numeric",
-            rules: [(v) => v >= 0 || "ERROR: specify values >= 0"],
-          },
-          {
-            name: "penalty",
-            value: -3,
-            disabled: "never",
-            tooltip: "penalty for a mismatch",
-            type: "numeric",
-            rules: [(v) => v <= 0 || "ERROR: specify values <= 0"],
-          },
-          {
-            name: "gap_open",
-            value: 5,
-            disabled: "never",
-            tooltip: "cost to open a gap",
-            type: "numeric",
-            rules: [(v) => v >= 0 || "ERROR: specify values >= 0"],
-          },
-          {
-            name: "gap_extend",
-            value: 2,
-            disabled: "never",
-            tooltip: "cost to extend a gap",
-            type: "numeric",
-            // rules: [(v) => v >= 0 || "ERROR: specify values >= 0"],
-          },
-          {
-            name: "cores",
-            value: 4,
-            disabled: "never",
-            tooltip: "number of cores to use",
-            type: "numeric",
-            rules: [(v) => v >= 1 || "ERROR: specify values >= 1"],
-          },
-        ],
-        Inputs: [
-          {
-            name: "database_file",
-            btnName: "select file",
-            value: "undefined",
-            disabled: "never",
-            tooltip:
-              "database file (may be fasta formated - automatically will convert to BLAST database format)",
-            type: "file",
-          },
-          {
-            name: "task",
-            items: ["blastn", "megablast"],
-            value: "blastn",
-            disabled: "never",
-            tooltip: "task (blastn or megablast)",
-            type: "select",
-          },
-          {
-            name: "strands",
-            items: ["plus", "both"],
-            value: "both",
-            disabled: "never",
-            tooltip:
-              "query strand to search against database. Both = search also reverse complement",
-            type: "select",
-          },
-        ],
-      },
     ],
+
+    // # UNOISE ASVs 
     UNOISE_ASVs: [
       {
         tooltip: "remove primers sequences from the reads",
@@ -3193,7 +3095,7 @@ export default new Vuex.Store({
             rules: [(v) => v >= 0 || "ERROR: specify values >= 0"],
           },
           {
-            name: "max_len",
+            name: "max_length",
             value: 600,
             disabled: "never",
             tooltip: "maximum length of the merged sequence",
@@ -3237,7 +3139,7 @@ export default new Vuex.Store({
             rules: [(v) => v >= 1 || "ERROR: specify values >= 1"],
           },
           {
-            name: "min_lenght",
+            name: "min_length",
             value: 32,
             disabled: "never",
             tooltip: "minimum length of the merged sequence",
@@ -3286,7 +3188,7 @@ export default new Vuex.Store({
             value: null,
             disabled: "never",
             tooltip:
-              "discard sequences with more than the specified number of bases. Note that if 'trunc length' setting is specified, then 'max length' SHOULD NOT be lower than 'trunc lenght' (otherwise all reads are discared)",
+              "discard sequences with more than the specified number of bases. Note that if 'trunc length' setting is specified, then 'max length' SHOULD NOT be lower than 'trunc length' (otherwise all reads are discared)",
             type: "numeric",
             rules: [
               (v) =>
@@ -3350,7 +3252,7 @@ export default new Vuex.Store({
             value: 32,
             disabled: "never",
             tooltip:
-              "minimum length of the filtered output sequence. Note that if 'trunc length' setting is specified, then 'min length' SHOULD BE lower than 'trunc lenght' (otherwise all reads are discared)",
+              "minimum length of the filtered output sequence. Note that if 'trunc length' setting is specified, then 'min length' SHOULD BE lower than 'trunc length' (otherwise all reads are discared)",
             type: "numeric",
             rules: [(v) => v >= 1 || "ERROR: specify values >= 1"],
           },
@@ -3359,7 +3261,7 @@ export default new Vuex.Store({
             value: null,
             disabled: "never",
             tooltip:
-              "truncate sequences to the specified length. Shorter sequences are discarded; thus if specified, check that 'min length' setting is lower than 'trunc length' ('min lenght' therefore has basically no effect)",
+              "truncate sequences to the specified length. Shorter sequences are discarded; thus if specified, check that 'min length' setting is lower than 'trunc length' ('min length' therefore has basically no effect)",
             type: "numeric",
             rules: [
               (v) =>
@@ -3639,106 +3541,6 @@ export default new Vuex.Store({
           },
         ],
       },
-      {
-        tooltip:
-          "assign taxonomy to zOTUs with BLAST against a selected database",
-        scriptName: "taxonomy_BLAST.sh",
-        imageName: "pipecraft/blast:2.14",
-        serviceName: "assign taxonomy",
-        manualLink:
-          "https://pipecraft2-manual.readthedocs.io/en/latest/quicktools.html#blast-camacho-et-al-2009",
-        selected: false,
-        showExtra: false,
-        extraInputs: [
-          {
-            name: "e_value",
-            value: 10,
-            disabled: "never",
-            tooltip:
-              "a parameter that describes the number of hits one can expect to see by chance when searching a database of a particular size. The lower the e-value the more 'significant' the match is",
-            type: "numeric",
-            default: 10,
-            rules: [(v) => v >= 0 || "ERROR: specify values >= 0"],
-          },
-          {
-            name: "word_size",
-            value: 11,
-            disabled: "never",
-            tooltip:
-              "the size of the initial word that must be matched between the database and the query sequence",
-            type: "numeric",
-            rules: [(v) => v >= 1 || "ERROR: specify values >= 1"],
-          },
-          {
-            name: "reward",
-            value: 2,
-            disabled: "never",
-            tooltip: "reward for a match",
-            type: "numeric",
-            rules: [(v) => v >= 0 || "ERROR: specify values >= 0"],
-          },
-          {
-            name: "penalty",
-            value: -3,
-            disabled: "never",
-            tooltip: "penalty for a mismatch",
-            type: "numeric",
-            rules: [(v) => v <= 0 || "ERROR: specify values <= 0"],
-          },
-          {
-            name: "gap_open",
-            value: 5,
-            disabled: "never",
-            tooltip: "cost to open a gap",
-            type: "numeric",
-            rules: [(v) => v >= 0 || "ERROR: specify values >= 0"],
-          },
-          {
-            name: "gap_extend",
-            value: 2,
-            disabled: "never",
-            tooltip: "cost to extend a gap",
-            type: "numeric",
-            // rules: [(v) => v >= 0 || "ERROR: specify values >= 0"],
-          },
-          {
-            name: "cores",
-            value: 4,
-            disabled: "never",
-            tooltip: "number of cores to use",
-            type: "numeric",
-            rules: [(v) => v >= 1 || "ERROR: specify values >= 1"],
-          },
-        ],
-        Inputs: [
-          {
-            name: "database_file",
-            btnName: "select file",
-            value: "undefined",
-            disabled: "never",
-            tooltip:
-              "database file (may be fasta formated - automatically will convert to BLAST database format)",
-            type: "file",
-          },
-          {
-            name: "task",
-            items: ["blastn", "megablast"],
-            value: "blastn",
-            disabled: "never",
-            tooltip: "task (blastn or megablast)",
-            type: "select",
-          },
-          {
-            name: "strands",
-            items: ["plus", "both"],
-            value: "both",
-            disabled: "never",
-            tooltip:
-              "query strand to search against database. Both = search also reverse complement",
-            type: "select",
-          },
-        ],
-      },
     ],
     // Metaworks_COI: [
     //   {
@@ -3955,6 +3757,8 @@ export default new Vuex.Store({
     //     ],
     //   },
     // ],
+
+    // # NextITS
     NextITS: [
       {
         tooltip:
@@ -3962,7 +3766,7 @@ export default new Vuex.Store({
         scriptName: "",
         imageName: "vmikk/nextits:0.5.0",
         serviceName: "Step_1",
-        manualLink: "https://next-its.github.io/parameters/#step-1",
+        manualLink: "https://pipecraft2-manual.readthedocs.io/en/latest/pre-defined_pipelines.html#nextits",
         disabled: "never",
         selected: "always",
         showExtra: false,
@@ -3989,7 +3793,7 @@ export default new Vuex.Store({
             value: 4,
             disabled: "never",
             tooltip:
-              "Discard sequences with more than the specified number of N’s",
+              "Discard sequences with more than the specified number of Ns",
             type: "numeric",
             rules: [(v) => v >= 1 || "ERROR: specify values >= 1"],
           },
@@ -4127,7 +3931,7 @@ export default new Vuex.Store({
         scriptName: "",
         imageName: "vmikk/nextits:0.5.0",
         serviceName: "Step_2",
-        manualLink: "https://next-its.github.io/parameters/#step-2",
+        manualLink: "https://pipecraft2-manual.readthedocs.io/en/latest/pre-defined_pipelines.html#nextits",
         disabled: "never",
         selected: "always",
         showExtra: false,
@@ -4284,6 +4088,8 @@ export default new Vuex.Store({
         ],
       },
     ],
+
+    // # DADA2 ASVs pipeline
     DADA2_ASVs: [
       {
         tooltip: "remove primers sequences from the reads",
@@ -4396,15 +4202,6 @@ export default new Vuex.Store({
             disabled: "single_end",
             tooltip:
               "[only for paired-end data] identifyer string that is common for all R1 reads. R1/R2 reads must contain R1/R2 strings in the file names; sample names must not contain R1/R2! (e.g. when all R1 files have '.R1' string, then enter '\\.R1'. Note that backslash is only needed to escape dot regex; e.g. when all R1 files have '_R1' string, then enter '_R1'.)",
-            type: "chip",
-            rules: [(v) => v.length <= 1 || "ADD ONLY ONE IDENTIFIER"],
-          },
-          {
-            name: "read_R2",
-            value: ["_R2"],
-            disabled: "single_end",
-            tooltip:
-              "[only for paired-end data] identifyer string that is common for all R2 reads (e.g. when all R2 files have '.R2' string, then enter '\\.R2'. Note that backslash is only needed to escape dot regex; e.g. when all R2 files have '_R1' string, then enter '_R2'.)",
             type: "chip",
             rules: [(v) => v.length <= 1 || "ADD ONLY ONE IDENTIFIER"],
           },
@@ -4667,136 +4464,138 @@ export default new Vuex.Store({
           },
         ],
       },
-      // {
-      //   scriptName: "tag_jump_removal.sh",
-      //   tooltip: "using UNCROSS2 to filter out putative tag-jumps",
-      //   imageName: "vmikk/nextits:0.5.0",
-      //   serviceName: "filter tag-jumps",
-      //   manualLink:
-      //     "https://pipecraft2-manual.readthedocs.io/en/latest/pre-defined_pipelines.html#tag-jump-correction",
-      //   selected: false,
-      //   showExtra: false,
-      //   extraInputs: [],
-      //   Inputs: [
-      //     {
-      //       name: "f_value",
-      //       value: 0.01,
-      //       disabled: "never",
-      //       tooltip:
-      //         "f-parameter of UNCROSS2, which defines the expected cross-talk rate. Default is 0.01 (equivalent to 1%). A higher value enforces stricter filtering",
-      //       type: "numeric",
-      //       rules: [(v) => v > 0 || "ERROR: specify values > 0"],
-      //     },
-      //     {
-      //       name: "p_value",
-      //       value: 1,
-      //       disabled: "never",
-      //       tooltip:
-      //         "p-parameter, which controls the severity of tag-jump removal. It adjusts the exponent in the UNCROSS formula. Default is 1. Opt for 0.5 or 0.3 to steepen the curve",
-      //       type: "numeric",
-      //       rules: [(v) => v > 0 || "ERROR: specify values > 0"],
-      //     },
-      //   ],
-      // },
       {
-        tooltip: "Collaplse identical ASVs or/and filter ASVs by length",
-        scriptName: "table_filtering_dada2_wf.sh",
+        tooltip: "Filter tag-jumps, filter ASV by length, collaplse identical ASVs",
+        scriptName: "curate_table_wf.sh",
         imageName: "pipecraft/vsearch_dada2:2",
-        serviceName: "filter ASV table",
+        serviceName: "curate ASV table",
         manualLink:
           "https://pipecraft2-manual.readthedocs.io/en/latest/quicktools.html#dada2-table-filtering",
         disabled: "never",
-        selected: false,
+        selected: true,
         showExtra: false,
-        extraInputs: [
-          {
-            name: "minOverlap",
-            value: 20,
-            disabled: "never",
-            tooltip:
-              "collapseNoMismatch setting. Default = 20. The minimum overlap of base pairs between ASV sequences required to collapse them together",
-            type: "numeric",
-            rules: [(v) => v >= 1 || "ERROR: specify values >= 1"],
-          },
-          {
-            name: "vec",
-            value: true,
-            disabled: "never",
-            tooltip:
-              "collapseNoMismatch setting. Default = TRUE. Use the vectorized aligner. Should be turned off if sequences exceed 2kb in length",
-            type: "bool",
-          },
-        ],
+        extraInputs: [],
         Inputs: [
           {
+            name: "f_value",
+            value: 0.03,
+            disabled: "never",
+            tooltip:
+              "for filtering tag-jumps; f-parameter of UNCROSS2, which defines the expected tag-jumps rate. Default is 0.03 (equivalent to 3%). A higher value enforces stricter filtering. Value 0 means OFF, no tag-jumps filtering",
+            type: "numeric",
+            rules: [(v) => v > 0.001 || "OFF. Turn ON with > 0.001"],
+            onChange: (service, value) => {
+              if (value <= 0.001 && !service.Inputs.find(input => input.name === "min_length").value == 0 && !service.Inputs.find(input => input.name === "max_length").value == 0 && !service.Inputs.find(input => input.name === "p_value").value == 0 && !service.Inputs.find(input => input.name === "collapseNoMismatch").value == false) {
+                service.selected = false;
+              }
+            },
+          },
+          {
+            name: "p_value",
+            value: 1,
+            disabled: "never",
+            tooltip:
+              "for filtering tag-jumps; p-parameter, which controls the severity of tag-jump removal. It adjusts the exponent in the UNCROSS formula. Default is 1. Opt for 0.5 or 0.3 to steepen the curve. Value 0 means OFF, no tag-jumps filtering",
+            type: "numeric",
+            rules: [(v) => v > 0.01 || "OFF. Turn ON with > 0.01"],
+            onChange: (service, value) => {
+              if (value <= 0.01 && !service.Inputs.find(input => input.name === "min_length").value == 0 && !service.Inputs.find(input => input.name === "max_length").value == 0 && !service.Inputs.find(input => input.name === "f_value").value == 0 && !service.Inputs.find(input => input.name === "collapseNoMismatch").value == false) {
+                service.selected = false;
+              }
+            },
+          },
+          {
+            // collapseNoMismatch is visible only in ASV workflow
             name: "collapseNoMismatch",
             value: true,
             disabled: "never",
             tooltip:
-              "collapses ASVs that are identical up to shifts or length variation, i.e. that have no mismatches or internal indels (dada2 'collapseNoMismatch')",
+              "collapses ASVs that have no internal mismatches and vary only in length (using usearch_global -id 1)",
             type: "bool",
+            onChange: (service, value) => {
+              if (value <= 0.001 && !service.Inputs.find(input => input.name === "min_length").value == 0 && !service.Inputs.find(input => input.name === "max_length").value == 0 && !service.Inputs.find(input => input.name === "f_value").value == 0 && !service.Inputs.find(input => input.name === "p_value").value == 0) {
+                service.selected = false;
+              }
+            },
           },
           {
-            name: "by_length",
-            value: 249,
+            name: "min_length",
+            value: 32,
             disabled: "never",
             tooltip:
-              "discard ASVs from the ASV table that are shorter than specified value (in base pairs). Value 0 means OFF, no filtering by length",
+              "discard ASVs that are shorter than specified value (in base pairs). Value 0 means OFF, no filtering by min length",
             type: "numeric",
-            rules: [(v) => v >= 0 || "ERROR: specify values >= 0"],
+            rules: [(v) => v > 0 || "OFF. Turn ON with values > 0"],
+            onChange: (service, value) => {
+              if (value <= 0.001 && !service.Inputs.find(input => input.name === "max_length").value == 0 && !service.Inputs.find(input => input.name === "f_value").value == 0 && !service.Inputs.find(input => input.name === "p_value").value == 0 && !service.Inputs.find(input => input.name === "collapseNoMismatch").value == false) {
+                service.selected = false;
+              }
+              else {
+                service.selected = true;
+              }
+            },
+          },
+          {
+            name: "max_length",
+            value: 0,
+            disabled: "never",
+            tooltip:
+              "discard ASVs that are longer than specified value (in base pairs). Value 0 means OFF, no filtering by max length",
+            type: "numeric",
+            rules: [(v) => v > 0 || "OFF. Turn ON with values > 0"],
+            onChange: (service, value) => {
+              if (value <= 0.001 && !service.Inputs.find(input => input.name === "min_length").value == 0 && !service.Inputs.find(input => input.name === "f_value").value == 0 && !service.Inputs.find(input => input.name === "p_value").value == 0 && !service.Inputs.find(input => input.name === "collapseNoMismatch").value == false) {
+                service.selected = false;
+              }
+            },
           },
         ],
       },
       {
-        tooltip:
-          "assign taxonomy with DADA2 'assignTaxonomy' function against a selected database. Untick the checkbox to skip this step",
-        scriptName: "taxonomy_dada2.sh",
-        imageName: "pipecraft/vsearch_dada2:2",
-        serviceName: "assign Taxonomy",
-        manualLink:
-          "https://pipecraft2-manual.readthedocs.io/en/latest/quicktools.html#assign-taxonomy-dada2",
+        tooltip: "Merge sequencing runs if working with multuple runs in multiRunDir. Samples with the same name across runs are merged together",
+        scriptName: "merge_runs_wf.sh",
+        imageName: "pipecraft/vsearch_dada2:2", 
+        serviceName: "Merge sequencing runs",
+        manualLink: "empty",
         disabled: "never",
         selected: false,
         showExtra: false,
         extraInputs: [],
         Inputs: [
           {
-            name: "dada2_database",
-            btnName: "select fasta",
-            value: "undefined",
+            name: "merge_runs",
+            value: true,
             disabled: "never",
-            tooltip:
-              "Select a reference database fasta file for taxonomy annotation. Click on the header to download DADA2-formatted reference databases https://benjjneb.github.io/dada2/training.html",
-            type: "file",
+            tooltip: "Merge sequencing runs if working with multuple runs in multiRunDir. Samples with the same name across runs are merged together",
+            type: "bool",
+            onChange: (state, value) => {
+              // When merge_runs is set to false, also set service selection to false
+              if (!value) {
+                state.selected = false;
+              }
+              else {
+                state.selected = true;
+              }
+            }
           },
           {
-            name: "minBoot",
-            value: 50,
+            // collapseNoMismatch is visible only in ASV workflow
+            name: "collapseNoMismatch",
+            value: true,
             disabled: "never",
             tooltip:
-              "the minimum bootstrap confidence for assigning a taxonomic level",
-            type: "numeric",
-            rules: [(v) => v >= 1 || "ERROR: specify values >= 1"],
-          },
-          {
-            name: "tryRC",
-            value: false,
-            disabled: "never",
-            tooltip:
-              "the reverse-complement of each sequences will be used for classification if it is a better match to the reference sequences than the forward sequence",
+              "collapses ASVs (in the MERGED results) that have no internal mismatches and vary only in length (using usearch_global -id 1)",
             type: "bool",
           },
         ],
       },
     ],
     customWorkflowInfo: {
-      vsearch_OTUs: {
-        info: "vsearch OTUs workflow for for demultiplexed Illumina data",
-        link: "https://github.com/torognes/vsearch",
-        title: "vsearch OTUs workflow",
-      },
       DADA2_ASVs: {
-        info: "DADA2 ASVs workflow for for demultiplexed Illumina or PacBio data. FORWARD: [for Illumina paired-end data] select this when all reads of interest are expected to be in 5-3 orient. MIXED: [for Illumina paired-end data] select this when reads of interest are expected to be in both 5-3 and 3-5 orient. PACBIO: [for PacBio data] select this when working with PacBio data",
+        info: `DADA2 ASVs workflow for for demultiplexed Illumina or PacBio data.
+PAIRED-END FORWARD is for Illumina paired-end data; select this when all reads of interest are expected to be in 5-3 orient. 
+PAIRED-END MIXED is also for Illumina paired-end data; select this when reads of interest are expected to be in both 5-3 and 3-5 orient. 
+SINGLE-END is for PacBio data, but can be also used for single-end read Illumina data when usig loessErrFun as errorEstFun`,
         link: "https://benjjneb.github.io/dada2/index.html",
         title: "DADA2 ASVs workflow",
       },
@@ -4804,6 +4603,11 @@ export default new Vuex.Store({
         info: "vsearch ASVs (zOTUs) workflow for for demultiplexed Illumina data",
         link: "https://github.com/torognes/vsearch",
         title: "UNOISE3 ASVs workflow",
+      },
+      vsearch_OTUs: {
+        info: "vsearch OTUs workflow for for demultiplexed Illumina data",
+        link: "https://github.com/torognes/vsearch",
+        title: "vsearch OTUs workflow",
       },
       // Metaworks_COI: {
       //   info: "MetaWorks ASVs workflow for demultiplexed Illumina COI amplicons (paired-end)",
@@ -5170,9 +4974,13 @@ export default new Vuex.Store({
       ][payload.inputIndex].value = payload.value;
     },
     premadeInputUpdate(state, payload) {
-      state[payload.workflowName][payload.serviceIndex][payload.listName][
-        payload.inputIndex
-      ].value = payload.value;
+      const input = state[payload.workflowName][payload.serviceIndex][payload.listName][payload.inputIndex];
+      input.value = payload.value;
+      
+      // Call onChange handler if it exists
+      if (input.onChange) {
+        input.onChange(state[payload.workflowName][payload.serviceIndex], payload.value);
+      }
     },
     toggleActive(state, payload) {
       state.selectedSteps[payload.stepIndex].services[payload.serviceIndex][

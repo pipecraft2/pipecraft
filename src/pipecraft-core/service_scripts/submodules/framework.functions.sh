@@ -1,6 +1,19 @@
 #!/bin/bash
 
 # Set of functions for PipeCraft (2.0) workflows, for checking data integrity.
+##############################
+### Error logging function ###
+##############################
+log_error() {
+    local error_message="$1"
+    local timestamp=$(date '+%Y-%m-%d_%H.%M.%S')
+    local log_file="$output_dir/log_$timestamp.log"
+      
+    # Log to file
+    echo "[$timestamp] ERROR: $error_message" >> "$log_file"
+    # Print to stderr
+    printf '%s\n' "ERROR]: $error_message" >&2
+}
 
 ###############################
 ### Quit process upon ERROR ###
@@ -835,3 +848,84 @@ else
 fi
 }
 
+# generate README.txt for table filtering (curate_table_wf.sh)
+function readme_table_filtering() {
+    local output_dir=$1
+    local runtime=$2
+
+    # Start README with basic info
+    cat << EOF > "$output_dir/README.txt"
+# Feature table filtering workflow output
+Runtime: $runtime seconds
+
+Input parameters:
+---------------
+Tag-jumps filtering: ${filter_tag_jumps}
+- f-value: ${f_value}
+- p-value: ${p_value}
+Length filtering:
+- min length: ${min_length} (empty or 0 means OFF)
+- max length: ${max_length} (empty or 0 means OFF)
+Collapse identical ASVs/OTUs: ${collapseNoMismatch}
+
+Output files:
+------------
+EOF
+
+    # Add file descriptions based on what was generated
+    if [[ $filter_tag_jumps == "true" ]]; then
+        cat << EOF >> "$output_dir/README.txt"
+# Tag-jumps filtering output (applied first):
+   - *_TagJumpFilt.txt    : Feature table after tag-jumps filtering
+   - $fasta_base_name     : Representative sequences after tag-jumps filtering (number of seqs = $ASVs_count, here always same as input)
+   - TagJump_plot.pdf     : Visualization of tag-jumps based on parameters
+   - TagJump_stats.txt    : Statistics about tag-jumps filtering including:
+                             * Total reads
+                             * Number of tag-jump events
+                             * Tag-jump reads
+                             * Read percent removed
+   - tag-jumps_filt.log   : R log file for tag-jumps filtering
+
+EOF
+    fi
+
+    if [[ $collapseNoMismatch == "true" ]]; then
+        cat << EOF >> "$output_dir/README.txt"
+# Collapsing identical ASVs/OTUs output (applied after tag-jumps filtering, if ON):
+[before collapsing, length filter is also applied (if ON)]
+$ASVs_collapsed_result
+
+EOF
+    elif [[ $min_length != "0" || $max_length != "0" ]] && [[ $collapseNoMismatch == "false" ]]; then
+
+        cat << EOF >> "$output_dir/README.txt"
+# Length filtering output (applied after tag-jumps filtering, if ON):
+$ASVs_lenFilt_result
+EOF
+    fi
+
+    # Add citations
+    cat << EOF >> "$output_dir/README.txt"
+
+##############################################
+### Third-party applications for this process:
+##############################################
+# vsearch (version $vsearch_version)
+   Citation: Rognes T, Flouri T, Nichols B, Quince C, Mahé F (2016) VSEARCH: a versatile open source tool for metagenomics. PeerJ 4:e2584 https://doi.org/10.7717/peerj.2584
+   https://github.com/torognes/vsearch
+
+# seqkit (version $seqkit_version)
+   Citation: Shen W, Le S, Li Y, Hu F (2016) 
+   SeqKit: A Cross-Platform and Ultrafast Toolkit for FASTA/Q File Manipulation. 
+   PLOS ONE 11(10): e0163962. https://doi.org/10.1371/journal.pone.0163962
+
+# UNCROSS2
+   Citation: R.C. Edgar (2018), UNCROSS2: identification of cross-talk in 16S rRNA OTU tables, https://doi.org/10.1101/400762
+
+# R (version $R_version)
+   Citation: R Core Team (2023). R: A language and environment for statistical computing. 
+   R Foundation for Statistical Computing, Vienna, Austria.
+   https://www.R-project.org/
+##############################################
+EOF
+}
