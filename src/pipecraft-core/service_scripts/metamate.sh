@@ -53,7 +53,8 @@ table=$(printf "/extraFiles4/$table")
 if grep -q "Sequence" $table; then
     printf '%s\n' "WARNIG]: table file contains a 'Sequence' column. Removing this column before running metaMATE." >&2
     awk 'BEGIN {FS=OFS="\t"} NR==1 {for (i=1; i<=NF; i++) if ($i=="Sequence") col=i} \
-        {for (i=1; i<=NF; i++) if (i!=col) printf "%s%s", $i, (i==NF?ORS:OFS)}' $table > $table.noSeq.txt
+        {for (i=1; i<=NF; i++) if (i!=col) printf "%s%s", $i, (i==NF?ORS:OFS)}' $table > $table.temp
+    table=$table.temp
 fi
 
 # Rep seqs handling
@@ -177,7 +178,7 @@ if [[ $find_or_dump == "find" ]] || [[ $find_or_dump == "find_and_dump" ]]; then
     printf "# Running metaMATE-find\n"
     checkerror=$(python3 /metamate/metamate/metamate.py find \
         --asvs /input/${rep_seqs_shuffled%.*}_shuffled.fasta \
-        --readmap $table.noSeq.txt \
+        --readmap $table \
         --specification $specifications \
         --references $reference_seqs \
         --expectedlength $length \
@@ -188,6 +189,13 @@ if [[ $find_or_dump == "find" ]] || [[ $find_or_dump == "find_and_dump" ]]; then
         --output $output_dir \
         --overwrite $taxgroups 2>&1)
     check_app_error
+
+    # remove temp table file and assign table to its original name
+    if [[ -e $table.temp ]]; then
+        original_table=${table%.temp}  # Only remove .temp extension
+        rm $table.temp
+        table=$original_table
+    fi
 
     # remove shuffled fasta file
     if [[ -e /input/${rep_seqs_shuffled%.*}_shuffled.fasta ]]; then
@@ -288,10 +296,10 @@ if [[ $find_or_dump == "find" ]] || [[ $find_or_dump == "find_and_dump" ]]; then
 Input parameters:
 ---------------
 - find_or_dump: ${find_or_dump}
-- specifications: ${specifications}
-- reference_seqs: ${reference_seqs}
-- table: ${table}
-- rep_seqs: ${rep_seqs}
+- specifications: $(basename $specifications)
+- reference_seqs: $(basename $reference_seqs)
+- table: $(basename ${table%.temp})
+- rep_seqs: $(basename $rep_seqs)
 - genetic_code: ${genetic_code}
 - length: ${length}
 - result_index: ${result_index}
@@ -373,10 +381,10 @@ if [[ $find_or_dump == "dump" ]] || [[ $find_or_dump == "find_and_dump" ]]; then
 Input parameters:
 ---------------
 - find_or_dump: ${find_or_dump}
-- specifications: ${specifications}
-- reference_seqs: ${reference_seqs}
-- table: ${table}
-- rep_seqs: ${rep_seqs}
+- specifications: $(basename $specifications)
+- reference_seqs: $(basename $reference_seqs)
+- table: $(basename ${table%.temp})
+- rep_seqs: $(basename $rep_seqs)
 - genetic_code: ${genetic_code}
 - length: ${length}
 - result_index: ${result_index}
@@ -391,10 +399,13 @@ Input parameters:
 
 Added files to 'metamate_out' directory:
 ----------------------------------------
-# ${dump_seqs%.*}_metaMATE.filt.fasta = output of metaMATE-dump function. Containes $outASV_count sequences.
+# ${dump_seqs%.*}_metaMATE.filt.fasta = output of metaMATE-dump function. 
+                                        Containes $outASV_count sequences.
 # ${dump_seqs%.*}_metaMATE.filt.list  = a list of sequence IDs from ${dump_seqs%.*}_metaMATE.filt.fasta
-# ${out_table%.*}_metaMATE.filt.txt = an ASV/OTU table containing the ASVs/OTUs that are in ${dump_seqs%.*}_metaMATE.filt.fasta file.
-# selected_result_index.txt = if present, then this file contains the selected resultindex for results.csv file for metaMATE-dump
+# ${out_table%.*}_metaMATE.filt.txt = an ASV/OTU table containing the ASVs/OTUs 
+                                      that are in ${dump_seqs%.*}_metaMATE.filt.fasta file.
+# selected_result_index.txt = if present, then this file contains the 
+                              selected resultindex for results.csv file for metaMATE-dump
 
 # -> more info about the outputs: https://github.com/tjcreedy/metamate?tab=readme-ov-file#outputs 
 
