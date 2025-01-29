@@ -4,7 +4,7 @@
 
 ##########################################################
 ###Third-party applications:
-#dada2 v1.28
+# dada2 v1.28
     #citation: Callahan, B., McMurdie, P., Rosen, M. et al. (2016) DADA2: High-resolution sample inference from Illumina amplicon data. Nat Methods 13, 581-583. https://doi.org/10.1038/nmeth.3869
     #Copyright (C) 2007 Free Software Foundation, Inc.
     #Distributed under the GNU LESSER GENERAL PUBLIC LICENSE
@@ -15,6 +15,11 @@
 readType=${readType}
 dataFormat=${dataFormat}
 workingDir=${workingDir}
+
+# Checking tool versions
+printf "# Checking tool versions ...\n"
+dada2_version=$(Rscript -e "packageVersion('dada2')" 2>/dev/null | awk '{print $2}' | sed -e "s/‘//g" -e 's/’//g')
+printf "# DADA2 version: $dada2_version\n"
 
 ## settings
 # method = list ["consensus", "pooled", "per-sample"]. 
@@ -28,26 +33,29 @@ if [[ -d "/input/multiRunDir" ]]; then
   echo "Process = chimera filtering"
   cd /input/multiRunDir
   # read in directories (sequencing sets) to work with. Skip directories renamed as "skip_*"
-    DIRS=$(find . -maxdepth 3 -mindepth 1 -type d | grep "denoised_assembled.dada2" | grep -v "skip_" | grep -v "tempdir" | sed -e "s/^\.\///") 
+    DIRS=$(find . -maxdepth 3 -mindepth 1 -type d | grep "denoised_assembled.dada2" | grep -v "skip_" | grep -v "merged_runs" | grep -v "tempdir" | sed -e "s/^\.\///") 
     echo "working in dirs:"
     echo $DIRS
-    multiDir=$"TRUE"
+    multiDir=$"true"
     export multiDir
 else
   echo "Working with individual sequencing run"
   cd /input
-  DIRS=$(find . -maxdepth 3 -mindepth 1 -type d | grep "denoised_assembled.dada2" | grep -v "skip_" | grep -v "tempdir" | sed -e "s/^\.\///")
+  DIRS=$(find . -maxdepth 3 -mindepth 1 -type d | grep "denoised_assembled.dada2" | grep -v "skip_" | grep -v "merged_runs" | grep -v "tempdir" | sed -e "s/^\.\///")
 fi
 
 #############################
 ### Start of the workflow ###
 #############################
 ### looping through multiple sequencing runs (dirs in multiRunDir) if the $WD=multiRunDir, otherwise just doing single seqrun analyses
+declare -a output_feature_tables
+declare -a output_fastas
+
 for seqrun in $DIRS; do
     start=$(date +%s)
     cd $seqrun
     
-    if [[ $multiDir == "TRUE" ]]; then
+    if [[ $multiDir == "true" ]]; then
         workingDir="/input/multiRunDir/$seqrun"
         export workingDir # real WD for R
         #output dir
@@ -55,18 +63,24 @@ for seqrun in $DIRS; do
         output_dir2=$"/input/multiRunDir/${seqrun%%/*}/ASVs_out.dada2"
         export output_dir1
         export output_dir2
+        # Store output files in arrays for multiple runs
+        output_feature_tables+=("$output_dir2/ASVs_table.txt")
+        output_fastas+=("$output_dir2/ASVs.fasta")
     else
         #output dir
         output_dir1=$"/input/chimeraFiltered_out.dada2"
         output_dir2=$"/input/ASVs_out.dada2"
         export output_dir1
         export output_dir2
+        # Store single output files
+        output_feature_table="$output_dir2/ASVs_table.txt"
+        output_fasta="$output_dir2/ASVs.fasta"
     fi
 
     # FOR TESTING: Skip if output directory already exists
     if [[ -d $output_dir1 ]]; then
         printf "# skipping chimera filtering\n"
-        if [[ $multiDir == "TRUE" ]]; then
+        if [[ $multiDir == "true" ]]; then
             workingDir=$"/input/multiRunDir"
             echo "workingDir=$workingDir"
         else
@@ -90,7 +104,8 @@ for seqrun in $DIRS; do
         sed -i "1 s|^|ASV|" $output_dir2/ASVs_table.txt
     fi
 
-    ###Compare 'chimera filtered fasta files per sample' and 'NOT chimera filtered fasta files per sample' to paste out only chimeric sequences per sample
+    ### Compare 'chimera filtered fasta files per sample' and 'NOT chimera 
+     # filtered fasta files per sample' to paste out only chimeric sequences per sample
     echo "pasting chimeric seqs"
     path_denoised=$"$workingDir"
 
@@ -146,12 +161,12 @@ Files in 'chimeraFiltered_out.dada2/chimeras':
 
 Total run time was $runtime sec.
 
-##################################################################
+###########################################################
 ###Third-party applications for this process [PLEASE CITE]:
-#dada2 v1.28
+# dada2 (version $dada2_version)
     #citation: Callahan, B., McMurdie, P., Rosen, M. et al. (2016) DADA2: High-resolution sample inference from Illumina amplicon data. Nat Methods 13, 581-583. https://doi.org/10.1038/nmeth.3869
     #https://github.com/benjjneb/dada2
-########################################################" > $output_dir1/README.txt
+###########################################################" > $output_dir1/README.txt
 
     #Make README.txt file (ASVs_out.dada2)
     #count ASVs
@@ -167,33 +182,72 @@ Number of sequences in the ASV table = $nSeqs
 Number of samples in the ASV table   = $nSample
 
 Files in 'ASVs_out.dada2' directory:
-    # ASVs_table.txt                  = ASV-by-sample table (tab delimited file). [denoised and chimera filtered]
-    # ASVs.fasta                      = FASTA formated representative ASV sequences [denoised and chimera filtered]
+    # ASVs_table.txt                  = ASV-by-sample table (tab delimited file). 
+                                         [denoised and chimera filtered]
+    # ASVs.fasta                      = FASTA formated representative ASV sequences 
+                                         [denoised and chimera filtered]
     # ASVs_table.denoised.nochim.rds  = rds formatted denoised and chimera filtered ASV table (for DADA2)
-    # ASVs_table.denoised.rds         = rds formatted denoised ASV table (for DADA2) [same .rds is in denoised_assembled.dada2 dir]
+    # ASVs_table.denoised.rds         = rds formatted denoised ASV table (for DADA2) 
+                                         [same .rds is in denoised_assembled.dada2 dir]
 
 ##################################################################
 ###Third-party applications for this process [PLEASE CITE]:
-#dada2 v1.28
+# dada2 (version $dada2_version)
     #citation: Callahan, B., McMurdie, P., Rosen, M. et al. (2016) DADA2: High-resolution sample inference from Illumina amplicon data. Nat Methods 13, 581-583. https://doi.org/10.1038/nmeth.3869
     #https://github.com/benjjneb/dada2
 ########################################################" > $output_dir2/README.txt
 
 
     ### if working with multiRunDir then cd /input/multiRunDir
-    if [[ $multiDir == "TRUE" ]]; then 
+    if [[ $multiDir == "true" ]]; then 
         cd /input/multiRunDir
     else
         cd ..
     fi
 done
 
-#Done
+# Validate and combine output files
+if [[ $multiDir == "true" ]]; then
+    # Check each file in the arrays
+    valid_feature_tables=()
+    valid_fastas=()
+    
+    for table in "${output_feature_tables[@]}"; do
+        if [[ -f "$table" && -s "$table" ]]; then
+            valid_feature_tables+=("$table")
+        else
+            printf "Warning: Feature table not found or empty: $table\n" >&2
+        fi
+    done
+    
+    for fasta in "${output_fastas[@]}"; do
+        if [[ -f "$fasta" && -s "$fasta" ]]; then
+            valid_fastas+=("$fasta")
+        else
+            printf "Warning: FASTA file not found or empty: $fasta\n" >&2
+        fi
+    done
+      
+    output_feature_table=$(IFS=,; echo "${valid_feature_tables[*]}")
+    output_fasta=$(IFS=,; echo "${valid_fastas[*]}")
+else
+    # Check single run output files
+    if [[ ! -f "$output_feature_table" || ! -s "$output_feature_table" ]]; then
+        printf "Error: Feature table not found or empty: $output_feature_table\n" >&2
+        exit 1
+    fi
+    if [[ ! -f "$output_fasta" || ! -s "$output_fasta" ]]; then
+        printf "Error: FASTA file not found or empty: $output_fasta\n" >&2
+        exit 1
+    fi
+fi
+
+# Done
 printf "\nDONE "
 
 #variables for all services
 echo "#variables for all services: "
-if [[ $multiDir == "TRUE" ]]; then
+if [[ $multiDir == "true" ]]; then
     workingDir=$"/input/multiRunDir"
     echo "workingDir=$workingDir"
 else
@@ -201,5 +255,8 @@ else
 fi
 echo "fileFormat=fasta"
 echo "readType=single_end"
+echo "output_feature_table=$output_feature_table"
+echo "output_fasta=$output_fasta"
+
 
 

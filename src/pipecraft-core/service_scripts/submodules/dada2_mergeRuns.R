@@ -4,39 +4,63 @@
 
 # load dada2
 library('dada2')
-
 # print DADA2 version
-cat("DADA2 version = ", base::toString(packageVersion("dada2")), "\n")
+cat(";; DADA2, version", base::toString(packageVersion("dada2")), "\n")
 
 # get input tables (txt files)
-input_tables = list()
-tab.1 = read.table(input_table1, 
-            header = T, row.names = 1, check.names = F, sep = "\t")
+output_feature_table=Sys.getenv("output_feature_table")
+cat(";; output_feature_table: ", output_feature_table, "\n")
+output_fasta=Sys.getenv("output_fasta")
+output_dir=Sys.getenv("output_dir")
 
+# Check if output_feature_table is empty
+if (output_feature_table == "") {
+    stop("Error: No input tables provided in output_feature_table environment variable")
+}
 
-# Format the txt ASV table for mergeSequenceTables
-i=1
-for (i in 1:length(input_tables)){
-    print(i)
-    tab = get(paste0("tab.", i))
+# Split the comma-separated string into a vector of file paths
+input_tables = strsplit(output_feature_table, ",")[[1]]
+input_tables = trimws(input_tables)  # Remove any whitespace
+
+# Check if files exist
+missing_files = input_tables[!file.exists(input_tables)]
+if (length(missing_files) > 0) {
+    stop("Error: Following files not found: ", paste(missing_files, collapse=", "))
+}
+
+# Initialize empty list for tables
+input_tables_list = list()
+# Read each table and store in the list
+for (i in 1:length(input_tables)) { # nolint
+    input_tables_list[[i]] = read.table(input_tables[i], 
+                                  header = T, 
+                                  row.names = 1, 
+                                  check.names = F, 
+                                  sep = "\t")
+}
+
+# Format the txt ASV table for dada2 mergeSequenceTables
+for (i in seq_along(input_tables)) {
+    print(paste0(";; Formatting table ", i, "."))
+    tab = input_tables_list[[i]]
     # sequences are row names
     rownames(tab) = tab$Sequence
     # remove col "Sequence"
     tab = tab[, !(colnames(tab) == "Sequence")]
     #transpose the tab
     tab = t(tab)
-    print(rownames(tab))
-    # assign the modified table back to its original name
-    assign(paste0("tab.", i), tab)
+    # store modified table back in list
+    input_tables_list[[i]] = tab
 }
 
 
-
-# MERGE RUNS
-merged_table = mergeSequenceTables(tables=input_tables, repeats = "sum")
+# MERGE RUNS with mergeSequenceTables
+cat(";; Merging tables...\n")
+merged_table = mergeSequenceTables(tables=input_tables_list, repeats = "sum")
 
 ###format and save ASV table and ASVs.fasta
 #sequence headers
+cat(";; Formatting ASV table and ASVs.fasta...\n")
 asv_seqs = colnames(merged_table)
 asv_headers = openssl::sha1(asv_seqs)
 
@@ -49,34 +73,12 @@ colnames(tmerged_table)[1] = "Sequence"
 row.names(tmerged_table) = asv_headers
 
 #write ASVs.fasta to path_ASVs
+cat(";; Writing ASVs.fasta...\n")
 asv_fasta <- c(rbind(paste(">", asv_headers, sep=""), asv_seqs))
-write(asv_fasta, file.path(path_ASVs, "ASVs.fasta"))
+write(asv_fasta, file.path(output_dir, "ASVs.fasta"))
 #write ASVs table to path_ASVs
-write.table(tmerged_table, file.path(path_ASVs, "ASVs_table.txt"), sep = "\t", col.names = NA, row.names = TRUE, quote = FALSE)
+cat(";; Writing ASVs table...\n")
+write.table(tmerged_table, file.path(output_dir, "ASVs_table.txt"), sep = "\t", col.names = NA, row.names = TRUE, quote = FALSE)
 
-
-
-# Remove chimeras (cuz those are not removed from the PacBio data)
-print("Removing chimeras...")
-ASV_tab.nochim = removeBimeraDenovo(merged_table, method="consensus", multithread=TRUE, verbose=TRUE)
-saveRDS(ASV_tab.nochim, "ASV_tab.nochim.rds")
-
-###format and save ASV table and ASVs.fasta
-#sequence headers
-asv_seqs = colnames(ASV_tab.nochim)
-asv_headers = openssl::sha1(asv_seqs)
-
-#transpose sequence table
-tASV_tab.nochim = t(ASV_tab.nochim)
-#add sequences to 1st column
-tASV_tab.nochim = cbind(row.names(tASV_tab.nochim), tASV_tab.nochim)
-colnames(tASV_tab.nochim)[1] = "Sequence"
-#row names as sequence headers
-row.names(tASV_tab.nochim) = asv_headers
-
-#write ASVs.fasta to path_ASVs
-asv_fasta <- c(rbind(paste(">", asv_headers, sep=""), asv_seqs))
-write(asv_fasta, file.path(path_ASVs, "ASVs.nochim.fasta"))
-#write ASVs table to path_ASVs
-write.table(tASV_tab.nochim, file.path(path_ASVs, "ASVs_table.nochim.txt"), sep = "\t", col.names = NA, row.names = TRUE, quote = FALSE)
+cat(";; Done!\n")
 

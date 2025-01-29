@@ -49,7 +49,7 @@ if [[ -d "/input/multiRunDir" ]]; then
   echo "Cut primers from single-end reads, input = multiple sequencing runs in multiRunDir"
   cd /input/multiRunDir
   # read in directories (sequencing sets) to work with. Skip directories renamed as "skip_*"
-    DIRS=$(find . -maxdepth 1 -mindepth 1 -type d | grep -v "tempdir" | grep -v "skip_" | sed -e "s/^\.\///")
+    DIRS=$(find . -maxdepth 1 -mindepth 1 -type d | grep -v "tempdir" | grep -v "skip_" | grep -v "merged_runs" | sed -e "s/^\.\///")
     echo "working in dirs:"
     echo $DIRS
     multiDir=$"TRUE"

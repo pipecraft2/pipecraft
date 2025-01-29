@@ -30,7 +30,7 @@ if [[ $pipeline == "DADA2_ASVs" ]] && [[ $prev_step == "cut_SE_primers" ]]; then
     echo "Process = quality filtering (after cut primers)"
     cd /input/multiRunDir
     # read in directories (sequencing sets) to work with. Skip directories renamed as "skip_*"
-    DIRS=$(find . -maxdepth 2 -mindepth 1 -type d | grep "primersCut_out" | grep -v "skip_" | grep -v "tempdir" | sed -e "s/^\.\///")
+    DIRS=$(find . -maxdepth 2 -mindepth 1 -type d | grep "primersCut_out" | grep -v "skip_" | grep -v "merged_runs" | grep -v "tempdir" | sed -e "s/^\.\///")
     echo "working in dirs:"
     echo $DIRS
     multiDir=$"TRUE"
@@ -42,7 +42,7 @@ elif [[ -d "/input/multiRunDir" ]] && [[ $prev_step != "cut_SE_primers" ]]; then
     echo "Process = quality filtering"
     cd /input/multiRunDir
     # read in directories (sequencing sets) to work with. Skip directories renamed as "skip_*" [replacing ^./ with sed]
-    DIRS=$(find . -maxdepth 1 -mindepth 1 -type d | grep -v "tempdir" | grep -v "skip_" | sed -e "s/^\.\///")
+    DIRS=$(find . -maxdepth 1 -mindepth 1 -type d | grep -v "tempdir" | grep -v "skip_" | grep -v "merged_runs" | sed -e "s/^\.\///")
     echo "working in dirs:"
     echo $DIRS
     multiDir=$"TRUE"

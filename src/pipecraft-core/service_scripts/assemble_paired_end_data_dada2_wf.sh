@@ -40,7 +40,7 @@ if [[ -d "/input/multiRunDir" ]]; then
   echo "Process = denoise and assemble"
   cd /input/multiRunDir
   # read in directories (sequencing sets) to work with. Skip directories renamed as "skip_*"
-    DIRS=$(find . -maxdepth 3 -mindepth 1 -type d | grep "qualFiltered_out" | grep -v "skip_" | grep -v "tempdir" | sed -e "s/^\.\///") 
+    DIRS=$(find . -maxdepth 3 -mindepth 1 -type d | grep "qualFiltered_out" | grep -v "skip_" | grep -v "merged_runs" | grep -v "tempdir" | sed -e "s/^\.\///") 
     echo "working in dirs:"
     echo $DIRS
     multiDir=$"TRUE"
@@ -48,7 +48,7 @@ if [[ -d "/input/multiRunDir" ]]; then
 else
     echo "Working with individual sequencing run"
     echo "Process = denoise and assemble"
-    #DIRS=$(find . -maxdepth 2 -mindepth 1 -type d | grep "qualFiltered_out" | grep -v "skip_" | grep -v "tempdir" | sed -e "s/^\.\///")
+    #DIRS=$(find . -maxdepth 2 -mindepth 1 -type d | grep "qualFiltered_out" | grep -v "skip_" | grep -v "merged_runs" | grep -v "tempdir" | sed -e "s/^\.\///")
     DIRS=$(pwd)
     printf "\n workingDir = $DIRS \n"
 fi

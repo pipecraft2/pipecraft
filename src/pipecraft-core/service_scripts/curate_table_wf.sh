@@ -17,8 +17,8 @@
 ##########################################################
 
 # Checking tool versions
-vsearch_version=$(vsearch --version 2>&1 | head -n 1)
-seqkit_version=$(seqkit version 2>&1 | head -n 1)
+vsearch_version=$(vsearch --version 2>&1 | head -n 1 | awk '{print $2}' | sed -e "s/,//g")
+seqkit_version=$(seqkit version 2>&1 | awk '{print $2}')
 R_version=$(R --version | head -n1 | cut -d " " -f3)
 awk_version=$(awk --version | head -n1)
 printf "# Checking tool versions ...\n"
@@ -71,7 +71,7 @@ if [[ -d "/input/multiRunDir" ]]; then
     echo "Process = Features (ASVs/OTUs) curation."
     cd /input/multiRunDir
     # read in directories (sequencing sets) to work with. Skip directories renamed as "skip_*"
-    DIRS=$(find . -maxdepth 1 -mindepth 1 -type d | grep -v "tempdir" | grep -v "skip_" | sed -e "s/^\.\///")
+    DIRS=$(find . -maxdepth 1 -mindepth 1 -type d | grep -v "tempdir" | grep -v "skip_" | grep -v "merged_runs" | sed -e "s/^\.\///")
     echo "Working in dirs:"
     echo $DIRS
     multiDir="true"
@@ -92,6 +92,7 @@ fi
 ### looping through multiple sequencing runs (dirs in multiRunDir) 
  # if the $WD=multiRunDir, otherwise just doing single seqrun analyses
 for seqrun in $DIRS; do
+    start_time=$(date)
     start=$(date +%s)
     cd $seqrun
 
@@ -195,7 +196,7 @@ for seqrun in $DIRS; do
     ### Process samples with UNCROSS2 (tag-jumps filtering) in R
     if [[ $filter_tag_jumps == "true" ]]; then
         printf "# Running tag-jumps filtering (UNCROSS2) for $seqrun\n "
-        Rlog=$(Rscript /scripts/submodules/tag_jump_removal.R $feature_table_file $f_value $p_value 2>&1)
+        Rlog=$(Rscript /scripts/submodules/tag_jump_removal.R $feature_table_file $f_value $p_value $fasta_file 2>&1)
         # Check if R script executed successfully
         if [ $? -ne 0 ]; then
             log_error "tag-jumps filtering R script failed with the following error:
@@ -252,7 +253,6 @@ for seqrun in $DIRS; do
         # fasta_file var does not change here
     fi
 
-
     ###################################
     ### Filtering the ASV/OTU table ###
     ###################################
@@ -275,12 +275,6 @@ for seqrun in $DIRS; do
 
         # skip collapsing and length filtering if ASVs_derep_count is 0
         if [[ $ASVs_derep_count == "0" ]]; then
-            if [[ -f ${fasta_file%%.fasta}_derep.fasta ]]; then
-                rm ${fasta_file%%.fasta}_derep.fasta
-            fi
-            if [[ -f ${fasta_file%%.fasta}_derep.uc ]]; then
-                rm ${fasta_file%%.fasta}_derep.uc
-            fi
             ASVs_collapsed_result="All Features (ASVs/OTUs) were filtered out based on the length filter 
             (min_length $min_length bp and max_length $max_length bp).
             Skipping collapseNoMismatch and length filtering. "
@@ -350,13 +344,6 @@ for seqrun in $DIRS; do
         # format R-log file
         sed -i "s/;; /\n/g" $output_dir/make_FeatureTable_collapseASVs.log 
 
-        # if collapse is successful, then remove the long table
-        if [[ -f $output_dir/${feature_table_base_name%%.txt}_collapsed.txt ]]; then
-            rm $output_dir/table_long.txt
-            rm $output_dir/${fasta_file%%.fasta}_derep.uc
-            rm $output_dir/${fasta_file%%.fasta}_derep.fasta
-        fi
-
         ### extract representative sequences for collapsed ASVs
         # extract first column, skip header
         cut -f1 $output_dir/${feature_table_base_name%%.txt}_collapsed.txt | tail -n +2 > $output_dir/seq_IDs.txt 
@@ -377,8 +364,17 @@ No new files outputted."
                 # remove intermediate files
                 rm $output_dir/${fasta_base_name%%.fasta}_collapsed.fasta
                 rm $output_dir/${feature_table_base_name%%.txt}_collapsed.txt
+                
+                # Set output variables based on whether tag-jumps filtering was performed
+                if [[ $filter_tag_jumps == "true" ]]; then
+                    output_feature_table=$output_dir/${feature_table_base_name%%.txt}_TagJumpFilt.txt
+                    output_fasta=$output_dir/$fasta_base_name
+                else
+                    output_feature_table=$feature_table_file
+                    output_fasta=$fasta_file
+                fi
             fi
-            # for the report, if ASVs_collapsed_count == 0, then no new files outputted
+            # for the report, ASVs_collapsed_count < $ASVs_count
             if [[ $ASVs_collapsed_count < $ASVs_count ]]; then
                 # output files variables for the Merge sequencing runs
                 output_feature_table=$output_dir/${feature_table_base_name%%.txt}_collapsed.txt
@@ -527,13 +523,12 @@ Input had $ASVs_count Features.
         if [[ -f $output_dir/seq_IDs.txt ]]; then
             rm $output_dir/seq_IDs.txt
         fi
+        if [[ -f $output_dir/table_long.txt ]]; then
+            rm $output_dir/table_long.txt
+        fi
         if [[ -f $output_dir/${fasta_base_name%%.fasta}_derep.uc ]]; then
             rm $output_dir/${fasta_base_name%%.fasta}_derep.uc
             rm $output_dir/${fasta_base_name%%.fasta}_derep.fasta
-        fi
-        if [[ -f ${fasta_file%%.fasta}_derep.uc ]]; then
-            rm ${fasta_file%%.fasta}_derep.uc
-            rm ${fasta_file%%.fasta}_derep.fasta
         fi
         if [[ -f $output_dir/usearch_global.uc ]]; then
             rm $output_dir/usearch_global.uc
@@ -560,7 +555,16 @@ Input had $ASVs_count Features.
     fi
 done
 
-#Done
+# output_feature_tables to output_feature_table when multiDir is true
+if [[ $multiDir == "true" ]]; then
+    output_feature_table=$(IFS=,; echo "${output_feature_tables[*]}")
+    output_fasta=$(IFS=,; echo "${output_fastas[*]}")
+else
+    echo "output_feature_table=$output_feature_table"
+    echo "output_fasta=$output_fasta"
+fi
+
+# Done
 printf "\nDONE "
 printf "Total time: $runtime sec.\n "
 
@@ -569,18 +573,5 @@ echo "#variables for all services: "
 echo "workingDir=$output_dir"
 echo "fileFormat=fasta"
 echo "readType=single_end"
-
-# Output the tables and fastas differently based on whether we processed multiple runs
-if [[ $multiDir == "true" ]]; then
-    # Join the arrays with commas for multiple runs
-    echo "output_feature_table=$(IFS=,; echo "${output_feature_tables[*]}")"
-    echo "output_fasta=$(IFS=,; echo "${output_fastas[*]}")"
-    
-    ## TODO 
-    # pass output_feature_tables to merge_runs_wf.sh
-    # pass output_fastas to merge_runs_wf.sh
-    # pass if curate_table_wf.sh run was TRUE (if not the chimeraFilt data in the input for merge_runs_wf.sh)
-else
-    echo "output_feature_table=$output_feature_table"
-    echo "output_fasta=$output_fasta"
-fi
+echo "output_feature_table=$output_feature_table"
+echo "output_fasta=$output_fasta"

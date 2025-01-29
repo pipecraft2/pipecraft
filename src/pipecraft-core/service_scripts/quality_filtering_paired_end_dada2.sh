@@ -5,17 +5,24 @@
 
 ##########################################################
 ###Third-party applications:
-#dada2 v1.28
+# dada2 v1.28
     #citation: Callahan, B., McMurdie, P., Rosen, M. et al. (2016) DADA2: High-resolution sample inference from Illumina amplicon data. Nat Methods 13, 581–583. https://doi.org/10.1038/nmeth.3869
     #Copyright (C) 2007 Free Software Foundation, Inc.
     #Distributed under the GNU LESSER GENERAL PUBLIC LICENSE
     #https://github.com/benjjneb/dada2
-#seqkit v2.3.0
+# seqkit v2.3.0
     #citation: Shen W, Le S, Li Y, Hu F (2016) SeqKit: A Cross-Platform and Ultrafast Toolkit for FASTA/Q File Manipulation. PLOS ONE 11(10): e0163962. https://doi.org/10.1371/journal.pone.0163962
     #Distributed under the MIT License
     #Copyright © 2016-2019 Wei Shen, 2019 Oxford Nanopore Technologies.
     #https://bioinf.shenwei.me/seqkit/
 ##########################################################
+
+# Checking tool versions
+printf "# Checking tool versions ...\n"
+dada2_version=$(Rscript -e "packageVersion('dada2')" 2>/dev/null | awk '{print $2}' | sed -e "s/‘//g" -e 's/’//g')
+seqkit_version=$(seqkit version 2>&1 | awk '{print $2}')
+printf "# DADA2 version: $dada2_version\n"
+printf "# seqkit version: $seqkit_version\n"
 
 #load env variables
 readType=${readType}
@@ -48,7 +55,7 @@ if [[ $pipeline == "DADA2_ASVs" ]] && [[ $prev_step == "cut_primers" ]]; then
     echo "Process = quality filtering (after cut primers)"
     cd /input/multiRunDir
     # read in directories (sequencing sets) to work with. Skip directories renamed as "skip_*"
-    DIRS=$(find . -maxdepth 2 -mindepth 1 -type d | grep "primersCut_out" | grep -v "skip_" | grep -v "tempdir" | sed -e "s/^\.\///")
+    DIRS=$(find . -maxdepth 2 -mindepth 1 -type d | grep "primersCut_out" | grep -v "skip_" | grep -v "merged_runs" | grep -v "tempdir" | sed -e "s/^\.\///")
     echo "working in dirs:"
     echo $DIRS
     multiDir=$"TRUE"
@@ -60,7 +67,7 @@ elif [[ -d "/input/multiRunDir" ]] && [[ $prev_step != "cut_primers" ]]; then
     echo "Process = quality filtering"
     cd /input/multiRunDir
     # read in directories (sequencing sets) to work with. Skip directories renamed as "skip_*" [replacing ^./ with sed]
-    DIRS=$(find . -maxdepth 1 -mindepth 1 -type d | grep -v "tempdir" | grep -v "skip_" | sed -e "s/^\.\///")
+    DIRS=$(find . -maxdepth 1 -mindepth 1 -type d | grep -v "tempdir" | grep -v "skip_" | grep -v "merged_runs" | sed -e "s/^\.\///")
     echo "working in dirs:"
     echo $DIRS
     multiDir=$"TRUE"
@@ -224,10 +231,10 @@ filterAndTrim(inputR1, outputR1, inputR2, outputR2, maxN = $maxN, maxEE = c($max
 Total run time was $runtime sec.
 ##################################################################
 ###Third-party applications for this process [PLEASE CITE]:
-#dada2 v1.28
+# dada2 (version $dada2_version)
     #citation: Callahan, B., McMurdie, P., Rosen, M. et al. (2016) DADA2: High-resolution sample inference from Illumina amplicon data. Nat Methods 13, 581-583. https://doi.org/10.1038/nmeth.3869
     #https://github.com/benjjneb/dada2
-#seqkit v2.3.0 for synchronizing R1 and R2 after filtering (when matchIDs = TRUE)
+# seqkit (version $seqkit_version) for synchronizing R1 and R2 after filtering (when matchIDs = TRUE)
     #citation: Shen W, Le S, Li Y, Hu F (2016) SeqKit: A Cross-Platform and Ultrafast Toolkit for FASTA/Q File Manipulation. PLOS ONE 11(10): e0163962. https://doi.org/10.1371/journal.pone.0163962
     #https://bioinf.shenwei.me/seqkit/
 ########################################################" > $output_dir/README.txt

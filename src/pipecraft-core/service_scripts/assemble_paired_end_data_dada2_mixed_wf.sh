@@ -41,7 +41,7 @@ if [[ -d "/input/multiRunDir" ]] && [[ $pipeline == "DADA2_ASVs" ]] && [[ $dada2
     echo "Process = denoise and assemble (for MIXED amplicons)"
     cd /input/multiRunDir
     # read in directories (sequencing sets) to work with. Skip directories renamed as "skip_*"
-    DIRS=$(find . -maxdepth 4 -mindepth 1 -type d | grep "fwd_orient/qualFiltered_out\|rev_orient/qualFiltered_out" | grep -v "skip_" | grep -v "tempdir" | sed -e "s/^\.\///")
+    DIRS=$(find . -maxdepth 4 -mindepth 1 -type d | grep "fwd_orient/qualFiltered_out\|rev_orient/qualFiltered_out" | grep -v "skip_" | grep -v "merged_runs" | grep -v "tempdir" | sed -e "s/^\.\///")
     echo "working in dirs:"
     echo $DIRS
     multiDir=$"TRUE"

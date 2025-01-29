@@ -855,7 +855,10 @@ function readme_table_filtering() {
 
     # Start README with basic info
     cat << EOF > "$output_dir/README.txt"
-# Feature table filtering workflow output
+# Feature table filtering.
+
+Start time: $start_time
+End time: $(date)
 Runtime: $runtime seconds
 
 Input parameters:
@@ -913,15 +916,12 @@ EOF
 # vsearch (version $vsearch_version)
    Citation: Rognes T, Flouri T, Nichols B, Quince C, Mahé F (2016) VSEARCH: a versatile open source tool for metagenomics. PeerJ 4:e2584 https://doi.org/10.7717/peerj.2584
    https://github.com/torognes/vsearch
-
 # seqkit (version $seqkit_version)
    Citation: Shen W, Le S, Li Y, Hu F (2016) 
    SeqKit: A Cross-Platform and Ultrafast Toolkit for FASTA/Q File Manipulation. 
    PLOS ONE 11(10): e0163962. https://doi.org/10.1371/journal.pone.0163962
-
 # UNCROSS2
    Citation: R.C. Edgar (2018), UNCROSS2: identification of cross-talk in 16S rRNA OTU tables, https://doi.org/10.1101/400762
-
 # R (version $R_version)
    Citation: R Core Team (2023). R: A language and environment for statistical computing. 
    R Foundation for Statistical Computing, Vienna, Austria.

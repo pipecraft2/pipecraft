@@ -2005,7 +2005,7 @@ export default new Vuex.Store({
           {
             scriptName: "tag_jump_removal.sh",
             tooltip: "filter out putative tag-jumps in the ASVs table (using UNCROSS2)",
-            imageName: "vmikk/nextits:0.5.0",
+            imageName: "pipecraft/vsearch_dada2:2",
             serviceName: "filter_tag-jumps",
             selected: false,
             showExtra: false,
@@ -2022,163 +2022,32 @@ export default new Vuex.Store({
                 type: "file",
               },
               {
-                name: "f_value",
-                value: 0.03,
-                max: 1,
-                min: 0,
-                step: 0.01,
-                disabled: "never",
-                tooltip:
-                  "f-parameter of UNCROSS2, which defines the expected tag-jumps rate. Default is 0.03 (equivalent to 3%). A higher value enforces stricter filtering",
-                type: "slide",
-                rules: [(v) => v > 0 || "ERROR: specify values > 0"],
-              },
-              {
-                name: "p_value",
-                value: 1,
-                disabled: "never",
-                tooltip:
-                  "p-parameter, which controls the severity of tag-jump removal. It adjusts the exponent in the UNCROSS formula. Default is 1. Opt for 0.5 or 0.3 to steepen the curve",
-                type: "numeric",
-                rules: [(v) => v > 0 || "ERROR: specify values > 0"],
-              },
-            ],
-          },
-          {
-            tooltip:
-              "pseudogene fintering with ORFfinder (search open reading frames) and/or HMMs",
-            scriptName: "ORFfinder_hmm.sh",
-            imageName: "pipecraft/metaworks:1.12.0",
-            serviceName: "filter_numts",
-            selected: false,
-            showExtra: false,
-            extraInputs: [
-              {
-                name: "ignore_nested",
-                value: true,
-                disabled: "never",
-                tooltip:
-                  "ignore nested open reading frames (completely placed within another)",
-                type: "bool",
-              },
-              {
-                name: "strand",
-                items: ["plus", "minus", "both"],
-                value: "both",
-                disabled: "never",
-                tooltip:
-                  "output open reading frames (ORFs) on specified strand only",
-                type: "select",
-              },
-            ],
-            Inputs: [
-              {
                 name: "fasta_file",
-                active: false,
-                btnName: "select fasta file",
+                active: true,
+                btnName: "select file",
                 value: "undefined",
                 disabled: "never",
                 tooltip:
-                  "select fasta formatted sequence file containing your OTU/ASV reads. Sequence IDs cannot contaon underlines '_' [output will be in the directory as specified under 'SELECT WORKDIR']",
+                  "select corresponding fasta file for OTU/ASV table [output will be in the directory as specified under 'SELECT WORKDIR']",
                 type: "file",
               },
               {
-                name: "min_length",
-                value: 309,
+                name: "f_value",
+                value: 0.03,
+                max: 0.4,
+                min: 0.01,
+                step: 0.01,
                 disabled: "never",
-                tooltip: "minimum length of an output sequence",
+                tooltip: "f-parameter of UNCROSS2, which defines the expected tag-jumps rate. Default is 0.03 (equivalent to 3%). A higher value enforces stricter filtering",
+                type: "slide",
+             },
+              {
+                name: "p_value", 
+                value: 1,
+                disabled: "never",
+                tooltip: "p-parameter, which controls the severity of tag-jump removal. It adjusts the exponent in the UNCROSS formula. Default is 1. Opt for 0.5 or 0.3 to steepen the curve",
                 type: "numeric",
-                rules: [(v) => v >= 1 || "ERROR: specify values >= 1"],
-              },
-              // {
-              //   name: "max_length",
-              //   value: 317,
-              //   disabled: "never",
-              //   tooltip: "maximum length of an output sequence",
-              //   type: "numeric",
-              //   rules: [(v) => v >= 1 || "ERROR: specify values >= 1"],
-              // },
-              {
-                name: "genetic_code",
-                value: 5,
-                disabled: "never",
-                tooltip:
-                  "5 = invertebrate mitochondrial code. Use 1 for rbcL. Specify values from 1 to 33; see https://www.ncbi.nlm.nih.gov/Taxonomy/Utils/wprintgc.cgi",
-                type: "numeric",
-                rules: [
-                  (v) => v >= 1 || "ERROR: specify values >= 1",
-                  (v) => v <= 34 || "ERROR: specify values <= 34",
-                ],
-              },
-              {
-                name: "start_codon",
-                value: 2,
-                disabled: "never",
-                tooltip:
-                  "0 = ATG only; 1 = ATG and alternative initation codons; 2 = any sense codon",
-                type: "numeric",
-                rules: [
-                  (v) => v >= 1 || "ERROR: specify values >= 1",
-                  (v) => v <= 34 || "ERROR: specify values <= 34",
-                ],
-              },
-              {
-                name: "arthropod_hmm",
-                value: true,
-                disabled: "never",
-                tooltip:
-                  "on top of ORFfinder, remove sequences that don't match well to a profile HMM based on arthropod COI barcode sequences",
-                type: "bool",
-              },
-            ],
-          },
-          {
-            tooltip:
-              "DEICODE (Robust Aitchison PCA on sparse compositional metabarcoding data)",
-            scriptName: "DEICODE.sh",
-            imageName: "pipecraft/deicode:0.2.4",
-            serviceName: "DEICODE",
-            selected: false,
-            showExtra: false,
-            extraInputs: [],
-            Inputs: [
-              {
-                name: "table",
-                active: false,
-                btnName: "select file",
-                value: "undefined",
-                disabled: "never",
-                tooltip:
-                  "select OTU/ASV table. If no file is selected, then PipeCraft will look OTU_table.txt or ASV_table.txt in the WORKDIR [output will be in the directory as specified under 'SELECT WORKDIR']",
-                type: "boolfile",
-              },
-              {
-                name: "subset_IDs",
-                active: false,
-                btnName: "select file",
-                value: "undefined",
-                disabled: "never",
-                tooltip:
-                  "select list of OTU/ASV IDs for analysing a subset from the full table",
-                type: "boolfile",
-              },
-              {
-                name: "min_otu_reads",
-                value: 10,
-                disabled: "never",
-                tooltip:
-                  "cutoff for reads per OTU/ASV. OTUs/ASVs with lower reads then specified cutoff will be excluded from the analysis",
-                type: "numeric",
-                rules: [(v) => v >= 0 || "ERROR: specify values >= 0"],
-              },
-              {
-                name: "min_sample_reads",
-                value: 500,
-                disabled: "never",
-                tooltip:
-                  "cutoff for reads per sample. Samples with lower reads then specified cutoff will be excluded from the analysis",
-                type: "numeric",
-                rules: [(v) => v >= 0 || "ERROR: specify values >= 0"],
+                rules: [(v) => v > 0 || "ERROR: specify values > 0"],
               },
             ],
           },
@@ -2348,6 +2217,144 @@ export default new Vuex.Store({
                 depends_on:
                 // Disable if abundance_filt is false
                   'state.selectedSteps[0].services[4].Inputs[0].value == "find_and_dump" && state.selectedSteps[0].services[4].Inputs[8].value === true'
+              },
+            ],
+          },
+          {
+            tooltip:
+              "pseudogene fintering with ORFfinder (search open reading frames) and/or HMMs",
+            scriptName: "ORFfinder_hmm.sh",
+            imageName: "pipecraft/metaworks:1.12.0",
+            serviceName: "ORF-finder",
+            selected: false,
+            showExtra: false,
+            extraInputs: [
+              {
+                name: "ignore_nested",
+                value: true,
+                disabled: "never",
+                tooltip:
+                  "ignore nested open reading frames (completely placed within another)",
+                type: "bool",
+              },
+              {
+                name: "strand",
+                items: ["plus", "minus", "both"],
+                value: "both",
+                disabled: "never",
+                tooltip:
+                  "output open reading frames (ORFs) on specified strand only",
+                type: "select",
+              },
+            ],
+            Inputs: [
+              {
+                name: "fasta_file",
+                active: false,
+                btnName: "select fasta file",
+                value: "undefined",
+                disabled: "never",
+                tooltip:
+                  "select fasta formatted sequence file containing your OTU/ASV reads. Sequence IDs cannot contaon underlines '_' [output will be in the directory as specified under 'SELECT WORKDIR']",
+                type: "file",
+              },
+              {
+                name: "min_length",
+                value: 309,
+                disabled: "never",
+                tooltip: "minimum length of an output sequence",
+                type: "numeric",
+                rules: [(v) => v >= 1 || "ERROR: specify values >= 1"],
+              },
+              // {
+              //   name: "max_length",
+              //   value: 317,
+              //   disabled: "never",
+              //   tooltip: "maximum length of an output sequence",
+              //   type: "numeric",
+              //   rules: [(v) => v >= 1 || "ERROR: specify values >= 1"],
+              // },
+              {
+                name: "genetic_code",
+                value: 5,
+                disabled: "never",
+                tooltip:
+                  "5 = invertebrate mitochondrial code. Use 1 for rbcL. Specify values from 1 to 33; see https://www.ncbi.nlm.nih.gov/Taxonomy/Utils/wprintgc.cgi",
+                type: "numeric",
+                rules: [
+                  (v) => v >= 1 || "ERROR: specify values >= 1",
+                  (v) => v <= 34 || "ERROR: specify values <= 34",
+                ],
+              },
+              {
+                name: "start_codon",
+                value: 2,
+                disabled: "never",
+                tooltip:
+                  "0 = ATG only; 1 = ATG and alternative initation codons; 2 = any sense codon",
+                type: "numeric",
+                rules: [
+                  (v) => v >= 1 || "ERROR: specify values >= 1",
+                  (v) => v <= 34 || "ERROR: specify values <= 34",
+                ],
+              },
+              {
+                name: "arthropod_hmm",
+                value: true,
+                disabled: "never",
+                tooltip:
+                  "on top of ORFfinder, remove sequences that don't match well to a profile HMM based on arthropod COI barcode sequences",
+                type: "bool",
+              },
+            ],
+          },
+          {
+            tooltip:
+              "DEICODE (Robust Aitchison PCA on sparse compositional metabarcoding data)",
+            scriptName: "DEICODE.sh",
+            imageName: "pipecraft/deicode:0.2.4",
+            serviceName: "DEICODE",
+            selected: false,
+            showExtra: false,
+            extraInputs: [],
+            Inputs: [
+              {
+                name: "table",
+                active: false,
+                btnName: "select file",
+                value: "undefined",
+                disabled: "never",
+                tooltip:
+                  "select OTU/ASV table. If no file is selected, then PipeCraft will look OTU_table.txt or ASV_table.txt in the WORKDIR [output will be in the directory as specified under 'SELECT WORKDIR']",
+                type: "boolfile",
+              },
+              {
+                name: "subset_IDs",
+                active: false,
+                btnName: "select file",
+                value: "undefined",
+                disabled: "never",
+                tooltip:
+                  "select list of OTU/ASV IDs for analysing a subset from the full table",
+                type: "boolfile",
+              },
+              {
+                name: "min_otu_reads",
+                value: 10,
+                disabled: "never",
+                tooltip:
+                  "cutoff for reads per OTU/ASV. OTUs/ASVs with lower reads then specified cutoff will be excluded from the analysis",
+                type: "numeric",
+                rules: [(v) => v >= 0 || "ERROR: specify values >= 0"],
+              },
+              {
+                name: "min_sample_reads",
+                value: 500,
+                disabled: "never",
+                tooltip:
+                  "cutoff for reads per sample. Samples with lower reads then specified cutoff will be excluded from the analysis",
+                type: "numeric",
+                rules: [(v) => v >= 0 || "ERROR: specify values >= 0"],
               },
             ],
           },
@@ -4481,33 +4488,37 @@ export default new Vuex.Store({
           {
             name: "f_value",
             value: 0.03,
+            max: 0.4,
+            min: 0,
+            step: 0.01,
             disabled: "never",
             tooltip:
               "for filtering tag-jumps; f-parameter of UNCROSS2, which defines the expected tag-jumps rate. Default is 0.03 (equivalent to 3%). A higher value enforces stricter filtering. Value 0 means OFF, no tag-jumps filtering",
-            type: "numeric",
-            rules: [(v) => v > 0.001 || "OFF. Turn ON with > 0.001"],
+            type: "slide",
+            rules: [],
             onChange: (service, value) => {
-              if (value <= 0.001 && !service.Inputs.find(input => input.name === "min_length").value == 0 && !service.Inputs.find(input => input.name === "max_length").value == 0 && !service.Inputs.find(input => input.name === "p_value").value == 0 && !service.Inputs.find(input => input.name === "collapseNoMismatch").value == false) {
+              const p_value = service.Inputs.find(input => input.name === "p_value").value;
+              if (Number(value) === 0 && Number(p_value) <= 0) {
                 service.selected = false;
               }
             },
           },
           {
-            name: "p_value",
+            name: "p_value", 
             value: 1,
             disabled: "never",
             tooltip:
               "for filtering tag-jumps; p-parameter, which controls the severity of tag-jump removal. It adjusts the exponent in the UNCROSS formula. Default is 1. Opt for 0.5 or 0.3 to steepen the curve. Value 0 means OFF, no tag-jumps filtering",
             type: "numeric",
-            rules: [(v) => v > 0.01 || "OFF. Turn ON with > 0.01"],
+            rules: [(v) => v > 0 || "OFF. Turn ON with > 0.01"],
             onChange: (service, value) => {
-              if (value <= 0.01 && !service.Inputs.find(input => input.name === "min_length").value == 0 && !service.Inputs.find(input => input.name === "max_length").value == 0 && !service.Inputs.find(input => input.name === "f_value").value == 0 && !service.Inputs.find(input => input.name === "collapseNoMismatch").value == false) {
+              const f_value = service.Inputs.find(input => input.name === "f_value").value;
+              if (Number(value) <= 0 && Number(f_value) === 0) {
                 service.selected = false;
               }
             },
           },
           {
-            // collapseNoMismatch is visible only in ASV workflow
             name: "collapseNoMismatch",
             value: true,
             disabled: "never",
@@ -4515,7 +4526,13 @@ export default new Vuex.Store({
               "collapses ASVs that have no internal mismatches and vary only in length (using usearch_global -id 1)",
             type: "bool",
             onChange: (service, value) => {
-              if (value <= 0.001 && !service.Inputs.find(input => input.name === "min_length").value == 0 && !service.Inputs.find(input => input.name === "max_length").value == 0 && !service.Inputs.find(input => input.name === "f_value").value == 0 && !service.Inputs.find(input => input.name === "p_value").value == 0) {
+              const allOthersOff =
+                service.Inputs.find(input => input.name == "min_length").value == 0 &&
+                service.Inputs.find(input => input.name == "max_length").value == 0 &&
+                service.Inputs.find(input => input.name == "f_value").value == 0 &&
+                service.Inputs.find(input => input.name == "p_value").value == 0;
+              
+              if (value == false && allOthersOff) {
                 service.selected = false;
               }
             },
@@ -4529,11 +4546,14 @@ export default new Vuex.Store({
             type: "numeric",
             rules: [(v) => v > 0 || "OFF. Turn ON with values > 0"],
             onChange: (service, value) => {
-              if (value <= 0.001 && !service.Inputs.find(input => input.name === "max_length").value == 0 && !service.Inputs.find(input => input.name === "f_value").value == 0 && !service.Inputs.find(input => input.name === "p_value").value == 0 && !service.Inputs.find(input => input.name === "collapseNoMismatch").value == false) {
+              const allOthersOff =
+                service.Inputs.find(input => input.name == "max_length").value == 0 &&
+                service.Inputs.find(input => input.name == "f_value").value == 0 &&
+                service.Inputs.find(input => input.name == "p_value").value == 0 &&
+                service.Inputs.find(input => input.name == "collapseNoMismatch").value == false;
+              
+              if (value == 0 && allOthersOff) {
                 service.selected = false;
-              }
-              else {
-                service.selected = true;
               }
             },
           },
@@ -4546,7 +4566,13 @@ export default new Vuex.Store({
             type: "numeric",
             rules: [(v) => v > 0 || "OFF. Turn ON with values > 0"],
             onChange: (service, value) => {
-              if (value <= 0.001 && !service.Inputs.find(input => input.name === "min_length").value == 0 && !service.Inputs.find(input => input.name === "f_value").value == 0 && !service.Inputs.find(input => input.name === "p_value").value == 0 && !service.Inputs.find(input => input.name === "collapseNoMismatch").value == false) {
+              const allOthersOff =
+                service.Inputs.find(input => input.name == "min_length").value == 0 &&
+                service.Inputs.find(input => input.name == "f_value").value == 0 &&
+                service.Inputs.find(input => input.name == "p_value").value == 0 &&
+                service.Inputs.find(input => input.name == "collapseNoMismatch").value == false;
+              
+              if (value == 0 && allOthersOff) {
                 service.selected = false;
               }
             },
@@ -4555,7 +4581,7 @@ export default new Vuex.Store({
       },
       {
         tooltip: "Merge sequencing runs if working with multuple runs in multiRunDir. Samples with the same name across runs are merged together",
-        scriptName: "merge_runs_wf.sh",
+        scriptName: "merge_runs_dada2_wf.sh",
         imageName: "pipecraft/vsearch_dada2:2", 
         serviceName: "Merge sequencing runs",
         manualLink: "empty",

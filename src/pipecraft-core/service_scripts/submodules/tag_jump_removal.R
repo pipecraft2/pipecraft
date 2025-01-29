@@ -12,6 +12,9 @@
 #  - Tag-jumpfiltered OTU table (`*_TagJumpFilt.txt`)
 #  - Plot (`TagJump_plot.pdf`)
 
+# edit 29.01.2025:
+#  - add sequences back to the output table (Biostrings and dplyr); needed merge runs process. 
+
 args = commandArgs(trailingOnly = TRUE)
 
 suppressMessages(library(data.table))
@@ -20,7 +23,6 @@ theme_set(theme_classic(base_size = 14))
 
 # load env variables
 output_dir = Sys.getenv('output_dir')
-
 # Get input file name and create output name
 input_file = args[1]
 base_name = tools::file_path_sans_ext(basename(input_file))
@@ -34,7 +36,7 @@ OTUTABW = fread(
 
 ## Check table; if 2nd col is sequence, then remove
 if (colnames(OTUTABW)[2] == "Sequence") {
-  cat(";; 2nd column was 'Sequence', removing this ... \n")
+  cat(";; 2nd column was 'Sequence', removing for now (adding sequences back later) \n")
   OTUTABW = OTUTABW[, -2]
 }
 
@@ -102,7 +104,6 @@ pdf(file = paste0(output_dir, "/TagJump_plot.pdf"), width = 12, height = 9.5, us
   PP
 dev.off()
 
-
 ## TJ stats
 cat(";; Calculating tag-jump summary\n")
 TJ = data.table(
@@ -130,13 +131,24 @@ clz = colnames(RES)[-1]
 otu_sums = rowSums(RES[, ..clz], na.rm = TRUE)
 RES = RES[ order(otu_sums, decreasing = TRUE) ]
 
+## Add sequences back to the table
+cat(";; Adding sequences back to the table\n")
+suppressMessages(library(Biostrings))
+suppressMessages(library(dplyr))
+# read the FASTA file
+fasta_sequences = readDNAStringSet(args[4])
+sequences = as.character(fasta_sequences)
+names(sequences) = names(fasta_sequences)
+# add the sequences as 2nd column
+RES = RES %>%
+  mutate(Sequence = sequences[OTU]) %>%
+  select(OTU, Sequence, everything())
+
+## Export table
 cat(";; Exporting tag-jump filtered table\n")
-
+cat(paste0(output_dir, output_name))
 fwrite(x = RES,
-  file = paste0(output_dir, "/", output_name),
+  file = paste0(output_dir, output_name),
   sep = "\t", compress = "none")
-
-# Save as RDS file
-# saveRDS(RES, file = paste0(output_dir, "/", tools::file_path_sans_ext(output_name), ".rds"))
 
 cat(";; Done\n")
