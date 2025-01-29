@@ -422,9 +422,22 @@ export default {
       });
     },
     getVariableFromLog(log, varName) {
-      var re = new RegExp(`(${varName}=.*)`, "g");
-      let value = log.match(re)[0].replace('"', "").split("=")[1];
-      return value;
+      try {
+        var re = new RegExp(`(${varName}=.*)`, "g");
+        const matches = log.match(re);
+        
+        // Check if we found any matches
+        if (!matches || matches.length === 0) {
+          console.warn(`No match found for variable: ${varName}`);
+          return null;
+        }
+        
+        let value = matches[0].replace('"', "").split("=")[1];
+        return value || null;
+      } catch (error) {
+        console.error(`Error parsing ${varName} from log:`, error);
+        return null;
+      }
     },
     createVariableObj(stepIndex, serviceIndex) {
       let envVariables = [];
