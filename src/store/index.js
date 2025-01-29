@@ -37,6 +37,8 @@ export default new Vuex.Store({
       debugger: false,
       pipeline: "",
       service: "",
+      output_fasta: "",
+      output_feature_table: "",
     },
     env_variables: ["FOO=bar", "BAZ=quux"],
     selectedSteps: [],
@@ -4868,7 +4870,9 @@ SINGLE-END is for PacBio data, but can be also used for single-end read Illumina
     },
     addInputInfo(state, payload) {
       (state.data.fileFormat = payload.fileFormat),
-        (state.data.readType = payload.readType);
+      (state.data.readType = payload.readType),
+      (state.data.output_fasta = payload.output_fasta),
+      (state.data.output_feature_table = payload.output_feature_table);
     },
     removeStep(state, index) {
       state.selectedSteps.splice(index, 1);

@@ -234,6 +234,14 @@ export default {
                     "fileFormat"
                   ),
                   readType: this.getVariableFromLog(result.stdout, "readType"),
+                  output_fasta: this.getVariableFromLog(
+                    result.stdout,
+                    "output_fasta"
+                  ),
+                  output_feature_table: this.getVariableFromLog(
+                    result.stdout,
+                    "output_feature_table"
+                  ),
                 };
                 this.$store.commit(
                   "toggle_PE_SE_scripts",
@@ -474,6 +482,8 @@ export default {
         dada2mode: this.$store.state.data.dada2mode,
         pipeline: this.$store.state.data.pipeline,
         service: this.$store.state.data.service,
+        output_fasta: this.$store.state.data.output_fasta,
+        output_feature_table: this.$store.state.data.output_feature_table,
       };
       Object.entries(dataInfo).forEach(([key, value]) => {
         let varObj = {};
