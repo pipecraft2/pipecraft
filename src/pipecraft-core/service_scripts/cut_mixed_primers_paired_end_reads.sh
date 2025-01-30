@@ -19,12 +19,21 @@
     #https://bioinf.shenwei.me/seqkit/
 #pigz v2.4
 ##########################################################
+#Source for functions
+source /scripts/submodules/framework.functions.sh
 
-#load variables
+# Checking tool versions
+cutadapt_version=$(cutadapt --version 2>&1)
+seqkit_version=$(seqkit version 2>&1 | awk '{print $2}')
+printf "# Checking tool versions ...\n"
+printf "# cutadapt (version $cutadapt_version)\n"
+printf "# seqkit (version $seqkit_version)\n"
+
+# load variables
 extension=${fileFormat}  # KEEP THIS (removed in some other scripts)
 mismatches=$"-e ${mismatches}"
 min_length=$"--minimum-length 32"   # minimum len of the output sequence. FIXED to 32 (in order to avoid 0 len seqs) because cutadapt --minimum-length does not behave as expected
-overlap=$"--overlap ${min_overlap}"
+overlap=$"--overlap ${min_overlap}" # this option is ignored for anchored adapters since these do not allow partial matches.
 cores=$"--cores ${cores}"
 no_indels=$no_indels
 discard_untrimmed=$"TRUE" #currently only fixed to TRUE 
@@ -33,12 +42,13 @@ pair_filter=$pair_filter
 fwd_tempprimer=$forward_primers
 rev_tempprimer=$reverse_primers
 
-#Source for functions
-source /scripts/submodules/framework.functions.sh
 
 #############################
 ### Start of the workflow ###
 #############################
+start_time=$(date)
+start=$(date +%s)
+printf "# Running cut primers (from MIXED amplicons) \n"
 if [[ $no_indels == "TRUE" ]]; then
     indels=$"--no-indels"
 fi
@@ -145,7 +155,9 @@ for seqrun in $DIRS; do
             --untrimmed-paired-output $output_dir/fwd_untrimmed/$inputR2.$extension \
             --pair-filter=$pair_filter \
             -g file:tempdir2/fwd_primer.fasta \
+            -a file:tempdir2/liked_fwd_revRC.fasta \
             -G file:tempdir2/rev_primer.fasta \
+            -A file:tempdir2/liked_rev_fwdRC.fasta \
             -o $output_dir/fwd_orient/$inputR1.$extension \
             -p $output_dir/fwd_orient/$inputR2.$extension \
             $inputR1.$extension $inputR2.$extension 2>&1)
@@ -161,8 +173,10 @@ for seqrun in $DIRS; do
             $untrimmed_output \
             $untrimmed_paired_output \
             --pair-filter=$pair_filter \
-            -G file:tempdir2/fwd_primer.fasta \
             -g file:tempdir2/rev_primer.fasta \
+            -a file:tempdir2/liked_rev_fwdRC.fasta \
+            -G file:tempdir2/fwd_primer.fasta \
+            -A file:tempdir2/liked_fwd_revRC.fasta \
             -o $output_dir/rev_orient/$inputR1.$extension \
             -p $output_dir/rev_orient/$inputR2.$extension \
             $output_dir/fwd_untrimmed/$inputR1.$extension $output_dir/fwd_untrimmed/$inputR2.$extension 2>&1)
@@ -391,18 +405,19 @@ fwd_untrimmed/inputR1 fwd_untrimmed/inputR2. \n" >> $output_dir/README.txt
 
     printf "\nSummary of sequence counts in 'seq_count_summary.txt'
 
-Total run time was $runtime sec.
+Start time: $start_time
+End time: $(date)
+Runtime: $runtime seconds
 
 ##########################################################
 ###Third-party applications used for this process [PLEASE CITE]:
-#cutadapt v4.4 for cutting the primers
+# cutadapt (version $cutadapt_version) for cutting the primers
    #citation: Martin, Marcel (2011) Cutadapt removes adapter sequences from high-throughput sequencing reads. EMBnet.journal, 17(1), 10-12.
    #https://cutadapt.readthedocs.io/en/stable/index.html
-#seqkit v2.3.0 for generating reverse complementary primer strings
+#seqkit (version $seqkit_version) for generating reverse complementary primer strings
     #citation: Shen W, Le S, Li Y, Hu F (2016) SeqKit: A Cross-Platform and Ultrafast Toolkit for FASTA/Q File Manipulation. PLOS ONE 11(10): e0163962. https://doi.org/10.1371/journal.pone.0163962
     #https://bioinf.shenwei.me/seqkit/
 ##################################################################" >> $output_dir/README.txt
-
 
     ### if working with multiRunDir then cd /input/multiRunDir
     if [[ $multiDir == "TRUE" ]]; then 

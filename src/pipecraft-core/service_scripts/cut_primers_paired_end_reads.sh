@@ -17,12 +17,14 @@
     #https://bioinf.shenwei.me/seqkit/
 #pigz v2.4
 ##########################################################
+#Source for functions
+source /scripts/submodules/framework.functions.sh
 
 #load variables
 extension=${fileFormat}             # KEEP THIS (removed in some other scripts)
 mismatches=$"-e ${mismatches}"      # number of mismatches in primer search
 min_length=$"--minimum-length 32"   # minimum len of the output sequence. FIXED to 32 (in order to avoid 0 len seqs) because cutadapt --minimum-length does not behave as expected
-overlap=$"--overlap ${min_overlap}"
+overlap=$"--overlap ${min_overlap}" # this option is ignored for anchored adapters since these do not allow partial matches.
 cores=$"--cores ${cores}"
 # $no_indels                        # "--no-indels" disallows insertions and deletions in a primer
 discard_untrimmed=$"TRUE"           # fixed to TRUE 
@@ -31,12 +33,19 @@ discard_untrimmed=$"TRUE"           # fixed to TRUE
 fwd_tempprimer=$forward_primers
 rev_tempprimer=$reverse_primers
 
-#Source for functions
-source /scripts/submodules/framework.functions.sh
+# Checking tool versions
+cutadapt_version=$(cutadapt --version 2>&1)
+seqkit_version=$(seqkit version 2>&1 | awk '{print $2}')
+printf "# Checking tool versions ...\n"
+printf "# cutadapt (version $cutadapt_version)\n"
+printf "# seqkit (version $seqkit_version)\n"
 
 #############################
 ### Start of the workflow ###
 #############################
+start_time=$(date)
+start=$(date +%s)
+printf "# Running cut primers (from paired-end reads) \n"
 if [[ $no_indels == "true" ]]; then
     indels=$"--no-indels"
 fi
@@ -136,12 +145,14 @@ for seqrun in $DIRS; do
             -a file:tempdir2/rev_primer_RC.fasta \
             -g file:tempdir2/rev_primer.fasta \
             -a file:tempdir2/fwd_primer_RC.fasta \
+            -a file:tempdir2/liked_fwd_revRC.fasta \
             -G file:tempdir2/liked_fwd_revRC.fasta \
             -G file:tempdir2/liked_rev_fwdRC.fasta \
             -G file:tempdir2/rev_primer.fasta \
             -A file:tempdir2/fwd_primer_RC.fasta \
             -G file:tempdir2/fwd_primer.fasta \
             -A file:tempdir2/rev_primer_RC.fasta \
+            -A file:tempdir2/liked_rev_fwdRC.fasta \
             -o $output_dir/$inputR1.round1.$extension \
             -p $output_dir/$inputR2.round1.$extension \
             $inputR1.$extension $inputR2.$extension 2>&1)
@@ -156,6 +167,7 @@ for seqrun in $DIRS; do
             $cores \
             --pair-filter=$pair_filter \
             -g file:tempdir2/liked_fwd_revRC.fasta \
+            -a file:tempdir2/liked_fwd_revRC.fasta \
             -g file:tempdir2/liked_rev_fwdRC.fasta \
             -g file:tempdir2/fwd_primer.fasta \
             -a file:tempdir2/rev_primer_RC.fasta \
@@ -167,6 +179,7 @@ for seqrun in $DIRS; do
             -A file:tempdir2/fwd_primer_RC.fasta \
             -G file:tempdir2/fwd_primer.fasta \
             -A file:tempdir2/rev_primer_RC.fasta \
+            -A file:tempdir2/liked_rev_fwdRC.fasta \
             -o $output_dir/$inputR1.$extension \
             -p $output_dir/$inputR2.$extension \
             $output_dir/$inputR1.round1.$extension $output_dir/$inputR2.round1.$extension 2>&1)
@@ -257,6 +270,7 @@ If no outputs were generated into /$output_dir, check your specified primer stri
 -g liked_reversePrimer_and_reverseComplementForwardPrimer \
 -g ForwardPrimer \
 -a reverseComplementReversePrimer \
+-a liked_forwardPrimer_and_reverseComplementReversePrimer \
 -g ReversePrimer \
 -a reverseComplementForwardPrimer \
 -G liked_forwardPrimer_and_reverseComplementReversePrimer \
@@ -265,6 +279,7 @@ If no outputs were generated into /$output_dir, check your specified primer stri
 -A reverseComplementForwardPrimer \
 -G forwardPrimer \
 -A reverseComplementReversePrimer \
+-A liked_reversePrimer_and_reverseComplementForwardPrimer \
 -o output.round1 -p output.round1 inputR1 inputR2 
 
 #round2; clipping if present, but no discarding
@@ -275,12 +290,14 @@ cutadapt $mismatches $min_length $overlap $indels --pair-filter=$pair_filter \
 -a reverseComplementReversePrimer \
 -g ReversePrimer \
 -a reverseComplementForwardPrimer \
+-a liked_forwardPrimer_and_reverseComplementReversePrimer \
 -G liked_forwardPrimer_and_reverseComplementReversePrimer \
 -G liked_reversePrimer_and_reverseComplementForwardPrimer \
 -G ReversePrimer \
 -A reverseComplementForwardPrimer \
 -G forwardPrimer \
 -A reverseComplementReversePrimer \
+-A liked_reversePrimer_and_reverseComplementForwardPrimer \
 -o outputR1 -p outputR2 inputR1.from_round1 inputR2.from_round1 \n" >> $output_dir/README.txt
 
     elif [[ $seqs_to_keep == "keep_only_linked" ]]; then
@@ -306,14 +323,16 @@ cutadapt $mismatches $min_length $overlap $indels \
 
     printf "\nSummary of sequence counts in 'seq_count_summary.txt'
 
-Total run time was $runtime sec.
+Start time: $start_time
+End time: $(date)
+Runtime: $runtime seconds
 
 ##########################################################
 ###Third-party applications used for this process [PLEASE CITE]:
-#cutadapt v4.4 for cutting the primers
+# cutadapt (version $cutadapt_version) for cutting the primers
     #citation: Martin, Marcel (2011) Cutadapt removes adapter sequences from high-throughput sequencing reads. EMBnet.journal, 17(1), 10-12.
     #https://cutadapt.readthedocs.io/en/stable/index.html
-#seqkit v2.3.0 for generating reverse complementary primer strings
+#seqkit (version $seqkit_version) for generating reverse complementary primer strings
     #citation: Shen W, Le S, Li Y, Hu F (2016) SeqKit: A Cross-Platform and Ultrafast Toolkit for FASTA/Q File Manipulation. PLOS ONE 11(10): e0163962. https://doi.org/10.1371/journal.pone.0163962
     #https://bioinf.shenwei.me/seqkit/
 ##################################################################" >> $output_dir/README.txt
