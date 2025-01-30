@@ -1490,14 +1490,186 @@ export default new Vuex.Store({
         ],
       },
       {
-        stepName: "postclustering",
+        stepName: "postprocessing",
         disabled: "never",
         services: [
+          {
+            scriptName: "tag_jump_removal.sh",
+            tooltip: "filter out putative tag-jumps in the ASVs table (using UNCROSS2)",
+            imageName: "pipecraft/vsearch_dada2:2",
+            serviceName: "filter_tag-jumps",
+            selected: false,
+            showExtra: false,
+            extraInputs: [],
+            Inputs: [
+              {
+                name: "OTU_table",
+                active: true,
+                btnName: "select file",
+                value: "undefined",
+                disabled: "never",
+                tooltip:
+                  "select TAB-DELIMITED OTU/ASV table, where the 1st column is the OTU/ASV IDs and the following columns represent samples; 2nd column may be Sequence column, with the colName 'Sequence' [output will be in the directory as specified under 'SELECT WORKDIR']",
+                type: "file",
+              },
+              {
+                name: "fasta_file",
+                active: true,
+                btnName: "select file",
+                value: "undefined",
+                disabled: "never",
+                tooltip:
+                  "select corresponding fasta file for OTU/ASV table [output will be in the directory as specified under 'SELECT WORKDIR']",
+                type: "file",
+              },
+              {
+                name: "f_value",
+                value: 0.03,
+                max: 0.4,
+                min: 0.01,
+                step: 0.01,
+                disabled: "never",
+                tooltip: "f-parameter of UNCROSS2, which defines the expected tag-jumps rate. Default is 0.03 (equivalent to 3%). A higher value enforces stricter filtering",
+                type: "slide",
+             },
+              {
+                name: "p_value", 
+                value: 1,
+                disabled: "never",
+                tooltip: "p-parameter, which controls the severity of tag-jump removal. It adjusts the exponent in the UNCROSS formula. Default is 1. Opt for 0.5 or 0.3 to steepen the curve",
+                type: "numeric",
+                rules: [(v) => v > 0 || "ERROR: specify values > 0"],
+              },
+            ],
+          },
+          {
+            scriptName: "clustering_vsearch_ASVs2OTUs.sh",
+            tooltip:
+              "clustering ASVs to OTUs with vsearch; and making an OTU table",
+            imageName: "pipecraft/vsearch_dada2:2",
+            serviceName: "ASV_to_OTU",
+            selected: false,
+            showExtra: false,
+            extraInputs: [
+              {
+                name: "OTU_type",
+                items: ["centroid", "consout"],
+                disabled: "never",
+                tooltip:
+                  '"centroid" = output centroid sequences; "consout" = output consensus sequences',
+                value: "centroid",
+                type: "select",
+              },
+              {
+                name: "strands",
+                items: ["both", "plus"],
+                disabled: "never",
+                tooltip:
+                  "when comparing sequences with the cluster seed, check both strands (forward and reverse complementary) or the plus strand only",
+                value: "both",
+                type: "select",
+              },
+              {
+                name: "remove_singletons",
+                value: false,
+                disabled: "never",
+                tooltip:
+                  "remove singleton OTUs (e.g., if TRUE, then OTUs with only one sequence will be discarded)",
+                type: "bool",
+              },
+              {
+                name: "similarity_type",
+                items: ["0", "1", "2", "3", "4"],
+                value: "2",
+                disabled: "never",
+                tooltip: "pairwise sequence identity definition (--iddef)",
+                type: "select",
+              },
+              {
+                name: "sequence_sorting",
+                items: ["size", "length", "no"],
+                value: "size",
+                disabled: "never",
+                tooltip:
+                  'size = sort the sequences by decreasing abundance; "length" = sort the sequences by decreasing length (--cluster_fast); "no" = do not sort sequences (--cluster_smallmem --usersort)',
+                type: "select",
+              },
+              {
+                name: "centroid_type",
+                items: ["similarity", "abundance"],
+                value: "similarity",
+                disabled: "never",
+                tooltip:
+                  '"similarity" = assign representative sequence to the closest (most similar) centroid (distance-based greedy clustering); "abundance" = assign representative sequence to the most abundant centroid (abundance-based greedy clustering; --sizeorder), --maxaccepts should be > 1',
+                type: "select",
+              },
+              {
+                name: "maxaccepts",
+                value: 1,
+                disabled: "never",
+                tooltip:
+                  "maximum number of hits to accept before stopping the search (should be > 1 for abundance-based selection of centroids [centroid type])",
+                type: "numeric",
+                rules: [(v) => v >= 1 || "ERROR: specify values >= 1"],
+              },
+              {
+                name: "mask",
+                items: ["dust", "none"],
+                value: "dust",
+                disabled: "never",
+                tooltip:
+                  'mask regions in sequences using the "dust" method, or do not mask ("none").',
+                type: "select",
+              },
+              {
+                name: "cores",
+                value: 4,
+                disabled: "never",
+                tooltip: "number of cores to use",
+                type: "numeric",
+                rules: [(v) => v >= 1 || "ERROR: specify values >= 1"],
+              },
+            ],
+            Inputs: [
+              {
+                name: "ASV_fasta",
+                active: false,
+                btnName: "select file",
+                value: "undefined",
+                disabled: "never",
+                tooltip:
+                  "select fasta formatted ASVs sequence file (ASV IDs must match with the ones in the ASVs table) [output will be in the directory as specified under 'SELECT WORKDIR']",
+                type: "file",
+              },
+              {
+                name: "ASV_table",
+                active: true,
+                btnName: "select file",
+                value: "undefined",
+                disabled: "never",
+                tooltip:
+                  "select ASVs_table file [1st col is ASVs ID, 2nd col must be 'Sequences' (default PipeCraft's output)]",
+                type: "file",
+              },
+              {
+                name: "similarity_threshold",
+                value: 0.97,
+                disabled: "never",
+                tooltip:
+                  "define OTUs based on the sequence similarity threshold; 0.97 = 97% similarity threshold",
+                max: 1,
+                min: 0,
+                step: 0.01,
+                type: "slide",
+              },
+            ],
+          },
+          
           {
             tooltip: "postclustering with LULU algorithm",
             scriptName: "lulu.sh",
             imageName: "pipecraft/vsearch_dada2:2",
-            serviceName: "LULU",
+            serviceName: "LULU_post-clustering",
             selected: false,
             showExtra: false,
             extraInputs: [
@@ -1681,373 +1853,6 @@ export default new Vuex.Store({
                   "discard ASVs from the ASV table that are shorter than specified value (in base pairs). Value 0 means OFF; no filtering by length.",
                 type: "numeric",
                 rules: [(v) => v >= 0 || "ERROR: specify values >= 0"],
-              },
-            ],
-          },
-        ],
-      },
-
-      {
-        stepName: "assign taxonomy",
-        disabled: "never",
-        services: [
-          {
-            tooltip:
-              "assign taxonomy with BLAST against a selected database [SELECT WORKDIR that contains only ONE fasta file for the process]",
-            scriptName: "taxonomy_BLAST.sh",
-            imageName: "pipecraft/blast:2.14",
-            serviceName: "BLAST",
-            selected: false,
-            showExtra: false,
-            extraInputs: [
-              {
-                name: "e_value",
-                value: 10,
-                disabled: "never",
-                tooltip:
-                  "a parameter that describes the number of hits one can expect to see by chance when searching a database of a particular size. The lower the e-value the more 'significant' the match is",
-                type: "numeric",
-                default: 10,
-                rules: [(v) => v >= 0 || "ERROR: specify values >= 0"],
-              },
-              {
-                name: "word_size",
-                value: 11,
-                disabled: "never",
-                tooltip:
-                  "the size of the initial word that must be matched between the database and the query sequence",
-                type: "numeric",
-                rules: [(v) => v >= 1 || "ERROR: specify values >= 1"],
-              },
-              {
-                name: "reward",
-                value: 2,
-                disabled: "never",
-                tooltip: "reward for a match",
-                type: "numeric",
-                rules: [(v) => v >= 0 || "ERROR: specify values >= 0"],
-              },
-              {
-                name: "penalty",
-                value: -3,
-                disabled: "never",
-                tooltip: "penalty for a mismatch",
-                type: "numeric",
-                rules: [(v) => v <= 0 || "ERROR: specify values <= 0"],
-              },
-              {
-                name: "gap_open",
-                value: 5,
-                disabled: "never",
-                tooltip: "cost to open a gap",
-                type: "numeric",
-                rules: [(v) => v >= 0 || "ERROR: specify values >= 0"],
-              },
-              {
-                name: "gap_extend",
-                value: 2,
-                disabled: "never",
-                tooltip: "cost to extend a gap",
-                type: "numeric",
-                // rules: [(v) => v >= 0 || "ERROR: specify values >= 0"],
-              },
-              {
-                name: "cores",
-                value: 4,
-                disabled: "never",
-                tooltip: "number of cores to use",
-                type: "numeric",
-                rules: [(v) => v >= 1 || "ERROR: specify values >= 1"],
-              },
-            ],
-            Inputs: [
-              {
-                name: "database_file",
-                btnName: "select file",
-                value: "undefined",
-                disabled: "never",
-                tooltip:
-                  "database file (may be fasta formated - automatically will convert to BLAST database format)",
-                type: "file",
-              },
-              {
-                name: "task",
-                items: ["blastn", "megablast"],
-                value: "blastn",
-                disabled: "never",
-                tooltip: "task (blastn or megablast)",
-                type: "select",
-              },
-              {
-                name: "strands",
-                items: ["plus", "both"],
-                value: "both",
-                disabled: "never",
-                tooltip:
-                  "query strand to search against database. Both = search also reverse complement",
-                type: "select",
-              },
-            ],
-          },
-          {
-            tooltip:
-              "assign taxonomy with RDP Classifier against a selected database [SELECT WORKDIR that contains only ONE fasta file for the process]",
-            scriptName: "taxonomy_RDP.sh",
-            imageName: "pipecraft/metaworks:1.12.0",
-            serviceName: "RDP_classifier",
-            selected: false,
-            showExtra: false,
-            extraInputs: [
-              {
-                name: "mem",
-                value: 10,
-                disabled: "never",
-                tooltip:
-                  "default is 10GB. The amount of memory to allocate to the RDP classifier",
-                type: "numeric",
-                rules: [
-                  (v) => v >= 0 || "ERROR: specify values >0",
-                  (v) => v <= 300 || "ERROR: specify values <= 300",
-                ],
-              },
-            ],
-            Inputs: [
-              {
-                name: "database",
-                btnName: "select RDP db",
-                value: "undefined",
-                disabled: "never",
-                tooltip:
-                  "RDP-trained reference database for the RDP classifier. Click on the header to download trained reference databases the RDP classifier, link MetaWorks user guide: https://terrimporter.github.io/MetaWorksSite/#classifier_table",
-                type: "file",
-              },
-              {
-                name: "confidence",
-                value: 0.8,
-                disabled: "never",
-                tooltip:
-                  "default is 0.8. Assignment confidence cutoff used to determine the assignment count for each taxon. Range [0-1]",
-                type: "numeric",
-                rules: [
-                  (v) => v >= 0 || "ERROR: specify values >0",
-                  (v) => v <= 1 || "ERROR: specify values <= 1",
-                ],
-              },
-            ],
-          },
-          {
-            tooltip:
-              "assign taxonomy with DADA2 'assignTaxonomy' function [SELECT WORKDIR that contains only ONE fasta file for the process]",
-            scriptName: "taxonomy_dada2.sh",
-            imageName: "pipecraft/vsearch_dada2:2",
-            serviceName: "DADA2 classifier",
-            disabled: "never",
-            selected: false,
-            showExtra: false,
-            extraInputs: [],
-            Inputs: [
-              {
-                name: "dada2_database",
-                btnName: "select fasta",
-                value: "undefined",
-                disabled: "never",
-                tooltip:
-                  "Select a reference database fasta file for taxonomy annotation. Click on the header to download DADA2-formatted reference databases https://benjjneb.github.io/dada2/training.html",
-                type: "file",
-              },
-              {
-                name: "minBoot",
-                value: 80,
-                disabled: "never",
-                tooltip:
-                  "the minimum bootstrap confidence for assigning a taxonomic level",
-                type: "numeric",
-                rules: [(v) => v >= 1 || "ERROR: specify values >= 1"],
-              },
-              {
-                name: "tryRC",
-                value: false,
-                disabled: "never",
-                tooltip:
-                  "the reverse-complement of each sequences will be used for classification if it is a better match to the reference sequences than the forward sequence",
-                type: "bool",
-              },
-            ],
-          },
-        ],
-      },
-      {
-        stepName: "postprocessing",
-        disabled: "never",
-        services: [
-          {
-            scriptName: "clustering_vsearch_ASVs2OTUs.sh",
-            tooltip:
-              "clustering ASVs to OTUs with vsearch; and making an OTU table",
-            imageName: "pipecraft/vsearch_dada2:2",
-            serviceName: "ASV_to_OTU",
-            selected: false,
-            showExtra: false,
-            extraInputs: [
-              {
-                name: "OTU_type",
-                items: ["centroid", "consout"],
-                disabled: "never",
-                tooltip:
-                  '"centroid" = output centroid sequences; "consout" = output consensus sequences',
-                value: "centroid",
-                type: "select",
-              },
-              {
-                name: "strands",
-                items: ["both", "plus"],
-                disabled: "never",
-                tooltip:
-                  "when comparing sequences with the cluster seed, check both strands (forward and reverse complementary) or the plus strand only",
-                value: "both",
-                type: "select",
-              },
-              {
-                name: "remove_singletons",
-                value: false,
-                disabled: "never",
-                tooltip:
-                  "remove singleton OTUs (e.g., if TRUE, then OTUs with only one sequence will be discarded)",
-                type: "bool",
-              },
-              {
-                name: "similarity_type",
-                items: ["0", "1", "2", "3", "4"],
-                value: "2",
-                disabled: "never",
-                tooltip: "pairwise sequence identity definition (--iddef)",
-                type: "select",
-              },
-              {
-                name: "sequence_sorting",
-                items: ["size", "length", "no"],
-                value: "size",
-                disabled: "never",
-                tooltip:
-                  'size = sort the sequences by decreasing abundance; "length" = sort the sequences by decreasing length (--cluster_fast); "no" = do not sort sequences (--cluster_smallmem --usersort)',
-                type: "select",
-              },
-              {
-                name: "centroid_type",
-                items: ["similarity", "abundance"],
-                value: "similarity",
-                disabled: "never",
-                tooltip:
-                  '"similarity" = assign representative sequence to the closest (most similar) centroid (distance-based greedy clustering); "abundance" = assign representative sequence to the most abundant centroid (abundance-based greedy clustering; --sizeorder), --maxaccepts should be > 1',
-                type: "select",
-              },
-              {
-                name: "maxaccepts",
-                value: 1,
-                disabled: "never",
-                tooltip:
-                  "maximum number of hits to accept before stopping the search (should be > 1 for abundance-based selection of centroids [centroid type])",
-                type: "numeric",
-                rules: [(v) => v >= 1 || "ERROR: specify values >= 1"],
-              },
-              {
-                name: "mask",
-                items: ["dust", "none"],
-                value: "dust",
-                disabled: "never",
-                tooltip:
-                  'mask regions in sequences using the "dust" method, or do not mask ("none").',
-                type: "select",
-              },
-              {
-                name: "cores",
-                value: 4,
-                disabled: "never",
-                tooltip: "number of cores to use",
-                type: "numeric",
-                rules: [(v) => v >= 1 || "ERROR: specify values >= 1"],
-              },
-            ],
-            Inputs: [
-              {
-                name: "ASV_fasta",
-                active: false,
-                btnName: "select file",
-                value: "undefined",
-                disabled: "never",
-                tooltip:
-                  "select fasta formatted ASVs sequence file (ASV IDs must match with the ones in the ASVs table) [output will be in the directory as specified under 'SELECT WORKDIR']",
-                type: "file",
-              },
-              {
-                name: "ASV_table",
-                active: true,
-                btnName: "select file",
-                value: "undefined",
-                disabled: "never",
-                tooltip:
-                  "select ASVs_table file [1st col is ASVs ID, 2nd col must be 'Sequences' (default PipeCraft's output)]",
-                type: "file",
-              },
-              {
-                name: "similarity_threshold",
-                value: 0.97,
-                disabled: "never",
-                tooltip:
-                  "define OTUs based on the sequence similarity threshold; 0.97 = 97% similarity threshold",
-                max: 1,
-                min: 0,
-                step: 0.01,
-                type: "slide",
-              },
-            ],
-          },
-          {
-            scriptName: "tag_jump_removal.sh",
-            tooltip: "filter out putative tag-jumps in the ASVs table (using UNCROSS2)",
-            imageName: "pipecraft/vsearch_dada2:2",
-            serviceName: "filter_tag-jumps",
-            selected: false,
-            showExtra: false,
-            extraInputs: [],
-            Inputs: [
-              {
-                name: "OTU_table",
-                active: true,
-                btnName: "select file",
-                value: "undefined",
-                disabled: "never",
-                tooltip:
-                  "select TAB-DELIMITED OTU/ASV table, where the 1st column is the OTU/ASV IDs and the following columns represent samples; 2nd column may be Sequence column, with the colName 'Sequence' [output will be in the directory as specified under 'SELECT WORKDIR']",
-                type: "file",
-              },
-              {
-                name: "fasta_file",
-                active: true,
-                btnName: "select file",
-                value: "undefined",
-                disabled: "never",
-                tooltip:
-                  "select corresponding fasta file for OTU/ASV table [output will be in the directory as specified under 'SELECT WORKDIR']",
-                type: "file",
-              },
-              {
-                name: "f_value",
-                value: 0.03,
-                max: 0.4,
-                min: 0.01,
-                step: 0.01,
-                disabled: "never",
-                tooltip: "f-parameter of UNCROSS2, which defines the expected tag-jumps rate. Default is 0.03 (equivalent to 3%). A higher value enforces stricter filtering",
-                type: "slide",
-             },
-              {
-                name: "p_value", 
-                value: 1,
-                disabled: "never",
-                tooltip: "p-parameter, which controls the severity of tag-jump removal. It adjusts the exponent in the UNCROSS formula. Default is 1. Opt for 0.5 or 0.3 to steepen the curve",
-                type: "numeric",
-                rules: [(v) => v > 0 || "ERROR: specify values > 0"],
               },
             ],
           },
@@ -2355,6 +2160,195 @@ export default new Vuex.Store({
                   "cutoff for reads per sample. Samples with lower reads then specified cutoff will be excluded from the analysis",
                 type: "numeric",
                 rules: [(v) => v >= 0 || "ERROR: specify values >= 0"],
+              },
+            ],
+          },
+        ],
+      },
+      {
+        stepName: "assign taxonomy",
+        disabled: "never",
+        services: [
+          {
+            tooltip:
+              "assign taxonomy with BLAST against a selected database [SELECT WORKDIR that contains only ONE fasta file for the process]",
+            scriptName: "taxonomy_BLAST.sh",
+            imageName: "pipecraft/blast:2.14",
+            serviceName: "BLAST",
+            selected: false,
+            showExtra: false,
+            extraInputs: [
+              {
+                name: "e_value",
+                value: 10,
+                disabled: "never",
+                tooltip:
+                  "a parameter that describes the number of hits one can expect to see by chance when searching a database of a particular size. The lower the e-value the more 'significant' the match is",
+                type: "numeric",
+                default: 10,
+                rules: [(v) => v >= 0 || "ERROR: specify values >= 0"],
+              },
+              {
+                name: "word_size",
+                value: 11,
+                disabled: "never",
+                tooltip:
+                  "the size of the initial word that must be matched between the database and the query sequence",
+                type: "numeric",
+                rules: [(v) => v >= 1 || "ERROR: specify values >= 1"],
+              },
+              {
+                name: "reward",
+                value: 2,
+                disabled: "never",
+                tooltip: "reward for a match",
+                type: "numeric",
+                rules: [(v) => v >= 0 || "ERROR: specify values >= 0"],
+              },
+              {
+                name: "penalty",
+                value: -3,
+                disabled: "never",
+                tooltip: "penalty for a mismatch",
+                type: "numeric",
+                rules: [(v) => v <= 0 || "ERROR: specify values <= 0"],
+              },
+              {
+                name: "gap_open",
+                value: 5,
+                disabled: "never",
+                tooltip: "cost to open a gap",
+                type: "numeric",
+                rules: [(v) => v >= 0 || "ERROR: specify values >= 0"],
+              },
+              {
+                name: "gap_extend",
+                value: 2,
+                disabled: "never",
+                tooltip: "cost to extend a gap",
+                type: "numeric",
+                // rules: [(v) => v >= 0 || "ERROR: specify values >= 0"],
+              },
+              {
+                name: "cores",
+                value: 4,
+                disabled: "never",
+                tooltip: "number of cores to use",
+                type: "numeric",
+                rules: [(v) => v >= 1 || "ERROR: specify values >= 1"],
+              },
+            ],
+            Inputs: [
+              {
+                name: "database_file",
+                btnName: "select file",
+                value: "undefined",
+                disabled: "never",
+                tooltip:
+                  "database file (may be fasta formated - automatically will convert to BLAST database format)",
+                type: "file",
+              },
+              {
+                name: "task",
+                items: ["blastn", "megablast"],
+                value: "blastn",
+                disabled: "never",
+                tooltip: "task (blastn or megablast)",
+                type: "select",
+              },
+              {
+                name: "strands",
+                items: ["plus", "both"],
+                value: "both",
+                disabled: "never",
+                tooltip:
+                  "query strand to search against database. Both = search also reverse complement",
+                type: "select",
+              },
+            ],
+          },
+          {
+            tooltip:
+              "assign taxonomy with RDP Classifier against a selected database [SELECT WORKDIR that contains only ONE fasta file for the process]",
+            scriptName: "taxonomy_RDP.sh",
+            imageName: "pipecraft/metaworks:1.12.0",
+            serviceName: "RDP_classifier",
+            selected: false,
+            showExtra: false,
+            extraInputs: [
+              {
+                name: "mem",
+                value: 10,
+                disabled: "never",
+                tooltip:
+                  "default is 10GB. The amount of memory to allocate to the RDP classifier",
+                type: "numeric",
+                rules: [
+                  (v) => v >= 0 || "ERROR: specify values >0",
+                  (v) => v <= 300 || "ERROR: specify values <= 300",
+                ],
+              },
+            ],
+            Inputs: [
+              {
+                name: "database",
+                btnName: "select RDP db",
+                value: "undefined",
+                disabled: "never",
+                tooltip:
+                  "RDP-trained reference database for the RDP classifier. Click on the header to download trained reference databases the RDP classifier, link MetaWorks user guide: https://terrimporter.github.io/MetaWorksSite/#classifier_table",
+                type: "file",
+              },
+              {
+                name: "confidence",
+                value: 0.8,
+                disabled: "never",
+                tooltip:
+                  "default is 0.8. Assignment confidence cutoff used to determine the assignment count for each taxon. Range [0-1]",
+                type: "numeric",
+                rules: [
+                  (v) => v >= 0 || "ERROR: specify values >0",
+                  (v) => v <= 1 || "ERROR: specify values <= 1",
+                ],
+              },
+            ],
+          },
+          {
+            tooltip:
+              "assign taxonomy with DADA2 'assignTaxonomy' function [SELECT WORKDIR that contains only ONE fasta file for the process]",
+            scriptName: "taxonomy_dada2.sh",
+            imageName: "pipecraft/vsearch_dada2:2",
+            serviceName: "DADA2 classifier",
+            disabled: "never",
+            selected: false,
+            showExtra: false,
+            extraInputs: [],
+            Inputs: [
+              {
+                name: "dada2_database",
+                btnName: "select fasta",
+                value: "undefined",
+                disabled: "never",
+                tooltip:
+                  "Select a reference database fasta file for taxonomy annotation. Click on the header to download DADA2-formatted reference databases https://benjjneb.github.io/dada2/training.html",
+                type: "file",
+              },
+              {
+                name: "minBoot",
+                value: 80,
+                disabled: "never",
+                tooltip:
+                  "the minimum bootstrap confidence for assigning a taxonomic level",
+                type: "numeric",
+                rules: [(v) => v >= 1 || "ERROR: specify values >= 1"],
+              },
+              {
+                name: "tryRC",
+                value: false,
+                disabled: "never",
+                tooltip:
+                  "the reverse-complement of each sequences will be used for classification if it is a better match to the reference sequences than the forward sequence",
+                type: "bool",
               },
             ],
           },
