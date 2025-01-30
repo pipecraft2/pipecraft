@@ -136,6 +136,7 @@ cat(";; Adding sequences back to the table\n")
 suppressMessages(library(Biostrings))
 suppressMessages(library(dplyr))
 # read the FASTA file
+cat(";; Loading input FASTA:", args[4], "\n")
 fasta_sequences = readDNAStringSet(args[4])
 sequences = as.character(fasta_sequences)
 names(sequences) = names(fasta_sequences)
@@ -145,10 +146,10 @@ RES = RES %>%
   select(OTU, Sequence, everything())
 
 ## Export table
-cat(";; Exporting tag-jump filtered table\n")
-cat(paste0(output_dir, output_name))
+cat(";; Exporting tag-jump filtered table (2nd col is sequence)\n")
+cat(paste0(output_dir, "/", output_name))
 fwrite(x = RES,
-  file = paste0(output_dir, output_name),
+  file = paste0(output_dir, "/", output_name),
   sep = "\t", compress = "none")
 
 cat(";; Done\n")

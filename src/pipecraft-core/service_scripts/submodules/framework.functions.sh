@@ -848,7 +848,57 @@ else
 fi
 }
 
-# generate README.txt for table filtering (curate_table_wf.sh)
+
+#################################################################
+### Function to count features and sequences in OTU/ASV table ###
+#################################################################
+ # Handles "Sequence" column in the table
+function count_features() {
+    local table=$1
+    
+    # count ASVs/OTUs (rows minus header)
+    local feature_count=$(awk 'NR>1' "$table" | wc -l)
+    
+    # count sequences and samples
+    local counts=$(awk -F'\t' '
+    NR==1 {
+        seq_col = -1
+        for(i=1; i<=NF; i++) {
+            if($i == "Sequence") {
+                seq_col = i
+                break
+            }
+        }
+        n_samples = NF - 1 - (seq_col > 0 ? 1 : 0)
+        print "samples=" n_samples
+    }
+    NR>1 {
+        sum = 0
+        for(i=2; i<=NF; i++) {
+            if(i != seq_col) {
+                sum += $i
+            }
+        }
+        total_seqs += sum
+    }
+    END {
+        print "sequences=" total_seqs
+    }' "$table")
+    
+    # Extract values
+    local n_samples=$(echo "$counts" | grep "samples=" | cut -d= -f2)
+    local n_seqs=$(echo "$counts" | grep "sequences=" | cut -d= -f2)
+    
+    # Set global variables
+    ASV_count=$feature_count
+    nSeqs=$n_seqs
+    nSample=$n_samples
+}
+
+
+####################################################################
+### generate README.txt for table filtering (curate_table_wf.sh) ###
+####################################################################
 function readme_table_filtering() {
     local output_dir=$1
     local runtime=$2
@@ -867,8 +917,8 @@ Tag-jumps filtering: ${filter_tag_jumps}
 - f-value: ${f_value}
 - p-value: ${p_value}
 Length filtering:
-- min length: ${min_length} (empty or 0 means OFF)
-- max length: ${max_length} (empty or 0 means OFF)
+- min length: ${min_length_num} (0 means OFF)
+- max length: ${max_length_num} (0 means OFF)
 Collapse identical ASVs/OTUs: ${collapseNoMismatch}
 
 Output files:
@@ -877,33 +927,45 @@ EOF
 
     # Add file descriptions based on what was generated
     if [[ $filter_tag_jumps == "true" ]]; then
+        count_features "$output_dir/${feature_table_base_name%%.txt}_TagJumpFilt.txt"
+
         cat << EOF >> "$output_dir/README.txt"
-# Tag-jumps filtering output (applied first):
-   - *_TagJumpFilt.txt    : Feature table after tag-jumps filtering
-   - $fasta_base_name     : Representative sequences after tag-jumps filtering (number of seqs = $ASVs_count, here always same as input)
-   - TagJump_plot.pdf     : Visualization of tag-jumps based on parameters
-   - TagJump_stats.txt    : Statistics about tag-jumps filtering including:
+## Tag-jumps filtering output (applied first):
+   - *_TagJumpFilt.txt = Feature table after tag-jumps filtering
+   - $fasta_base_name = Representative sequences after tag-jumps filtering (number of seqs = $ASVs_count, here always same as input)
+   - TagJump_plot.pdf = Visualization of tag-jumps based on parameters
+   - TagJump_stats.txt = Statistics about tag-jumps filtering including:
                              * Total reads
                              * Number of tag-jump events
                              * Tag-jump reads
                              * Read percent removed
-   - tag-jumps_filt.log   : R log file for tag-jumps filtering
+   - tag-jumps_filt.log = R log file for tag-jumps filtering
+
+    Number of Features                       = $ASV_count
+    Number of sequences in the Feature table = $nSeqs
+    Number of samples in the Feature table   = $nSample
 
 EOF
     fi
 
     if [[ $collapseNoMismatch == "true" ]]; then
+        count_features "$output_dir/${feature_table_base_name%%.txt}_collapsed.txt"
         cat << EOF >> "$output_dir/README.txt"
-# Collapsing identical ASVs/OTUs output (applied after tag-jumps filtering, if ON):
+## Collapsing identical ASVs/OTUs output (applied after tag-jumps filtering, if ON):
 [before collapsing, length filter is also applied (if ON)]
 $ASVs_collapsed_result
 
-EOF
-    elif [[ $min_length != "0" || $max_length != "0" ]] && [[ $collapseNoMismatch == "false" ]]; then
+Number of Features                       = $ASV_count
+Number of sequences in the Feature table = $nSeqs
+Number of samples in the Feature table   = $nSample
 
+EOF
+    elif [[ $collapseNoMismatch == "false" ]] && [[ $min_length_num != "0" && -n $min_length_num ]] || [[ $max_length_num != "0" && -n $max_length_num ]]; then
+        
         cat << EOF >> "$output_dir/README.txt"
-# Length filtering output (applied after tag-jumps filtering, if ON):
+## Length filtering output (applied after tag-jumps filtering, if ON):
 $ASVs_lenFilt_result
+
 EOF
     fi
 

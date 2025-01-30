@@ -77,7 +77,7 @@ for seqrun in $DIRS; do
         output_fasta="$output_dir2/ASVs.fasta"
     fi
 
-    # FOR TESTING: Skip if output directory already exists
+    FOR TESTING: Skip this process if output directory already exists
     if [[ -d $output_dir1 ]]; then
         printf "# skipping chimera filtering\n"
         if [[ $multiDir == "true" ]]; then

@@ -1,5 +1,5 @@
 #!/bin/bash
-
+set -e 
 # Filter tag-jumps, filter ASV by length, collaplse identical ASVs in DADA2 workflow
 # Filter tag-jumps, filter OTUs by length in OTUs workflows
 # Input = ASV/OTU table file, txt format, may have "Sequence" column
@@ -37,14 +37,18 @@ min_length=${min_length} # min length of ASVs to keep, if 0 then no min length f
 # min_length and max_length handling
 if [[ $min_length == "0" ]]; then
     min_length=""
+    min_length_num="0"
 else
-    min_length_seqkit="$min_length"
+    min_length_num=${min_length}
+    min_length_seqkit="-m $min_length"
     min_length="--minseqlength $min_length"
 fi
 if [[ $max_length == "0" ]]; then
     max_length=""
+    max_length_num="0"
 else
-    max_length_seqkit="$max_length"
+    max_length_num=${max_length}
+    max_length_seqkit="-M $max_length"
     max_length="--maxseqlength $max_length"
 fi
 
@@ -206,11 +210,12 @@ for seqrun in $DIRS; do
             end_process
         fi
         echo "$Rlog" > "$output_dir/tag-jumps_filt.log"
-        wait
+        # format R-log file
+        sed -i "s/;; /\n/g" $output_dir/tag-jumps_filt.log 
     
         # Check if output files were created
         if [ -z "$(find "$output_dir" -name "*_TagJumpFilt.txt")" ]; then
-            log_error "UNCROSS2 did not generate the expected output file.
+            log_error "tag-jumps filtering process did not generate the expected output file.
             Please check the log file at $output_dir/tag-jumps_filt.log
             >Quitting"
             end_process
@@ -218,7 +223,7 @@ for seqrun in $DIRS; do
 
         printf "\n tag-jumps filtering completed \n"
         # Update output variables if only tag-jumps filtering is performed
-        if [[ $collapseNoMismatch != "true" ]] && [[ -z $min_length || $min_length == "0" ]] && [[ -z $max_length || $max_length == "0" ]]; then
+        if [[ $collapseNoMismatch != "true" ]] && [[ -z $min_length_num || $min_length_num == "0" ]] && [[ -z $max_length_num || $max_length_num == "0" ]]; then
             output_feature_table=$output_dir/${feature_table_base_name%%.txt}_TagJumpFilt.txt
             output_fasta=$output_dir/$fasta_base_name
         fi
@@ -275,16 +280,34 @@ for seqrun in $DIRS; do
 
         # skip collapsing and length filtering if ASVs_derep_count is 0
         if [[ $ASVs_derep_count == "0" ]]; then
+            rm $output_dir/${fasta_base_name%%.fasta}_derep.fasta
+            rm $output_dir/${fasta_base_name%%.fasta}_derep.uc
+
             ASVs_collapsed_result="All Features (ASVs/OTUs) were filtered out based on the length filter 
-            (min_length $min_length bp and max_length $max_length bp).
+            (min_length $min_length_num bp and max_length $max_length_num bp).
             Skipping collapseNoMismatch and length filtering. "
             echo $ASVs_collapsed_result
             # Set output variables to input files since no filtering occurred
             output_feature_table=$feature_table_file
             output_fasta=$fasta_file
-            continue
+            
+            # Make README.txt file for this run even though no features passed filtering
+            end=$(date +%s)
+            runtime=$((end-start))
+            readme_table_filtering $output_dir $runtime
+
+            # If in multiDir mode, store outputs and continue to next run
+            if [[ $multiDir == "true" ]]; then
+                output_feature_tables+=("$output_feature_table")
+                output_fastas+=("$output_fasta")
+                cd /input/multiRunDir
+                continue
+            else
+                cd /input
+                continue
+            fi
         else
-            ASVs_lenFilt_result="ASVs after length filtering = $ASVs_derep_count (input was $ASVs_count ASVs)"
+            ASVs_lenFilt_result="ASVs after length filtering = $ASVs_derep_count (input had $ASVs_count ASVs)"
             echo $ASVs_lenFilt_result
         fi
 
@@ -294,7 +317,7 @@ for seqrun in $DIRS; do
                 --id 1 \
                 --uc $output_dir/usearch_global.uc \
                 --strand plus \
-                --maxaccepts 99999 2>&1)
+                --maxaccepts 999999 2>&1)
         check_app_error
        
         ### Convert wide format OTU table to long format in awk (bash) 
@@ -331,6 +354,7 @@ for seqrun in $DIRS; do
                 --derepuc ${fasta_file%%.fasta}_derep.uc \
                 --uc $output_dir/usearch_global.uc \
                 --asv $output_dir/table_long.txt \
+                --fasta $fasta_file \
                 --output $output_dir/${feature_table_base_name%%.txt}_collapsed.txt)
         # Check if R script executed successfully
         if [ $? -ne 0 ]; then
@@ -357,9 +381,7 @@ for seqrun in $DIRS; do
             ASVs_collapsed_count=$(grep -c "^>" $output_dir/${fasta_base_name%%.fasta}_collapsed.fasta)
             # for the report, if ASVs_collapsed_count == ASVs_count, then no new files outputted
             if [[ $ASVs_collapsed_count == $ASVs_count ]]; then
-                ASVs_collapsed_result=$"Output has the same number of Features (ASVs/OTUs) as input.
-Input had $ASVs_count Features; lenFilt = $ASVs_derep_count Features).
-No new files outputted."
+                ASVs_collapsed_result=$"Output has the same number of Features (ASVs/OTUs) as input. No new files outputted."
                 echo -e "$ASVs_collapsed_result"
                 # remove intermediate files
                 rm $output_dir/${fasta_base_name%%.fasta}_collapsed.fasta
@@ -382,8 +404,8 @@ No new files outputted."
                 # for the report
                 ASVs_collapsed_result="Outputted $ASVs_collapsed_count Features (ASVs/OTUs) (lenFilt resulted in $ASVs_derep_count Features).
 Input had $ASVs_count Features.
-    - ${feature_table_base_name%%.txt}_collapsed.txt: Feature table after collapsing identical Features (ASVs/OTUs). Contains $ASVs_collapsed_count Features.
-    - ${fasta_base_name%%.fasta}_collapsed.fasta: Representative sequences after collapsing"
+    - ${feature_table_base_name%%.txt}_collapsed.txt = Feature table after collapsing identical Features (ASVs/OTUs). Contains $ASVs_collapsed_count Features.
+    - ${fasta_base_name%%.fasta}_collapsed.fasta = Representative sequences after collapsing"
                 echo -e "$ASVs_collapsed_result"
             fi
         fi 
@@ -392,9 +414,9 @@ Input had $ASVs_count Features.
     ### only length filtering ###
     #############################
     elif [[ $collapseNoMismatch == "false" ]] && \
-        [[ $min_length != "0" && -n $min_length ]] && \
-        [[ $max_length != "0" && -n $max_length ]]; then
-        printf "Filtering by length, min_length = $min_length_seqkit, max_length = $max_length_seqkit. \n"
+        [[ $min_length_num != "0" && -n $min_length_num ]] || \
+        [[ $max_length_num != "0" && -n $max_length_num ]]; then
+        printf "Filtering by length, min_length = $min_length_num, max_length = $max_length_num. \n"
         
         # get basenames for correct naming of output files
         input_table_base_name=$(basename $input_table)
@@ -404,8 +426,8 @@ Input had $ASVs_count Features.
         echo "Feature (ASVs/OTUs) count = $ASVs_count"
         # filter by length
         checkerror=$(seqkit seq -w 0 -g \
-                    -m $min_length_seqkit \
-                    -M $max_length_seqkit \
+                    $min_length_seqkit \
+                    $max_length_seqkit \
                     $fasta_file \
                     > $output_dir/${fasta_base_name%%.fasta}_lenFilt.fasta 2>&1)
         check_app_error
@@ -415,7 +437,7 @@ Input had $ASVs_count Features.
         echo "length filtered Feature (ASV/OTU) count = $ASVs_lenFilt"
         if [[ $ASVs_lenFilt == 0 ]]; then
             ASVs_lenFilt_result=$"All Features (ASVs/OTUs) were filtered out based on the length filter
-            (min_length $min_length_seqkit bp and max_length $max_length_seqkit bp).
+            (min_length $min_length_num bp and max_length $max_length_num bp).
             No new files generated.
             Input table was $input_table_base_name and input fasta was $fasta_base_name with $ASVs_count sequences"
             echo -e "$ASVs_lenFilt_result"
@@ -426,7 +448,7 @@ Input had $ASVs_count Features.
             
         elif [[ $ASVs_lenFilt == $ASVs_count ]]; then
             ASVs_lenFilt_result=$"None of the Features (ASVs/OTUs) were filtered out based on the length filter
-            (min_length $min_length_seqkit bp and max_length $max_length_seqkit bp).
+            (min_length $min_length_num bp and max_length $max_length_num bp).
             No new files generated.
             Input table was $input_table_base_name and input fasta was $fasta_base_name with $ASVs_count sequences"
             echo -e "$ASVs_lenFilt_result"
@@ -504,10 +526,13 @@ Input had $ASVs_count Features.
             output_feature_table=$output_dir/${input_table_base_name%%.txt}_lenFilt.txt
             output_fasta=$output_dir/${fasta_base_name%%.fasta}_lenFilt.fasta
             # for the report
+            count_features "$output_dir/${input_table_base_name%%.txt}_lenFilt.txt"
             ASVs_lenFilt_result=$"Features (ASVs/OTUs) after length filtering = $ASVs_lenFilt.
-Input had $ASVs_count Features.
-    - ${input_table_base_name%%.txt}_lenFilt.txt: Feature table after length filtering. Contains $ASVs_lenFilt Features.
-    - ${fasta_base_name%%.fasta}_lenFilt.fasta: Representative sequences file after length filtering"
+    - ${input_table_base_name%%.txt}_lenFilt.txt = Feature table after length filtering.
+    - ${fasta_base_name%%.fasta}_lenFilt.fasta = Representative sequences file after length filtering
+    Number of Features                       = $ASV_count
+    Number of sequences in the Feature table = $nSeqs
+    Number of samples in the Feature table   = $nSample"
             echo -e "$ASVs_lenFilt_result"
         fi
     fi
