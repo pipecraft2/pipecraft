@@ -17,7 +17,7 @@ source /scripts/submodules/framework.functions.sh
 
 # $OTU_table = input OTU_table
 regex='[^/]*$'
-OTU_table_file_path=$(echo $OTU_table | grep -oP "$regex")
+OTU_table_file_path=$(echo $table | grep -oP "$regex")
 OTU_table_temp=$(basename $OTU_table_file_path)
 OTU_table_file=$(printf "/extraFiles/$OTU_table_temp")
 

@@ -1503,13 +1503,13 @@ export default new Vuex.Store({
             extraInputs: [],
             Inputs: [
               {
-                name: "OTU_table",
+                name: "table",
                 active: true,
                 btnName: "select file",
                 value: "undefined",
                 disabled: "never",
                 tooltip:
-                  "select TAB-DELIMITED OTU/ASV table, where the 1st column is the OTU/ASV IDs and the following columns represent samples; 2nd column may be Sequence column, with the colName 'Sequence' [output will be in the directory as specified under 'SELECT WORKDIR']",
+                  "select tab-delimited OTU/ASV table, where the 1st column is the OTU/ASV IDs and the following columns represent samples; 2nd column may be Sequence column, with the colName 'Sequence' [output will be in the directory as specified under 'SELECT WORKDIR']",
                 type: "file",
               },
               {
@@ -1519,7 +1519,7 @@ export default new Vuex.Store({
                 value: "undefined",
                 disabled: "never",
                 tooltip:
-                  "select corresponding fasta file for OTU/ASV table [output will be in the directory as specified under 'SELECT WORKDIR']",
+                  "select corresponding fasta file for OTU/ASV table",
                 type: "file",
               },
               {
@@ -1742,18 +1742,18 @@ export default new Vuex.Store({
                 value: "undefined",
                 disabled: "never",
                 tooltip:
-                  "select OTU/ASV table. If no file is selected, then PipeCraft will look OTU_table.txt or ASV_table.txt in the working directory",
-                type: "boolfile",
+                  "select tab-delimited OTU/ASV table, where the 1st column is the OTU/ASV IDs and the following columns represent samples; 2nd column may be Sequence column, with the colName 'Sequence' [output will be in the directory as specified under 'SELECT WORKDIR']",
+                type: "file",
               },
               {
-                name: "rep_seqs",
+                name: "fasta_file",
                 active: false,
                 btnName: "select file",
                 value: "undefined",
                 disabled: "never",
                 tooltip:
-                  "select fasta formatted sequence file containing your OTU/ASV reads",
-                type: "boolfile",
+                  "select corresponding fasta file for OTU/ASV table",
+                type: "file",
               },
               {
                 name: "min_ratio_type",

@@ -1,8 +1,7 @@
 #!/bin/bash
 
-#Post-clustering of OTU/ASV table with LULU 
-#Input = specified table (if not specified, then OTU_table.txt or ASVs_table.txt will be searched from the workingDir)
-#Representative sequeces are searched from the workingDir as based on the specified file extension
+# Post-clustering of OTU/ASV table with LULU 
+# Input = OTU table and correspoding fasta file
 
 ##########################################################
 ###Third-party applications:
@@ -45,43 +44,17 @@ if [ -d $output_dir ]; then
 fi
 mkdir -p $output_dir
 
-#Automatic search for OTU_table.txt or ASVs_table.txt (standard PipeCraft2 output file names), otherwise use the file that was specified in the panel
-if [[ $table != "undefined" ]]; then
-    #get specified input OTU table file
-    regex='[^/]*$'
-    otu_table_temp=$(echo $table | grep -oP "$regex")
-    otu_table=$(printf "/extraFiles/$otu_table_temp")
-    printf "\n input table = $otu_table \n"
-elif [[ -e "$workingDir/OTU_table.txt" ]]; then
-    otu_table=$"$workingDir/OTU_table.txt"
-    printf "\n input table = $otu_table \n"
-elif [[ -e "$workingDir/ASVs_table.txt" ]]; then
-    otu_table=$"$workingDir/ASVs_table.txt"
-    printf "\n input table = $otu_table \n"
-elif [[ $table == "undefined" ]]; then
-    printf '%s\n' "ERROR]: input table was not specified and cannot find OTU_table.txt or ASVs_table.txt in the working dir.
-    >Quitting" >&2
-    end_process  
-fi
+#get specified input OTU table file
+regex='[^/]*$'
+otu_table_temp=$(echo $table | grep -oP "$regex")
+otu_table=$(printf "/extraFiles/$otu_table_temp")
+printf "\n input table = $otu_table \n"
 
-#Automatic search for OTUs.fasta or ASVs.fasta (standard PipeCraft2 output file names), otherwise use the file that was specified in the panel
-if [[ $rep_seqs != "undefined" ]]; then
-    #get specified input fasta file
-    regex='[^/]*$'
-    input_fasta_temp=$(echo $rep_seqs | grep -oP "$regex")
-    input_fasta=$(printf "/extraFiles2/$input_fasta_temp")
-    printf "\n input fasta = $input_fasta \n"
-elif [[ -e "$workingDir/OTUs.fasta" ]]; then
-    input_fasta=$"$workingDir/OTUs.fasta"
-    printf "\n input table = $input_fasta \n"
-elif [[ -e "$workingDir/ASVs.fasta" ]]; then
-    input_fasta=$"$workingDir/ASVs.fasta"
-    printf "\n input fasta = $input_fasta \n"
-elif [[ $rep_seqs == "undefined" ]]; then
-    printf '%s\n' "ERROR]: rep seqs (input fasta) was not specified and cannot find OTUs.fasta or ASVs.fasta in the working dir.
-    >Quitting" >&2
-    end_process 
-fi
+#get specified input fasta file
+regex='[^/]*$'
+input_fasta_temp=$(echo $fasta_files | grep -oP "$regex")
+input_fasta=$(printf "/extraFiles2/$input_fasta_temp")
+printf "\n input fasta = $input_fasta \n"
 
 #############################
 ### Start of the workflow ###
