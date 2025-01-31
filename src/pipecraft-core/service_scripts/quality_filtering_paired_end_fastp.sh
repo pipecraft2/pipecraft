@@ -122,6 +122,7 @@ runtime=$((end-start))
 printf "# Quality filtering was performed using fastp (see 'Core command' below for the used settings).
 
 Files in 'qualFiltered_out':
+----------------------------
 # *.fastq               = quality filtered sequences per sample.
 # seq_count_summary.txt = summary of sequence counts per sample.
 

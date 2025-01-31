@@ -154,10 +154,12 @@ for seqrun in $DIRS; do
     printf "# Chimeras were filtered out with DADA2 removeBimeraDenovo function (method = $method).
 
 Files in 'chimeraFiltered_out.dada2':
+-----------------------------------
 # *.chimFilt_ASVs.fasta   = chimera filtered ASVs per sample. 'Size' denotes the abundance of the ASV sequence  
 # seq_count_summary.txt   = summary of sequence and ASV counts per sample
 
 Files in 'chimeraFiltered_out.dada2/chimeras':
+----------------------------------------------
 # *.chimeras.fasta        = ASVs per sample that were flagged as chimeras (and thus discarded).
 
 Total run time was $runtime sec.
@@ -176,13 +178,12 @@ Total run time was $runtime sec.
     printf "# ASV table was constructed with DADA2 makeSequenceTable function.
 
 Files in 'ASVs_out.dada2' directory:
-    # ASVs_table.txt                  = ASV-by-sample table (tab delimited file). 
-                                         [denoised and chimera filtered]
-    # ASVs.fasta                      = FASTA formated representative ASV sequences 
-                                         [denoised and chimera filtered]
-    # ASVs_table.denoised.nochim.rds  = rds formatted denoised and chimera filtered ASV table (for DADA2)
-    # ASVs_table.denoised.rds         = rds formatted denoised ASV table (for DADA2) 
-                                         [same .rds is in denoised_assembled.dada2 dir]
+------------------------------------
+# ASVs_table.txt                  = ASV-by-sample table (tab delimited file). 
+# ASVs.fasta                      = FASTA formated representative ASV sequences 
+# ASVs_table.denoised.nochim.rds  = rds formatted denoised and chimera filtered ASV table (for DADA2)
+# ASVs_table.denoised.nochim.rds  = rds formatted denoised and chimera filtered ASV table (for DADA2)
+# ASVs_table.denoised.rds         = rds formatted denoised ASV table (for DADA2) [same .rds is in denoised_assembled.dada2 dir]
 
 Number of ASVs                       = $feature_count
 Number of sequences in the ASV table = $nSeqs

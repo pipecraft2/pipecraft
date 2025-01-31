@@ -177,6 +177,7 @@ Total of $merged_units molecular units (OTUs or ASVs) were merged.
 $info
 
 Files in 'lulu_out' directory:
+------------------------------
 # lulu_out_table.txt     = curated table in tab delimited txt format
 # lulu_out_RepSeqs.fasta = fasta file for the molecular units (OTUs or ASVs) in the curated table
 # match_list.lulu        = match list file that was used by LULU to merge 'daughter molecular' units

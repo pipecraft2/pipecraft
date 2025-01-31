@@ -197,7 +197,8 @@ End time: $(date)
 Runtime: $runtime seconds
 
 Files in 'qualFiltered_out':
-    # *.$fileFormat             = quality filtered sequences per sample.
+----------------------------
+    # *.$fileFormat            = quality filtered sequences per sample.
     # seq_count_summary.csv    = summary of sequence counts per sample.
     # *.rds                    = R objects for dada2.
 

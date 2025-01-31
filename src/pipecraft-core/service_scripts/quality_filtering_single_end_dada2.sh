@@ -114,9 +114,10 @@ for seqrun in $DIRS; do
     printf "# Quality filtering was performed using dada2 (see 'Core command' below for the used settings).
 
 Files in 'qualFiltered_out':
-    # *.$extension             = quality filtered sequences per sample.
-    # seq_count_summary.csv    = summary of sequence counts per sample.
-    # *.rds                    = R objects for dada2.
+----------------------------
+# *.$extension             = quality filtered sequences per sample.
+# seq_count_summary.csv    = summary of sequence counts per sample.
+# *.rds                    = R objects for dada2.
 
 Core command -> 
 filterAndTrim(inputR1, outputR1, maxN = $maxN, maxEE = $maxEE, truncQ = $truncQ, truncLen = $truncLen, maxLen = $maxLen, minLen = $minLen, minQ = $minQ, rm.phix = TRUE)

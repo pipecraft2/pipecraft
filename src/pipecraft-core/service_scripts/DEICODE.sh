@@ -142,6 +142,7 @@ printf "## DEICODE (Robust Aitchison PCA on sparse compositional metabarcoding d
 ## See method description in Martino et al., 2019 (DOI 10.1128/mSystems.00016-19)
 
 Files in 'DEICODE_out' directory:
+--------------------------------
 #   - otutab.biom          =  full OTU table in BIOM format
 #   - rclr_subset.tsv      =  rCLR-transformed subset of OTU table *
 # DEICODE_out/full/

@@ -205,7 +205,8 @@ Start time: $start_time
 End time: $(date)
 Runtime: $runtime seconds
 
-Files in 'assembled_out' directory represent assembled paired-end files.\n
+Files in 'assembled_out' directory represent assembled paired-end files.
+
 If include only R1 = TRUE, then the unassembled R1 reads have been added to the set of assembled reads per sample.
 This may be relevant when working with e.g. ITS2 sequences, because ITS2 region in some taxa is too long for assembly, 
 therefore discarded completely after assembly process. Thus, including also unassembled R1 reads, partial ITS2 sequences 

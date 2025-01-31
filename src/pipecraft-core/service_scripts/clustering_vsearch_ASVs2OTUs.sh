@@ -208,6 +208,7 @@ Clustering formed $feature_count OTUs
   [input contained $input_ASV_count ASVs (sequences)].
 
 Files in 'ASVs2OTUs' directory:
+-------------------------------
 # OTUs.fasta            = FASTA formated representative OTU sequences. 
 # OTU_table.txt         = OTU distribution table per sample (tab delimited file).
 # OTUs.uc               = uclust-like formatted clustering results for OTUs.

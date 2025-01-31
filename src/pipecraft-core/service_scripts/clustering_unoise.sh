@@ -373,6 +373,7 @@ runtime=$((end-start))
 printf "# Denoising was performed using UNOISE3.
 
 Files in 'clustering_out' directory:
+-----------------------------------
 # zOTUs.fasta    = FASTA formated denoized sequences (zOTUs.fasta). Headers are renamed according to sha1 algorithm in vsearch.
 # zOTU_table.txt = zOTU distribution table per sample (per input file in the working directory).
 # zOTUs.uc       = uclust-like formatted clustering results for zOTUs

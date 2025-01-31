@@ -96,9 +96,12 @@ runtime=$((end-start))
 printf "# Quality filtering was performed using trimmomatic (see 'Core commands' below for the used settings).
 
 Files in 'qualFiltered_out':
+----------------------------
 # *.$extension              = quality filtered sequences in FASTQ format.
 # seq_count_summary.txt     = summary of sequence counts per sample.
+
 Files in 'qualFiltered_out/FASTA':
+----------------------------------
 # *.fasta                   = quality filtered sequences in FASTA format.
 
 Core commands ->

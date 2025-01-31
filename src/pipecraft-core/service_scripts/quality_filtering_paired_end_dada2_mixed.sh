@@ -205,7 +205,8 @@ for seqrun in $DIRS; do
 Detected MIXED orient sequences as input data; note that there were independent runs for fwd_orient and rev_orient inputs.
 
 Files in 'qualFiltered_out':
-# *.$fileFormat              = quality filtered sequences per sample.
+----------------------------
+# *.$fileFormat             = quality filtered sequences per sample.
 # seq_count_summary.txt     = summary of sequence counts per sample.
 # *.rds                     = R objects for dada2.
 

@@ -95,6 +95,7 @@ if [[ $collapseNoMismatch == "true" ]]; then
     printf "# Filtering the of the dada2 ASV table.
 
 Files in 'filtered_table':
+--------------------------
 # ASVs_table_collapsed.txt = ASV table after collapsing identical ASVs. Contains $ASVs_collapsed ASVs
 # ASVs_collapsed.fasta     = ASV sequences after collapsing identical ASVs. Contains $ASVs_collapsed ASVs
 # ASV_table_collapsed.rds  = ASV table in RDS format after collapsing identical ASVs. 
@@ -115,6 +116,7 @@ else
     printf "# Filtering the of the dada2 ASV table.
 
 Files in 'filtered_table':
+--------------------------
 # ASV_table_lenFilt.txt    = $ASVs_lenFilt_result_table
 # ASVs_lenFilt.fasta       = $ASVs_lenFilt_result_fasta
 

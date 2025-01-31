@@ -239,6 +239,7 @@ for seqrun in $DIRS; do
     Runtime: $runtime seconds
 
     Files in 'qualFiltered_out':
+    ----------------------------
     # *.$extension          = quality filtered sequences in FASTQ format.
     # seq_count_summary.txt = summary of sequence counts per sample.
 
