@@ -146,11 +146,12 @@ Input sequences must be made up only of A/C/G/T for denoising (i.e maxN must = 0
 #############
 
 Files in 'denoised_assembled.dada2':
-    # *ASVs.fasta   = denoised and assembled sequences per sample in FASTA format (no fastq output). 'Size' denotes the abundance of the ASV sequence.  
-    # Error_rates_R1.pdf    = plots for estimated R1 error rates
-    # Error_rates_R2.pdf    = plots for estimated R2 error rates
-    # seq_count_summary.csv = summary of sequence counts per sample
-    # *.rds = R objects for dada2.
+-----------------------------------
+# *ASVs.fasta           = denoised and assembled sequences per sample in FASTA format (no fastq output). 'Size' denotes the abundance of the ASV sequence.  
+# Error_rates_R1.pdf    = plots for estimated R1 error rates
+# Error_rates_R2.pdf    = plots for estimated R2 error rates
+# seq_count_summary.csv = summary of sequence counts per sample
+# *.rds = R objects for dada2.
 
 Core commands -> 
 setDadaOpt(OMEGA_A = $omegaa, OMEGA_P = $omegap, OMEGA_C = $omegac, DETECT_SINGLETONS = $detect_singletons, BAND_SIZE = $band_size)

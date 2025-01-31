@@ -2925,6 +2925,91 @@ export default new Vuex.Store({
           },
         ],
       },
+      {
+        tooltip: "Filter tag-jumps and/or filter OTUs by length",
+        scriptName: "curate_table_wf.sh",
+        imageName: "pipecraft/vsearch_dada2:2",
+        serviceName: "curate OTU table",
+        manualLink:
+          "empty",
+        disabled: "never",
+        selected: true,
+        showExtra: false,
+        extraInputs: [],
+        Inputs: [
+          {
+            name: "f_value",
+            value: 0.03,
+            max: 0.4,
+            min: 0,
+            step: 0.01,
+            disabled: "never",
+            tooltip:
+              "for filtering tag-jumps; f-parameter of UNCROSS2, which defines the expected tag-jumps rate. Default is 0.03 (equivalent to 3%). A higher value enforces stricter filtering. Value 0 means OFF, no tag-jumps filtering",
+            type: "slide",
+            rules: [],
+            onChange: (service, value) => {
+              const p_value = service.Inputs.find(input => input.name === "p_value").value;
+              if (Number(value) === 0 && Number(p_value) <= 0) {
+                service.selected = false;
+              }
+            },
+          },
+          {
+            name: "p_value", 
+            value: 1,
+            disabled: "never",
+            tooltip:
+              "for filtering tag-jumps; p-parameter, which controls the severity of tag-jump removal. It adjusts the exponent in the UNCROSS formula. Default is 1. Opt for 0.5 or 0.3 to steepen the curve. Value 0 means OFF, no tag-jumps filtering",
+            type: "numeric",
+            rules: [(v) => v > 0 || "OFF. Turn ON with > 0.01"],
+            onChange: (service, value) => {
+              const f_value = service.Inputs.find(input => input.name === "f_value").value;
+              if (Number(value) <= 0 && Number(f_value) === 0) {
+                service.selected = false;
+              }
+            },
+          },
+          {
+            name: "min_length",
+            value: 32,
+            disabled: "never",
+            tooltip:
+              "discard OTUs that are shorter than specified value (in base pairs). Value 0 means OFF, no filtering by min length",
+            type: "numeric",
+            rules: [(v) => v > 0 || "OFF. Turn ON with values > 0"],
+            onChange: (service, value) => {
+              const allOthersOff =
+                service.Inputs.find(input => input.name == "max_length").value == 0 &&
+                service.Inputs.find(input => input.name == "f_value").value == 0 &&
+                service.Inputs.find(input => input.name == "p_value").value == 0;
+              
+              if (value == 0 && allOthersOff) {
+                service.selected = false;
+              }
+            },
+          },
+          {
+            name: "max_length",
+            value: 0,
+            disabled: "never",
+            tooltip:
+              "discard OTUs that are longer than specified value (in base pairs). Value 0 means OFF, no filtering by max length",
+            type: "numeric",
+            rules: [(v) => v > 0 || "OFF. Turn ON with values > 0"],
+            onChange: (service, value) => {
+              const allOthersOff =
+                service.Inputs.find(input => input.name == "min_length").value == 0 &&
+                service.Inputs.find(input => input.name == "f_value").value == 0 &&
+                service.Inputs.find(input => input.name == "p_value").value == 0;
+              
+              if (value == 0 && allOthersOff) {
+                service.selected = false;
+              }
+            },
+          },
+        ],
+      },
     ],
 
     // # UNOISE ASVs 

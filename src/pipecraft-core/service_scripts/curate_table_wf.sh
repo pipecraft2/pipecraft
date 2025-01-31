@@ -73,6 +73,7 @@ source /scripts/submodules/framework.functions.sh
 if [[ -d "/input/multiRunDir" ]]; then
     echo "CURATE TABLE for multiple sequencing runs in multiRunDir"
     echo "Process = Features (ASVs/OTUs) curation."
+    echo "pipeline = $pipeline"
     cd /input/multiRunDir
     # read in directories (sequencing sets) to work with. Skip directories renamed as "skip_*"
     DIRS=$(find . -maxdepth 1 -mindepth 1 -type d | grep -v "tempdir" | grep -v "skip_" | grep -v "merged_runs" | sed -e "s/^\.\///")
@@ -84,6 +85,7 @@ else
     cd /input
     echo "Working with individual sequencing run"
     echo "Process = Features (ASVs/OTUs) curation."
+    echo "pipeline = $pipeline"
     DIRS="/input"
     printf "\n workingDirs = $DIRS \n"
     multiDir="false"
@@ -103,7 +105,7 @@ for seqrun in $DIRS; do
     # Multi-sequencing run (full pipeline)
     if [[ $multiDir == "true" ]]; then
         # Check for input table; define output_dir and workingDir
-        if [[ -f "/input/multiRunDir/${seqrun%%/*}/ASVs_out.dada2/ASVs_table.txt" ]]; then
+        if [[ -f "/input/multiRunDir/${seqrun%%/*}/ASVs_out.dada2/ASVs_table.txt" ]] && [[ $pipeline == "DADA2_ASVs" ]]; then
             feature_table_file="/input/multiRunDir/${seqrun%%/*}/ASVs_out.dada2/ASVs_table.txt"
             feature_table_base_name=$(basename $feature_table_file)
             fasta_file="/input/multiRunDir/${seqrun%%/*}/ASVs_out.dada2/ASVs.fasta"
@@ -113,7 +115,7 @@ for seqrun in $DIRS; do
             export output_dir
             workingDir=$output_dir
             printf "\n ASV table filtering, input = $feature_table_file\n"
-        elif [[ -f "/input/multiRunDir/${seqrun%%/*}/clustering_out/OTU_table.txt" ]]; then
+        elif [[ -f "/input/multiRunDir/${seqrun%%/*}/clustering_out/OTU_table.txt" ]] && [[ $pipeline == "vsearch_OTUs" ]]; then
             feature_table_file="/input/multiRunDir/${seqrun%%/*}/clustering_out/OTU_table.txt"
             feature_table_base_name=$(basename $feature_table_file)
             fasta_file="/input/multiRunDir/${seqrun%%/*}/clustering_out/OTUs.fasta"
@@ -123,7 +125,7 @@ for seqrun in $DIRS; do
             export output_dir
             workingDir=$output_dir
             printf "\n OTU table filtering, input = $feature_table_file\n"
-        elif [[ -f "/input/multiRunDir/${seqrun%%/*}/clustering_out/zOTU_table.txt" ]]; then
+        elif [[ -f "/input/multiRunDir/${seqrun%%/*}/clustering_out/zOTU_table.txt" ]] && [[ $pipeline == "UNOISE_ASVs" ]]; then
             feature_table_file="/input/multiRunDir/${seqrun%%/*}/clustering_out/zOTU_table.txt"
             feature_table_base_name=$(basename $feature_table_file)
             fasta_file="/input/multiRunDir/${seqrun%%/*}/clustering_out/zOTUs.fasta"
@@ -528,8 +530,10 @@ Input had $ASVs_count Features.
             # for the report
             count_features "$output_dir/${input_table_base_name%%.txt}_lenFilt.txt"
             ASVs_lenFilt_result=$"Features (ASVs/OTUs) after length filtering = $ASVs_lenFilt.
+
     - ${input_table_base_name%%.txt}_lenFilt.txt = Feature table after length filtering.
     - ${fasta_base_name%%.fasta}_lenFilt.fasta = Representative sequences file after length filtering
+    
     Number of Features                       = $feature_count
     Number of sequences in the Feature table = $nSeqs
     Number of samples in the Feature table   = $nSample"

@@ -286,6 +286,7 @@ End time: $(date)
 Runtime: $runtime seconds
 
 Files in 'clustering_out' directory:
+-----------------------------------
 # OTUs.fasta    = FASTA formated representative OTU sequences. OTU headers are renamed according to sha1 algorithm in vsearch.
 # OTU_table.txt = OTU distribution table per sample (tab delimited file). OTU headers are renamed according to sha1 algorithm in vsearch.
 # OTUs.uc       = uclust-like formatted clustering results for OTUs.
