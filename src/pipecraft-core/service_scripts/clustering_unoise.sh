@@ -363,24 +363,22 @@ if [[ $debugger != "true" ]]; then
 fi
 
 #Make README.txt file
-size_zotu=$(grep -c "^>" $output_dir/zOTUs.fasta)
-nSeqs=$(awk 'BEGIN{FS=OFS="\t"}NR>1{for(i=2;i<=NF;i++) t+=$i; print t; t=0}' $output_dir/zOTU_table.txt | awk '{for(i=1;i<=NF;i++)$i=(a[i]+=$i)}END{print}')
-nCols=$(awk -F'\t' '{print NF; exit}' $output_dir/zOTU_table.txt)
-nSample=$(awk -v NUM=$nCols 'BEGIN {print (NUM-1)}') # -1 cuz 1st column is OTU_ID
+ # count features and sequences; outputs variables feature_count, nSeqs, nSample
+count_features "$output_dir/zOTU_table.txt"
 
 end=$(date +%s)
 runtime=$((end-start))
 
 printf "# Denoising was performed using UNOISE3.
 
-Number of zOTUs (zero-radius OTUs)    = $size_zotu
-Number of sequences in the zOTU table = $nSeqs
-Number of samples in the zOTU table   = $nSample
-
 Files in 'clustering_out' directory:
 # zOTUs.fasta    = FASTA formated denoized sequences (zOTUs.fasta). Headers are renamed according to sha1 algorithm in vsearch.
 # zOTU_table.txt = zOTU distribution table per sample (per input file in the working directory).
 # zOTUs.uc       = uclust-like formatted clustering results for zOTUs
+
+Number of zOTUs (zero-radius OTUs)    = $feature_count
+Number of sequences in the zOTU table = $nSeqs
+Number of samples in the zOTU table   = $nSample
 
 Core command -> 
 UNOISE: vsearch --cluster_unoise dereplicated_sequences.fasta $strands $minsize $unoise_alpha $simtype $mask $maxaccepts $maxrejects $cores --centroids zOTUs.fasta --uc zOTUs.uc \n\n" > $output_dir/README.txt

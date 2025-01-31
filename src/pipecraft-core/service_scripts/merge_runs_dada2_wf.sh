@@ -186,9 +186,8 @@ if [[ $debugger != "true" ]]; then
     rm $output_dir/dada2_mergeRuns.log
 fi
 
-# count ASVs and sequences
-    # outputs variables ASV_count, nSeqs, nSample
-count_features $output_dir/ASVs_table.txt
+# count features and sequences; outputs variables feature_count, nSeqs, nSample
+count_features "$output_dir/ASVs_table.txt"
 
 ### Make README.txt file (merged_runs)
 end=$(date +%s)
@@ -213,7 +212,7 @@ Output files:
 # ASVs_table.txt = merged ASV abundance table
 # ASVs.fasta     = merged ASV sequences
 
-Number of ASVs                       = $ASV_count
+Number of ASVs                       = $feature_count
 Number of sequences in the ASV table = $nSeqs
 Number of samples in the ASV table   = $nSample " >> $output_dir/README.txt
 
@@ -231,7 +230,7 @@ if [[ $collapseNoMismatch == "true" ]] && [[ -f $output_dir/${feature_table_base
 ${feature_table_base_name%%.txt}_collapsed.txt = merged and collapsed ASV abundance table
 ${fasta_base_name%%.fasta}_collapsed.fasta = merged and collapsed ASV sequences
 
-Number of ASVs                       = $ASV_count
+Number of ASVs                       = $feature_count
 Number of sequences in the ASV table = $nSeqs
 Number of samples in the ASV table   = $nSample " >> $output_dir/README.txt
 fi

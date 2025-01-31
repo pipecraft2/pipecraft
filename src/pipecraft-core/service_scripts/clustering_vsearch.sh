@@ -228,17 +228,14 @@ if [[ $debugger != "true" ]]; then
 fi
 
 #Make README.txt file
-OTU_count=$(grep -c "^>" $output_dir/OTUs.fasta)
-nSeqs=$(awk 'BEGIN{FS=OFS="\t"}NR>1{for(i=2;i<=NF;i++) t+=$i; print t; t=0}' $output_dir/OTU_table.txt | awk '{for(i=1;i<=NF;i++)$i=(a[i]+=$i)}END{print}')
-nCols=$(awk -F'\t' '{print NF; exit}' $output_dir/OTU_table.txt)
-nSample=$(awk -v NUM=$nCols 'BEGIN {print (NUM-1)}') # -1 cuz 1st column is OTU_ID
+count_features "$output_dir/OTU_table.txt"
 
 end=$(date +%s)
 runtime=$((end-start))
 
 printf "# Reads were clustered to OTUs using vsearch (see 'Core command' below for the used settings).
 
-Number of OTUs                       = $OTU_count
+Number of OTUs                       = $feature_count
 Number of sequences in the OTU table = $nSeqs
 Number of samples in the OTU table   = $nSample
 

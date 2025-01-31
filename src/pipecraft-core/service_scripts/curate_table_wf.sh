@@ -530,7 +530,7 @@ Input had $ASVs_count Features.
             ASVs_lenFilt_result=$"Features (ASVs/OTUs) after length filtering = $ASVs_lenFilt.
     - ${input_table_base_name%%.txt}_lenFilt.txt = Feature table after length filtering.
     - ${fasta_base_name%%.fasta}_lenFilt.fasta = Representative sequences file after length filtering
-    Number of Features                       = $ASV_count
+    Number of Features                       = $feature_count
     Number of sequences in the Feature table = $nSeqs
     Number of samples in the Feature table   = $nSample"
             echo -e "$ASVs_lenFilt_result"

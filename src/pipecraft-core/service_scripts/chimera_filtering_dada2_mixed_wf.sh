@@ -147,15 +147,12 @@ Total run time was $runtime sec.
 ########################################################" > $output_dir1/README.txt
 
     #Make README.txt file (ASVs_out.dada2)
-    #count ASVs
-    ASV_count=$(grep -c "^>" $output_dir2/ASVs.fasta)
-    nSeqs=$(awk 'BEGIN{FS=OFS="\t"}NR>1{for(i=2;i<=NF;i++) t+=$i; print t; t=0}' $output_dir2/ASVs_table.txt  | awk '{for(i=1;i<=NF;i++)$i=(a[i]+=$i)}END{print}')
-    nCols=$(awk -F'\t' '{print NF; exit}' $output_dir2/ASVs_table.txt)
-    nSample=$(awk -v NUM=$nCols 'BEGIN {print (NUM-2)}') # -2 cuz 1st column is ASV_ID and 2nd is Sequence
+    # count features and sequences; outputs variables feature_count, nSeqs, nSample
+    count_features "$output_dir2/ASVs_table.txt"
 
     printf "# ASV table was constructed with DADA2 makeSequenceTable function.
 
-Number of ASVs                       = $ASV_count
+Number of ASVs                       = $feature_count
 Number of sequences in the ASV table = $nSeqs
 Number of samples in the ASV table   = $nSample
 

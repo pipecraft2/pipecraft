@@ -192,15 +192,17 @@ if [[ $debugger != "true" ]]; then
     fi
 fi
 
-OTU_count=$(grep -c "^>" $output_dir/OTUs.fasta)
+# count features and sequences; outputs variables feature_count, nSeqs, nSample
+count_features "$output_dir/OTU_table.txt"
 input_ASV_count=$(grep -c "^>" $ASV_fasta_size)
+
 end=$(date +%s)
 runtime=$((end-start))
 
 #Make README.txt file
 printf "# ASVs clustered to OTUs with vsearch (see 'Core command' below for the used settings).
 
-Clustering formed $OTU_count OTUs 
+Clustering formed $feature_count OTUs 
   [input contained $input_ASV_count ASVs (sequences)].
 
 Files in 'ASVs2OTUs' directory:
@@ -208,6 +210,10 @@ Files in 'ASVs2OTUs' directory:
 # OTU_table.txt         = OTU distribution table per sample (tab delimited file).
 # OTUs.uc               = uclust-like formatted clustering results for OTUs.
 # $fastasize.size.fasta = size annotated input sequences [size annotation based on the input table $ASV_table] 
+
+Number of OTUs                       = $feature_count
+Number of sequences in the OTU table = $nSeqs
+Number of samples in the OTU table   = $nSample
 
 Core command -> 
 vsearch $seqsort input.fasta $id $simtype $strands $mask $centroid_in $maxaccepts $cores $otutype OTUs.fasta --fasta_width 0 --sizein

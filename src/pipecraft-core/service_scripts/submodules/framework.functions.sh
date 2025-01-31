@@ -853,6 +853,10 @@ fi
 ### Function to count features and sequences in OTU/ASV table ###
 #################################################################
  # Handles "Sequence" column in the table
+    # output variables:
+    # feature_count - numbers of ASVs/OTUs in the table
+    # nSeqs - numbers of sequences in the table
+    # nSample - numbers of samples in the table
 function count_features() {
     local table=$1
     
@@ -869,7 +873,7 @@ function count_features() {
                 break
             }
         }
-        n_samples = NF - 1 - (seq_col > 0 ? 1 : 0)
+        nSample = NF - 1 - (seq_col > 0 ? 1 : 0)
         print "samples=" n_samples
     }
     NR>1 {
@@ -883,16 +887,12 @@ function count_features() {
     }
     END {
         print "sequences=" total_seqs
+        print "features=" feature_count
     }' "$table")
     
     # Extract values
-    local n_samples=$(echo "$counts" | grep "samples=" | cut -d= -f2)
-    local n_seqs=$(echo "$counts" | grep "sequences=" | cut -d= -f2)
-    
-    # Set global variables
-    ASV_count=$feature_count
-    nSeqs=$n_seqs
-    nSample=$n_samples
+    local nSample=$(echo "$counts" | grep "samples=" | cut -d= -f2)
+    local nSeqs=$(echo "$counts" | grep "sequences=" | cut -d= -f2)
 }
 
 
@@ -941,7 +941,7 @@ EOF
                              * Read percent removed
    - tag-jumps_filt.log = R log file for tag-jumps filtering
 
-    Number of Features                       = $ASV_count
+    Number of Features                       = $feature_count
     Number of sequences in the Feature table = $nSeqs
     Number of samples in the Feature table   = $nSample
 
@@ -955,7 +955,7 @@ EOF
 [before collapsing, length filter is also applied (if ON)]
 $ASVs_collapsed_result
 
-Number of Features                       = $ASV_count
+Number of Features                       = $feature_count
 Number of sequences in the Feature table = $nSeqs
 Number of samples in the Feature table   = $nSample
 
