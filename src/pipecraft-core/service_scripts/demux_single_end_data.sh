@@ -4,7 +4,7 @@
 # Demultiplexing of single-end reads in mixed orientation using paired-end or single-end indexes is supported.
 # Input = a directory with fastq/fasta files; and indexes file in fasta format (header as a sample name).
 
-##########################################################
+################################################
 ###Third-party applications:
 #cutadapt v4.4
     #citation: Martin, Marcel (2011) Cutadapt removes adapter sequences from high-throughput sequencing reads. EMBnet.journal, 17(1), 10-12.
@@ -16,7 +16,7 @@
     #Copyright © 2016-2019 Wei Shen, 2019 Oxford Nanopore Technologies.
     #https://bioinf.shenwei.me/seqkit/
 #pigz v2.4
-##################################################################
+##############################################
 
 #Load variables
 regex='[^/]*$'
@@ -44,6 +44,7 @@ output_dir=$"/input/demultiplex_out"
 #############################
 ### Start of the workflow ###
 #############################
+start_time=$(date)
 start=$(date +%s)
 ### Check if files with specified extension exist in the dir
 first_file_check
@@ -171,15 +172,15 @@ Summary of sequence counts in 'seq_count_summary.txt'
 
 Total run time was $runtime sec.
 
-##################################################################
-###Third-party applications for this process [PLEASE CITE]:
+##############################################
+###Third-party applications for this process:
 #cutadapt v4.4 for demultiplexing
     #citation: Martin, Marcel (2011) Cutadapt removes adapter sequences from high-throughput sequencing reads. EMBnet.journal, 17(1), 10-12.
     #https://cutadapt.readthedocs.io/en/stable/index.html
 #seqkit v2.3.0 for validating indexes file
     #citation: Shen W, Le S, Li Y, Hu F (2016) SeqKit: A Cross-Platform and Ultrafast Toolkit for FASTA/Q File Manipulation. PLOS ONE 11(10): e0163962. https://doi.org/10.1371/journal.pone.0163962
     #https://bioinf.shenwei.me/seqkit/
-##################################################################" > $output_dir/README.txt
+##############################################" > $output_dir/README.txt
 
 #Done
 printf "\nDONE "

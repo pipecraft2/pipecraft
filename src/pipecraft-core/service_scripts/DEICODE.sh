@@ -9,7 +9,7 @@
 
 ## See method description in Martino et al., 2019 (DOI 10.1128/mSystems.00016-19)
 
-##########################################################
+################################################
 ###Third-party applications:
 #DEICODE v0.2.4
     #citation: Martino C., Morton J.T., Marotz C.A., Thompson L.R., Tripathi A., Knight R., et al. (2019). A Novel Sparse Compositional Technique Reveals Microbial Perturbations. mSystems. doi: 10.1128/mSystems.00016-19. 
@@ -19,7 +19,7 @@
     #citation: McDonald D., Clemente J.C., Kuczynski J., Rideout J.R., Stombaugh J., Wendel D., et al. (2012). The Biological Observation Matrix (BIOM) format or: how I learned to stop worrying and love the ome-ome. GigaScience 1, 2047-217X-1–7. doi: 10.1186/2047-217X-1-7.
     #Distributed under the Modified BSD License
     #https://biom-format.org/
-##################################################################
+##############################################
 
 ## Input:
 # otu_table = tab-delimited OTU table (columns = samples, rows = OTUs)
@@ -85,6 +85,7 @@ fi
 mkdir -p "$output_dir"
 
 #start time
+start_time=$(date)
 start=$(date +%s)
 
 ## Prepare BIOM file
@@ -159,13 +160,13 @@ deicode auto-rpca --in-biom $output_biom --min-feature-count $min_otu_reads --mi
 
 Total run time was $runtime sec.
 
-##########################################################
-###Third-party applications [PLEASE CITE]:
+################################################
+###Third-party applications:
 #DEICODE v0.2.4
     #citation: Martino C., Morton J.T., Marotz C.A., Thompson L.R., Tripathi A., Knight R., et al. (2019). A Novel Sparse Compositional Technique Reveals Microbial Perturbations. mSystems. doi: 10.1128/mSystems.00016-19. 
 #biom-format v2.1.12 (for preparing BIOM file)
     #citation: McDonald D., Clemente J.C., Kuczynski J., Rideout J.R., Stombaugh J., Wendel D., et al. (2012). The Biological Observation Matrix (BIOM) format or: how I learned to stop worrying and love the ome-ome. GigaScience 1, 2047-217X-1–7. doi: 10.1186/2047-217X-1-7.
-##################################################################" > $output_dir/README.txt
+##############################################" > $output_dir/README.txt
 
 #Done
 printf "\nDONE "

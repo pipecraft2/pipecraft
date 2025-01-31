@@ -32,6 +32,7 @@ source /scripts/submodules/framework.functions.sh
 #############################
 ### Start of the workflow ###
 #############################
+start_time=$(date)
 start=$(date +%s)
 eval "$(conda shell.bash hook)"
 conda activate MetaWorks_v1.12.0
@@ -187,15 +188,15 @@ fi
 
 printf "Total run time was $runtime sec.
 
-##################################################################
-###Third-party applications for this process [PLEASE CITE]:
+##############################################
+###Third-party applications for this process:
 #MetaWorks v1.12.0 (strategy for filtering putative NUMTs)
     citation: Porter, T. M., & Hajibabaei, M. (2022). MetaWorks: A flexible, scalable bioinformatic pipeline for high-throughput multi-marker biodiversity assessments. PLoS One, 17(9), e0274260. https://doi.org/10.1371/journ al.pone.0274260
 #ORFfinder v0.4.3 for finding ORFs
     #https://www.ncbi.nlm.nih.gov/orffinder/
 #HMMER v3.3.2 for HMM filtering if the sequences (on top of ORFfinder)
     #http://hmmer.org
-##################################################################" >> $output_dir/README_ORFfinder.txt
+##############################################" >> $output_dir/README_ORFfinder.txt
 
 #Done
 printf "\nDONE "

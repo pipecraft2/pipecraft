@@ -5,13 +5,13 @@
 #If database = fasta file, then makeblastdb with BLAST+, otherwise run BLAST
 #Outputs: BLAST_1st_best_hit.txt, BLAST_10_best_hits.txt
 
-##########################################################
+################################################
 ###Third-party applications:
 # BLAST+
 # python3 with biopython module
 # seqkit
 # gawk
-##########################################################
+################################################
 
 #load variables
 #database [# here, a possibility for multiple databases to be added: database=$"-db $db1 $db2 $db3 $db4 $db5"]
@@ -44,6 +44,7 @@ output_dir=$"/input/taxonomy_out"
 #############################
 ### Start of the workflow ###
 #############################
+start_time=$(date)
 start=$(date +%s)
 ### Check if files with specified extension exist in the dir
 first_file_check
@@ -198,8 +199,8 @@ blastn -query $IN $strands $database $task -max_target_seqs 10 $evalue $wordsize
 
 Total run time was $runtime sec.
 
-##########################################################
-###Third-party applications [PLEASE CITE]:
+################################################
+###Third-party applications:
     #BLAST 2.14.0+
     #citation: Camacho C., Coulouris G., Avagyan V., Ma N., Papadopoulos J., Bealer K., & Madden T.L. (2008) BLAST+: architecture and applications. BMC Bioinformatics 10:421. 
 #####################################################" > $output_dir/README.txt

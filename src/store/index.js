@@ -682,24 +682,6 @@ export default new Vuex.Store({
             ],
             Inputs: [
               {
-                name: "read_R1",
-                value: ["_R1"],
-                disabled: "single_end",
-                tooltip:
-                  "applies only for paired-end data. Identifyer string that is common for all R1 reads. R1 reads must contain R1 strings in the file names; sample names must not contain R1! (e.g. when all R1 files have '.R1' string, then enter '\\.R1'. Note that backslash is only needed to escape dot regex; e.g. when all R1 files have '_R1' string, then enter '_R1'.)'",
-                type: "chip",
-                rules: [(v) => v.length <= 1 || "ADD ONLY ONE IDENTIFIER"],
-              },
-              // {
-              //   name: "samp_ID",
-              //   value: ["_"],
-              //   disabled: "single_end",
-              //   tooltip:
-              //     "applies only for paired-end data. Identifyer string that separates the sample name from redundant charachters (e.g. file name = sample1.R1.fastq, then '\\.' would be the 'identifier string' (sample name = sample1)); note that backslash is only needed to escape dot regex (e.g. when file name = sample1_R1.fastq then specify as '_')",
-              //   type: "chip",
-              //   rules: [(v) => v.length <= 1 || "ADD ONLY ONE IDENTIFIER"],
-              // },
-              {
                 name: "maxEE",
                 value: 2,
                 disabled: "never",
@@ -788,15 +770,6 @@ export default new Vuex.Store({
               },
             ],
             Inputs: [
-              {
-                name: "read_R1",
-                value: ["_R1"],
-                disabled: "single_end",
-                tooltip:
-                  "identifyer string that is common for all R1 reads. R1/R2 reads must contain R1/R2 strings in the file names; sample names must not contain R1/R2! (e.g. when all R1 files have '.R1' string, then enter '\\.R1'. Note that backslash is only needed to escape dot regex; e.g. when all R1 files have '_R1' string, then enter '_R1'.)",
-                type: "chip",
-                rules: [(v) => v.length <= 1 || "ADD ONLY ONE IDENTIFIER"],
-              },
               {
                 name: "min_overlap",
                 value: 12,
@@ -915,24 +888,6 @@ export default new Vuex.Store({
               },
             ],
             Inputs: [
-              {
-                name: "read_R1",
-                value: ["_R1"],
-                disabled: "single_end",
-                tooltip:
-                  "identifyer string that is common for all R1 reads. R1/R2 reads must contain R1/R2 strings in the file names; sample names must not contain R1/R2! (e.g. when all R1 files have '.R1' string, then enter '\\.R1'. Note that backslash is only needed to escape dot regex; e.g. when all R1 files have '_R1' string, then enter '_R1'.)",
-                type: "chip",
-                rules: [(v) => v.length <= 1 || "ADD ONLY ONE IDENTIFIER"],
-              },
-              // {
-              //   name: "samp_ID",
-              //   value: ["_"],
-              //   disabled: "never",
-              //   tooltip:
-              //     "identifyer string that separates the sample name from redundant charachters (e.g. file name = sample1.R1.fastq, then '\\.' would be the 'identifier string' (sample name = sample1)); note that backslash is only needed to escape dot regex (e.g. when file name = sample1_R1.fastq then specify as '_')",
-              //   type: "chip",
-              //   rules: [(v) => v.length <= 1 || "ADD ONLY ONE IDENTIFIER"],
-              // },
               {
                 name: "minOverlap",
                 value: 12,
@@ -2502,15 +2457,6 @@ export default new Vuex.Store({
         ],
         Inputs: [
           {
-            name: "read_R1",
-            value: ["_R1"],
-            disabled: "single_end",
-            tooltip:
-              "identifyer string that is common for all R1 reads. R1/R2 reads must contain R1/R2 strings in the file names; sample names must not contain R1/R2! (e.g. when all R1 files have '.R1' string, then enter '\\.R1'. Note that backslash is only needed to escape dot regex; e.g. when all R1 files have '_R1' string, then enter '_R1'.)",
-            type: "chip",
-            rules: [(v) => v.length <= 1 || "ADD ONLY ONE IDENTIFIER"],
-          },
-          {
             name: "min_overlap",
             value: 12,
             disabled: "never",
@@ -3124,15 +3070,6 @@ export default new Vuex.Store({
           },
         ],
         Inputs: [
-          {
-            name: "read_R1",
-            value: ["_R1"],
-            disabled: "single_end",
-            tooltip:
-              "identifyer string that is common for all R1 reads. R1/R2 reads must contain R1/R2 strings in the file names; sample names must not contain R1/R2! (e.g. when all R1 files have '.R1' string, then enter '\\.R1'. Note that backslash is only needed to escape dot regex; e.g. when all R1 files have '_R1' string, then enter '_R1'.)",
-            type: "chip",
-            rules: [(v) => v.length <= 1 || "ADD ONLY ONE IDENTIFIER"],
-          },
           {
             name: "min_overlap",
             value: 12,
@@ -4199,15 +4136,6 @@ export default new Vuex.Store({
         showExtra: false,
         extraInputs: [],
         Inputs: [
-          {
-            name: "read_R1",
-            value: ["_R1"],
-            disabled: "single_end",
-            tooltip:
-              "[only for paired-end data] identifyer string that is common for all R1 reads. R1/R2 reads must contain R1/R2 strings in the file names; sample names must not contain R1/R2! (e.g. when all R1 files have '.R1' string, then enter '\\.R1'. Note that backslash is only needed to escape dot regex; e.g. when all R1 files have '_R1' string, then enter '_R1'.)",
-            type: "chip",
-            rules: [(v) => v.length <= 1 || "ADD ONLY ONE IDENTIFIER"],
-          },
           {
             name: "maxEE",
             value: 2,

@@ -4,7 +4,7 @@
 
 # Extraction of ITS region(s)
 
-##########################################################
+################################################
 ###Third-party applications:
 #ITSx v1.1.3
     #citation: Bengtsson-Palme J., et al., 2013. Improved software detection and extraction of ITS1 and ITS2 from ribosomal ITS sequences of fungi and other eukaryotes for analysis of environmental sequencing data. Methods in Ecology and Evolution 4, 914-919.
@@ -24,7 +24,7 @@
 #pigz v2.4
 #perl v5.32.0
 #python3 with biopython
-##########################################################
+################################################
 
 #load variables
 echo ${organisms}
@@ -74,6 +74,7 @@ run_python_module=$"python3 /scripts/submodules/remove_empty_seqs.py"
 #############################
 ### Start of the workflow ###
 #############################
+start_time=$(date)
 start=$(date +%s)
 ### Check if files with specified extension exist in the dir
 first_file_check
@@ -364,8 +365,8 @@ ITSx -i input.unique.seqs -o output --preserve T --graphical F $organisms $parti
 
 Total run time was $runtime sec.
 
-##################################################################
-###Third-party applications for this process [PLEASE CITE]:
+##############################################
+###Third-party applications for this process:
 #ITSx v1.1.3 for extracting ITS regions
     #citation: Bengtsson-Palme J., et al., 2013. Improved software detection and extraction of ITS1 and ITS2 from ribosomal ITS sequences of fungi and other eukaryotes for analysis of environmental sequencing data. Methods in Ecology and Evolution 4, 914-919.
     #microbiology.se/software/itsx/
@@ -375,7 +376,7 @@ Total run time was $runtime sec.
 #mothur 1.46.1 for unique and deunique sequences prior and after extraction
     #citation: Schloss, P.D., et al., Introducing mothur: Open-source, platform-independent, community-supported software for describing and comparing microbial communities. Appl Environ Microbiol, 2009. 75(23):7537-41
     #https://github.com/mothur/mothur
-##################################################################" > $output_dir/README.txt
+##############################################" > $output_dir/README.txt
 
 #Done
 printf "\nDONE "

@@ -3,19 +3,11 @@
 # Quality filter PAIRED-END sequencing data with dada2
 # Input = paired-end fastq files
 
-##########################################################
+############################
 ###Third-party applications:
 # dada2 v1.28
-    #citation: Callahan, B., McMurdie, P., Rosen, M. et al. (2016) DADA2: High-resolution sample inference from Illumina amplicon data. Nat Methods 13, 581–583. https://doi.org/10.1038/nmeth.3869
-    #Copyright (C) 2007 Free Software Foundation, Inc.
-    #Distributed under the GNU LESSER GENERAL PUBLIC LICENSE
-    #https://github.com/benjjneb/dada2
 # seqkit v2.3.0
-    #citation: Shen W, Le S, Li Y, Hu F (2016) SeqKit: A Cross-Platform and Ultrafast Toolkit for FASTA/Q File Manipulation. PLOS ONE 11(10): e0163962. https://doi.org/10.1371/journal.pone.0163962
-    #Distributed under the MIT License
-    #Copyright © 2016-2019 Wei Shen, 2019 Oxford Nanopore Technologies.
-    #https://bioinf.shenwei.me/seqkit/
-##########################################################
+############################
 
 # Checking tool versions
 printf "# Checking tool versions ...\n"
@@ -30,7 +22,6 @@ dataFormat=${dataFormat}
 workingDir=${workingDir}
 
 ### variables
-# read_R1     = identifyer string that is common for all R1 reads.
 # maxEE       = discard sequences with more than the specified number of expected errors
 # maxN        = discard sequences with more than the specified number of Ns (ambiguous bases)
 # truncQ      = truncate reads at the first instance of a quality score less than or equal to truncQ
@@ -45,7 +36,7 @@ workingDir=${workingDir}
 #Source for functions
 source /scripts/submodules/framework.functions.sh
 
-## Check if I need to work with multiple or with a single sequencing run
+## check if working with multiple runs or with a single sequencing run
 # if working with multiRunDir, and the previous step was CUT PRIMERS
 if [[ -f "$workingDir/prev_step.temp" ]]; then
     prev_step=$(cat $workingDir/prev_step.temp) # for checking previous step (output from cut_primers_paired_end_reads.sh)
@@ -89,18 +80,13 @@ Supported extensions: fastq(.gz), fq(.gz).
 >Quitting" >&2
     end_process
 fi
-#Check if R1 identifier is specified
-if [[ -z $read_R1 ]]; then
-    printf '%s\n' "ERROR]: 'read_R1' is not specified.
-    >Quitting" >&2
-    end_process
-fi
 
 #############################
 ### Start of the workflow ###
 #############################
 ### looping through multiple sequencing runs (dirs in multiRunDir) if the $WD=multiRunDir, otherwise just doing single seqrun analyses
 for seqrun in $DIRS; do
+    start_time=$(date)
     start=$(date +%s)
     cd $seqrun
     
@@ -143,20 +129,6 @@ for seqrun in $DIRS; do
         # Prepare working env and check paired-end data
         prepare_PE_env
     fi
-
-
-
-    # Check if 'read_R1' identifier is correctly specified in $seqrun.
-    read_R1_a=$(echo $read_R1 | sed -e 's/\\//') #if dot is the separator, then remove \ from the read identifier
-    while read file; do
-        if [[ $file == *"$read_R1_a"* ]]; then
-            :
-        else
-            printf '%s\n' "ERROR]: 'read_R1' identifier is incorrectly specified in $seqrun.
-            >Quitting" >&2
-            end_process
-        fi
-    done < tempdir2/paired_end_files.txt
 
     ### Process samples with dada2 filterAndTrim function in R
     printf "# Running DADA2 filterAndTrim in $seqrun \n"
@@ -220,6 +192,10 @@ for seqrun in $DIRS; do
     #Make README.txt file
     printf "# Quality filtering was performed using dada2 (see 'Core command' below for the used settings).
 
+Start time: $start_time
+End time: $(date)
+Runtime: $runtime seconds
+
 Files in 'qualFiltered_out':
     # *.$fileFormat             = quality filtered sequences per sample.
     # seq_count_summary.csv    = summary of sequence counts per sample.
@@ -229,15 +205,15 @@ Core command ->
 filterAndTrim(inputR1, outputR1, inputR2, outputR2, maxN = $maxN, maxEE = c($maxEE, $maxEE), truncQ = $truncQ, truncLen = c($truncLen, $truncLen_R2), maxLen = $maxLen, minLen = $minLen, minQ=$minQ, rm.phix = TRUE)
 
 Total run time was $runtime sec.
-##################################################################
-###Third-party applications for this process [PLEASE CITE]:
+##############################################
+###Third-party applications for this process:
 # dada2 (version $dada2_version)
     #citation: Callahan, B., McMurdie, P., Rosen, M. et al. (2016) DADA2: High-resolution sample inference from Illumina amplicon data. Nat Methods 13, 581-583. https://doi.org/10.1038/nmeth.3869
     #https://github.com/benjjneb/dada2
 # seqkit (version $seqkit_version) for synchronizing R1 and R2 after filtering (when matchIDs = TRUE)
     #citation: Shen W, Le S, Li Y, Hu F (2016) SeqKit: A Cross-Platform and Ultrafast Toolkit for FASTA/Q File Manipulation. PLOS ONE 11(10): e0163962. https://doi.org/10.1371/journal.pone.0163962
     #https://bioinf.shenwei.me/seqkit/
-########################################################" > $output_dir/README.txt
+##############################################" > $output_dir/README.txt
 
 
     ### if working with multiRunDir then cd /input/multiRunDir
@@ -246,7 +222,7 @@ Total run time was $runtime sec.
     fi
 done
 
-#Done
+# Done
 printf "\nDONE "
 
 #variables for all services

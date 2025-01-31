@@ -3,10 +3,17 @@
 # Merge sequencing runs processed with DADA2 if working with multuple runs in multiRunDir. 
  # Samples with the same name across runs are merged together.
 
-##########################################################
+################################################
 ###Third-party applications:
 # dada2, R
-##########################################################
+################################################
+# Checking tool versions
+printf "# Checking tool versions ...\n"
+dada2_version=$(Rscript -e "packageVersion('dada2')" 2>/dev/null | awk '{print $2}' | sed -e "s/‘//g" -e 's/’//g')
+vsearch_version=$(vsearch --version 2>&1 | head -n 1 | awk '{print $2}' | sed -e "s/,//g")
+printf "# DADA2 version: $dada2_version\n"
+printf "# vsearch version: $vsearch_version\n"
+
 start_time=$(date)
 start=$(date +%s)
 # source for functions
@@ -14,7 +21,8 @@ source /scripts/submodules/framework.functions.sh
 
 # Excecute only if multiDir = true
 if [[ ! -d "/input/multiRunDir" ]]; then
-    printf '%s\n' "ERROR]: multiRunDir not detected. Cannot merge sequencing runs. Exiting.\n" >&2
+    printf '%s\n' "ERROR]: multiRunDir not detected. Cannot merge sequencing runs. 
+    >DONE." >&2
     end_process
 elif [[ $merge_runs == "true" ]]; then
     printf "Starting merge sequencing runs...\n"

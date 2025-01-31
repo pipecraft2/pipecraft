@@ -6,14 +6,14 @@
     # ASV table format = ASVs in rows, samples in columns; 2nd column must be SEQUENCE column (default PipeCraft2 ASVs workflow output)
 #Output = FASTA formated representative OTU sequences and OTU table
 
-##########################################################
+################################################
 ###Third-party applications:
 #vsearch v2.23.0
     #citation: Rognes T, Flouri T, Nichols B, Quince C, Mahé F (2016) VSEARCH: a versatile open source tool for metagenomics PeerJ 4:e2584
     #Copyright (C) 2014-2021, Torbjorn Rognes, Frederic Mahe and Tomas Flouri
     #Distributed under the GNU General Public License version 3 by the Free Software Foundation
     #https://github.com/torognes/vsearch
-##########################################################
+################################################
 # Source for functions
 source /scripts/submodules/framework.functions.sh
 
@@ -82,7 +82,9 @@ fi
 #############################
 ### Start of the workflow ###
 #############################
+start_time=$(date)
 start=$(date +%s)
+
 echo "output_dir = $output_dir"
 if [[ -d $output_dir ]]; then
     rm -rf $output_dir
@@ -220,12 +222,12 @@ vsearch $seqsort input.fasta $id $simtype $strands $mask $centroid_in $maxaccept
 [before clustering, ASV size annotations were fetched from the ASV table]
 
 Total run time was $runtime sec.\n\n
-##################################################################
-###Third-party applications for this process [PLEASE CITE]:
+##############################################
+###Third-party applications for this process:
 #vsearch v2.23.0 for clustering
     #citation: Rognes T, Flouri T, Nichols B, Quince C, Mahé F (2016) VSEARCH: a versatile open source tool for metagenomics PeerJ 4:e2584
     #https://github.com/torognes/vsearch
-##########################################################" > $output_dir/README.txt
+################################################" > $output_dir/README.txt
 
 #Done
 printf "\nDONE "

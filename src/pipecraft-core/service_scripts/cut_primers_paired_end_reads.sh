@@ -4,7 +4,7 @@
 # Degenerate primers are allowed using IUPAC codes. Reverse complementary strings will be also searched.
 # Input = paired-end fastq or paired-end fasta files. If using fasta, then cores must = 1
 
-##########################################################
+################################################
 ###Third-party applications:
 #cutadapt v4.4
     #citation: Martin, M. (2011). Cutadapt removes adapter sequences from high-throughput sequencing reads. EMBnet. journal, 17(1), 10-12.
@@ -16,7 +16,7 @@
     #Copyright © 2016-2019 Wei Shen, 2019 Oxford Nanopore Technologies.
     #https://bioinf.shenwei.me/seqkit/
 #pigz v2.4
-##########################################################
+################################################
 #Source for functions
 source /scripts/submodules/framework.functions.sh
 
@@ -27,7 +27,7 @@ min_length=$"--minimum-length 32"   # minimum len of the output sequence. FIXED 
 overlap=$"--overlap ${min_overlap}" # this option is ignored for anchored adapters since these do not allow partial matches.
 cores=$"--cores ${cores}"
 # $no_indels                        # "--no-indels" disallows insertions and deletions in a primer
-discard_untrimmed=$"TRUE"           # fixed to TRUE 
+discard_untrimmed="TRUE"            # fixed to TRUE 
 # $seqs_to_keep                     # all/keep_only_linked
 # $pair_filter                      # both/any
 fwd_tempprimer=$forward_primers
@@ -57,7 +57,7 @@ else
 fi
 
 
-# Check if I need to work with multiple or with a single sequencing run
+# check if working with multiple runs or with a single sequencing run
 if [[ -d "/input/multiRunDir" ]]; then
   echo "Working with multiple sequencing runs in multiRunDir"
   cd /input/multiRunDir
@@ -237,7 +237,6 @@ for seqrun in $DIRS; do
 
     end=$(date +%s)
     runtime=$((end-start))
-
     #Make README.txt file for untrimmed seqs
     if [[ $discard_untrimmed == "TRUE" ]]; then
         printf "Files in /untrimmed folder represent sequences that did not contain specified primer strings.
@@ -249,6 +248,9 @@ If no files in this folder, then all sequences were passed to files in $output_d
 
     #Make README.txt file for PrimerClipped reads
     printf "# Primers were removed using cutadapt (see 'Core command' below for the used settings).
+Start time: $start_time
+End time: $(date)
+Runtime: $runtime seconds
 
 Files in 'primersCut_out' folder represent sequences from where the PCR primers were recognized and clipped.
 Forward primer(s) [has to be 5'-3']: $fwd_tempprimer
@@ -323,19 +325,15 @@ cutadapt $mismatches $min_length $overlap $indels \
 
     printf "\nSummary of sequence counts in 'seq_count_summary.txt'
 
-Start time: $start_time
-End time: $(date)
-Runtime: $runtime seconds
-
-##########################################################
-###Third-party applications used for this process [PLEASE CITE]:
+################################################
+###Third-party applications used for this process:
 # cutadapt (version $cutadapt_version) for cutting the primers
     #citation: Martin, Marcel (2011) Cutadapt removes adapter sequences from high-throughput sequencing reads. EMBnet.journal, 17(1), 10-12.
     #https://cutadapt.readthedocs.io/en/stable/index.html
 #seqkit (version $seqkit_version) for generating reverse complementary primer strings
     #citation: Shen W, Le S, Li Y, Hu F (2016) SeqKit: A Cross-Platform and Ultrafast Toolkit for FASTA/Q File Manipulation. PLOS ONE 11(10): e0163962. https://doi.org/10.1371/journal.pone.0163962
     #https://bioinf.shenwei.me/seqkit/
-##################################################################" >> $output_dir/README.txt
+##############################################" >> $output_dir/README.txt
 
     
     ### if working with multiRunDir then cd ..

@@ -78,9 +78,9 @@ else
 fi
 }
 
-#################################################################
+#######################################################
 ### Check if files with specified extension exist in the dir ###
-#################################################################
+#######################################################
 function first_file_check () {
 count=$(ls -1 *.$fileFormat 2>/dev/null | wc -l)
 if (( $count != 0 )); then 
@@ -130,37 +130,47 @@ done
 while read file; do
     if [[ $file == *" "* ]]; then
         printf '%s\n' "WARNING]: File $file name contains empty spaces, replaced 'space' with '_'" >&2
-        rename 's/ /_/g' "$file"
+        mv "$file" "${file// /_}"
     fi
 done < tempdir2/files_in_folder.txt
 #Fix also names in files_in_folder file if they contained space
 sed -i 's/ /_/g' tempdir2/files_in_folder.txt
-#Check if R1 string is in the file name (if so, then assume that then reverse file has R2 in the file name)
+
+#Grep R1 string is in the file names
 grep "R1" < tempdir2/files_in_folder.txt > tempdir2/paired_end_files.txt || true
-    #Check if everything is ok considering file names
-if [[ -s tempdir2/paired_end_files.txt ]]; then
-    :
-else
+
+#Detect R1 pattern from the first R1 file
+read_R1=$(head -n1 tempdir2/paired_end_files.txt | grep -o '[._]R1' | tail -n1)
+if [[ -z "$read_R1" ]]; then
     printf '%s\n' "ERROR]: no paired-end read files found.
-File names must contain 'R1' and 'R2' strings! (e.g. s01_R1.fastq and s01_R2.fastq)
+File names must contain '_R1' or '.R1' strings! (e.g. s01_R1.fastq and s01_R2.fastq)
 >Quitting" >&2
     end_process
+else 
+    # Verify all files have the same R1 pattern
+    while read file; do
+        # Check for multiple R1/R2 occurrences first
+        r1_count=$(echo "$file" | grep -o "R1" | wc -l)
+        if [[ $r1_count -gt 1 ]]; then
+            printf '%s\n' "ERROR]: File '$file' contains multiple R1 strings (i.e. there was other R1 stings besides just read identifier).
+Sample names cannot contain R1 strings (e.g. 'sampleR1_R1.fastq' or 'sampleR11.R1.fastq' are not allowed).
+>Quitting" >&2
+            end_process
+        fi
+
+        # Then check for consistent R1 pattern
+        if ! echo "$file" | grep -q "$(echo $read_R1 | sed 's/\./\\./g')"; then
+            printf '%s\n' "ERROR]: File '$file' has inconsistent R1 pattern (did not contain '${read_R1}').
+All files must use the same pattern ('_R1' or '.R1'). 
+>Quitting" >&2
+            end_process
+        fi
+    done < tempdir2/paired_end_files.txt
+    
+    echo "Detected R1 pattern: ${read_R1}"
+    read_R1="${read_R1}" 
+    export read_R1
 fi
-#Check multiple occurrences of R1 and R2 strings (e.g. R123.R1.fq). 
-while read file; do
-    x=$(echo $file | grep -o -E '(R1|R2)' | wc -l)
-    if [[ $x == "1" ]]; then
-        :
-    elif [[ $x == "0" ]]; then
-        printf '%s\n' "ERROR]: $file name does not contain R1/R2 strings to identify paired-end reads. Remove file from folder or fix the name.
->Quitting" >&2
-        end_process
-    else    
-        printf '%s\n' "ERROR]: $file name contains multiple R1/R2 strings -> change names (e.g. R123.R1.fastq to S123.R1.fastq)
->Quitting" >&2
-        end_process
-    fi
-done < tempdir2/files_in_folder.txt
 }
 
 ####################################################
@@ -185,9 +195,11 @@ done
 while read file; do
     if [[ $file == *" "* ]]; then
         printf '%s\n' "WARNING]: File $file name contains empty spaces, replaced 'space' with '_'" >&2
-        rename 's/ /_/g' "$file"
+        mv "$file" "${file// /_}"
     fi
 done < tempdir2/files_in_folder.txt
+# replace empty spaces in file names with _
+sed -i 's/ /_/g' tempdir2/files_in_folder.txt
 }
 
 ############################################
@@ -256,9 +268,9 @@ while read LINE; do
 done < tempdir2/rev_primer.fasta
 }
 
-#######################################################################
+###################################################
 ### Check if single-end files are compressed (decompress and check) ###
-#######################################################################
+###################################################
 #If input is compressed, then decompress (keeping the compressed file, but overwriting if filename exists!)
 function check_gz_zip_SE () {
     #Read user specified input extension
@@ -284,9 +296,9 @@ Decompressing other formats is not supported, please decompress manually.
 }
 
 
-#######################################################################
+###################################################
 ### Check if paired-end files are compressed (decompress and check) ###
-#######################################################################
+###################################################
 #If input is compressed, then decompress (keeping the compressed file, but overwriting if filename exists!)
 function check_gz_zip_PE () {
 check_compress=$(echo $fileFormat | (awk 'BEGIN{FS=OFS="."} {print $NF}';))
@@ -374,9 +386,9 @@ Supported extensions: fastq, fq, fasta, fas, fa (and gz compressed formats).
 fi
 }
 
-#######################################################################
+###################################################
 ### Cleaning up and compiling final stats file, only for demux data ###
-#######################################################################
+###################################################
 function clean_and_make_stats_demux () {
 #Delete empty output files
 find $output_dir -empty -type f -delete
@@ -445,9 +457,9 @@ if [[ $debugger != "true" ]]; then
 fi
 }
 
-#############################################################################
+###############################################
 ### Cleaning up and compiling final stats file, only for assemble PE data ###
-#############################################################################
+###############################################
 function clean_and_make_stats_assemble () {
 #Delete empty output files
 find $output_dir -empty -type f -delete
@@ -503,9 +515,9 @@ fi
 }
 
 
-################################################################################################################
+##################################################################################
 ### Cleaning up and compiling final stats file UNIVERSAL fastx (but not for PE assembly and demux and GeneX) ###
-################################################################################################################
+##################################################################################
 function clean_and_make_stats () {
 countstart=$(date +%s)
 
@@ -572,9 +584,9 @@ if [[ $debugger != "true" ]]; then
 fi
 }
 
-########################################################################################
+##########################################################
 ### Cleaning up and compiling final stats file, when outputting multiple directories ###
-########################################################################################
+##########################################################
 function clean_and_make_stats_multidir () {
 ### Count reads before and after the process
 mkdir -p tempdir2
@@ -662,9 +674,9 @@ fi
 }
 
 
-###########################################################
+#################################################
 ### Paired-end data reorient reads based on FWD primers ###
-###########################################################
+#################################################
 function PE_reorient_FWD () {
 touch tempdir/R1.5_3.fastq
 touch tempdir/R2.5_3.fastq
@@ -680,9 +692,9 @@ for primer in $(echo $fwd_tempprimer | sed "s/,/ /g"); do
 done
 }
 
-###########################################################
+#################################################
 ### Paired-end data reorient reads based on REV primers ###
-###########################################################
+#################################################
 function PE_reorient_REV () {
 touch tempdir/R1.3_5.fastq
 touch tempdir/R2.3_5.fastq
@@ -849,9 +861,9 @@ fi
 }
 
 
-#################################################################
+#######################################################
 ### Function to count features and sequences in OTU/ASV table ###
-#################################################################
+#######################################################
  # Handles "Sequence" column in the table
     # output variables:
     # feature_count - numbers of ASVs/OTUs in the table
@@ -861,10 +873,15 @@ function count_features() {
     local table=$1
     
     # count ASVs/OTUs (rows minus header)
-    local feature_count=$(awk 'NR>1' "$table" | wc -l)
+    feature_count=$(awk 'NR>1' "$table" | wc -l)
     
     # count sequences and samples
-    local counts=$(awk -F'\t' '
+    while IFS='=' read -r key value; do
+        case $key in
+            "samples") nSample=$value ;;
+            "sequences") nSeqs=$value ;;
+        esac
+    done < <(awk -F'\t' '
     NR==1 {
         seq_col = -1
         for(i=1; i<=NF; i++) {
@@ -874,7 +891,7 @@ function count_features() {
             }
         }
         nSample = NF - 1 - (seq_col > 0 ? 1 : 0)
-        print "samples=" n_samples
+        print "samples=" nSample
     }
     NR>1 {
         sum = 0
@@ -887,18 +904,17 @@ function count_features() {
     }
     END {
         print "sequences=" total_seqs
-        print "features=" feature_count
     }' "$table")
     
-    # Extract values
-    local nSample=$(echo "$counts" | grep "samples=" | cut -d= -f2)
-    local nSeqs=$(echo "$counts" | grep "sequences=" | cut -d= -f2)
+    export feature_count
+    export nSeqs
+    export nSample
 }
+  
 
-
-####################################################################
+################################################
 ### generate README.txt for table filtering (curate_table_wf.sh) ###
-####################################################################
+################################################
 function readme_table_filtering() {
     local output_dir=$1
     local runtime=$2
@@ -955,11 +971,15 @@ EOF
 [before collapsing, length filter is also applied (if ON)]
 $ASVs_collapsed_result
 
-Number of Features                       = $feature_count
-Number of sequences in the Feature table = $nSeqs
-Number of samples in the Feature table   = $nSample
-
 EOF
+     if [[ $feature_count > 0 ]]; then
+     cat << EOF >> "$output_dir/README.txt"
+        Number of Features                       = $feature_count
+        Number of sequences in the Feature table = $nSeqs
+        Number of samples in the Feature table   = $nSample
+EOF
+    fi 
+    
     elif [[ $collapseNoMismatch == "false" ]] && [[ $min_length_num != "0" && -n $min_length_num ]] || [[ $max_length_num != "0" && -n $max_length_num ]]; then
         
         cat << EOF >> "$output_dir/README.txt"

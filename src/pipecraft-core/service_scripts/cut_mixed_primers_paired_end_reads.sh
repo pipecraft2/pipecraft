@@ -6,7 +6,7 @@
     # Using this only in the DADA2 paired-end pipeline where amplicons are MIXED oriented  - outputs the required structure for quality_filtering_paired_end_dada2_mixed.sh.
     # Output = files in primersCut_out/fwd_orient and primersCut_out/rev_orient dirs.
 
-##########################################################
+################################################
 ###Third-party applications:
 #cutadapt v4.4
     #citation: Martin, M. (2011). Cutadapt removes adapter sequences from high-throughput sequencing reads. EMBnet. journal, 17(1), 10-12.
@@ -18,7 +18,7 @@
     #Copyright © 2016-2019 Wei Shen, 2019 Oxford Nanopore Technologies.
     #https://bioinf.shenwei.me/seqkit/
 #pigz v2.4
-##########################################################
+################################################
 #Source for functions
 source /scripts/submodules/framework.functions.sh
 
@@ -60,7 +60,7 @@ else
 fi
 
 
-# Check if I need to work with multiple or with a single sequencing run
+# check if working with multiple runs or with a single sequencing run
 if [[ -d "/input/multiRunDir" ]]; then
   echo "Working with multiple sequencing runs in multiRunDir"
   echo "Process = cut primers (from MIXED amplicons)"
@@ -354,6 +354,10 @@ for seqrun in $DIRS; do
     #Make README.txt file for PrimerClipped reads
     printf "# Primers from mixed orient sequences were removed using cutadapt (see 'Core command' below for the used settings).
 
+Start time: $start_time
+End time: $(date)
+Runtime: $runtime seconds
+
 Files in 'primersCut_out/fwd_orient' folder represent forward orient sequences from where the PCR primers were recognized and clipped (R1 files started with forward primer and R2 files with reverse_complement of reverse primer).
 Files in 'primersCut_out/rev_orient' folder represent reverse_complement sequences from where the PCR primers were recognized and clipped (R1 files started with reverse primer and R2 files with reverse_complement of forward primer).
 
@@ -405,19 +409,15 @@ fwd_untrimmed/inputR1 fwd_untrimmed/inputR2. \n" >> $output_dir/README.txt
 
     printf "\nSummary of sequence counts in 'seq_count_summary.txt'
 
-Start time: $start_time
-End time: $(date)
-Runtime: $runtime seconds
-
-##########################################################
-###Third-party applications used for this process [PLEASE CITE]:
+################################################
+###Third-party applications used for this process:
 # cutadapt (version $cutadapt_version) for cutting the primers
    #citation: Martin, Marcel (2011) Cutadapt removes adapter sequences from high-throughput sequencing reads. EMBnet.journal, 17(1), 10-12.
    #https://cutadapt.readthedocs.io/en/stable/index.html
 #seqkit (version $seqkit_version) for generating reverse complementary primer strings
     #citation: Shen W, Le S, Li Y, Hu F (2016) SeqKit: A Cross-Platform and Ultrafast Toolkit for FASTA/Q File Manipulation. PLOS ONE 11(10): e0163962. https://doi.org/10.1371/journal.pone.0163962
     #https://bioinf.shenwei.me/seqkit/
-##################################################################" >> $output_dir/README.txt
+##############################################" >> $output_dir/README.txt
 
     ### if working with multiRunDir then cd /input/multiRunDir
     if [[ $multiDir == "TRUE" ]]; then 

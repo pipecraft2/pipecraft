@@ -3,14 +3,14 @@
 # Quality filter SINGLE-END sequencing data with dada2
 # Input = single-end fastq files
 
-##########################################################
+################################################
 ###Third-party applications:
 #dada2 v1.28
-    #citation: Callahan, B., McMurdie, P., Rosen, M. et al. (2016) DADA2: High-resolution sample inference from Illumina amplicon data. Nat Methods 13, 581–583. https://doi.org/10.1038/nmeth.3869
-    #Copyright (C) 2007 Free Software Foundation, Inc.
-    #Distributed under the GNU LESSER GENERAL PUBLIC LICENSE
-    #https://github.com/benjjneb/dada2
-##########################################################
+################################################
+# Checking tool versions
+printf "# Checking tool versions ...\n"
+dada2_version=$(Rscript -e "packageVersion('dada2')" 2>/dev/null | awk '{print $2}' | sed -e "s/‘//g" -e 's/’//g')
+printf "# DADA2 version: $dada2_version\n"
 
 #load env variables
 readType=${readType}
@@ -20,7 +20,7 @@ workingDir=${workingDir}
 #Source for functions
 source /scripts/submodules/framework.functions.sh
 
-## Check if I need to work with multiple or with a single sequencing run
+## check if working with multiple runs or with a single sequencing run
 # if working with multiRunDir, and the previous step was CUT PRIMERS
 if [[ -f "$workingDir/prev_step.temp" ]]; then
     prev_step=$(cat $workingDir/prev_step.temp) # for checking previous step (output from cut_primers_paired_end_reads.sh)
@@ -59,6 +59,7 @@ fi
 #############################
 ### looping through multiple sequencing runs (dirs in multiRunDir) if the $WD=multiRunDir, otherwise just doing single seqrun analyses
 for seqrun in $DIRS; do
+    start_time=$(date)
     start=$(date +%s)
     cd $seqrun
 
@@ -85,7 +86,6 @@ for seqrun in $DIRS; do
         ### Prepare working env and check single-end data
         prepare_SE_env
     fi
-
 
     ### Process samples with dada2 filterAndTrim function in R
     printf "# Running DADA2 filterAndTrim in $seqrun\n"
@@ -122,12 +122,12 @@ Core command ->
 filterAndTrim(inputR1, outputR1, maxN = $maxN, maxEE = $maxEE, truncQ = $truncQ, truncLen = $truncLen, maxLen = $maxLen, minLen = $minLen, minQ = $minQ, rm.phix = TRUE)
 
 Total run time was $runtime sec.
-##################################################################
-###Third-party applications for this process [PLEASE CITE]:
-#dada2 v1.28
+##############################################
+###Third-party applications for this process:
+#dada2 (version $dada2_version)
     #citation: Callahan, B., McMurdie, P., Rosen, M. et al. (2016) DADA2: High-resolution sample inference from Illumina amplicon data. Nat Methods 13, 581-583. https://doi.org/10.1038/nmeth.3869
     #https://github.com/benjjneb/dada2
-########################################################" > $output_dir/README.txt
+##############################################" > $output_dir/README.txt
 
     ### if working with multiRunDir then cd /input/multiRunDir
     if [[ $multiDir == "TRUE" ]]; then 

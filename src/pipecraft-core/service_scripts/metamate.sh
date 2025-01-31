@@ -5,13 +5,13 @@
 
 # Input = fasta file of the OTUs/ASVs and the OTU/ASV table.
 
-##########################################################
+################################################
 ###Third-party applications:
 # metaMATE v0.4.3
     #citation: Andújar, C., Creedy, T.J., Arribas, P., López, H., Salces-Castellano, A., Pérez-Delgado, A.J., Vogler, A.P. and Emerson, B.C. (2021), Validated removal of nuclear pseudogenes and sequencing artefacts from mitochondrial metabarcode data. Mol Ecol Resour, 21: 1772-1787. https://doi.org/10.1111/1755-0998.13337
     #Distributed under the GNU General Public License
     #https://github.com/tjcreedy/metamate
-##########################################################
+################################################
 
 #load variables
 find_or_dump=${find_or_dump}       # find, dump or find_and_dump
@@ -98,6 +98,7 @@ conda activate metamate
 #############################
 ### Start of the workflow ###
 #############################
+start_time=$(date)
 start=$(date +%s)
 
 ### quick check of the rep_seqs file
@@ -331,12 +332,12 @@ Files in 'metamate_out' directory:
 $warn
 Total run time was $runtime sec.
 
-###########################################################
-###Third-party applications for this process [PLEASE CITE]:
+#################################################
+###Third-party applications for this process:
 # metaMATE v0.4.3
     #citation: Andújar, C., Creedy, T.J., Arribas, P., López, H., Salces-Castellano, A., Pérez-Delgado, A.J., Vogler, A.P. and Emerson, B.C. (2021), Validated removal of nuclear pseudogenes and sequencing artefacts from mitochondrial metabarcode data. Mol Ecol Resour, 21: 1772-1787. https://doi.org/10.1111/1755-0998.13337
     #https://github.com/tjcreedy/metamate
-###########################################################" > $output_dir/README.metaMATE-find.txt
+#################################################" > $output_dir/README.metaMATE-find.txt
 fi
 
 if [[ $find_or_dump == "dump" ]] || [[ $find_or_dump == "find_and_dump" ]]; then
@@ -411,12 +412,12 @@ Added files to 'metamate_out' directory:
 
 Total run time was $runtime sec.
 
-###########################################################
-###Third-party applications for this process [PLEASE CITE]:
+#################################################
+###Third-party applications for this process:
 # metaMATE v0.4.3
     #citation: Andújar, C., Creedy, T.J., Arribas, P., López, H., Salces-Castellano, A., Pérez-Delgado, A.J., Vogler, A.P. and Emerson, B.C. (2021), Validated removal of nuclear pseudogenes and sequencing artefacts from mitochondrial metabarcode data. Mol Ecol Resour, 21: 1772-1787. https://doi.org/10.1111/1755-0998.13337
     #https://github.com/tjcreedy/metamate
-###########################################################" > $output_dir/README.metaMATE-dump.txt
+#################################################" > $output_dir/README.metaMATE-dump.txt
 fi
 
 if [[ -e $output_dir/next_best_set.csv ]]; then

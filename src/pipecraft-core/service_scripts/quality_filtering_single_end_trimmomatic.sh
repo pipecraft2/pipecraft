@@ -3,7 +3,7 @@
 # Quality filter SINGLE-END sequencing data with trimmomatic
 #Input = single-end fastq files.
 
-##########################################################
+################################################
 ###Third-party applications:
 #trimmomatic v0.39
     #citation: Bolger, A. M., Lohse, M., & Usadel, B. (2014). Trimmomatic: A flexible trimmer for Illumina Sequence Data. Bioinformatics, btu1
@@ -15,7 +15,7 @@
     #Copyright © 2016-2019 Wei Shen, 2019 Oxford Nanopore Technologies.
     #https://bioinf.shenwei.me/seqkit/
 #pigz v2.4
-##########################################################
+################################################
 
 #load variables
 window_size=${window_size}
@@ -46,6 +46,7 @@ fi
 #############################
 ### Start of the workflow ###
 #############################
+start_time=$(date)
 start=$(date +%s)
 ### Check if files with specified extension exist in the dir
 first_file_check
@@ -106,15 +107,15 @@ convert output fastq files to FASTA: seqkit fq2fa -t dna --line-width 0 input_fi
 
 Total run time was $runtime sec.
 
-##################################################################
-###Third-party applications for this process [PLEASE CITE]:
+##############################################
+###Third-party applications for this process:
 #trimmomatic v0.39 for quality filtering
     #citation: Bolger, A. M., Lohse, M., & Usadel, B. (2014). Trimmomatic: A flexible trimmer for Illumina Sequence Data. Bioinformatics, btu1
     #https://github.com/usadellab/Trimmomatic
 #seqkit v2.3.0 for converting filtered fastq to fasta 
     #citation: Shen W, Le S, Li Y, Hu F (2016) SeqKit: A Cross-Platform and Ultrafast Toolkit for FASTA/Q File Manipulation. PLOS ONE 11(10): e0163962. https://doi.org/10.1371/journal.pone.0163962
     #https://bioinf.shenwei.me/seqkit/
-##########################################################" > $output_dir/README.txt
+################################################" > $output_dir/README.txt
 
 #Done
 printf "\nDONE "

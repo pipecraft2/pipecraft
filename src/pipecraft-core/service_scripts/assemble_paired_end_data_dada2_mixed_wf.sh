@@ -2,14 +2,14 @@
 
 # denoise and assemble paired-end data with DADA2 dada and mergePairs functions. For DADA2 full workflow.
 
-##########################################################
+################################################
 ###Third-party applications:
 #dada2 v1.28
-    #citation: Callahan, B., McMurdie, P., Rosen, M. et al. (2016) DADA2: High-resolution sample inference from Illumina amplicon data. Nat Methods 13, 581-583. https://doi.org/10.1038/nmeth.3869
-    #Copyright (C) 2007 Free Software Foundation, Inc.
-    #Distributed under the GNU LESSER GENERAL PUBLIC LICENSE
-    #https://github.com/benjjneb/dada2
-##########################################################
+################################################
+# Checking tool versions
+printf "# Checking tool versions ...\n"
+dada2_version=$(Rscript -e "packageVersion('dada2')" 2>/dev/null | awk '{print $2}' | sed -e "s/‘//g" -e 's/’//g')
+printf "# DADA2 version: $dada2_version\n"
 
 #load env variables
 readType=${readType}
@@ -34,7 +34,7 @@ detect_singletons=${DETECT_SINGLETONS}
 #Source for functions
 source /scripts/submodules/framework.functions.sh
 
-## Check if I need to work with multiple or with a single sequencing run
+## check if working with multiple runs or with a single sequencing run
 # if working with multiRunDir, and dada2mode == "MIXED" [here CUT_PRIMERS is always mandatory]
 if [[ -d "/input/multiRunDir" ]] && [[ $pipeline == "DADA2_ASVs" ]] && [[ $dada2mode == "MIXED" ]]; then
     echo "DADA2 paired-end pipeline for MIXED amplicons with multiple sequencing runs in multiRunDir"
@@ -68,6 +68,7 @@ fi
 #############################
 ### looping through multiple sequencing runs (dirs in multiRunDir) if the $WD=multiRunDir, otherwise just doing single seqrun analyses
 for seqrun in $DIRS; do
+    start_time=$(date)
     start=$(date +%s)
     cd $seqrun
     
@@ -109,39 +110,36 @@ for seqrun in $DIRS; do
         fi
     fi
 
-        ### Check that at least 2 samples are provided
-        files=$(ls | grep -c ".$fileFormat")
-        if (( $files < 4 )); then
-            printf '%s\n' "ERROR]: please provide at least 2 samples for the ASVs workflow
-        >Quitting" >&2
-            end_process
+    ### Process samples with dada2 removeBimeraDenovo function in R
+    printf "# Running DADA2 denoising and assembling in $seqrun \n"
+    Rlog=$(Rscript /scripts/submodules/dada2_denoise_assemble_wf.R 2>&1)
+    echo $Rlog >> $output_dir/denoise_assemble.log 
+    wait
+    #format R-log file
+    sed -i "s/;; /\n/g" $output_dir/denoise_assemble.log
+
+    echo "output_dir=$output_dir"
+
+    #####################################
+    ### CLEAN AND COMPILE README FILE ###
+    #####################################
+    if [[ $debugger != "true" ]]; then
+        if [[ -d tempdir2 ]]; then
+            rm -rf tempdir2
         fi
+        # rm $output_dir/denoise_assemble.log
+    fi
+    end=$(date +%s)
+    runtime=$((end-start))
 
-        ### Process samples with dada2 removeBimeraDenovo function in R
-        printf "# Running DADA2 denoising and assembling in $seqrun \n"
-        Rlog=$(Rscript /scripts/submodules/dada2_denoise_assemble_wf.R 2>&1)
-        echo $Rlog >> $output_dir/denoise_assemble.log 
-        wait
-        #format R-log file
-        sed -i "s/;; /\n/g" $output_dir/denoise_assemble.log
+    #Make README.txt file
+    # if omegaa is set, then denoise is performed 
+    if [[ ! -z $omegaa ]]; then
+        printf "# Denoising and assembling of paired-end sequencing data was performed with dada2 (see 'Core commands' below for the used settings).
 
-        echo "output_dir=$output_dir"
-
-        #####################################
-        ### CLEAN AND COMPILE README FILE ###
-        #####################################
-        if [[ $debugger != "true" ]]; then
-            if [[ -d tempdir2 ]]; then
-                rm -rf tempdir2
-            fi
-           # rm $output_dir/denoise_assemble.log
-        fi
-        end=$(date +%s)
-        runtime=$((end-start))
-
-        #Make README.txt file
-        if [[ ! -z $omegaa ]]; then
-            printf "# Denoising and assembling of paired-end sequencing data was performed with dada2 (see 'Core commands' below for the used settings).
+Start time: $start_time
+End time: $(date)
+Runtime: $runtime seconds
 
 ### NOTE: ### 
 Input sequences must be made up only of A/C/G/T for denoising (i.e maxN must = 0 in quality filtering step). Otherwise DADA2 fails, and no output is generated.
@@ -162,18 +160,19 @@ dereplicate: derepFs = derepFastq(fnFs, qualityType = $qualityType)
              derepRs = derepFastq(fnRs, qualityType = $qualityType)
 denoise: dadaFs = dada(derepFs, err = errF, pool = $pool)
          dadaRs = dada(derepRs, err = errR, pool = $pool)" > $output_dir/README.txt
-        fi
-        if [[ -z $omegaa ]]; then
-            printf "assemble:     mergePairs(dadaFs, derepFs, dadaRs, derepRs, maxMismatch = $maxMismatch, minOverlap = $minOverlap, justConcatenate = $justConcatenate, trimOverhang = $trimOverhang)
+    fi
 
-Total run time was $runtime sec.
-##################################################################
- ###Third-party applications for this process [PLEASE CITE]:
-#dada2 v1.28
+    # if omegaa is not set, then mergePairs is performed 
+    if [[ -z $omegaa ]]; then
+        printf "assemble: mergePairs(dadaFs, derepFs, dadaRs, derepRs, maxMismatch = $maxMismatch, minOverlap = $minOverlap, justConcatenate = $justConcatenate, trimOverhang = $trimOverhang)
+
+##############################################
+ ###Third-party applications for this process:
+#dada2 (version $dada2_version)
     #citation: Callahan, B., McMurdie, P., Rosen, M. et al. (2016) DADA2: High-resolution sample inference from Illumina amplicon data. Nat Methods 13, 581-583. https://doi.org/10.1038/nmeth.3869
     #https://github.com/benjjneb/dada2
-########################################################" >> $output_dir/README.txt
-        fi
+##############################################\n" >> $output_dir/README.txt
+    fi
 
     ### if working with multiRunDir then cd /input/multiRunDir
     if [[ $multiDir == "TRUE" ]]; then 

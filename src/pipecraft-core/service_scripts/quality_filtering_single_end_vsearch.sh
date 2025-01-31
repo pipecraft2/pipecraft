@@ -3,20 +3,14 @@
 # Quality filter SINGLE-END sequencing data with vsearch
 # Input = single-end fastq files
 
-##########################################################
+############################
 ###Third-party applications:
 #vsearch v2.23.0
-    #citation: Rognes T, Flouri T, Nichols B, Quince C, Mahé F (2016) VSEARCH: a versatile open source tool for metagenomics PeerJ 4:e2584
-    #Copyright (C) 2014-2021, Torbjorn Rognes, Frederic Mahe and Tomas Flouri
-    #Distributed under the GNU General Public License version 3 by the Free Software Foundation
-    #https://github.com/torognes/vsearch
-#seqkit v2.3.0
-    #citation: Shen W, Le S, Li Y, Hu F (2016) SeqKit: A Cross-Platform and Ultrafast Toolkit for FASTA/Q File Manipulation. PLOS ONE 11(10): e0163962. https://doi.org/10.1371/journal.pone.0163962
-    #Distributed under the MIT License
-    #Copyright © 2016-2019 Wei Shen, 2019 Oxford Nanopore Technologies.
-    #https://bioinf.shenwei.me/seqkit/
-#pigz v2.4
-##########################################################
+# pigz v2.4
+############################
+# checking tool versions
+vsearch_version=$(vsearch --version 2>&1 | head -n 1 | awk '{print $2}' | sed -e "s/,//g")
+printf "# vsearch (version $vsearch_version)\n"
 
 #load variables
 extension=$fileFormat && export fileFormat 
@@ -66,57 +60,105 @@ else
     truncee=$"--fastq_truncee $truncee"
 fi
 
+# check if working with multiple runs or with a single sequencing run
+if [[ -d "/input/multiRunDir" ]]; then
+    echo "vsearch paired-end pipeline with multiple sequencing runs in multiRunDir"
+    echo "Process = quality filtering"
+    cd /input/multiRunDir
+    # read in directories (sequencing sets) to work with. Skip directories renamed as "skip_*"
+    DIRS=$(find . -maxdepth 3 -mindepth 1 -type d | grep "assembled_out" | grep -v "skip_" | grep -v "merged_runs" | grep -v "tempdir" | sed -e "s/^\.\///") 
+    echo "working in dirs:"
+    echo $DIRS
+    multiDir=$"TRUE"
+    export multiDir
+else
+    echo "Working with individual sequencing run"
+    echo "Process = quality filtering"
+    DIRS=$(pwd)
+    printf "\n workingDir = $DIRS \n"
+fi
+
 #############################
 ### Start of the workflow ###
 #############################
-start=$(date +%s)
-### Check if files with specified extension exist in the dir
-first_file_check
-### Prepare working env and check single-end data
-prepare_SE_env
-### Process samples
-for file in *.$extension; do
-    #Read file name; without extension
-    input=$(echo $file | sed -e "s/.$extension//")
-    ## Preparing files for the process
-    printf "\n____________________________________\n"
-    printf "Processing $input ...\n"
-    #If input is compressed, then decompress (keeping the compressed file, but overwriting if filename exists!)
-        
-    check_gz_zip_SE
-    ### Check input formats (fastq supported)
-    check_extension_fastq
+### looping through multiple sequencing runs (dirs in multiRunDir) if the $WD=multiRunDir, otherwise just doing single seqrun analyses
+for seqrun in $DIRS; do
+    start_time=$(date)
+    start=$(date +%s)
 
-    ###############################
-    ### Start quality filtering ###
-    ###############################
-    checkerror=$(vsearch --fastq_filter \
-    $input.$extension \
-    $maxee \
-    $maxns \
-    $trunc_length \
-    $minlen \
-    $cores \
-    $qmax \
-    $qmin \
-    $max_length \
-    $maxee_rate \
-    $truncqual \
-    $truncee \
-    --fastqout $output_dir/$input.$extension 2>&1)
-    check_app_error
-done
+    cd $seqrun
+    if [[ $multiDir == "TRUE" ]]; then
+        ### Check if the dir has the specified file extension; if not then ERROR
+        count=$(ls -1 *.$fileFormat 2>/dev/null | wc -l)
+        if [[ $count == 0 ]]; then
+            printf '%s\n' "ERROR]: cannot find files with specified extension '$fileFormat' in dir $seqrun.
+            Please check the extension of your files and specify again.
+            >Quitting" >&2
+            end_process
+        fi
+        #output dir
+        output_dir=$"/input/multiRunDir/${seqrun%%/*}/qualFiltered_out"
+        export output_dir
 
-#################################################
-### COMPILE FINAL STATISTICS AND README FILES ###
-#################################################
-printf "\nCleaning up and compiling final stats files ...\n"
-clean_and_make_stats
-end=$(date +%s)
-runtime=$((end-start))
+        ### Prepare working env and check paired-end data
+        first_file_check
+        prepare_SE_env
+    else
+        #output dir
+        output_dir=$"/input/qualFiltered_out"
+        export output_dir
+        # Check if files with specified extension exist in the dir
+        first_file_check
+        # Prepare working env and check paired-end data
+        prepare_SE_env
+    fi
 
-#Make README.txt file
-printf "# Quality filtering was performed using vsearch (see 'Core command' below for the used settings).
+    ### Process samples
+    for file in *.$extension; do
+        #Read file name; without extension
+        input=$(echo $file | sed -e "s/.$extension//")
+        ## Preparing files for the process
+        printf "\n____________________________________\n"
+        printf "Processing $input ...\n"
+        #If input is compressed, then decompress (keeping the compressed file, but overwriting if filename exists!)
+        check_gz_zip_SE
+        ### Check input formats (fastq supported)
+        check_extension_fastq
+
+        ###############################
+        ### Start quality filtering ###
+        ###############################
+        checkerror=$(vsearch --fastq_filter \
+        $input.$extension \
+        $maxee \
+        $maxns \
+        $trunc_length \
+        $minlen \
+        $cores \
+        $qmax \
+        $qmin \
+        $max_length \
+        $maxee_rate \
+        $truncqual \
+        $truncee \
+        --fastqout $output_dir/$input.$extension 2>&1)
+        check_app_error
+    done
+
+    #################################################
+    ### COMPILE FINAL STATISTICS AND README FILES ###
+    #################################################
+    printf "\nCleaning up and compiling final stats files ...\n"
+    clean_and_make_stats
+    end=$(date +%s)
+    runtime=$((end-start))
+
+    #Make README.txt file
+    printf "# Quality filtering was performed using vsearch (see 'Core command' below for the used settings).
+
+Start time: $start_time
+End time: $(date)
+Runtime: $runtime seconds
 
 Files in 'qualFiltered_out':
 # *.$extension           = quality filtered sequences in FASTQ format.
@@ -125,14 +167,17 @@ Files in 'qualFiltered_out':
 Core command -> 
 vsearch --fastq_filter input_file $maxee $maxns $trunc_length $minlen $cores $qmax $qmin $max_length $maxee_rate $truncqual $truncee --fastqout $output_dir/output_file.fastq
 
-Total run time was $runtime sec.
-
-##################################################################
-###Third-party applications for this process [PLEASE CITE]:
-#vsearch v2.23.0 for quality filtering
+#############################################
+###Third-party applications for this process:
+#vsearch (version $vsearch_version) for quality filtering
     #citation: Rognes T, Flouri T, Nichols B, Quince C, Mahé F (2016) VSEARCH: a versatile open source tool for metagenomics PeerJ 4:e2584
     #https://github.com/torognes/vsearch
-##########################################################" > $output_dir/README.txt
+#############################################" > $output_dir/README.txt
+    ### if working with multiRunDir then cd /input/multiRunDir
+    if [[ $multiDir == "TRUE" ]]; then 
+        cd /input/multiRunDir
+    fi
+done
 
 #Done
 printf "\nDONE "

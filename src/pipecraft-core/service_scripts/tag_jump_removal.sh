@@ -89,11 +89,11 @@ Generated files:
 
 Total run time was $runtime sec.
 
-##################################################################
-###Third-party applications for this process [PLEASE CITE]:
+##############################################
+###Third-party applications for this process:
 # UNCROSS2
     citation: R.C. Edgar (2018), UNCROSS2: identification of cross-talk in 16S rRNA OTU tables, https://doi.org/10.1101/400762
-##################################################################" > $output_dir/README_TagJumps.txt
+##############################################" > $output_dir/README_TagJumps.txt
 
 #Done
 printf "\nDONE "

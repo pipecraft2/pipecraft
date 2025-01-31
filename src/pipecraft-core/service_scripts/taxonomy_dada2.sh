@@ -3,13 +3,14 @@
 #DADA2 RDP naive Bayesian classifier (function assignTaxonomy)
 #Input = fasta file in the working directory and specified database file
 
-##########################################################
+################################################
 ###Third-party applications:
 #dada2 v1.28
-    #citation: Callahan, B., McMurdie, P., Rosen, M. et al. (2016) DADA2: High-resolution sample inference from Illumina amplicon data. Nat Methods 13, 581–583. https://doi.org/10.1038/nmeth.3869
-    #Distributed under the GNU LESSER GENERAL PUBLIC LICENSE
-    #https://github.com/benjjneb/dada2
-##################################################################
+##############################################
+# Checking tool versions
+printf "# Checking tool versions ...\n"
+dada2_version=$(Rscript -e "packageVersion('dada2')" 2>/dev/null | awk '{print $2}' | sed -e "s/‘//g" -e 's/’//g')
+printf "# DADA2 version: $dada2_version\n"
 
 #env variables
 workingDir=${workingDir}
@@ -26,6 +27,7 @@ output_dir=$"/input/taxonomy_out.dada2"
 export output_dir
 
 #start time
+start_time=$(date)
 start=$(date +%s)
 
 ### Check if files with specified extension exist in the dir
@@ -96,11 +98,11 @@ assignTaxonomy($input_fasta, $dada2_database, minBoot = $minBoot, tryRC = $tryRC
 
 Total run time was $runtime sec.
 
-##########################################################
-###Third-party applications [PLEASE CITE]:
-#dada2 v1.28
+################################################
+###Third-party applications:
+#dada2 (version $dada2_version)
     #citation: Callahan, B., McMurdie, P., Rosen, M. et al. (2016) DADA2: High-resolution sample inference from Illumina amplicon data. Nat Methods 13, 581-583. https://doi.org/10.1038/nmeth.3869
-##################################################################" > $output_dir/README.txt
+##############################################" > $output_dir/README.txt
 
 #Done
 printf "\nDONE "

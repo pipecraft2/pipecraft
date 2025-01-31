@@ -2,14 +2,14 @@
 
 # Chimera filtering with DADA2 removeBimeraDenovo function for ASVs workflow.
 
-##########################################################
+################################################
 ###Third-party applications:
 # dada2 v1.28
-    #citation: Callahan, B., McMurdie, P., Rosen, M. et al. (2016) DADA2: High-resolution sample inference from Illumina amplicon data. Nat Methods 13, 581-583. https://doi.org/10.1038/nmeth.3869
-    #Copyright (C) 2007 Free Software Foundation, Inc.
-    #Distributed under the GNU LESSER GENERAL PUBLIC LICENSE
-    #https://github.com/benjjneb/dada2
-##########################################################
+################################################
+# Checking tool versions
+printf "# Checking tool versions ...\n"
+dada2_version=$(Rscript -e "packageVersion('dada2')" 2>/dev/null | awk '{print $2}' | sed -e "s/‘//g" -e 's/’//g')
+printf "# DADA2 version: $dada2_version\n"
 
 #load env variables
 readType=${readType}
@@ -27,7 +27,7 @@ printf "# DADA2 version: $dada2_version\n"
 #Source for functions
 source /scripts/submodules/framework.functions.sh
 
-# Check if I need to work with multiple or with a single sequencing run
+# check if working with multiple runs or with a single sequencing run
 if [[ -d "/input/multiRunDir" ]]; then
   echo "DADA2 paired-end pipeline with multiple sequencing runs in multiRunDir"
   echo "Process = chimera filtering"
@@ -52,6 +52,7 @@ declare -a output_feature_tables
 declare -a output_fastas
 
 for seqrun in $DIRS; do
+    start_time=$(date)
     start=$(date +%s)
     cd $seqrun
     
@@ -77,7 +78,7 @@ for seqrun in $DIRS; do
         output_fasta="$output_dir2/ASVs.fasta"
     fi
 
-    FOR TESTING: Skip this process if output directory already exists
+    # # FOR TESTING: Skip this process if output directory already exists
     if [[ -d $output_dir1 ]]; then
         printf "# skipping chimera filtering\n"
         if [[ $multiDir == "true" ]]; then
@@ -161,22 +162,18 @@ Files in 'chimeraFiltered_out.dada2/chimeras':
 
 Total run time was $runtime sec.
 
-###########################################################
-###Third-party applications for this process [PLEASE CITE]:
+#################################################
+###Third-party applications for this process:
 # dada2 (version $dada2_version)
     #citation: Callahan, B., McMurdie, P., Rosen, M. et al. (2016) DADA2: High-resolution sample inference from Illumina amplicon data. Nat Methods 13, 581-583. https://doi.org/10.1038/nmeth.3869
     #https://github.com/benjjneb/dada2
-###########################################################" > $output_dir1/README.txt
+#################################################" > $output_dir1/README.txt
 
     #Make README.txt file (ASVs_out.dada2)
     # count features and sequences; outputs variables feature_count, nSeqs, nSample
     count_features "$output_dir2/ASVs_table.txt"
 
     printf "# ASV table was constructed with DADA2 makeSequenceTable function.
-
-Number of ASVs                       = $feature_count
-Number of sequences in the ASV table = $nSeqs
-Number of samples in the ASV table   = $nSample
 
 Files in 'ASVs_out.dada2' directory:
     # ASVs_table.txt                  = ASV-by-sample table (tab delimited file). 
@@ -187,12 +184,16 @@ Files in 'ASVs_out.dada2' directory:
     # ASVs_table.denoised.rds         = rds formatted denoised ASV table (for DADA2) 
                                          [same .rds is in denoised_assembled.dada2 dir]
 
-##################################################################
-###Third-party applications for this process [PLEASE CITE]:
+Number of ASVs                       = $feature_count
+Number of sequences in the ASV table = $nSeqs
+Number of samples in the ASV table   = $nSample
+
+##############################################
+###Third-party applications for this process:
 # dada2 (version $dada2_version)
     #citation: Callahan, B., McMurdie, P., Rosen, M. et al. (2016) DADA2: High-resolution sample inference from Illumina amplicon data. Nat Methods 13, 581-583. https://doi.org/10.1038/nmeth.3869
     #https://github.com/benjjneb/dada2
-########################################################" > $output_dir2/README.txt
+##############################################" > $output_dir2/README.txt
 
 
     ### if working with multiRunDir then cd /input/multiRunDir

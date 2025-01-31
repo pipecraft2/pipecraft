@@ -3,10 +3,10 @@
 #Taxonomy annotation with RDP Classifier
 #Input = single-end fasta file + database file.
 
-##########################################################
+################################################
 ###Third-party applications:
 # The RDP classifier v2.13 [via metaworks container]
-##########################################################
+################################################
 
 #load variables
 regex='[^/]*$'
@@ -24,6 +24,7 @@ output_dir=$"/input/taxonomy_out"
 #############################
 ### Start of the workflow ###
 #############################
+start_time=$(date)
 start=$(date +%s)
 #initiate conda env on container
 eval "$(conda shell.bash hook)"
@@ -84,8 +85,8 @@ rdp_classifier $mem classify --shortseq_outfile shortseqs.txt $confidence -t $db
 
 Total run time was $runtime sec.
 
-##########################################################
-###Third-party applications [PLEASE CITE]:
+################################################
+###Third-party applications:
     #The RDP classifier v2.13:
 	#citation: Wang, Q., Garrity, G. M., Tiedje, J. M., & Cole, J. R. (2007). Naive Bayesian Classifier for Rapid Assignment of rRNA Sequences into the New Bacterial Taxonomy. Applied and Environmental Microbiology. 73(16), 5261-5267. doi:10.1128/AEM.00062-07
 #####################################################" > $output_dir/README.txt

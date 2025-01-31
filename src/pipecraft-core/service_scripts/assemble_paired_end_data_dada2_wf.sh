@@ -2,14 +2,14 @@
 
 # denoise and assemble paired-end data with DADA2 dada and mergePairs functions. For DADA2 full workflow.
 
-##########################################################
+################################################
 ###Third-party applications:
 #dada2 v1.28
-    #citation: Callahan, B., McMurdie, P., Rosen, M. et al. (2016) DADA2: High-resolution sample inference from Illumina amplicon data. Nat Methods 13, 581-583. https://doi.org/10.1038/nmeth.3869
-    #Copyright (C) 2007 Free Software Foundation, Inc.
-    #Distributed under the GNU LESSER GENERAL PUBLIC LICENSE
-    #https://github.com/benjjneb/dada2
-##########################################################
+################################################
+# Checking tool versions
+printf "# Checking tool versions ...\n"
+dada2_version=$(Rscript -e "packageVersion('dada2')" 2>/dev/null | awk '{print $2}' | sed -e "s/‘//g" -e 's/’//g')
+printf "# DADA2 version: $dada2_version\n"
 
 #load env variables
 readType=${readType}
@@ -34,12 +34,12 @@ detect_singletons=${DETECT_SINGLETONS}
 #Source for functions
 source /scripts/submodules/framework.functions.sh
 
-# Check if I need to work with multiple or with a single sequencing run
+# check if working with multiple runs or with a single sequencing run
 if [[ -d "/input/multiRunDir" ]]; then
-  echo "DADA2 paired-end pipeline with multiple sequencing runs in multiRunDir"
-  echo "Process = denoise and assemble"
-  cd /input/multiRunDir
-  # read in directories (sequencing sets) to work with. Skip directories renamed as "skip_*"
+    echo "DADA2 paired-end pipeline with multiple sequencing runs in multiRunDir"
+    echo "Process = denoise and assemble"
+    cd /input/multiRunDir
+    # read in directories (sequencing sets) to work with. Skip directories renamed as "skip_*"
     DIRS=$(find . -maxdepth 3 -mindepth 1 -type d | grep "qualFiltered_out" | grep -v "skip_" | grep -v "merged_runs" | grep -v "tempdir" | sed -e "s/^\.\///") 
     echo "working in dirs:"
     echo $DIRS
@@ -48,7 +48,6 @@ if [[ -d "/input/multiRunDir" ]]; then
 else
     echo "Working with individual sequencing run"
     echo "Process = denoise and assemble"
-    #DIRS=$(find . -maxdepth 2 -mindepth 1 -type d | grep "qualFiltered_out" | grep -v "skip_" | grep -v "merged_runs" | grep -v "tempdir" | sed -e "s/^\.\///")
     DIRS=$(pwd)
     printf "\n workingDir = $DIRS \n"
 fi
@@ -58,6 +57,7 @@ fi
 #############################
 ### looping through multiple sequencing runs (dirs in multiRunDir) if the $WD=multiRunDir, otherwise just doing single seqrun analyses
 for seqrun in $DIRS; do
+    start_time=$(date)
     start=$(date +%s)
     cd $seqrun
     
@@ -68,7 +68,7 @@ for seqrun in $DIRS; do
         output_dir=$"/input/multiRunDir/${seqrun%%/*}/denoised_assembled.dada2"
         export output_dir
 
-        # FOR TESTING: Skip if output directory already exists
+        # # FOR TESTING: Skip if output directory already exists
         if [[ -d $output_dir ]]; then
             printf "# skipping denoising and assembling\n"
             if [[ $multiDir == "TRUE" ]]; then
@@ -111,15 +111,6 @@ for seqrun in $DIRS; do
         if [[ $workingDir == "/input/qualFiltered_out" ]]; then
             first_file_check
         fi
-    fi
-
-
-    ### Check that at least 2 samples are provided
-    files=$(ls | grep -c ".$fileFormat")
-    if (( $files < 4 )); then
-        printf '%s\n' "ERROR]: please provide at least 2 samples for the ASVs workflow (WD = $seqrun)
-    >Quitting" >&2
-        end_process
     fi
 
     #############################
@@ -178,12 +169,12 @@ Total run time was $runtime sec for denoising.
 assemble:     mergePairs(dadaFs, derepFs, dadaRs, derepRs, maxMismatch = $maxMismatch, minOverlap = $minOverlap, justConcatenate = $justConcatenate, trimOverhang = $trimOverhang)
 
 Total run time was $runtime sec for merging pairs.
-##################################################################
-###Third-party applications for this process [PLEASE CITE]:
-#dada2 v1.28
+##############################################
+###Third-party applications for this process:
+#dada2 (version $dada2_version)
     #citation: Callahan, B., McMurdie, P., Rosen, M. et al. (2016) DADA2: High-resolution sample inference from Illumina amplicon data. Nat Methods 13, 581-583. https://doi.org/10.1038/nmeth.3869
     #https://github.com/benjjneb/dada2
-########################################################" >> $output_dir/README.txt
+##############################################" >> $output_dir/README.txt
     fi
 
     ### if working with multiRunDir then cd /input/multiRunDir

@@ -6,7 +6,7 @@
 #mismatches = allowed number of differences for primer.
 #Degenerate primers are allowed using IUPAC codes.
 
-##########################################################
+################################################
 ###Third-party applications:
 #seqkit v2.3.0
     #citation: Shen W, Le S, Li Y, Hu F (2016) SeqKit: A Cross-Platform and Ultrafast Toolkit for FASTA/Q File Manipulation. PLOS ONE 11(10): e0163962. https://doi.org/10.1371/journal.pone.0163962
@@ -17,7 +17,7 @@
     #Copyright (c) 2011-2016, Indraniel Das
     #https://github.com/indraniel/fqgrep
 #pigz v2.4
-##########################################################
+################################################
 
 # Load variables
 ###############################
@@ -34,6 +34,7 @@ output_dir=$"/input/reoriented_out"
 #############################
 ### Start of the workflow ###
 #############################
+start_time=$(date)
 start=$(date +%s)
 ### Check if files with specified extension exist in the dir
 first_file_check
@@ -173,15 +174,15 @@ Summary of sequence counts in 'seq_count_summary.txt'\n
 
 Total run time was $runtime sec.
 
-##################################################################
-###Third-party applications for this process [PLEASE CITE]:
+##############################################
+###Third-party applications for this process:
 #seqkit v2.3.0 for manipulating reads and synchronizing R1 and R2
     #citation: Shen W, Le S, Li Y, Hu F (2016) SeqKit: A Cross-Platform and Ultrafast Toolkit for FASTA/Q File Manipulation. PLOS ONE 11(10): e0163962. https://doi.org/10.1371/journal.pone.0163962
     #https://bioinf.shenwei.me/seqkit/
 #fqgrep v0.4.4 for finding primer strings
     #Copyright (c) 2011-2016, Indraniel Das
     #https://github.com/indraniel/fqgrep
-##########################################################" > $output_dir/README.txt
+################################################" > $output_dir/README.txt
 
 printf "\nDONE "
 printf "Total time: $runtime sec.\n "

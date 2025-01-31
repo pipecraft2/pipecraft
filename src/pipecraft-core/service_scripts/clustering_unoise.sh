@@ -5,7 +5,7 @@
 
 # Sequence denoising and clustering
 
-##########################################################
+################################################
 ###Third-party applications:
 #vsearch v2.23.0
     #citation: Rognes T, Flouri T, Nichols B, Quince C, Mahé F (2016) VSEARCH: a versatile open source tool for metagenomics PeerJ 4:e2584
@@ -17,7 +17,7 @@
     #Copyright (C) 2007-2021 Ole Tange, http://ole.tange.dk and Free Software Foundation, Inc.
     #Distributed under the License GPLv3+
 #pigz
-##########################################################
+################################################
 
 ###############################
 ###############################
@@ -50,6 +50,7 @@ output_dir=$"/input/clustering_out"
 ## Number of cores for GNU parallel. [NOT WORKING]
 #NCORES=$cores
 
+start_time=$(date)
 start=$(date +%s)
 # Source for functions
 source /scripts/submodules/framework.functions.sh
@@ -411,14 +412,14 @@ reducing minsize to 4 is more reasonable for higher sensitivity.
 \n" >> $output_dir/README.txt
 
 printf "\nTotal run time was $runtime sec.\n\n
-##################################################################
-###Third-party applications for this process [PLEASE CITE]:
+##############################################
+###Third-party applications for this process:
 #vsearch v2.23.0 for clustering
     #citation: Rognes T, Flouri T, Nichols B, Quince C, Mahé F (2016) VSEARCH: a versatile open source tool for metagenomics PeerJ 4:e2584
     #https://github.com/torognes/vsearch
 #GNU Parallel 20210422 for job parallelisation 
     #Citation: Tange, O. (2021, April 22). GNU Parallel 20210422 ('Ever Given'). Zenodo. https://doi.org/10.5281/zenodo.4710607
-##########################################################" >> $output_dir/README.txt
+################################################" >> $output_dir/README.txt
 
 #variables for all services
 echo "#variables for all services: "

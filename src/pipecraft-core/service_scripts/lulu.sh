@@ -3,7 +3,7 @@
 # Post-clustering of OTU/ASV table with LULU 
 # Input = OTU table and correspoding fasta file
 
-##########################################################
+################################################
 ###Third-party applications:
 #lulu v0.1.0
     #citation: Froslev, T.G., Kjoller, R., Bruun, H.H. et al. (2017) Algorithm for post-clustering curation of DNA amplicon data yields reliable biodiversity estimates. Nat Commun 8, 1188.
@@ -17,7 +17,7 @@
     #Distributed under the GNU General Public License version 3 by the Free Software Foundation
     #https://github.com/torognes/vsearch
 #pigz
-##################################################################
+##############################################
 
 #env variables
 workingDir=${workingDir}
@@ -60,6 +60,7 @@ printf "\n input fasta = $input_fasta \n"
 ### Start of the workflow ###
 #############################
 #start time
+start_time=$(date)
 start=$(date +%s)
 
 ### Check if input table col.names contain #
@@ -187,15 +188,15 @@ LULU in R: curated_result <- lulu::lulu(otutable_name, match_list.lulu, minimum_
 
 Total run time was $runtime sec.
 
-##########################################################
-###Third-party applications [PLEASE CITE]:
+################################################
+###Third-party applications:
 #lulu v0.1.0
     #citation: Froslev, T.G., Kjoller, R., Bruun, H.H. et al. 2017. Algorithm for post-clustering curation of DNA amplicon data yields reliable biodiversity estimates. Nat Commun 8, 1188.
 #BLAST 2.14.0+ (if BLAST was used to make match_list.lulu)
     #citation: Camacho C., Coulouris G., Avagyan V., Ma N., Papadopoulos J., Bealer K., & Madden T.L. (2008) BLAST+: architecture and applications. BMC Bioinformatics 10:421. 
 #vsearch v2.23.0 (if vsearch was used to make match_list.lulu)
     #citation: Rognes T, Flouri T, Nichols B, Quince C, Mahé F (2016) VSEARCH: a versatile open source tool for metagenomics PeerJ 4:e2584
-##################################################################" > $output_dir/README.txt
+##############################################" > $output_dir/README.txt
 
 #Done
 printf "\nDONE "
