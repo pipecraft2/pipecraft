@@ -44,24 +44,11 @@ source /scripts/submodules/framework.functions.sh
 #output dir
 output_dir=$"/input/DEICODE_out"
 
-#Automatic search for OTU_table.txt or ASVs_table.txt (standard PipeCraft2 output file names), otherwise use the file that was specified in the panel
-if [[ -e "$workingDir/OTU_table.txt" ]]; then
-    otu_table=$"$workingDir/OTU_table.txt"
-    printf "\n input table = $otu_table \n"
-elif [[ -e "$workingDir/ASVs_table.txt" ]]; then
-    otu_table=$"$workingDir/ASVs_table.txt"
-    printf "\n input table = $otu_table \n"
-elif [[ $table == "undefined" ]]; then
-    printf '%s\n' "ERROR]: input table was not specified and cannot find OTU_table.txt or ASVs_table.txt in the working dir.
-    >Quitting" >&2
-    end_process
-else
-    #get input OTU table file
-    regex='[^/]*$'
-    otu_table_temp=$(echo $table | grep -oP "$regex")
-    otu_table=$(printf "/extraFiles/$otu_table_temp")
-    printf "\n input table = $otu_table \n "
-fi
+# get input OTU table file
+regex='[^/]*$'
+otu_table_temp=$(echo $table | grep -oP "$regex")
+otu_table=$(printf "/extraFiles/$otu_table_temp")
+printf "\n input table = $otu_table \n "
 
 #If specified, get OTUs subset
 if [[ $subset_IDs == "undefined" ]]; then

@@ -2031,20 +2031,20 @@ export default new Vuex.Store({
               },
               {
                 name: "min_length",
-                value: 309,
+                value: 304,
                 disabled: "never",
                 tooltip: "minimum length of an output sequence",
                 type: "numeric",
                 rules: [(v) => v >= 1 || "ERROR: specify values >= 1"],
               },
-              // {
-              //   name: "max_length",
-              //   value: 317,
-              //   disabled: "never",
-              //   tooltip: "maximum length of an output sequence",
-              //   type: "numeric",
-              //   rules: [(v) => v >= 1 || "ERROR: specify values >= 1"],
-              // },
+              {
+                name: "max_length",
+                value: 324,
+                disabled: "never",
+                tooltip: "maximum length of an output sequence",
+                type: "numeric",
+                rules: [(v) => v >= 1 || "ERROR: specify values >= 1"],
+              },
               {
                 name: "genetic_code",
                 value: 5,
@@ -2096,8 +2096,8 @@ export default new Vuex.Store({
                 value: "undefined",
                 disabled: "never",
                 tooltip:
-                  "select OTU/ASV table. If no file is selected, then PipeCraft will look OTU_table.txt or ASV_table.txt in the WORKDIR [output will be in the directory as specified under 'SELECT WORKDIR']",
-                type: "boolfile",
+                  "select tab-delimited OTU/ASV table. [output will be in the directory as specified under 'SELECT WORKDIR']",
+                type: "file",
               },
               {
                 name: "subset_IDs",
