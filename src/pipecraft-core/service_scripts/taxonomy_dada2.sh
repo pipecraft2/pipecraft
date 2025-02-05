@@ -1,7 +1,6 @@
 #!/bin/bash
 
-#DADA2 RDP naive Bayesian classifier (function assignTaxonomy)
-#Input = fasta file in the working directory and specified database file
+### DADA2 RDP naive Bayesian classifier (function assignTaxonomy)
 
 ################################################
 ###Third-party applications:
@@ -14,11 +13,13 @@ printf "# DADA2 version: $dada2_version\n"
 
 #env variables
 workingDir=${workingDir}
-extension=$fileFormat && export fileFormat 
+extension=$fileFormat && export fileFormat
+
 #load variables
 minBoot=${minBoot}
 tryRC=${tryRC}
 dada2_database=${dada2_database}
+fasta_file=${fasta_file}
 
 #Source for functions
 source /scripts/submodules/framework.functions.sh
@@ -35,29 +36,9 @@ first_file_check
 ### Check if single-end files are compressed (decompress and check)
 check_gz_zip_SE
 
-### Get input fasta
-i=$"0"
-for file in *.$extension; do
-    input_fasta=$(echo $file)
-    i=$((i + 1))
-done
-if [[ $i > 1 ]]; then
-    if [[ -s $workingDir/ASVs_lenFilt.fasta ]] && [[ -s $workingDir/ASVs_collapsed.fasta ]]; then #if table filtering was performed by collapsing identical ASVs and by length
-        input_fasta=$"/input/ASVs_lenFilt.fasta"
-    else 
-        printf '%s\n' "ERROR]: more than one representative sequence file ($extension file) in the working folder" >&2
-        end_process
-    fi
-    printf "\n input fasta = $input_fasta \n"
-else
-    printf "\n input fasta = $input_fasta \n"
-fi
-
 #############################
 ### Start of the workflow ###
 #############################
-### Check if files with specified extension exist in the dir
-first_file_check
 ### Prepare working env and check single-end data
 prepare_SE_env
 
@@ -87,14 +68,14 @@ runtime=$((end-start))
 ###Make README.txt file
 printf "# Taxonomy was assigned using DADA2 classifier (see 'Core command' below for the used settings).
 
-Query    = $input_fasta
+Query    = $fasta_file
 Database = $dada2_database
 
 # taxonomy.csv = classifier results with bootstrap values.
   [if the above file does not exists, then check if the database formatting is appropriate for DADA2 classifier]
 
 Core command -> 
-assignTaxonomy($input_fasta, $dada2_database, minBoot = $minBoot, tryRC = $tryRC, outputBootstraps = TRUE)
+assignTaxonomy($fasta_file, $dada2_database, minBoot = $minBoot, tryRC = $tryRC, outputBootstraps = TRUE)
 
 Total run time was $runtime sec.
 

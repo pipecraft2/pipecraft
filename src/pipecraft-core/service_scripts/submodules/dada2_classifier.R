@@ -26,6 +26,9 @@ dir.create(path_results)
 database = Sys.getenv('dada2_database')
 database = gsub("\\\\", "/", database) #replace backslashes \ in the database path
 database = paste("/extraFiles", basename(database), sep = "/")
+fasta_file = Sys.getenv('fasta_file')
+fasta_file = gsub("\\\\", "/", fasta_file) #replace backslashes \ in the fasta file path
+fasta_file = paste("/extraFiles2", basename(fasta_file), sep = "/")
 minBoot = as.integer(Sys.getenv('minBoot'))
 tryRC = Sys.getenv('tryRC')
 
@@ -37,19 +40,12 @@ if (tryRC == "true" || tryRC == "TRUE"){
     tryRC = TRUE
 }
 
-#load sequences
-if (file.exists("ASVs_lenFilt.fasta") == TRUE && file.exists("ASVs_collapsed.fasta") == TRUE) {
-    seqs_file = list.files(file.path(getwd()), pattern = "ASVs_lenFilt.fasta")
-} else {
-    seqs_file = list.files(file.path(workingDir), pattern = paste0(fileFormat,"$"))
-}
-
 #log
-cat(";; input = ", seqs_file, "\n")
+cat(";; input = ", fasta_file, "\n")
 cat(";; database file = ", database, "\n")
 
 #read.fasta
-fasta = read.fasta(seqs_file, seqtype = "DNA", as.string = TRUE, forceDNAtolower = FALSE, seqonly = FALSE)
+fasta = read.fasta(fasta_file, seqtype = "DNA", as.string = TRUE, forceDNAtolower = FALSE, seqonly = FALSE)
 seq_names = getName(fasta)
 seqs = unlist(getSequence(fasta, as.string = TRUE))
 #Print no of sequences in the input file

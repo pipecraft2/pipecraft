@@ -67,30 +67,7 @@ for seqrun in $DIRS; do
         #output dir
         output_dir=$"/input/multiRunDir/${seqrun%%/*}/denoised_assembled.dada2"
         export output_dir
-
-        # # FOR TESTING: Skip if output directory already exists
-        if [[ -d $output_dir ]]; then
-            printf "# skipping denoising and assembling\n"
-            if [[ $multiDir == "TRUE" ]]; then
-                workingDir=$"/input/multiRunDir"
-                echo "workingDir=$workingDir"
-            else
-                echo "workingDir=$output_dir"
-            fi
-            if [[ -z $pool ]]; then
-                fileFormat="fasta"
-                echo "fileFormat=$fileFormat"
-            else
-                echo "fileFormat=$fileFormat"
-            fi
-            if [[ -z $pool ]]; then
-                echo "readType=single_end"
-            else
-                echo "readType=paired_end"
-            fi
-            exit 0
-        fi
-        
+       
         ### Check if the dir has the specified file extension; if not then ERROR
         count=$(ls -1 *.$fileFormat 2>/dev/null | wc -l)
         if [[ $count == 0 ]]; then

@@ -2204,6 +2204,15 @@ export default new Vuex.Store({
                 type: "file",
               },
               {
+                name: "fasta_file",
+                btnName: "select fasta",
+                value: "undefined",
+                disabled: "never",
+                tooltip:
+                  "Select a fasta file containing sequences that are subjected to taxonomy assignment",
+                type: "file",
+              },
+              {
                 name: "task",
                 items: ["blastn", "megablast"],
                 value: "blastn",
@@ -2255,6 +2264,15 @@ export default new Vuex.Store({
                 type: "file",
               },
               {
+                name: "fasta_file",
+                btnName: "select fasta",
+                value: "undefined",
+                disabled: "never",
+                tooltip:
+                  "Select a fasta file containing sequences that are subjected to taxonomy assignment",
+                type: "file",
+              },
+              {
                 name: "confidence",
                 value: 0.8,
                 disabled: "never",
@@ -2270,7 +2288,7 @@ export default new Vuex.Store({
           },
           {
             tooltip:
-              "assign taxonomy with DADA2 'assignTaxonomy' function [SELECT WORKDIR that contains only ONE fasta file for the process]",
+              "assign taxonomy with DADA2 'assignTaxonomy' function (RDP naive Bayesian classifier)",
             scriptName: "taxonomy_dada2.sh",
             imageName: "pipecraft/vsearch_dada2:2",
             serviceName: "DADA2 classifier",
@@ -2285,7 +2303,16 @@ export default new Vuex.Store({
                 value: "undefined",
                 disabled: "never",
                 tooltip:
-                  "Select a reference database fasta file for taxonomy annotation. Click on the header to download DADA2-formatted reference databases https://benjjneb.github.io/dada2/training.html",
+                  "Select a reference database fasta(.gz) file for taxonomy annotation. Click on the header to download DADA2-formatted reference databases https://benjjneb.github.io/dada2/training.html",
+                type: "file",
+              },
+              {
+                name: "fasta_file",
+                btnName: "select fasta",
+                value: "undefined",
+                disabled: "never",
+                tooltip:
+                  "Select a fasta file containing sequences that are subjected to taxonomy assignment",
                 type: "file",
               },
               {

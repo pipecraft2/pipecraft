@@ -19,6 +19,9 @@ regex='[^/]*$'
 db1_temp=$(echo $database_file | grep -oP "$regex")
 db1=$(printf "/extraFiles/$db1_temp")
 echo "db1 = $db1"
+fasta_file=$(echo $fasta_file | grep -oP "$regex")
+fasta_file=$(printf "/extraFiles2/$fasta_file")
+echo "fasta_file = $fasta_file"
 #mandatory options
 task=$"-task ${task}" # list: blastn, megablast
 strands=$"-strand ${strands}" #list: both, plus
@@ -39,7 +42,7 @@ fi
 # Source for functions
 source /scripts/submodules/framework.functions.sh
 #output dir
-output_dir=$"/input/taxonomy_out"
+output_dir=$"/input/taxonomy_out.blast"
 
 #############################
 ### Start of the workflow ###
@@ -54,11 +57,6 @@ prepare_SE_env
 check_gz_zip_SE
 ### Check input formats (fasta supported)
 check_extension_fasta
-### Select last fasta file in the folder as input for BLAST
-for file in *.$fileFormat; do
-	IN=$(echo $file)
-done
-echo "input = $IN"
 
 ### Check and assign BLAST database
 d1=$(echo $db1 | awk 'BEGIN{FS=OFS="."}{print $NF}') #get the extension
@@ -80,8 +78,10 @@ fi
 
 ## Perform taxonomy annotation
 printf '%s\n' "Running BLAST"
+echo "input = $fasta_file"
+
 checkerror=$(blastn \
--query $IN \
+-query $fasta_file \
 $strands \
 $cores \
 $database \
@@ -167,7 +167,7 @@ runtime=$((end-start))
 db_x=$(echo $db1 | sed -e 's/\/extraFiles\///')
 printf "# Taxonomy was assigned using BLAST (see 'Core command' below for the used settings).
 
-Query    = $IN
+Query    = $fasta_file	
 Database = $db_x
 
 BLAST_1st_best_hit.txt = BLAST results for the 1st best hit in the used database.
@@ -195,7 +195,7 @@ qcovs     = query coverage per subject
 pident    = percentage of identical matches
 
 Core command -> 
-blastn -query $IN $strands $database $task -max_target_seqs 10 $evalue $wordsize $reward $penalty $gapopen $gapextend -max_hsps 1
+blastn -query $fasta_file $strands $database $task -max_target_seqs 10 $evalue $wordsize $reward $penalty $gapopen $gapextend -max_hsps 1
 
 Total run time was $runtime sec.
 

@@ -52,7 +52,7 @@ printf "\n input table = $otu_table \n"
 
 #get specified input fasta file
 regex='[^/]*$'
-input_fasta_temp=$(echo $fasta_files | grep -oP "$regex")
+input_fasta_temp=$(echo $fasta_file | grep -oP "$regex")
 input_fasta=$(printf "/extraFiles2/$input_fasta_temp")
 printf "\n input fasta = $input_fasta \n"
 
@@ -168,20 +168,20 @@ if (( $merged_units == 0 )); then
     rm $output_dir/lulu_out_table.txt
     rm $output_dir/lulu_out_table.csv
 else
-    info=$"Output table consists of $curated_units molecular units (OTUs or ASVs)."
+    info=$"Output table consists of $curated_units Features (OTUs/ASVs)."
 fi
 
 printf "# Performed post-clustering with LULU (see 'Core commands' below for the used settings).
 
-Total of $merged_units molecular units (OTUs or ASVs) were merged.
+Total of $merged_units Features (OTUs/ASVs) were merged.
 $info
 
 Files in 'lulu_out' directory:
 ------------------------------
 # lulu_out_table.txt     = curated table in tab delimited txt format
-# lulu_out_RepSeqs.fasta = fasta file for the molecular units (OTUs or ASVs) in the curated table
+# lulu_out_RepSeqs.fasta = fasta file for the Features (OTUs/ASVs) in the curated table
 # match_list.lulu        = match list file that was used by LULU to merge 'daughter molecular' units
-# discarded_units.lulu   = molecular units (OTUs or ASVs) that were merged with other units based on specified thresholds)
+# discarded_units.lulu   = Features (OTUs/ASVs) that were merged with other units based on specified thresholds)
 
 Core commands -> 
 match list for LULU (match_list.lulu): $match_list_generation

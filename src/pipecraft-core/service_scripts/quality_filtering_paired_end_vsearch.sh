@@ -99,22 +99,7 @@ for seqrun in $DIRS; do
         #output dir
         output_dir=$"/input/multiRunDir/${seqrun%%/*}/qualFiltered_out"
         export output_dir
-
-        # # FOR TESTING: Skip if output directory already exists
-        if [[ -d $output_dir ]]; then
-            printf "# Output directory already exists, skipping quality filtering\n"
-            if [[ $multiDir == "TRUE" ]]; then
-                workingDir=$"/input/multiRunDir"
-                echo "workingDir=$workingDir"
-            else
-                workingDir=$"/input/qualFiltered_out"
-                echo "workingDir=$workingDir"
-            fi
-            echo "fileFormat=$fileFormat"
-            echo "readType=paired_end"
-            exit 0
-        fi
-        
+       
         ### Prepare working env and check paired-end data
         prepare_PE_env
     else

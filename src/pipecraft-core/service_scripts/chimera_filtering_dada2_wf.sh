@@ -77,20 +77,6 @@ for seqrun in $DIRS; do
         output_feature_table="$output_dir2/ASVs_table.txt"
         output_fasta="$output_dir2/ASVs.fasta"
     fi
-
-    # # FOR TESTING: Skip this process if output directory already exists
-    if [[ -d $output_dir1 ]]; then
-        printf "# skipping chimera filtering\n"
-        if [[ $multiDir == "true" ]]; then
-            workingDir=$"/input/multiRunDir"
-            echo "workingDir=$workingDir"
-        else
-            echo "workingDir=$output_dir2"
-        fi
-        echo "fileFormat=fasta"
-        echo "readType=single_end"
-        exit 0
-    fi
    
     ### Process samples with dada2 removeBimeraDenovo function in R
     printf "# Running DADA2 removeBimeraDenovo in $seqrun\n"
