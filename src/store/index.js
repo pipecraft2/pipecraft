@@ -1883,9 +1883,20 @@ export default new Vuex.Store({
                 btnName: "select fasta",
                 disabled: "never",
                 tooltip:
-                  "find setting; sequences file (fasta) that represent known species that are likely to occur in the dataset. \
+                  "find setting; reference sequences file (fasta) that represent known species that are likely to occur in the dataset. \
                   Can be the same fasta formatted database file that was/would be used for the taxonomy assignment.",
                 type: "file",
+                depends_on:
+                  'state.selectedSteps[0].services[4].Inputs[0].value == "find" || state.selectedSteps[0].services[4].Inputs[0].value == "find_and_dump"',
+              },
+              {
+                name: "reference_seqs2",
+                value: "undefined",
+                btnName: "select fasta",
+                disabled: "never",
+                tooltip:
+                  "find setting; you may provide additional reference sequences file (fasta).",
+                type: "boolfile",
                 depends_on:
                   'state.selectedSteps[0].services[4].Inputs[0].value == "find" || state.selectedSteps[0].services[4].Inputs[0].value == "find_and_dump"',
               },
@@ -4614,7 +4625,7 @@ export default new Vuex.Store({
         ],
       },
       {
-        tooltip: "Merge sequencing runs if working with multuple runs in multiRunDir. Samples with the same name across runs are merged together",
+        tooltip: "Merge sequencing runs if working with multuple runs in the 'multiRunDir' directory. Samples with the same name across runs are merged together",
         scriptName: "merge_runs_dada2_wf.sh",
         imageName: "pipecraft/vsearch_dada2:2", 
         serviceName: "Merge sequencing runs",
@@ -4628,7 +4639,7 @@ export default new Vuex.Store({
             name: "merge_runs",
             value: true,
             disabled: "never",
-            tooltip: "Merge sequencing runs if working with multuple runs in multiRunDir. Samples with the same name across runs are merged together",
+            tooltip: "Merge sequencing runs if working with multuple runs in the 'multiRunDir' directory. Samples with the same name across runs are merged together",
             type: "bool",
             onChange: (state, value) => {
               // When merge_runs is set to false, also set service selection to false

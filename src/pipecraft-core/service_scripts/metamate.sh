@@ -45,10 +45,17 @@ reference_seqs=$(echo $reference_seqs | grep -oP "$regex")
 reference_seqs=$(basename $reference_seqs)
 reference_seqs=$(printf "/extraFiles3/$reference_seqs")
 
+# Reference seqs2 handling
+if [[ $reference_seqs2 != "undefined" ]]; then
+    reference_seqs2=$(echo $reference_seqs2 | grep -oP "$regex")
+    reference_seqs2=$(basename $reference_seqs2)
+    reference_seqs2=$(printf "/extraFiles4/$reference_seqs2")
+fi
+
 # Feature table handling
 table=$(echo $table | grep -oP "$regex")
 table=$(basename $table)
-table=$(printf "/extraFiles4/$table")
+table=$(printf "/extraFiles5/$table")
 # check "Sequence" column in the table file
 if grep -q "Sequence" $table; then
     printf '%s\n' "WARNIG]: table file contains a 'Sequence' column. Removing this column before running metaMATE." >&2
@@ -60,12 +67,13 @@ fi
 # Rep seqs handling
 rep_seqs=$(echo $rep_seqs | grep -oP "$regex")
 rep_seqs=$(basename $rep_seqs)
-rep_seqs=$(printf "/extraFiles5/$rep_seqs")
+rep_seqs=$(printf "/extraFiles6/$rep_seqs")
 
+# Taxgroups handling
 if [[ $taxgroups != "undefined" ]]; then
     taxgroups=$(echo $taxgroups | grep -oP "$regex")
     taxgroups=$(basename $taxgroups) #basename, needed for macOS
-    taxgroups=$(printf "/extraFiles2/$taxgroups")
+    taxgroups=$(printf "/extraFiles13/$taxgroups")
     taxgroups=$"--taxgroups $taxgroups"
 else 
     taxgroups=$""
@@ -73,6 +81,9 @@ fi
 
 printf "\n specifications file = $specifications\n"
 printf "reference seqs file = $reference_seqs\n"
+if [[ $reference_seqs2 != "undefined" ]]; then
+    printf "reference seqs file2 = $reference_seqs2\n"
+fi
 printf "table file = $table\n"
 printf "rep seqs file = $rep_seqs\n"
 printf "find_or_dump = $find_or_dump\n"
@@ -170,10 +181,29 @@ if [[ $find_or_dump == "find" ]] || [[ $find_or_dump == "find_and_dump" ]]; then
         >Quitting" >&2
         end_process
     fi
+    if [[ $reference_seqs2 != "undefined" ]]; then
+        if ! grep -q "^>" $reference_seqs2; then
+            printf '%s\n' "ERROR]: reference_seqs2 file is not a FASTA file.
+            Please provide a fasta.
+            >Quitting" >&2
+            end_process
+        fi
+    fi
 
     # remove old $output_dir if exists
     if [[ -d $output_dir ]]; then
         rm -rf $output_dir
+    fi
+    mkdir -p $output_dir
+    # merge reference seqs files; if reference_seqs2 is provided
+    if [[ $reference_seqs2 != "undefined" ]]; then
+        cat $reference_seqs $reference_seqs2 > $output_dir/reference_seqs_merged.fasta
+        db1=$(basename $reference_seqs)
+        db2=$(basename $reference_seqs2)
+        reference_seqs=$output_dir/reference_seqs_merged.fasta
+    else 
+        db1=$(basename $reference_seqs)
+        db2=$""
     fi
 
     printf "# Running metaMATE-find\n"
@@ -298,7 +328,7 @@ Input parameters:
 ---------------
 - find_or_dump: ${find_or_dump}
 - specifications: $(basename $specifications)
-- reference_seqs: $(basename $reference_seqs)
+- reference_seqs: $db1 $db2
 - table: $(basename ${table%.temp})
 - rep_seqs: $(basename $rep_seqs)
 - genetic_code: ${genetic_code}
