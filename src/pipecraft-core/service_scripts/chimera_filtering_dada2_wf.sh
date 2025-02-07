@@ -163,6 +163,10 @@ Total run time was $runtime sec.
 
     printf "# ASV table was constructed with DADA2 makeSequenceTable function.
 
+Start time: $start_time
+End time: $(date)
+Runtime: $runtime seconds
+
 Files in 'ASVs_out.dada2' directory:
 ------------------------------------
 # ASVs_table.txt                  = ASV-by-sample table (tab delimited file). 
