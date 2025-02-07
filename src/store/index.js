@@ -3040,6 +3040,37 @@ export default new Vuex.Store({
           },
         ],
       },
+      {
+        tooltip: "Merge sequencing runs if working with multuple runs in the 'multiRunDir' directory. \
+        Performs vsearch clustering with filteres sequences from all sequencing runs. \
+        Samples with the same name across runs are not merged together (each sample will be tagged with RunID__SampleID)",
+        scriptName: "merge_runs_vsearch_wf.sh",
+        imageName: "pipecraft/vsearch_dada2:2", 
+        serviceName: "Merge sequencing runs",
+        manualLink: "empty",
+        disabled: "never",
+        selected: false,
+        showExtra: false,
+        extraInputs: [],
+        Inputs: [
+          {
+            name: "merge_runs",
+            value: true,
+            disabled: "never",
+            tooltip: "Merge sequencing runs if working with multuple runs in the 'multiRunDir' directory",
+            type: "bool",
+            onChange: (state, value) => {
+              // When merge_runs is set to false, also set service selection to false
+              if (!value) {
+                state.selected = false;
+              }
+              else {
+                state.selected = true;
+              }
+            }
+          },
+        ],
+      },
     ],
 
     // # UNOISE ASVs 

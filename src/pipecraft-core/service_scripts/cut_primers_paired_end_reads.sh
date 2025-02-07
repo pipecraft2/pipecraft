@@ -43,8 +43,6 @@ printf "# seqkit (version $seqkit_version)\n"
 #############################
 ### Start of the workflow ###
 #############################
-start_time=$(date)
-start=$(date +%s)
 printf "# Running cut primers (from paired-end reads) \n"
 if [[ $no_indels == "true" ]]; then
     indels=$"--no-indels"
@@ -74,6 +72,7 @@ fi
 
 ### looping through multiple sequencing runs (dirs in multiRunDir) if the $WD=multiRunDir, otherwise just doing single seqrun analyses
 for seqrun in $DIRS; do
+    start_time=$(date)
     start=$(date +%s)
     cd $seqrun
     

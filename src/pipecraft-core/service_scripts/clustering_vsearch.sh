@@ -74,6 +74,10 @@ fi
 #############################
 ### Start of the workflow ###
 #############################
+# Store output files in arrays for multiple runs
+declare -a output_feature_tables
+declare -a output_fastas
+
 ### looping through multiple sequencing runs (dirs in multiRunDir) if the $WD=multiRunDir, otherwise just doing single seqrun analyses
 for seqrun in $DIRS; do
     start_time=$(date)
@@ -92,6 +96,9 @@ for seqrun in $DIRS; do
         #output dir
         output_dir=$"/input/multiRunDir/${seqrun%%/*}/clustering_out"
         export output_dir
+        # Store output files in arrays for multiple runs
+        output_feature_tables+=("$output_dir/OTU_table.txt")
+        output_fastas+=("$output_dir/OTUs.fasta")
 
         ### Prepare working env and check paired-end data
         first_file_check
@@ -100,6 +107,9 @@ for seqrun in $DIRS; do
         #output dir
         output_dir=$"/input/clustering_out"
         export output_dir
+        # Store single output files
+        output_feature_table="$output_dir/OTU_table.txt"
+        output_fasta="$output_dir/OTUs.fasta"
         # Check if files with specified extension exist in the dir
         first_file_check
         # Prepare working env and check paired-end data
@@ -137,6 +147,11 @@ for seqrun in $DIRS; do
     fi
     mkdir -p tempdir
 
+    if [[ ! -d dereplicated_sequences ]]; then
+        rm -rf dereplicated_sequences
+    fi
+    mkdir -p dereplicated_sequences
+
     ### Rename sequences to sha1
         # and dereplication of individual samples, add sample ID to the header
     derep_rename () {
@@ -148,7 +163,7 @@ for seqrun in $DIRS; do
         --fasta_width 0 \
         --threads 1 \
         --sizein --sizeout \
-    | sed 's/>.*/&;sample='"$samp_name"'/' > tempdir/"$samp_name".fasta
+    | sed 's/>.*/&;sample='"$samp_name"'/' > dereplicated_sequences/"$samp_name".fasta
     }
     export -f derep_rename
     printf "Dereplication of individual samples ... \n"
@@ -156,7 +171,7 @@ for seqrun in $DIRS; do
 
     ### Global dereplication
     printf "Dereplicating globally ... \n"
-    find tempdir -maxdepth 1 -name "*.fasta" | parallel -j 1 "cat {}" \
+    find dereplicated_sequences -maxdepth 1 -name "*.fasta" | parallel -j 1 "cat {}" \
     | vsearch \
     --derep_fulllength - \
     --output $output_dir/Glob_derep.fasta \
@@ -167,19 +182,6 @@ for seqrun in $DIRS; do
 
     ### Clustering
     printf "Clustering ... \n"
-    printf "\n vsearch $seqsort \
-    $output_dir/Glob_derep.fasta \
-    $id \
-    $simtype \
-    $strands \
-    $mask \
-    $centroid_in \
-    $maxaccepts \
-    $cores \
-    $otutype $output_dir/OTUs.temp.fasta \
-    --uc $output_dir/OTUs.uc \
-    --fasta_width 0 \
-    --sizein "
 
     checkerror=$(vsearch $seqsort \
     $output_dir/Glob_derep.fasta \
@@ -197,7 +199,7 @@ for seqrun in $DIRS; do
     check_app_error
 
     ### Cat dereplicated individual samples for making an OTU table
-    cat tempdir/*.fasta > tempdir/Dereplicated_samples.fasta
+    cat dereplicated_sequences/*.fasta > tempdir/Dereplicated_samples.fasta
 
     ## Prepare table with sequence abundance per sample
     seqkit seq --name tempdir/Dereplicated_samples.fasta \
@@ -256,20 +258,22 @@ for seqrun in $DIRS; do
     fi
 
     #Delete tempdirs
-    if [[ $debugger != "true" ]]; then
-        if [[ -d tempdir ]]; then
-            rm -rf tempdir
-        fi
-        if [[ -d tempdir2 ]]; then
-            rm -rf tempdir2
-        fi
-        if [[ -f $output_dir/OTU_table_creation.log ]]; then
-            rm -f $output_dir/OTU_table_creation.log
-        fi
-        else 
-        #compress files in /tempdir
-        if [[ -d tempdir ]]; then
-            pigz tempdir/*
+    if [[ $multiDir != "TRUE" ]]; then
+        if [[ $debugger != "true" ]]; then
+            if [[ -d tempdir ]]; then
+                rm -rf tempdir
+            fi
+            if [[ -d tempdir2 ]]; then
+                rm -rf tempdir2
+            fi
+            if [[ -f $output_dir/OTU_table_creation.log ]]; then
+                rm -f $output_dir/OTU_table_creation.log
+            fi
+            else 
+            compress files in /tempdir
+            if [[ -d tempdir ]]; then
+                pigz tempdir/*
+            fi
         fi
     fi
 
@@ -320,6 +324,43 @@ clustering: vsearch $seqsort dereplicated_sequences.fasta $id $simtype $strands 
     fi
 done
 
+
+# Validate and combine output files
+if [[ $multiDir == "TRUE" ]]; then
+    # Check each file in the arrays
+    valid_feature_tables=()
+    valid_fastas=()
+    
+    for table in "${output_feature_tables[@]}"; do
+        if [[ -f "$table" && -s "$table" ]]; then
+            valid_feature_tables+=("$table")
+        else
+            printf "Warning: Feature table not found or empty: $table\n" >&2
+        fi
+    done
+    
+    for fasta in "${output_fastas[@]}"; do
+        if [[ -f "$fasta" && -s "$fasta" ]]; then
+            valid_fastas+=("$fasta")
+        else
+            printf "Warning: FASTA file not found or empty: $fasta\n" >&2
+        fi
+    done
+      
+    output_feature_table=$(IFS=,; echo "${valid_feature_tables[*]}")
+    output_fasta=$(IFS=,; echo "${valid_fastas[*]}")
+else
+    # Check single run output files
+    if [[ ! -f "$output_feature_table" || ! -s "$output_feature_table" ]]; then
+        printf "Error: Feature table not found or empty: $output_feature_table\n" >&2
+        exit 1
+    fi
+    if [[ ! -f "$output_fasta" || ! -s "$output_fasta" ]]; then
+        printf "Error: FASTA file not found or empty: $output_fasta\n" >&2
+        exit 1
+    fi
+fi
+
 #Done
 printf "\nDONE "
 printf "Total time: $runtime sec.\n "
@@ -329,3 +370,6 @@ echo "#variables for all services: "
 echo "workingDir=$output_dir"
 echo "fileFormat=$extension"
 echo "readType=single_end"
+echo "output_feature_table=$output_feature_table"
+echo "output_fasta=$output_fasta"
+

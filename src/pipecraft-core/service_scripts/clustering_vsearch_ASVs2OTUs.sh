@@ -204,6 +204,10 @@ runtime=$((end-start))
 #Make README.txt file
 printf "# ASVs clustered to OTUs with vsearch (see 'Core command' below for the used settings).
 
+Start time: $start_time
+End time: $(date)
+Runtime: $runtime seconds
+
 Clustering formed $feature_count OTUs 
   [input contained $input_ASV_count ASVs (sequences)].
 

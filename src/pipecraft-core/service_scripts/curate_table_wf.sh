@@ -79,7 +79,7 @@ if [[ -d "/input/multiRunDir" ]]; then
     DIRS=$(find . -maxdepth 1 -mindepth 1 -type d | grep -v "tempdir" | grep -v "skip_" | grep -v "merged_runs" | sed -e "s/^\.\///")
     echo "Working in dirs:"
     echo $DIRS
-    multiDir="true"
+    multiDir="TRUE"
     export multiDir
 else
     cd /input
@@ -88,7 +88,7 @@ else
     echo "pipeline = $pipeline"
     DIRS="/input"
     printf "\n workingDirs = $DIRS \n"
-    multiDir="false"
+    multiDir="FALSE"
     export multiDir
 fi
 
@@ -103,7 +103,7 @@ for seqrun in $DIRS; do
     cd $seqrun
 
     # Multi-sequencing run (full pipeline)
-    if [[ $multiDir == "true" ]]; then
+    if [[ $multiDir == "TRUE" ]]; then
         # Check for input table; define output_dir and workingDir
         if [[ -f "/input/multiRunDir/${seqrun%%/*}/ASVs_out.dada2/ASVs_table.txt" ]] && [[ $pipeline == "DADA2_ASVs" ]]; then
             feature_table_file="/input/multiRunDir/${seqrun%%/*}/ASVs_out.dada2/ASVs_table.txt"
@@ -147,7 +147,7 @@ for seqrun in $DIRS; do
             end_process
         fi
     # Single sequencing run (full pipeline)
-    elif [[ $multiDir == "false" ]]; then   
+    elif [[ $multiDir == "FALSE" ]]; then   
         # Check for input table; define output_dir and workingDir
         if [[ -f "/input/ASVs_out.dada2/ASVs_table.txt" ]]; then
             feature_table_file="/input/ASVs_out.dada2/ASVs_table.txt"
@@ -299,7 +299,7 @@ for seqrun in $DIRS; do
             readme_table_filtering $output_dir $runtime
 
             # If in multiDir mode, store outputs and continue to next run
-            if [[ $multiDir == "true" ]]; then
+            if [[ $multiDir == "TRUE" ]]; then
                 output_feature_tables+=("$output_feature_table")
                 output_fastas+=("$output_fasta")
                 cd /input/multiRunDir
@@ -571,7 +571,7 @@ Input had $ASVs_count Features.
     
     ### if working with multiRunDir then cd /input/multiRunDir to start next seqrun
         # Store outputs for this sequencing run if working with multiRunDir
-    if [[ $multiDir == "true" ]]; then
+    if [[ $multiDir == "TRUE" ]]; then
         # Create arrays if they don't exist yet
         declare -a output_feature_tables
         declare -a output_fastas
@@ -585,7 +585,7 @@ Input had $ASVs_count Features.
 done
 
 # output_feature_tables to output_feature_table when multiDir is true
-if [[ $multiDir == "true" ]]; then
+if [[ $multiDir == "TRUE" ]]; then
     output_feature_table=$(IFS=,; echo "${output_feature_tables[*]}")
     output_fasta=$(IFS=,; echo "${output_fastas[*]}")
 else

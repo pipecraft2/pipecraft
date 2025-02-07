@@ -36,7 +36,7 @@ if [[ -d "/input/multiRunDir" ]]; then
     DIRS=$(find . -maxdepth 3 -mindepth 1 -type d | grep "denoised_assembled.dada2" | grep -v "skip_" | grep -v "merged_runs" | grep -v "tempdir" | sed -e "s/^\.\///") 
     echo "working in dirs:"
     echo $DIRS
-    multiDir=$"true"
+    multiDir=$"TRUE"
     export multiDir
 else
   echo "Working with individual sequencing run"
@@ -56,7 +56,7 @@ for seqrun in $DIRS; do
     start=$(date +%s)
     cd $seqrun
     
-    if [[ $multiDir == "true" ]]; then
+    if [[ $multiDir == "TRUE" ]]; then
         workingDir="/input/multiRunDir/$seqrun"
         export workingDir # real WD for R
         #output dir
@@ -188,7 +188,7 @@ Number of samples in the ASV table   = $nSample
 
 
     ### if working with multiRunDir then cd /input/multiRunDir
-    if [[ $multiDir == "true" ]]; then 
+    if [[ $multiDir == "TRUE" ]]; then 
         cd /input/multiRunDir
     else
         cd ..
@@ -196,7 +196,7 @@ Number of samples in the ASV table   = $nSample
 done
 
 # Validate and combine output files
-if [[ $multiDir == "true" ]]; then
+if [[ $multiDir == "TRUE" ]]; then
     # Check each file in the arrays
     valid_feature_tables=()
     valid_fastas=()
@@ -236,7 +236,7 @@ printf "\nDONE "
 
 #variables for all services
 echo "#variables for all services: "
-if [[ $multiDir == "true" ]]; then
+if [[ $multiDir == "TRUE" ]]; then
     workingDir=$"/input/multiRunDir"
     echo "workingDir=$workingDir"
 else
