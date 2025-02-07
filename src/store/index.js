@@ -1994,7 +1994,7 @@ export default new Vuex.Store({
           {
             tooltip:
               "pseudogene fintering with ORFfinder (search open reading frames) and/or HMMs",
-            scriptName: "ORFfinder_hmm.sh",
+            scriptName: "ORFfinder.sh",
             imageName: "pipecraft/metaworks:1.12.0",
             serviceName: "ORF-finder",
             selected: false,
@@ -2068,14 +2068,6 @@ export default new Vuex.Store({
                   (v) => v >= 1 || "ERROR: specify values >= 1",
                   (v) => v <= 34 || "ERROR: specify values <= 34",
                 ],
-              },
-              {
-                name: "arthropod_hmm",
-                value: true,
-                disabled: "never",
-                tooltip:
-                  "on top of ORFfinder, remove sequences that don't match well to a profile HMM based on arthropod COI barcode sequences",
-                type: "bool",
               },
             ],
           },
