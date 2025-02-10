@@ -98,23 +98,26 @@ $gapextend \
 -outfmt "6 delim=+ qseqid stitle qlen slen qstart qend sstart send evalue length nident mismatch gapopen gaps sstrand qcovs pident" 2>&1)
 check_app_error
 
+# Compute similarity score and append as new column to BLAST output file
+awk -F'+' 'BEGIN {OFS="+"} {sim = $17 * ($10 / $3); print $0, sim}' "$output_dir/10BestHits.txt" > "$output_dir/10BestHits.tmp" && mv "$output_dir/10BestHits.tmp" "$output_dir/10BestHits.txt"
+
 ### Parse 10BestHits ### QUERY SEQUENCE HEADERS MUST BE UNIQE! 
 cd $output_dir
 #get only first occurrence of a duplicate row (1st hit)
 mkdir -p tempdir
-awk 'BEGIN{FS="+"}''!seen[$1]++' 10BestHits.txt > tempdir/1.temphit #sep = +
+awk 'BEGIN{FS="+"} !seen[$1]++' 10BestHits.txt > tempdir/1.temphit #sep = +
 #check which seqs got a hit
 gawk 'BEGIN{FS="+"}{print $1}' < tempdir/1.temphit | uniq > tempdir/gothits.names
 #add no_hits flag
 seqkit seq -n ../$IN > tempdir/$IN.names
 grep -v -w -F -f tempdir/gothits.names tempdir/$IN.names | sed -e 's/$/\tNo_significant_similarity_found/' >> tempdir/1.temphit
 #add header
-sed -e '1 i\qseqid+1st_hit+qlen+slen+qstart+qend+sstart+send+evalue+length+nident+mismatch+gapopen+gaps+sstrand+qcovs+pident' tempdir/1.temphit > tempdir/BLAST_1st_hit.txt 
+sed -e '1 i\qseqid+1st_hit+qlen+slen+qstart+qend+sstart+send+evalue+length+nident+mismatch+gapopen+gaps+sstrand+qcovs+pident+sim_score' tempdir/1.temphit > tempdir/BLAST_1st_hit.txt 
 
 ###10hits
 #do the same for next 2-10 hits
 for i in {2..10}; do 
-    awk -v i="$i" 'BEGIN{FS="+"}''++seen[$1]==i' 10BestHits.txt > tempdir/$i.temphit
+    awk -v i="$i" 'BEGIN{FS="+"} ++seen[$1]==i' 10BestHits.txt > tempdir/$i.temphit
     gawk 'BEGIN{FS="+"}{print $1}' < tempdir/$i.temphit | uniq > tempdir/gothits.names
     grep -v -w -F -f tempdir/gothits.names tempdir/$IN.names | sed -e 's/$/\tNo_BLAST_hit/' >> tempdir/$i.temphit && rm tempdir/gothits.names
 done
@@ -128,7 +131,7 @@ rm tempdir/*.temp
 #format 10 hits
 sed -i 's/No_significant_similarity_found.*/No_significant_similarity_found/' BLAST_10_best_hits.txt
 sed -i 's/No_BLAST_hit.*/No_BLAST_hit/' BLAST_10_best_hits.txt
-sed -i '1 i\qseqid+1st_hit+qlen+slen+qstart+qend+sstart+send+evalue+length+nident+mismatch+gapopen+gaps+sstrand+qcovs+pident+qseqid+2nd_hit+qlen+slen+qstart+qend+sstart+send+evalue+length+nident+mismatch+gapopen+gaps+sstrand+qcovs+pident+qseqid+3rd_hit+qlen+slen+qstart+qend+sstart+send+evalue+length+nident+mismatch+gapopen+gaps+sstrand+qcovs+pident+qseqid+4th_hit+qlen+slen+qstart+qend+sstart+send+evalue+length+nident+mismatch+gapopen+gaps+sstrand+qcovs+pident+qseqid+5th_hit+qlen+slen+qstart+qend+sstart+send+evalue+length+nident+mismatch+gapopen+gaps+sstrand+qcovs+pident+qseqid+6th_hit+qlen+slen+qstart+qend+sstart+send+evalue+length+nident+mismatch+gapopen+gaps+sstrand+qcovs+pident+qseqid+7th_hit+qlen+slen+qstart+qend+sstart+send+evalue+length+nident+mismatch+gapopen+gaps+sstrand+qcovs+pident+qseqid+8th_hit+qlen+slen+qstart+qend+sstart+send+evalue+length+nident+mismatch+gapopen+gaps+sstrand+qcovs+pident+qseqid+9th_hit+qlen+slen+qstart+qend+sstart+send+evalue+length+nident+mismatch+gapopen+gaps+sstrand+qcovs+pident+qseqid+10th_hit+qlen+slen+qstart+qend+sstart+send+evalue+length+nident+mismatch+gapopen+gaps+sstrand+qcovs+pident' BLAST_10_best_hits.txt
+sed -i '1 i\qseqid+1st_hit+qlen+slen+qstart+qend+sstart+send+evalue+length+nident+mismatch+gapopen+gaps+sstrand+qcovs+pident+sim_score+qseqid+2nd_hit+qlen+slen+qstart+qend+sstart+send+evalue+length+nident+mismatch+gapopen+gaps+sstrand+qcovs+pident+sim_score+qseqid+3rd_hit+qlen+slen+qstart+qend+sstart+send+evalue+length+nident+mismatch+gapopen+gaps+sstrand+qcovs+pident+sim_score+qseqid+4th_hit+qlen+slen+qstart+qend+sstart+send+evalue+length+nident+mismatch+gapopen+gaps+sstrand+qcovs+pident+sim_score+qseqid+5th_hit+qlen+slen+qstart+qend+sstart+send+evalue+length+nident+mismatch+gapopen+gaps+sstrand+qcovs+pident+sim_score+qseqid+6th_hit+qlen+slen+qstart+qend+sstart+send+evalue+length+nident+mismatch+gapopen+gaps+sstrand+qcovs+pident+sim_score+qseqid+7th_hit+qlen+slen+qstart+qend+sstart+send+evalue+length+nident+mismatch+gapopen+gaps+sstrand+qcovs+pident+sim_score+qseqid+8th_hit+qlen+slen+qstart+qend+sstart+send+evalue+length+nident+mismatch+gapopen+gaps+sstrand+qcovs+pident+sim_score+qseqid+9th_hit+qlen+slen+qstart+qend+sstart+send+evalue+length+nident+mismatch+gapopen+gaps+sstrand+qcovs+pident+sim_score+qseqid+10th_hit+qlen+slen+qstart+qend+sstart+send+evalue+length+nident+mismatch+gapopen+gaps+sstrand+qcovs+pident+sim_score' BLAST_10_best_hits.txt
 
 ##### BLAST 1st hit with query SEQ ######
 #fasta to oneline
@@ -140,7 +143,7 @@ sed -i '/^$/d' BLAST_1st_best_hit.temp
 sort -k 1 --field-separator=\t tempdir/$IN.oneline | sed -e 's/^>//' | sed -e 's/\r//' > tempdir/seqs.txt
 #merge seqs and 1st hit
 paste tempdir/seqs.txt BLAST_1st_best_hit.temp > BLAST_1st_best_hit.txt && rm BLAST_1st_best_hit.temp
-sed -i '1 i\qseqid+query_seq+qseqid+1st_hit+qlen+slen+qstart+qend+sstart+send+evalue+length+nident+mismatch+gapopen+gaps+sstrand+qcovs+pident' BLAST_1st_best_hit.txt
+sed -i '1 i\qseqid+query_seq+qseqid+1st_hit+qlen+slen+qstart+qend+sstart+send+evalue+length+nident+mismatch+gapopen+gaps+sstrand+qcovs+pident+sim_score' BLAST_1st_best_hit.txt
 
 mv 10BestHits.txt tempdir/
 sed -i 's/\t/+/g' BLAST_1st_best_hit.txt
@@ -152,10 +155,10 @@ sed -i 's/\t/+/g' BLAST_10_best_hits.txt
 printf "\nCleaning up and compiling final stats files ...\n"
 
 if [[ $debugger != "true" ]]; then
-	if [[ -d tempdir ]];then
+	if [[ -d tempdir ]]; then
 		rm -r tempdir
 	fi
-	if [[ -d tempdir2 ]];then
+	if [[ -d tempdir2 ]]; then
 		rm -r tempdir2
 	fi
 fi
@@ -193,6 +196,7 @@ gaps      = total number of gaps
 sstrand   = subject strand
 qcovs     = query coverage per subject
 pident    = percentage of identical matches
+sim_score = similarity score calculated as (pident * (alignment length/qlen))
 
 Core command -> 
 blastn -query $fasta_file $strands $database $task -max_target_seqs 10 $evalue $wordsize $reward $penalty $gapopen $gapextend -max_hsps 1
