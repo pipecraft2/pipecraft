@@ -3843,6 +3843,377 @@ export default new Vuex.Store({
     //     ],
     //   },
     // ],
+    // # OptimOTU
+    OptimOTU: [
+      {
+        tooltip: "Specify sequence orientation",
+        scriptName:"xxx.sh",
+        imageName: "pipecraft/optim_otu:3",
+        serviceName: "sequence orientation",
+        manualLink:
+          "",
+        disabled: "never",
+        selected: "always",
+        showExtra: false,
+        extraInputs: [],
+        Inputs: [
+          {
+            name: "seq_orientation",
+            items: ["fwd", "rev", "mixed"],
+            value: "fwd",
+            disabled: "never",
+            tooltip: `fwd = all sequences are expected to be in 5'-3' orientation; 
+            rev = all sequences are expected to be in 3'-5' orientation.
+            mixed = the orientation of seqs is expected to be mixed (5'-3' and 3'-5)`,
+            type: "select",
+          },
+        ],
+      },
+      {
+        tooltip: "remove primers sequences and trim the reads; discards all reads that contain N's (ambiguous bases) for following dada2 denoising",
+        scriptName: "xxx.sh",
+        imageName: "pipecraft/optim_otu:3",
+        serviceName: "cut primers and trim reads",
+        manualLink:
+          "",
+        disabled: "never",
+        selected: "always",
+        showExtra: false,
+        extraInputs: [],
+        Inputs: [
+          {
+            name: "forward_primer",
+            value: ["GTGARTCATCGAATCTTTG"],
+            disabled: "never",
+            tooltip: "specify forward primer (5'-3'); supports only a single fwd primer",
+            type: "chip",
+            iupac: true,
+            rules: [(v) => v.length <= 1 || "TOO MANY PRIMERS, specify ONE"],
+          },
+          {
+            name: "reverse_primer",
+            value: ["TCCTCCGCTTATTGATATGC"],
+            disabled: "never",
+            tooltip: "specify reverse primer (3'-5'); supports only a single rev primer",
+            type: "chip",
+            iupac: true,
+            rules: [(v) => v.length <= 1 || "TOO MANY PRIMERS, specify ONE"],
+          },
+          {
+            name: "max_err",
+            value: 1,
+            disabled: "never",
+            tooltip: "maximum allowed error rate in the primer search (float; e.g 0.2 = 20% error rate) in the primer sequence; or number of mismatches (int; e.g. 1 = 1 mismatch)",
+            type: "numeric",
+            rules: [(v) => v >= 0 || "ERROR: specify values >= 0"],
+          },
+          {
+            name: "truncQ_R1",
+            value: 2,
+            disabled: "never",
+            tooltip: "truncate ends (3') of R1 at first base with quality score <= N",
+            type: "numeric",
+            rules: [(v) => v >= 0 || "ERROR: specify values >= 0"],
+          },
+          {
+            name: "truncQ_R2",
+            value: 2,
+            disabled: "never",
+            tooltip: "truncate ends (3') of R2 at first base with quality score <= N",
+            type: "numeric",
+            rules: [(v) => v >= 0 || "ERROR: specify values >= 0"],
+          },
+          {
+            name: "min_length",
+            value: 100,
+            disabled: "never",
+            tooltip: "minimum length of the trimmed sequence",
+            type: "numeric",
+            rules: [(v) => v >= 1 || "ERROR: specify values >= 1"],
+          },
+          {
+            name: "cut_R1",
+            value: 0,
+            disabled: "never",
+            tooltip: "remove N bases from start of R1",
+            type: "numeric",
+            rules: [(v) => v >= 0 || "ERROR: specify values >= 0"],
+          },
+          {
+            name: "cut_R2",
+            value: 0,
+            disabled: "never",
+            tooltip: "remove N bases from start of R2",
+            type: "numeric",
+            rules: [(v) => v >= 0 || "ERROR: specify values >= 0"],
+          },
+          {
+            name: "action",
+            items: ["trim", "retain"],
+            value: "trim",
+            disabled: "never",  
+            tooltip: `trim = trim the primers from the reads; 
+            retain = retain the primers after primer has been founds`,
+            type: "select",
+          },
+        ],
+      },
+      {
+        tooltip: "quality filtering with DADA2 'filterAndTrim' function",
+        scriptName: "xxx.sh",
+        imageName: "pipecraft/optim_otu:3",
+        serviceName: "quality filtering",
+        manualLink:
+          "",
+        disabled: "never",
+        selected: "always",
+        showExtra: false,
+        extraInputs: [],
+        Inputs: [
+          {
+            name: "maxEE_R1",
+            value: 1,
+            disabled: "never",
+            tooltip:
+              "discard sequences with more than the specified number of expected errors in R1 reads",
+            type: "numeric",
+            rules: [(v) => v >= 0.1 || "ERROR: specify values >= 0.1"],
+          },
+          {
+            name: "maxEE_R2",
+            value: 1,
+            disabled: "never",
+            tooltip:
+              "discard sequences with more than the specified number of expected errors in R2 reads",
+            type: "numeric",
+            rules: [(v) => v >= 0.1 || "ERROR: specify values >= 0.1"],
+          },
+        ],
+      },
+      {
+        tooltip: `DADA2 denoising with learnErrors(), dada() and mergePairs() functions with default DADA2 parameters. 
+                  Sequences with binned quality scores, as produced by newer Illumina sequencers, are automatically detected, and the error model is adjusted accordingly.`,
+        scriptName: "xxx.sh",
+        imageName: "pipecraft/optim_otu:3",
+        serviceName: "denoising and merging paired-end reads",
+        manualLink:
+          "",
+        disabled: "never",
+        selected: "always",
+        showExtra: false,
+        extraInputs: [],
+        Inputs: [],
+      },
+      {
+        tooltip: `Chimera filtering with DADA2 'removeBimeraDenovo()' function and vsearch 'uchime_ref' function`,
+        scriptName: "xxx.sh",
+        imageName: "pipecraft/optim_otu:3",
+        serviceName: "chimera filtering",
+        manualLink:
+          "",
+        disabled: "never",
+        selected: "always",
+        showExtra: false,
+        extraInputs: [],
+        Inputs: [],
+      },
+      {
+        tooltip: "Filter tag-jumps with UNCROSS2",
+        scriptName: "xxx.sh",
+        imageName: "pipecraft/optim_otu:3",
+        serviceName: "filter tag-jumps",
+        manualLink:
+          "",
+        disabled: "never",
+        selected: "always",
+        showExtra: false,
+        extraInputs: [],
+        Inputs: [
+          {
+            name: "f_value",
+            value: 0.03,
+            max: 0.4,
+            min: 0,
+            step: 0.01,
+            disabled: "never",
+            tooltip:
+              "f-parameter defines the expected tag-jumps rate. Default is 0.03 (equivalent to 3%). A higher value enforces stricter filtering.",
+            type: "slide",
+          },
+          {
+            name: "p_value", 
+            value: 1,
+            max: 7,
+            min: 0,
+            step: 0.5,
+            disabled: "never",
+            tooltip:
+              "p-parameter  controls the severity of tag-jump removal. It adjusts the exponent in the UNCROSS formula. Default is 1.",
+            type: "slide",
+          },
+        ],
+      },
+      {
+        tooltip: "Statistical sequence models are used for several purposes: 1) aligning ASVs prior to use of protax and/or NUMT detection; 2) filtering ASVs to remove spurious sequences",
+        scriptName: "xxx.sh",
+        imageName: "pipecraft/optim_otu:3",
+        serviceName: "Amplicon model setting",
+        manualLink:
+          "",
+        disabled: "never",
+        selected: false,
+        showExtra: false,
+        extraInputs: [],
+        Inputs: [
+          {
+            name: "model_type",
+            items: ["CM", "HMM", "none"],
+            value: "CM",
+            disabled: "never",  
+            tooltip: `CM = Codon model; 
+            HMM = Hidden Markov Model; 
+            none = skip this step`,
+            type: "select",
+          },
+          {
+            name: "model_file",
+            items: ["ITS3_ITS4", "none"],
+            value: "ITS3_ITS4",
+            disabled: "never",  
+            tooltip: `ITS3_ITS4 - model for ITS2 amplicons with ITS3 and ITS4 primers.
+            none - skip this step`,
+            type: "select",
+          },
+          {
+            name: "max_model_start",
+            value: 5,
+            disabled: "never",
+            tooltip:
+              "the match must start at this point in the model or earlier",
+            type: "numeric",
+            rules: [(v) => v >= 0 || "ERROR: specify values >= 0"],
+          },
+          {
+            name: "min_model_end",
+            value: 140,
+            disabled: "never",
+            tooltip:
+              "the match must end at this point in the model or later",
+            type: "numeric",
+            rules: [(v) => v >= 0 || "ERROR: specify values >= 0"],
+          },
+          {
+            name: "min_model_score",
+            value: 50,
+            disabled: "never",
+            tooltip:
+              "the match bit score must be at least this",
+            type: "numeric",
+            rules: [(v) => v >= 0 || "ERROR: specify values >= 0"],
+          },
+          {
+            name: "model_align",
+            value: false,
+            disabled: "never",
+            tooltip:
+              "producing aligned sequences will be skipped if the value is false",
+            type: "bool",
+          },
+          {
+            name: "numt_filter",
+            value: false,
+            disabled: "never",
+            tooltip:
+              "Filter NUMTs; requires model_type == HMM and model_align == TRUE",
+            type: "bool",
+          },
+        ],
+      },
+      {
+        tooltip: "Settings for Protax classification",
+        scriptName: "xxx.sh",
+        imageName: "pipecraft/optim_otu:3",
+        serviceName: "Protax classification",
+        manualLink:
+          "",
+        disabled: "never",
+        selected: "always",
+        showExtra: false,
+        extraInputs: [],
+        Inputs: [
+          {
+            name: "location",
+            value: "protaxFungi",
+            btnName: "protax directory",
+            disabled: "never",
+            tooltip:
+              "directory where protax is located. Default is protaxFungi that is included in the PipeCraft2 container",
+            type: "file",
+          },
+          {
+            name: "aligned",
+            value: false,
+            disabled: "never",
+            tooltip:
+              "Are all reference and query sequences are aligned (default = FALSE)",
+            type: "bool",
+          },
+          {
+            name: "ranks",
+            items: [
+              "kingdom: Fungi",
+              "kingdom",
+              "phylum",
+              "class",
+              "order",
+              "family",
+              "genus",
+              "species",
+            ],
+            value: ["kingdom"],
+            disabled: "never",
+            tooltip: "Ranks should be listed from most inclusive to lease inclusive.",
+            type: "combobox",
+          },
+          {
+            name: "outgroup",
+            value: "UNITE_Eukaryota",
+            btnName: "outgroup sequences",
+            disabled: "never",
+            tooltip:
+              `directory where the outgroup reference seqs are located. Default is xxx sequences for Fungi that are included in the PipeCraft2 container.
+              The outgroup reference should be taxonomically annotated sequences which
+              include not only the ingroup (i.e., those sequences which Protax can identify)
+              but also (ideally) all other groups which could conceivably be encountered
+              with the chosen marker.`,
+            type: "file",
+          },
+        ],
+      },
+      {
+        tooltip: "Clustering",
+        scriptName: "xxx.sh",
+        imageName: "pipecraft/optim_otu:3",
+        serviceName: "Clustering",
+        manualLink:
+          "",
+        disabled: "never",
+        selected: "always",
+        showExtra: false,
+        extraInputs: [],
+        Inputs: [
+          {
+            name: "cluster_thresholds",
+            value: "GSSP_thresholds.tsv",
+            btnName: "select file",
+            disabled: "never",
+            tooltip:
+              "select file with clustering thresholds. Default is pre-calculated thresholds for Fungi (included in the PipeCraft2 container)",
+            type: "file",
+          },
+        ],
+      },
+    ],
 
     // # NextITS
     NextITS: [
@@ -4714,6 +5085,11 @@ SINGLE-END is for PacBio data, but can be also used for single-end read Illumina
         info: "NextITS pipeline for demultiplexed PacBio ITS (single-end) amplicons. Please see the special requirement (folder structure) for the data input from the PipeCraft user guide",
         link: "https://github.com/vmikk/NextITS",
         title: "NextITS",
+      },
+      OptimOTU: {
+        info: `OptimOTU pipeline for demultiplexed Illumina ITS or COI amplicons.`,
+        link: "https://github.com/brendanf/optimotu.pipeline",
+        title: "OptimOTU",
       },
     },
   },
