@@ -4211,6 +4211,14 @@ export default new Vuex.Store({
               "select file with clustering thresholds. Default is pre-calculated thresholds for Fungi (included in the PipeCraft2 container)",
             type: "file",
           },
+          {
+            name: "cluster_thresholds_2",
+            items: ["GSSP", "other", "custom"],
+            value: "GSSP",
+            disabled: "never",
+            tooltip:"select file with clustering thresholds. Default is pre-calculated thresholds for Fungi (included in the PipeCraft2 container)",
+            type: "select",
+          }
         ],
       },
     ],

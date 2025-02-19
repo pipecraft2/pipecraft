@@ -45,6 +45,8 @@
 </template>
 
 <script>
+const slash = require("slash");
+const { dialog } = require("@electron/remote");
 export default {
   computed: {
     input() {
@@ -66,6 +68,9 @@ export default {
   methods: {
     inputUpdate(value) {
       if (this.$route.params.workflowName) {
+        if (value =='custom') {
+          this.fileSelect();
+        }
         this.blastSwitch(value);
         this.unoiseSwitch(this.$route.params.workflowName, value);
         this.$store.commit("premadeInputUpdate", {
@@ -76,6 +81,9 @@ export default {
           value: value,
         });
       } else {
+        if (value =='custom') {
+          this.fileSelect();
+        }
         this.blastSwitch2(
           value,
           this.$route.params.order,
@@ -107,6 +115,23 @@ export default {
       if (name == "NextITS" && (value == "vsearch" || value == "swarm")) {
         this.$store.state.NextITS[1].Inputs[4].value = false;
       }
+    },
+    fileSelect() {
+      dialog
+        .showOpenDialog({
+          title: "Select input files",
+          properties: ["openFile", "multiSelections", "showHiddenFiles"],
+        })
+        .then((result) => {
+          console.log(result);
+          if (typeof result.filePaths[0] !== "undefined") {
+            let correctedPath = slash(result.filePaths[0]);
+            this.inputUpdate(correctedPath);
+          }
+        })
+        .catch((err) => {
+          console.log(err);
+        });
     },
   },
 };
