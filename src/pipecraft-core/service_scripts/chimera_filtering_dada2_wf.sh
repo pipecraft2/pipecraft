@@ -33,7 +33,7 @@ if [[ -d "/input/multiRunDir" ]]; then
   echo "Process = chimera filtering"
   cd /input/multiRunDir
   # read in directories (sequencing sets) to work with. Skip directories renamed as "skip_*"
-    DIRS=$(find . -maxdepth 3 -mindepth 1 -type d | grep "denoised_assembled.dada2" | grep -v "skip_" | grep -v "merged_runs" | grep -v "tempdir" | sed -e "s/^\.\///") 
+    DIRS=$(find . -maxdepth 3 -mindepth 1 -type d | grep -E "denoised_assembled\.dada2|denoised\.dada2" | grep -v "skip_" | grep -v "merged_runs" | grep -v "tempdir" | sed -e "s/^\.\///") 
     echo "working in dirs:"
     echo $DIRS
     multiDir=$"TRUE"
@@ -41,7 +41,7 @@ if [[ -d "/input/multiRunDir" ]]; then
 else
   echo "Working with individual sequencing run"
   cd /input
-  DIRS=$(find . -maxdepth 3 -mindepth 1 -type d | grep "denoised_assembled.dada2" | grep -v "skip_" | grep -v "merged_runs" | grep -v "tempdir" | sed -e "s/^\.\///")
+  DIRS=$(find . -maxdepth 3 -mindepth 1 -type d | grep -E "denoised_assembled\.dada2|denoised\.dada2" | grep -v "skip_" | grep -v "merged_runs" | grep -v "tempdir" | sed -e "s/^\.\///")
 fi
 
 #############################
