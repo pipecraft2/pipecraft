@@ -226,7 +226,7 @@ if [[ $multiDir == "TRUE" ]]; then
     workingDir=$"/input/multiRunDir"
     echo "workingDir=$workingDir"
     # var for multiRunDir pipe
-    printf "cut_SE_primers" > $workingDir/prev_step.temp
+    printf "cut_primers" > $workingDir/.prev_step.temp
 else
     echo "workingDir=$output_dir"
 fi

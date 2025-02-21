@@ -239,6 +239,8 @@ echo "#variables for all services: "
 if [[ $multiDir == "TRUE" ]]; then
     workingDir=$"/input/multiRunDir"
     echo "workingDir=$workingDir"
+    # var for multiRunDir pipe
+    printf "merge_reads" > $workingDir/.prev_step.temp
 else
     echo "workingDir=$output_dir"
 fi
