@@ -58,3 +58,4 @@ dependencies:
   - seqkit=2.9.0
   - usearch
   - pigz
+  - r-qs2

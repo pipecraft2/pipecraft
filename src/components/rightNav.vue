@@ -292,6 +292,7 @@ export default {
       }
     },
     push2ResourceManager() {
+      console.log(docker.version())
       if (this.$route.path != "/ResourceManager") {
         if (this.$store.state.dockerStatus == "running" && this.$store.state.OStype != "Linux") {
           console.log('Linux')
