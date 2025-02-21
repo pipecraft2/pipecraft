@@ -11,6 +11,8 @@
 # checking tool versions
 vsearch_version=$(vsearch --version 2>&1 | head -n 1 | awk '{print $2}' | sed -e "s/,//g")
 printf "# vsearch (version $vsearch_version)\n"
+printf "# pipeline = $pipeline\n"
+printf "# service = $service\n"
 
 # load variables
 fastq_minoverlen="--fastq_minovlen ${min_overlap}"
@@ -28,10 +30,11 @@ source /scripts/submodules/framework.functions.sh
 
 ## check if working with multiple runs or with a single sequencing run
 # if working with multiRunDir, and the previous step was CUT PRIMERS
-if [[ -f "$workingDir/prev_step.temp" ]]; then
-    prev_step=$(cat $workingDir/prev_step.temp) # for checking previous step (output from cut_primers_paired_end_reads.sh)
+if [[ -f "$workingDir/.prev_step.temp" ]]; then
+    prev_step=$(cat $workingDir/.prev_step.temp) # for checking previous step (output from cut_primers_paired_end_reads.sh)
+    printf "# prev_step = $prev_step\n"
 fi
-if [[ $pipeline == "vsearch_OTUs" ]] && [[ $prev_step == "cut_primers" ]]; then
+if [[ $pipeline == "vsearch_OTUs" || $pipeline == "UNOISE_ASVs" ]] && [[ $prev_step == "cut_primers" ]]; then
     echo "vsearch paired-end pipeline with multiple sequencing runs in multiRunDir"
     echo "Process = assembling paired-end reads (after cut primers)"
     cd /input/multiRunDir
@@ -41,7 +44,7 @@ if [[ $pipeline == "vsearch_OTUs" ]] && [[ $prev_step == "cut_primers" ]]; then
     echo $DIRS
     multiDir=$"TRUE"
     export multiDir
-    rm $workingDir/prev_step.temp
+    rm $workingDir/.prev_step.temp
 # if working with multiRunDir, but the previous step was not CUT PRIMERS
 elif [[ -d "/input/multiRunDir" ]] && [[ $prev_step != "cut_primers" ]]; then
     echo "vsearch paired-end pipeline with multiple sequencing runs in multiRunDir"
@@ -108,14 +111,6 @@ for seqrun in $DIRS; do
             first_file_check
             prepare_PE_env
         fi
-    fi
-
-    ### Check that at least 2 samples are provided
-    files=$(ls | grep -c ".$fileFormat")
-    if (( $files < 4 )); then
-        printf '%s\n' "ERROR]: please provide at least 2 samples for the workflow (WD = $seqrun)
-    >Quitting" >&2
-        end_process
     fi
 
     ### Check if files with specified extension exist in the dir

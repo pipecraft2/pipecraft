@@ -11,6 +11,8 @@
 # checking tool versions
 vsearch_version=$(vsearch --version 2>&1 | head -n 1 | awk '{print $2}' | sed -e "s/,//g")
 printf "# vsearch (version $vsearch_version)\n"
+printf "# pipeline = $pipeline\n"
+printf "# service = $service\n"
 
 #load variables
 extension=$fileFormat && export fileFormat 
@@ -25,8 +27,6 @@ max_length=$max_length
 maxee_rate=$maxee_rate
 truncqual=${truncqual}
 truncee=${truncee}
-echo $pipeline 
-echo $service
 
 #Source for functions
 source /scripts/submodules/framework.functions.sh
@@ -62,7 +62,7 @@ fi
 
 # check if working with multiple runs or with a single sequencing run
 if [[ -d "/input/multiRunDir" ]]; then
-    echo "vsearch paired-end pipeline with multiple sequencing runs in multiRunDir"
+    echo "vsearch single-end pipeline with multiple sequencing runs in multiRunDir"
     echo "Process = quality filtering"
     cd /input/multiRunDir
     # read in directories (sequencing sets) to work with. Skip directories renamed as "skip_*"
@@ -100,7 +100,7 @@ for seqrun in $DIRS; do
         output_dir=$"/input/multiRunDir/${seqrun%%/*}/qualFiltered_out"
         export output_dir
 
-        ### Prepare working env and check paired-end data
+        ### Prepare working env and check single-end data
         first_file_check
         prepare_SE_env
     else
@@ -109,7 +109,7 @@ for seqrun in $DIRS; do
         export output_dir
         # Check if files with specified extension exist in the dir
         first_file_check
-        # Prepare working env and check paired-end data
+        # Prepare working env and check single-end data
         prepare_SE_env
     fi
 
@@ -186,6 +186,11 @@ printf "Total time: $runtime sec.\n "
 
 #variables for all services
 echo "#variables for all services: "
-echo "workingDir=$output_dir"
+if [[ $multiDir == "TRUE" ]]; then
+    workingDir=$"/input/multiRunDir"
+    echo "workingDir=$workingDir"
+else
+    echo "workingDir=$output_dir"
+fi
 echo "fileFormat=$extension"
 echo "readType=single_end"

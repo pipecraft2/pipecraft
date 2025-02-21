@@ -921,7 +921,7 @@ function readme_table_filtering() {
 
     # Start README with basic info
     cat << EOF > "$output_dir/README.txt"
-# Feature table filtering.
+# Feature table curation.
 
 Start time: $start_time
 End time: $(date)
@@ -964,6 +964,11 @@ EOF
 EOF
     fi
 
+    if [[ -n "$feature_table_file2" ]]; then
+        echo "   [clustered zOTUs (OTU_table) was also tag-jumps filtered, but stats not given in this file]" >> "$output_dir/README.txt"
+        echo "" >> "$output_dir/README.txt"
+    fi
+
     if [[ $collapseNoMismatch == "true" ]]; then
         count_features "$output_dir/${feature_table_base_name%%.txt}_collapsed.txt"
         cat << EOF >> "$output_dir/README.txt"
@@ -980,13 +985,21 @@ EOF
 EOF
     fi 
     
-    elif [[ $collapseNoMismatch == "false" ]] && [[ $min_length_num != "0" && -n $min_length_num ]] || [[ $max_length_num != "0" && -n $max_length_num ]]; then
+    elif [[ $collapseNoMismatch == "false" ]] && \
+         [[ ($min_length_num != "0" && -n $min_length_num) || \
+            ($max_length_num != "0" && -n $max_length_num) ]]; then
         
         cat << EOF >> "$output_dir/README.txt"
 ## Length filtering output (applied after tag-jumps filtering, if ON):
 $ASVs_lenFilt_result
 
 EOF
+
+    if [[ -n "$feature_table_file2" ]]; then
+        echo "  [clustered zOTUs (OTU_table) was also length filtered (after tag-jumps filtering), but stats not given in this file]" >> "$output_dir/README.txt"
+    fi
+
+
     fi
 
     # Add citations

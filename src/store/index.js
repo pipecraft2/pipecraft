@@ -3504,7 +3504,8 @@ export default new Vuex.Store({
           "tick the checkbox to cluster reads with vsearch --cluster_unoise (and optionally remove chimeras with --uchime3_denovo)",
         imageName: "pipecraft/vsearch_dada2:2",
         serviceName: "unoise3",
-        selected: false,
+        disabled: "never",
+        selected: "always",
         showExtra: false,
         extraInputs: [
           {
@@ -3624,6 +3625,91 @@ export default new Vuex.Store({
             tooltip: "minimum abundance of sequences for denoising",
             type: "numeric",
             rules: [(v) => v >= 1 || "ERROR: specify values >= 1"],
+          },
+        ],
+      },
+      {
+        tooltip: "Filter tag-jumps and/or filter OTUs by length",
+        scriptName: "curate_table_wf.sh",
+        imageName: "pipecraft/vsearch_dada2:2",
+        serviceName: "curate OTU table",
+        manualLink:
+          "empty",
+        disabled: "never",
+        selected: true,
+        showExtra: false,
+        extraInputs: [],
+        Inputs: [
+          {
+            name: "f_value",
+            value: 0.03,
+            max: 0.4,
+            min: 0,
+            step: 0.01,
+            disabled: "never",
+            tooltip:
+              "for filtering tag-jumps; f-parameter of UNCROSS2, which defines the expected tag-jumps rate. Default is 0.03 (equivalent to 3%). A higher value enforces stricter filtering. Value 0 means OFF, no tag-jumps filtering",
+            type: "slide",
+            rules: [],
+            onChange: (service, value) => {
+              const p_value = service.Inputs.find(input => input.name === "p_value").value;
+              if (Number(value) === 0 && Number(p_value) <= 0) {
+                service.selected = false;
+              }
+            },
+          },
+          {
+            name: "p_value", 
+            value: 1,
+            disabled: "never",
+            tooltip:
+              "for filtering tag-jumps; p-parameter, which controls the severity of tag-jump removal. It adjusts the exponent in the UNCROSS formula. Default is 1. Opt for 0.5 or 0.3 to steepen the curve. Value 0 means OFF, no tag-jumps filtering",
+            type: "numeric",
+            rules: [(v) => v > 0 || "OFF. Turn ON with > 0.01"],
+            onChange: (service, value) => {
+              const f_value = service.Inputs.find(input => input.name === "f_value").value;
+              if (Number(value) <= 0 && Number(f_value) === 0) {
+                service.selected = false;
+              }
+            },
+          },
+          {
+            name: "min_length",
+            value: 32,
+            disabled: "never",
+            tooltip:
+              "discard OTUs that are shorter than specified value (in base pairs). Value 0 means OFF, no filtering by min length",
+            type: "numeric",
+            rules: [(v) => v > 0 || "OFF. Turn ON with values > 0"],
+            onChange: (service, value) => {
+              const allOthersOff =
+                service.Inputs.find(input => input.name == "max_length").value == 0 &&
+                service.Inputs.find(input => input.name == "f_value").value == 0 &&
+                service.Inputs.find(input => input.name == "p_value").value == 0;
+              
+              if (value == 0 && allOthersOff) {
+                service.selected = false;
+              }
+            },
+          },
+          {
+            name: "max_length",
+            value: 0,
+            disabled: "never",
+            tooltip:
+              "discard OTUs that are longer than specified value (in base pairs). Value 0 means OFF, no filtering by max length",
+            type: "numeric",
+            rules: [(v) => v > 0 || "OFF. Turn ON with values > 0"],
+            onChange: (service, value) => {
+              const allOthersOff =
+                service.Inputs.find(input => input.name == "min_length").value == 0 &&
+                service.Inputs.find(input => input.name == "f_value").value == 0 &&
+                service.Inputs.find(input => input.name == "p_value").value == 0;
+              
+              if (value == 0 && allOthersOff) {
+                service.selected = false;
+              }
+            },
           },
         ],
       },
@@ -4077,11 +4163,13 @@ export default new Vuex.Store({
           },
           {
             name: "model_file",
-            items: ["ITS3_ITS4", "none"],
+            items: ["ITS3_ITS4", "fITS7_ITS4", "none", "custom"],
             value: "ITS3_ITS4",
             disabled: "never",  
-            tooltip: `ITS3_ITS4 - model for ITS2 amplicons with ITS3 and ITS4 primers.
-            none - skip this step`,
+            tooltip: `ITS3_ITS4 = model for ITS2 amplicons with ITS3 and ITS4 primers.
+            fITS7_ITS4 = model for ITS2 amplicons with fITS7 and ITS4 primers.
+            none = skip this step.
+            custom = specify your own custom model file`,
             type: "select",
           },
           {
@@ -4204,21 +4292,12 @@ export default new Vuex.Store({
         Inputs: [
           {
             name: "cluster_thresholds",
-            value: "GSSP_thresholds.tsv",
-            btnName: "select file",
+            items: ["Fungi", "Metazoa", "custom"],
+            value: "Fungi",
             disabled: "never",
-            tooltip:
-              "select file with clustering thresholds. Default is pre-calculated thresholds for Fungi (included in the PipeCraft2 container)",
-            type: "file",
-          },
-          {
-            name: "cluster_thresholds_2",
-            items: ["GSSP", "other", "custom"],
-            value: "GSSP",
-            disabled: "never",
-            tooltip:"select file with clustering thresholds. Default is pre-calculated thresholds for Fungi (included in the PipeCraft2 container)",
+            tooltip:"select file with clustering thresholds. Default is pre-calculated thresholds for Fungi (x.x.2024 UNITEv XX) (included in the PipeCraft2 container)",
             type: "select",
-          }
+          },
         ],
       },
     ],
@@ -5075,7 +5154,7 @@ SINGLE-END is for PacBio data, but can be also used for single-end read Illumina
         title: "DADA2 ASVs workflow",
       },
       UNOISE_ASVs: {
-        info: "vsearch ASVs (zOTUs) workflow for for demultiplexed Illumina data",
+        info: "UNOISE3 ASVs (zOTUs) workflow with vsearch for for demultiplexed Illumina data",
         link: "https://github.com/torognes/vsearch",
         title: "UNOISE3 ASVs workflow",
       },

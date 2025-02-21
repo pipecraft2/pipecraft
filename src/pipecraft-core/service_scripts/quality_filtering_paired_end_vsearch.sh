@@ -15,6 +15,8 @@ vsearch_version=$(vsearch --version 2>&1 | head -n 1 | awk '{print $2}' | sed -e
 seqkit_version=$(seqkit version 2>&1 | awk '{print $2}')
 printf "# vsearch (version $vsearch_version)\n"
 printf "# seqkit (version $seqkit_version)\n"
+printf "# pipeline = $pipeline\n"
+printf "# service = $service\n"
 
 #load variables
 export fileFormat 
