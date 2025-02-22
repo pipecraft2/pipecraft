@@ -3935,7 +3935,7 @@ export default new Vuex.Store({
         tooltip: "Specify sequence orientation",
         scriptName:"xxx.sh",
         imageName: "pipecraft/optim_otu:3",
-        serviceName: "sequence orientation",
+        serviceName: "target taxa and sequence orientation",
         manualLink:
           "",
         disabled: "never",
@@ -3943,6 +3943,15 @@ export default new Vuex.Store({
         showExtra: false,
         extraInputs: [],
         Inputs: [
+          {
+            name: "target_taxa",
+            items: ["fungi", "metazoa"],
+            value: "fungi",
+            disabled: "never",
+            tooltip: `fungi = target taxa are fungi; 
+            metazoa = target taxa are metazoa`,
+            type: "select",
+          },
           {
             name: "seq_orientation",
             items: ["fwd", "rev", "mixed"],
@@ -4140,14 +4149,14 @@ export default new Vuex.Store({
         ],
       },
       {
-        tooltip: "Statistical sequence models are used for several purposes: 1) aligning ASVs prior to use of protax and/or NUMT detection; 2) filtering ASVs to remove spurious sequences",
+        tooltip: "Statistical sequence models are used for 1) aligning ASVs prior to use of protax and/or NUMT detection; 2) filtering ASVs to remove spurious sequences",
         scriptName: "xxx.sh",
         imageName: "pipecraft/optim_otu:3",
         serviceName: "Amplicon model setting",
         manualLink:
           "",
         disabled: "never",
-        selected: false,
+        selected: true,
         showExtra: false,
         extraInputs: [],
         Inputs: [
@@ -4156,19 +4165,26 @@ export default new Vuex.Store({
             items: ["CM", "HMM", "none"],
             value: "CM",
             disabled: "never",  
-            tooltip: `CM = Codon model; 
-            HMM = Hidden Markov Model; 
+            tooltip: `CM = Codon model for Fungi; 
+            HMM = Hidden Markov Model for Metazoa; 
             none = skip this step`,
             type: "select",
+            onChange: (service, value) => {
+              if (value === "none") {
+                service.selected = false;
+              } else {
+                service.selected = true;
+              }
+            },
           },
           {
             name: "model_file",
-            items: ["ITS3_ITS4", "fITS7_ITS4", "none", "custom"],
-            value: "ITS3_ITS4",
+            items: ["ITS3_ITS4.cm", "f/gITS7_ITS4.cm", "COI.hmm", "custom"],
+            value: "ITS3_ITS4.cm",
             disabled: "never",  
-            tooltip: `ITS3_ITS4 = model for ITS2 amplicons with ITS3 and ITS4 primers.
-            fITS7_ITS4 = model for ITS2 amplicons with fITS7 and ITS4 primers.
-            none = skip this step.
+            tooltip: `included models: ITS3_ITS4.cm = model for ITS2 amplicons with ITS3 and ITS4 primers.
+            f/gITS7_ITS4.cm = model for ITS2 amplicons with fITS7/gITS7 and ITS4 primers.
+            COI.hmm = model for COI amplicons.
             custom = specify your own custom model file`,
             type: "select",
           },
@@ -4231,12 +4247,12 @@ export default new Vuex.Store({
         Inputs: [
           {
             name: "location",
+            items: ["protaxFungi", "protaxAnimal", "custom"],
             value: "protaxFungi",
-            btnName: "protax directory",
             disabled: "never",
             tooltip:
-              "directory where protax is located. Default is protaxFungi that is included in the PipeCraft2 container",
-            type: "file",
+              "directory where protax is located. For fungi, default is protaxFungi and for protaxAnimal for metazoa (included in the PipeCraft2 container)",
+            type: "select",
           },
           {
             name: "aligned",
@@ -4247,34 +4263,28 @@ export default new Vuex.Store({
             type: "bool",
           },
           {
-            name: "ranks",
-            items: [
-              "kingdom: Fungi",
-              "kingdom",
-              "phylum",
-              "class",
-              "order",
-              "family",
-              "genus",
-              "species",
-            ],
-            value: ["kingdom"],
-            disabled: "never",
-            tooltip: "Ranks should be listed from most inclusive to lease inclusive.",
-            type: "combobox",
-          },
-          {
             name: "outgroup",
-            value: "UNITE_Eukaryota",
-            btnName: "outgroup sequences",
+            items: ["undefined", "UNITE_SHs", "custom"],
+            value: "UNITE_SHs",
             disabled: "never",
             tooltip:
-              `directory where the outgroup reference seqs are located. Default is xxx sequences for Fungi that are included in the PipeCraft2 container.
-              The outgroup reference should be taxonomically annotated sequences which
-              include not only the ingroup (i.e., those sequences which Protax can identify)
-              but also (ideally) all other groups which could conceivably be encountered
+              `for fungi, default is UNITE_SHs, which are sh_matching_data_0_5_v9 sequences (included in the PipeCraft2 container).
+              for other downloadable databases for e.g. metazoa, click on the outgroup header https://pipecraft2-manual.readthedocs.io/en/1.0.0/pre-defined_pipelines.html . 
+              custom -> to specify your own file in fasta format. The outgroup reference should be taxonomically annotated sequences which
+              include not only the ingroup (i.e., those sequences which Protax can identify) but also (ideally) all other groups which could conceivably be encountered
               with the chosen marker.`,
-            type: "file",
+            type: "select",
+          },
+          {
+            name: "taxonomy",
+            items: ["undefined", "UNITE_SHs", "custom"],
+            value: "UNITE_SHs",
+            disabled: "never",
+            tooltip: `taxonomic annotations (optional). Used "undefined" if no taxonomic annotations are provided.
+            If given, this is also the file used for reference-based chimera checking.
+            "UNITE_SHs" (included) are for Fungi if outgroup is also UNITE_SHs (sh_matching_data_0_5_v9 data). 
+            "custom" -> to specify your own file (see the example in the manual).`,
+            type: "select",
           },
         ],
       },
