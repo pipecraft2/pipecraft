@@ -4810,7 +4810,7 @@ export default new Vuex.Store({
         title: "vsearch OTUs workflow",
       },
       DADA2_ASVs: {
-        info: "DADA2 ASVs workflow for for demultiplexed Illumina or PacBio data. FORWARD: [for Illumina paired-end data] select this when all reads of interest are expected to be in 5-3 orient. MIXED: [for Illumina paired-end data] select this when reads of interest are expected to be in both 5-3 and 3-5 orient. PACBIO: [for PacBio data] select this when working with PacBio data",
+        info: "DADA2 ASVs workflow for for demultiplexed Illumina or PacBio data.\nFORWARD: [for Illumina paired-end data] select this when all reads of interest are expected to be in 5-3 orient. MIXED: [for Illumina paired-end data] select this when reads of interest are expected to be in both 5-3 and 3-5 orient. PACBIO: [for PacBio data] select this when working with PacBio data",
         link: "https://benjjneb.github.io/dada2/index.html",
         title: "DADA2 ASVs workflow",
       },

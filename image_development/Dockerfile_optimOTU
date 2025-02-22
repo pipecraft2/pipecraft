@@ -41,8 +41,8 @@ RUN wget --quiet https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86
 
 # Put conda in path so we can use conda activate
 ENV PATH=$CONDA_DIR/bin:$PATH
-ADD image_development/OptimOTU_v3.yml /OptimOTU_v3.yml
-RUN conda env create -f /OptimOTU_v3.yml    
+ADD image_development/OptimOTU_v4.yml /OptimOTU_v4.yml
+RUN conda env create -f /OptimOTU_v4.yml    
 
 
 ENTRYPOINT ["bash", "-c", "eval \"$(conda shell.bash hook)\" && conda activate OptimOTU_v3 && exec bash"]
