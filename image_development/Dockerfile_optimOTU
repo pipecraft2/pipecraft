@@ -4,7 +4,9 @@ ENV LC_ALL=C.UTF-8
 RUN apt-get update && \
     apt-get install -y wget git zip build-essential zlib1g-dev
 
-RUN git clone --branch v4.0.1 https://github.com/brendanf/optimotu_targets.git /optimotu_targets
+RUN git clone --branch main https://github.com/brendanf/optimotu_targets.git /optimotu_targets
+RUN sed -i 's|\$PROTAX/usearch10.0.240_i86linux32|usearch|g' /optimotu_targets/scripts/runprotax && \
+    sed -i 's|BASEDIR=$(pwd)|BASEDIR="/optimotu_targets"|g' /optimotu_targets/scripts/runprotax
 
 WORKDIR /optimotu_targets/bin
 RUN wget https://github.com/DKFZ-ODCF/FastqIndEx/releases/download/0.9.0b/fastqindex_0.9.0b.gz && \
@@ -27,7 +29,10 @@ RUN wget -O /optimotu_targets/protaxAnimal.zip https://nextcloud.jyu.fi/index.ph
 
 RUN wget -O /optimotu_targets/FinPROTAX.zip https://github.com/psomervuo/FinPROTAX/archive/refs/heads/main.zip && \
     unzip /optimotu_targets/FinPROTAX.zip -d /optimotu_targets && \
-    rm /optimotu_targets/FinPROTAX.zip
+    rm /optimotu_targets/FinPROTAX.zip && \
+    mv /optimotu_targets/FinPROTAX-main /optimotu_targets/FinPROTAX && \
+    unzip /optimotu_targets/FinPROTAX/FinPROTAX.zip && \
+    rm /optimotu_targets/FinPROTAX/FinPROTAX.zip
 
 RUN wget -O /optimotu_targets/protaxAnimal_bin.zip https://nextcloud.jyu.fi/index.php/s/NJ6Kxg6Jte4GJow/download && \
     unzip /optimotu_targets/protaxAnimal_bin.zip -d /optimotu_targets/protaxAnimal_bin && \
@@ -42,7 +47,22 @@ RUN wget --quiet https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86
 # Put conda in path so we can use conda activate
 ENV PATH=$CONDA_DIR/bin:$PATH
 ADD image_development/OptimOTU_v4.yml /OptimOTU_v4.yml
-RUN conda env create -f /OptimOTU_v4.yml    
+RUN conda env create -f /OptimOTU_v4.yml
+
+RUN wget https://drive5.com/downloads/usearch10.0.240_i86linux32.gz
+RUN gunzip usearch10.0.240_i86linux32.gz
+RUN chmod +x usearch10.0.240_i86linux32
+RUN ./usearch10.0.240_i86linux32 -udb2fasta protaxFungi/addedmodel/sintaxits2.udb -output protaxFungi/addedmodel/sintaxits2.fasta
+RUN rm usearch10.0.240_i86linux32
+
+RUN eval "$(conda shell.bash hook)" && \
+    conda activate OptimOTU_v4  && \
+    usearch -makeudb_usearch protaxFungi/addedmodel/amptk_synmock.fasta -output protaxFungi/addedmodel/amptk_synmock.udb && \
+    usearch -makeudb_usearch protaxFungi/addedmodel/its2.fa -output protaxFungi/addedmodel/its2.udb && \
+    usearch -makeudb_usearch protaxFungi/addedmodel/sintaxits2.fasta -output protaxFungi/addedmodel/sintaxits2.udb
+
+RUN gzip protaxAnimal/refs.aln && \
+    mv protaxAnimal/refs.aln.gz protaxAnimal/refs.aln
 
 
-ENTRYPOINT ["bash", "-c", "eval \"$(conda shell.bash hook)\" && conda activate OptimOTU_v3 && exec bash"]
+ENTRYPOINT ["bash", "-c", "eval \"$(conda shell.bash hook)\" && conda activate OptimOTU_v4 && exec bash"]
