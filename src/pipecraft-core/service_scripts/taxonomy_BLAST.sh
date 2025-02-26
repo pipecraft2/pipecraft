@@ -55,7 +55,7 @@ check_gz_zip_SE
 check_extension_fasta
 ### Select last fasta file in the folder as input for BLAST
 for file in *.$fileFormat; do
-    IN=$(echo $file)
+	IN=$(echo $file)
 done
 echo "input = $IN"
 
@@ -65,16 +65,16 @@ d1=$(echo $db1 | awk 'BEGIN{FS=OFS="."}{print $NF}') #get the extension
 db_dir=$(dirname $db1)
 check_db_presence=$(ls -1 $db_dir/*.nhr 2>/dev/null | wc -l)
 if (( $check_db_presence != 0 )); then
-    if [[ $d1 == "fasta" ]] || [[ $d1 == "fa" ]] || [[ $d1 == "fas" ]] || [[ $d1 == "fna" ]] || [[ $d1 == "ffn" ]]; then
-        database=$"-db $db1"
-    elif [[ $d1 == "ndb" ]] || [[ $d1 == "nhr" ]] || [[ $d1 == "nin" ]] || [[ $d1 == "not" ]] || [[ $d1 == "nsq" ]] || [[ $d1 == "ntf" ]] || [[ $d1 == "nto" ]]; then
-        db1=$(echo $db1 | awk 'BEGIN{FS=OFS="."}NF{NF-=1};1')
-        database=$"-db $db1"
-    fi
+	if [[ $d1 == "fasta" ]] || [[ $d1 == "fa" ]] || [[ $d1 == "fas" ]] || [[ $d1 == "fna" ]] || [[ $d1 == "ffn" ]]; then
+		database=$"-db $db1"
+	elif [[ $d1 == "ndb" ]] || [[ $d1 == "nhr" ]] || [[ $d1 == "nin" ]] || [[ $d1 == "not" ]] || [[ $d1 == "nsq" ]] || [[ $d1 == "ntf" ]] || [[ $d1 == "nto" ]]; then
+		db1=$(echo $db1 | awk 'BEGIN{FS=OFS="."}NF{NF-=1};1')
+		database=$"-db $db1"
+	fi
 elif [[ $d1 == "fasta" ]] || [[ $d1 == "fa" ]] || [[ $d1 == "fas" ]] || [[ $d1 == "fna" ]] || [[ $d1 == "ffn" ]]; then
-        printf '%s\n' "Note: converting fasta formatted database for BLAST"
-        makeblastdb -in $db1 -input_type fasta -dbtype nucl
-        database=$"-db $db1"
+		printf '%s\n' "Note: converting fasta formatted database for BLAST"
+		makeblastdb -in $db1 -input_type fasta -dbtype nucl
+		database=$"-db $db1"
 fi
 
 ## Perform taxonomy annotation
@@ -110,13 +110,26 @@ grep -v -w -F -f tempdir/gothits.names tempdir/$IN.names | sed -e 's/$/\tNo_sign
 #add header
 sed -e '1 i\qseqid+1st_hit+qlen+slen+qstart+qend+sstart+send+evalue+length+nident+mismatch+gapopen+gaps+sstrand+qcovs+pident' tempdir/1.temphit > tempdir/BLAST_1st_hit.txt 
 
+# Add sim_score to BLAST_1st_hit.txt
+# sim_score = (pident * (alignment length/qlen))
+awk 'BEGIN{FS=OFS="+"} NR==1 {print $0, "sim_score"} NR>1 {if ($2 == "No_significant_similarity_found") {print $0, "0"} else {sim_score = $17 * ($10 / $3); printf "%s+%.2f\n", $0, sim_score}}' tempdir/BLAST_1st_hit.txt > tempdir/BLAST_1st_hit_with_sim.txt
+mv tempdir/BLAST_1st_hit_with_sim.txt tempdir/BLAST_1st_hit.txt
+
 ###10hits
 #do the same for next 2-10 hits
 for i in {2..10}; do 
     awk -v i="$i" 'BEGIN{FS="+"}''++seen[$1]==i' 10BestHits.txt > tempdir/$i.temphit
     gawk 'BEGIN{FS="+"}{print $1}' < tempdir/$i.temphit | uniq > tempdir/gothits.names
     grep -v -w -F -f tempdir/gothits.names tempdir/$IN.names | sed -e 's/$/\tNo_BLAST_hit/' >> tempdir/$i.temphit && rm tempdir/gothits.names
+    
+    # Add sim_score to each hit file
+    # Only for files with actual BLAST hits
+    if [ -s tempdir/$i.temphit ]; then
+        awk 'BEGIN{FS=OFS="+"} {if ($2 == "No_BLAST_hit") {print $0, "0"} else {sim_score = $17 * ($10 / $3); printf "%s+%.2f\n", $0, sim_score}}' tempdir/$i.temphit > tempdir/$i.temphit.sim
+        mv tempdir/$i.temphit.sim tempdir/$i.temphit
+    fi
 done
+
 #sort
 for file in tempdir/*.temphit; do
     sort -k 1 --field-separator=+ $file > $file.temp && rm $file
@@ -127,7 +140,7 @@ rm tempdir/*.temp
 #format 10 hits
 sed -i 's/No_significant_similarity_found.*/No_significant_similarity_found/' BLAST_10_best_hits.txt
 sed -i 's/No_BLAST_hit.*/No_BLAST_hit/' BLAST_10_best_hits.txt
-sed -i '1 i\qseqid+1st_hit+qlen+slen+qstart+qend+sstart+send+evalue+length+nident+mismatch+gapopen+gaps+sstrand+qcovs+pident+qseqid+2nd_hit+qlen+slen+qstart+qend+sstart+send+evalue+length+nident+mismatch+gapopen+gaps+sstrand+qcovs+pident+qseqid+3rd_hit+qlen+slen+qstart+qend+sstart+send+evalue+length+nident+mismatch+gapopen+gaps+sstrand+qcovs+pident+qseqid+4th_hit+qlen+slen+qstart+qend+sstart+send+evalue+length+nident+mismatch+gapopen+gaps+sstrand+qcovs+pident+qseqid+5th_hit+qlen+slen+qstart+qend+sstart+send+evalue+length+nident+mismatch+gapopen+gaps+sstrand+qcovs+pident+qseqid+6th_hit+qlen+slen+qstart+qend+sstart+send+evalue+length+nident+mismatch+gapopen+gaps+sstrand+qcovs+pident+qseqid+7th_hit+qlen+slen+qstart+qend+sstart+send+evalue+length+nident+mismatch+gapopen+gaps+sstrand+qcovs+pident+qseqid+8th_hit+qlen+slen+qstart+qend+sstart+send+evalue+length+nident+mismatch+gapopen+gaps+sstrand+qcovs+pident+qseqid+9th_hit+qlen+slen+qstart+qend+sstart+send+evalue+length+nident+mismatch+gapopen+gaps+sstrand+qcovs+pident+qseqid+10th_hit+qlen+slen+qstart+qend+sstart+send+evalue+length+nident+mismatch+gapopen+gaps+sstrand+qcovs+pident' BLAST_10_best_hits.txt
+sed -i '1 i\qseqid+1st_hit+qlen+slen+qstart+qend+sstart+send+evalue+length+nident+mismatch+gapopen+gaps+sstrand+qcovs+pident+sim_score+qseqid+2nd_hit+qlen+slen+qstart+qend+sstart+send+evalue+length+nident+mismatch+gapopen+gaps+sstrand+qcovs+pident+sim_score+qseqid+3rd_hit+qlen+slen+qstart+qend+sstart+send+evalue+length+nident+mismatch+gapopen+gaps+sstrand+qcovs+pident+sim_score+qseqid+4th_hit+qlen+slen+qstart+qend+sstart+send+evalue+length+nident+mismatch+gapopen+gaps+sstrand+qcovs+pident+sim_score+qseqid+5th_hit+qlen+slen+qstart+qend+sstart+send+evalue+length+nident+mismatch+gapopen+gaps+sstrand+qcovs+pident+sim_score+qseqid+6th_hit+qlen+slen+qstart+qend+sstart+send+evalue+length+nident+mismatch+gapopen+gaps+sstrand+qcovs+pident+sim_score+qseqid+7th_hit+qlen+slen+qstart+qend+sstart+send+evalue+length+nident+mismatch+gapopen+gaps+sstrand+qcovs+pident+sim_score+qseqid+8th_hit+qlen+slen+qstart+qend+sstart+send+evalue+length+nident+mismatch+gapopen+gaps+sstrand+qcovs+pident+sim_score+qseqid+9th_hit+qlen+slen+qstart+qend+sstart+send+evalue+length+nident+mismatch+gapopen+gaps+sstrand+qcovs+pident+sim_score+qseqid+10th_hit+qlen+slen+qstart+qend+sstart+send+evalue+length+nident+mismatch+gapopen+gaps+sstrand+qcovs+pident+sim_score' BLAST_10_best_hits.txt
 
 ##### BLAST 1st hit with query SEQ ######
 #fasta to oneline
@@ -139,39 +152,11 @@ sed -i '/^$/d' BLAST_1st_best_hit.temp
 sort -k 1 --field-separator=\t tempdir/$IN.oneline | sed -e 's/^>//' | sed -e 's/\r//' > tempdir/seqs.txt
 #merge seqs and 1st hit
 paste tempdir/seqs.txt BLAST_1st_best_hit.temp > BLAST_1st_best_hit.txt && rm BLAST_1st_best_hit.temp
-sed -i '1 i\qseqid+query_seq+qseqid+1st_hit+qlen+slen+qstart+qend+sstart+send+evalue+length+nident+mismatch+gapopen+gaps+sstrand+qcovs+pident' BLAST_1st_best_hit.txt
+sed -i '1 i\qseqid+query_seq+qseqid+1st_hit+qlen+slen+qstart+qend+sstart+send+evalue+length+nident+mismatch+gapopen+gaps+sstrand+qcovs+pident+sim_score' BLAST_1st_best_hit.txt
 
 mv 10BestHits.txt tempdir/
 sed -i 's/\t/+/g' BLAST_1st_best_hit.txt
 sed -i 's/\t/+/g' BLAST_10_best_hits.txt
-
-# Add sim_score column to BLAST_1st_best_hit.txt
-awk -F'+' 'BEGIN{OFS="+"}
-NR==1 {print $0, "sim_score"; next}
-{
-    sim = $19 * ($12 / $5);
-    print $0, sim
-}' BLAST_1st_best_hit.txt > BLAST_1st_best_hit_tmp && mv BLAST_1st_best_hit_tmp BLAST_1st_best_hit.txt
-
-# Add sim_score columns to BLAST_10_best_hits.txt for each hit block
-awk -F'+' 'BEGIN{OFS="+"}
-NR==1 {
-   print $0, "sim_score_hit1","sim_score_hit2","sim_score_hit3","sim_score_hit4","sim_score_hit5","sim_score_hit6","sim_score_hit7","sim_score_hit8","sim_score_hit9","sim_score_hit10"; next}
-{
-   for(i=1; i<=10; i++){
-       start = 1 + (i-1)*17;
-       qlen = $(start+2);
-       align_len = $(start+9);
-       pident = $(start+16);
-       if(qlen+0 > 0) {
-           sim = pident * (align_len / qlen);
-       } else {
-           sim = "NA";
-       }
-       sim_scores[i] = sim;
-   }
-   print $0, sim_scores[1], sim_scores[2], sim_scores[3], sim_scores[4], sim_scores[5], sim_scores[6], sim_scores[7], sim_scores[8], sim_scores[9], sim_scores[10]
-}' BLAST_10_best_hits.txt > BLAST_10_best_hits_tmp && mv BLAST_10_best_hits_tmp BLAST_10_best_hits.txt
 
 #################################################
 ### COMPILE FINAL STATISTICS AND README FILES ###
@@ -179,12 +164,12 @@ NR==1 {
 printf "\nCleaning up and compiling final stats files ...\n"
 
 if [[ $debugger != "true" ]]; then
-    if [[ -d tempdir ]];then
-        rm -r tempdir
-    fi
-    if [[ -d tempdir2 ]];then
-        rm -r tempdir2
-    fi
+	if [[ -d tempdir ]];then
+		rm -r tempdir
+	fi
+	if [[ -d tempdir2 ]];then
+		rm -r tempdir2
+	fi
 fi
 
 end=$(date +%s)
@@ -220,7 +205,7 @@ gaps      = total number of gaps
 sstrand   = subject strand
 qcovs     = query coverage per subject
 pident    = percentage of identical matches
-sim_score = similarity score calculated as (pident*(alignment length/qlen))
+sim_score = similarity score calculated as (pident * (alignment length/qlen))
 
 Core command -> 
 blastn -query $IN $strands $database $task -max_target_seqs 10 $evalue $wordsize $reward $penalty $gapopen $gapextend -max_hsps 1
