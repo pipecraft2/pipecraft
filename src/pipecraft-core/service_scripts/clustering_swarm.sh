@@ -189,7 +189,7 @@ for seqrun in $DIRS; do
     swarm_opts+=" -o ${swarm_output_file}"
     swarm_opts+=" -s ${swarm_stats_file}"
     swarm_opts+=" -w ${swarm_seeds_file}"
-    # Add threads option (if supported by swarm)
+    # Add threads option
     swarm_opts+=" -t ${swarm_threads}"
     # Additional input/output options if set by user
     [[ -n "$swarm_append" ]] && swarm_opts+=" -a ${swarm_append}"
