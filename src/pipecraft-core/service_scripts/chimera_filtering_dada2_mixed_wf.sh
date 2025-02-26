@@ -135,12 +135,15 @@ for seqrun in $DIRS; do
     #Make README.txt file (chimeraFiltered_out.dada2)
     printf "# Chimeras were filtered out with DADA2 removeBimeraDenovo function (method = $method).
 
+Start time: $start_time
+End time: $(date)
+Runtime: $runtime seconds
+
 Files in 'chimeraFiltered_out.dada2':
 -----------------------------------
 # *.chimFilt_ASVs.fasta = chimera filtered ASVs per sample. 'Size' denotes the abundance of the ASV sequence  
 # seq_count_summary.csv = summary of sequence and ASV counts per sample
 
-Total run time was $runtime sec.
 ##############################################
 ###Third-party applications for this process:
 #dada2 (version $dada2_version)

@@ -31,6 +31,13 @@ output_dir=$"/input/taxonomy_out.rdp"
 #############################
 ### Start of the workflow ###
 #############################
+echo "output_dir = $output_dir"
+if [[ -d $output_dir ]]; then
+    rm -rf $output_dir
+fi
+mkdir $output_dir
+
+### Start time
 start_time=$(date)
 start=$(date +%s)
 #initiate conda env on container
@@ -76,6 +83,10 @@ fasta_file=$(echo $fasta_file | grep -oP "$regex")
 db_x=$(echo $db1 | sed -e 's/\/extraFiles\///')
 printf "# Taxonomy was assigned using RDP classifier (see 'Core command' below for the used settings).
 
+Start time: $start_time
+End time: $(date)
+Runtime: $runtime seconds
+
 Query    = $fasta_file
 Database = $db_x
 
@@ -84,8 +95,6 @@ Database = $db_x
 
 Core command -> 
 rdp_classifier $mem classify --shortseq_outfile shortseqs.rdp.txt $confidence -t $db_x -o taxonomy.rdp.txt $fasta_file
-
-Total run time was $runtime sec.
 
 ################################################
 ###Third-party applications:

@@ -53,6 +53,14 @@ output_dir=$"/input/taxonomy_out.blast"
 #############################
 ### Start of the workflow ###
 #############################
+echo "output_dir = $output_dir"
+if [[ -d $output_dir ]]; then
+    rm -rf $output_dir
+fi
+mkdir $output_dir
+
+### Start time
+start_time=$(date)
 start=$(date +%s)
 
 ### Check if files with specified extension exist in the dir
@@ -81,9 +89,10 @@ elif [[ $d1 == "fasta" ]] || [[ $d1 == "fa" ]] || [[ $d1 == "fas" ]] || [[ $d1 =
     printf '%s\n' "Note: converting fasta formatted database for BLAST"
     makeblastdb -in $db1 -input_type fasta -dbtype nucl
     database=$"-db $db1"
+    printf '%s\n' "BLAST database was converted to BLAST format (file = $db1)."
 fi
 
-## Perform taxonomy annotation
+## Do BLAST
 printf '%s\n' "Running BLAST"
 checkerror=$(blastn \
 -query $IN \
@@ -256,6 +265,10 @@ db_x=$(echo $db1 | sed -e 's/\/extraFiles\///')
 
 # Make README.txt file
 printf "# Taxonomy was assigned using BLAST (see 'Core command' below for the used settings).
+
+Start time: $start_time
+End time: $(date)
+Runtime: $runtime seconds
 
 Query    = $IN
 Database = $db_x

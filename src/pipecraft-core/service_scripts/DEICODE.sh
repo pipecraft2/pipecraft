@@ -120,6 +120,10 @@ runtime=$((end-start))
 ###Make README.txt file
 printf "## DEICODE (Robust Aitchison PCA on sparse compositional metabarcoding data)
 
+Start time: $start_time
+End time: $(date)
+Runtime: $runtime seconds
+
 # Step 1. rCLR
 #   Data transformation using centered log ratio on only non-zero values (no pseudo count added)
 # Step 2. RPCA
@@ -145,8 +149,6 @@ Files in 'DEICODE_out' directory:
 Core commands -> 
 biom convert -i $otu_table -o $output_biom --table-type='OTU table' --to-hdf5
 deicode auto-rpca --in-biom $output_biom --min-feature-count $min_otu_reads --min-sample-count $min_sample_reads --output-dir $output_deicode_full
-
-Total run time was $runtime sec.
 
 ################################################
 ###Third-party applications:

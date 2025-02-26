@@ -37,8 +37,7 @@ check_gz_zip_SE
 #############################
 ### Start of the workflow ###
 #############################
-### Prepare working env and check single-end data
-prepare_SE_env
+# output dir checks are done in dada2_classifier.R
 
 ###Run DADA2 classifier in R
 printf "# Running DADA2 classifier \n"
@@ -66,6 +65,10 @@ runtime=$((end-start))
 ###Make README.txt file
 printf "# Taxonomy was assigned using DADA2 classifier (see 'Core command' below for the used settings).
 
+Start time: $start_time
+End time: $(date)
+Runtime: $runtime seconds
+
 Query    = $fasta_file
 Database = $dada2_database
 
@@ -74,8 +77,6 @@ Database = $dada2_database
 
 Core command -> 
 assignTaxonomy($fasta_file, $dada2_database, minBoot = $minBoot, tryRC = $tryRC, outputBootstraps = TRUE)
-
-Total run time was $runtime sec.
 
 ################################################
 ###Third-party applications:

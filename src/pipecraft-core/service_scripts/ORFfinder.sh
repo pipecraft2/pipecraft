@@ -120,6 +120,10 @@ in=$(echo $in_name | sed -e 's/\/extraFiles\///')
 printf "# Used ORFfinder to remove putative pseudogenes and off-targets. 
     (details in the MetaWorks user guide: https://terrimporter.github.io/MetaWorksSite/details/ - sequences are translated into every possible open reading frame (ORF) using ORFfinder, the longest ORF is reatined. Putative pseudogenes are removed as outliers with unusually small/large ORF lengths. Outliers are calcualted as follows: Sequence lengths shorter than the 25th percentile - 1.5*IQR (inter quartile range) are removed as putative pseudogenes (or sequences with errors that cause a frame-shift). Sequence lengths longer than the 75th percentile + 1.5*IQR are also removed as putative pseudogenes.
 
+Start time: $start_time
+End time: $(date)
+Runtime: $runtime seconds
+
 Input file $in.$extension contained $input_seqs sequences.
 Filtered output file $in.ORFs.fasta contains $ORFs sequences.
 
@@ -133,8 +137,7 @@ Core commands ->
 ORFfinder -in $rep_seqs_file_path -ml $min_length -g $genetic_code -s $start_codon -n $ignore_nested -strand $strand
 seqkit seq --quiet -g -w 0  -M $max_length $in_name.ORFs.temp > $in_name.ORFs.fasta \n" > $output_dir/README_ORFfinder.txt
 
-printf "Total run time was $runtime sec.
-
+printf "
 ##############################################
 ###Third-party applications for this process:
 # MetaWorks v1.12.0 (strategy for filtering putative NUMTs via ORFfinder)

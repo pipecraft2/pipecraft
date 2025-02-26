@@ -212,7 +212,13 @@ end=$(date +%s)
 runtime=$((end-start))
 
 #Make README.txt file
-printf "Files in 'chimeraFiltered_out' directory represent chimera filtered sequences.
+printf "# Chimeras were filtered out with vsearch --uchime3_denovo.
+
+Start time: $start_time
+End time: $(date)
+Runtime: $runtime seconds
+
+Files in 'chimeraFiltered_out' directory represent chimera filtered sequences.
 Files in 'chimeraFiltered_out/chimeras' directory represent identified putative chimeric sequences.
 If input was FASTQ formatted file(s), then it was converted to FASTA (location = chimeraFiltered_out/chimeraFilt_input_to_FASTA), and only FASTA is outputted.
 

@@ -249,6 +249,7 @@ If no files in this folder, then all sequences were passed to files in $output_d
 
     #Make README.txt file for PrimerClipped reads
     printf "# Primers were removed using cutadapt (see 'Core command' below for the used settings).
+    
 Start time: $start_time
 End time: $(date)
 Runtime: $runtime seconds
