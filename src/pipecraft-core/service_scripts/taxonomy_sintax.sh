@@ -19,8 +19,8 @@ extension=${fileFormat} && export fileFormat
 # Load variables
 fasta_file=${fasta_file}
 sintax_db=${sintax_db}            # Provided SINTAX database file (FASTA or already built .udb)
-sintax_cutoff=${sintax_cutoff}    # e.g., 0.8
-sintax_strand=${sintax_strand}    # e.g., both
+sintax_cutoff=${sintax_cutoff}    
+sintax_strand=${sintax_strand}    
 sintax_wordlength=${sintax_wordlength}  
 sintax_threads=${sintax_threads}  
 
@@ -42,7 +42,7 @@ check_sintax_format() {
         return 1
     fi
     
-    # Check if file is FASTA format (starts with >)
+    # Check if file is FASTA format 
     if [[ $(head -c 1 "$db_path") != ">" ]]; then
         printf "Error: Database does not appear to be in FASTA format (should start with '>').\n"
         return 1
