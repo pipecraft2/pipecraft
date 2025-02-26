@@ -1985,9 +1985,7 @@ export default new Vuex.Store({
                 min: 0,
                 step: 0.01,
                 type: "slide",
-                depends_on:
-                // Disable if abundance_filt is false
-                  'state.selectedSteps[0].services[4].Inputs[0].value == "find_and_dump" && state.selectedSteps[0].services[4].Inputs[8].value === true'
+                depends_on: "state.selectedSteps[0].services[4].Inputs[0].value === 'find_and_dump' && state.selectedSteps[0].services[4].Inputs[9].value === true"
               },
             ],
           },
