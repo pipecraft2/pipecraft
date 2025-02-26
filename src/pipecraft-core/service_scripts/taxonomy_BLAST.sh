@@ -22,6 +22,9 @@ echo "db1 = $db1"
 fasta_file=$(echo $fasta_file | grep -oP "$regex")
 fasta_file=$(printf "/extraFiles2/$fasta_file")
 echo "fasta_file = $fasta_file"
+# Extract the base filename from fasta_file
+IN=$(basename "$fasta_file")
+echo "input = $IN"
 #mandatory options
 task=$"-task ${task}" # list: blastn, megablast
 strands=$"-strand ${strands}" #list: both, plus
@@ -42,7 +45,7 @@ fi
 # Source for functions
 source /scripts/submodules/framework.functions.sh
 #output dir
-output_dir=$"/input/taxonomy_out.blast"
+output_dir=$"/input/taxonomy_out"
 
 #############################
 ### Start of the workflow ###
