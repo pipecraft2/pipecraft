@@ -11,7 +11,6 @@ library("seqinr")
 cat("DADA2 version = ", base::toString(packageVersion("dada2")), "\n")
 
 #load env variables
-fileFormat = Sys.getenv('fileFormat')
 workingDir = Sys.getenv('workingDir')
 path_results = Sys.getenv('output_dir')
 

@@ -31,8 +31,6 @@ export output_dir
 start_time=$(date)
 start=$(date +%s)
 
-### Check if files with specified extension exist in the dir
-first_file_check
 ### Check if single-end files are compressed (decompress and check)
 check_gz_zip_SE
 
@@ -57,9 +55,9 @@ if [[ $debugger != "true" ]]; then
     if [[ -d tempdir2 ]]; then
         rm -rf tempdir2
     fi
-    if [[ -f $output_dir/dada2_classifier.log ]]; then
-        rm -f $output_dir/dada2_classifier.log
-    fi
+    # if [[ -f $output_dir/dada2_classifier.log ]]; then
+    #     rm -f $output_dir/dada2_classifier.log
+    # fi
 fi
 
 end=$(date +%s)

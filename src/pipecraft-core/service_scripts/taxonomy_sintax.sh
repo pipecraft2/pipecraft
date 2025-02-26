@@ -18,34 +18,47 @@ extension=${fileFormat} && export fileFormat
 
 # Load variables
 fasta_file=${fasta_file}
-sintax_db=${sintax_db}            # Provided SINTAX database file (FASTA or already built .udb)
-sintax_cutoff=${sintax_cutoff}    # e.g., 0.8
-sintax_strand=${sintax_strand}    # e.g., both
-sintax_wordlength=${sintax_wordlength}  
-sintax_threads=${sintax_threads}  
+database_file=${database}      # Provided SINTAX database file (FASTA or already built .udb)
+cutoff=${cutoff}          # e.g., default is 0.8
+strand=${strand}          # [both, plus]
+wordlength=${wordlength}  # Length of words (i.e. k-mers) for database indexing. Defaut is 8.
+cores=${cores}            # number of cores to use
+
+# prep input files for container
+regex='[^/]*$'
+db1_temp=$(echo $database_file | grep -oP "$regex")
+database=$(printf "/extraFiles/$db1_temp")
+echo "database = $database"
+
+fasta_file=$(echo $fasta_file | grep -oP "$regex")
+fasta_file=$(printf "/extraFiles2/$fasta_file")
+echo "fasta_file = $fasta_file"
+# overwrite fileFormat variable; get it from input fasta_file
+fileFormat=$(echo $fasta_file | awk -F. '{print $NF}')
+export fileFormat
 
 # Source for functions
 source /scripts/submodules/framework.functions.sh
 
 # Output directory
-output_dir=$"/input/taxonomy_out.vsearch"
+output_dir=$"/input/taxonomy_out.sintax"
 export output_dir
 
 # Check and prepare SINTAX database
-if [[ -f "$sintax_db" ]]; then
-    ext="${sintax_db##*.}"
+if [[ -f "$database" ]]; then
+    ext="${database##*.}"
     if [[ "$ext" != "udb" ]]; then
-        printf "# Building SINTAX database from FASTA file: %s\n" "$sintax_db"
-        sintax_db_formatted="${sintax_db%.*}.udb"
-        vsearch --makeudb_sintax "$sintax_db" --output "$sintax_db_formatted"
+        printf "# Building SINTAX database from FASTA file: %s\n" "$database"
+        database_formatted="${database%.*}.udb"
+        vsearch --makeudb_usearch "$database" --output "$database_formatted"
         if [[ $? -ne 0 ]]; then
-            printf "Error: Failed to build SINTAX database from %s\n" "$sintax_db"
+            printf "Error: Failed to build SINTAX database from %s\n" "$database"
             exit 1
         fi
-        sintax_db="$sintax_db_formatted"
+        database="$database_formatted"
     fi
 else
-    printf "Error: SINTAX database file %s does not exist.\n" "$sintax_db"
+    printf "Error: SINTAX database file %s does not exist.\n" "$database"
     exit 1
 fi
 
@@ -53,28 +66,26 @@ fi
 start_time=$(date)
 start=$(date +%s)
 
-### Check if files with specified extension exist in the directory
-first_file_check
-### Check if single-end files are compressed (decompress and check)
+#If input is compressed, then decompress (keeping the compressed file, but overwriting if filename exists!)
 check_gz_zip_SE
+### Check input formats (fasta supported)
+check_extension_fasta
 
 #############################
 ### Start of the workflow ###
 #############################
-### Prepare working environment and check single-end data
-prepare_SE_env
 
 ### Run VSEARCH SINTAX Taxonomy Assignment
-printf "# Running VSEARCH SINTAX Taxonomy Assignment\n"
-vsearch_log=$(vsearch --sintax "$fasta_file" \
-        --db "$sintax_db" \
-        --tabbedout "$output_dir/sintax_out.txt" \
-        --sintax_cutoff "$sintax_cutoff" \
-        --strand "$sintax_strand" \
-        --wordlength "$sintax_wordlength" \
-        --threads "$sintax_threads" 2>&1)
-echo "$vsearch_log" > "$output_dir/vsearch_sintax.log"
-printf "\nVSEARCH SINTAX Taxonomy Assignment completed\n"
+printf "# Running VSEARCH SINTAX \n"
+checkerror=$(vsearch --sintax "$fasta_file" \
+        --db "$database" \
+        --tabbedout "$output_dir/taxonomy.sintax.txt" \
+        --sintax_cutoff "$cutoff" \
+        --strand "$strand" \
+        --wordlength "$wordlength" \
+        --threads "$cores" 2>&1)
+check_app_error
+printf "\n SINTAX completed\n"
 
 ########################################
 ### CLEAN UP AND COMPILE README FILE ###
@@ -83,24 +94,25 @@ if [[ $debugger != "true" ]]; then
     if [[ -d tempdir2 ]]; then
         rm -rf tempdir2
     fi
-    if [[ -f $output_dir/vsearch_sintax.log ]]; then
-        rm -f $output_dir/vsearch_sintax.log
-    fi
 fi
 
 end=$(date +%s)
 runtime=$((end - start))
 
 ### Make README.txt file
+# Remove /extraFiles*/ prefix from input files
+fasta_file=${fasta_file/\/extraFiles2\//}
+database=${database/\/extraFiles\//}
+
 printf "# Taxonomy was assigned using VSEARCH SINTAX (with database preparation if required).
 Query    = $fasta_file
-Database = $sintax_db
+Database = $database
 
-# sintax_out.txt = VSEARCH SINTAX output file in tab-delimited format.
-[If the provided database was not in the correct format, it was converted to a SINTAX database using 'vsearch --makeudb_sintax'.]
+# taxonomy.sintax.txt = VSEARCH SINTAX output file in tab-delimited format.
+[If the provided database was not in the correct format, it was converted to a SINTAX database using 'vsearch --makeudb_usearch'.]
 
 Core command -> 
-vsearch --sintax $fasta_file --db $sintax_db --tabbedout sintax_out.txt --sintax_cutoff $sintax_cutoff --strand $sintax_strand --wordlength $sintax_wordlength --threads $sintax_threads
+vsearch --sintax $fasta_file --db $database --tabbedout taxonomy.sintax.txt --sintax_cutoff $cutoff --strand $strand --wordlength $wordlength --threads $cores
 
 Total run time was $runtime sec.
 
