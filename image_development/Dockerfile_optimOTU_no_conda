@@ -1,0 +1,144 @@
+FROM rocker/r-ver:4.3.0
+
+ENV LANG=C.UTF-8
+ENV LC_ALL=C.UTF-8
+
+# Install system dependencies
+RUN apt-get update && apt-get install -y \
+    wget \
+    git \
+    zip \
+    build-essential \
+    zlib1g-dev \
+    libcurl4-openssl-dev \
+    libssl-dev \
+    libxml2-dev \
+    libgit2-dev \
+    hmmer \
+    pigz \
+    python3-pip \
+    autoconf \
+    automake \
+    cmake \
+    bison \
+    flex \
+    liblzma-dev \
+    && rm -rf /var/lib/apt/lists/*
+
+# Install cutadapt via pip
+RUN pip3 install cutadapt==4.2
+
+# Install vsearch
+RUN wget https://github.com/torognes/vsearch/archive/v2.29.4.tar.gz && \
+    tar xzf v2.29.4.tar.gz && \
+    cd vsearch-2.29.4 && \
+    ./autogen.sh && \
+    ./configure && \
+    make && \
+    make install && \
+    cd .. && \
+    rm -rf vsearch-2.29.4 v2.29.4.tar.gz
+
+# Install EPA-NG
+RUN wget https://github.com/Pbdas/epa-ng/archive/v0.3.8.tar.gz && \
+    tar xzf v0.3.8.tar.gz && \
+    cd epa-ng-0.3.8 && \
+    make && \
+    cp bin/epa-ng /usr/local/bin/ && \
+    cd .. && \
+    rm -rf epa-ng-0.3.8 v0.3.8.tar.gz
+
+# Install gappa
+RUN wget https://github.com/lczech/gappa/archive/v0.8.5.tar.gz && \
+    tar xzf v0.8.5.tar.gz && \
+    cd gappa-0.8.5 && \
+    make && \
+    cp bin/gappa /usr/local/bin/ && \
+    cd .. && \
+    rm -rf gappa-0.8.5 v0.8.5.tar.gz
+
+# Install Krona
+RUN wget https://github.com/marbl/Krona/releases/download/v2.7.1/KronaTools-2.7.1.tar && \
+    tar xf KronaTools-2.7.1.tar && \
+    cd KronaTools-2.7.1 && \
+    ./install.pl && \
+    cd .. && \
+    rm -rf KronaTools-2.7.1 KronaTools-2.7.1.tar
+
+# Clone and setup optimotu_targets
+RUN git clone --branch v4.1.0 https://github.com/brendanf/optimotu_targets.git /optimotu_targets
+RUN sed -i 's|\$PROTAX/usearch10.0.240_i86linux32|usearch|g' /optimotu_targets/scripts/runprotax && \
+    sed -i 's|BASEDIR=$(pwd)|BASEDIR="/optimotu_targets"|g' /optimotu_targets/scripts/runprotax && \
+    sed -i '1i#!/bin/bash' /optimotu_targets/scripts/runprotax
+
+# Setup fastqindex
+WORKDIR /optimotu_targets/bin
+RUN wget https://github.com/DKFZ-ODCF/FastqIndEx/releases/download/0.9.0b/fastqindex_0.9.0b.gz && \
+    gunzip fastqindex_0.9.0b.gz && \
+    chmod +x fastqindex_0.9.0b
+
+# Download and setup data files
+WORKDIR /optimotu_targets
+RUN wget https://s3.hpc.ut.ee/plutof-public/original/5dcbe93a-b50c-4ff5-8898-528160c4e593.zip && \
+    unzip -j 5dcbe93a-b50c-4ff5-8898-528160c4e593.zip data/shs_out.txt data/sanger_refs_sh.fasta -d data/sh_matching_data && \
+    rm 5dcbe93a-b50c-4ff5-8898-528160c4e593.zip
+
+# Temporarily use usearch10 to process database files
+RUN wget -O /usr/local/bin/usearch https://raw.githubusercontent.com/rcedgar/usearch_old_binaries/main/bin/usearch10.0.240_i86linux64 && \
+    chmod +x /usr/local/bin/usearch
+
+# Setup PROTAX related files
+RUN rm -rf /optimotu_targets/protaxFungi && \
+    wget -O /optimotu_targets/protaxFungi.zip https://nextcloud.jyu.fi/index.php/s/JCdqdNPgsNqJw6o/download && \
+    unzip /optimotu_targets/protaxFungi.zip -d /optimotu_targets && \
+    rm /optimotu_targets/protaxFungi.zip
+
+RUN wget -O /optimotu_targets/protaxAnimal.zip https://nextcloud.jyu.fi/index.php/s/74p3zTjRjLX76fb/download && \
+    unzip /optimotu_targets/protaxAnimal.zip -d /optimotu_targets && \
+    rm /optimotu_targets/protaxAnimal.zip
+
+RUN wget -O /optimotu_targets/FinPROTAX.zip https://github.com/psomervuo/FinPROTAX/archive/refs/heads/main.zip && \
+    unzip /optimotu_targets/FinPROTAX.zip -d /optimotu_targets && \
+    rm /optimotu_targets/FinPROTAX.zip && \
+    mv /optimotu_targets/FinPROTAX-main /optimotu_targets/FinPROTAX && \
+    unzip /optimotu_targets/FinPROTAX/FinPROTAX.zip && \
+    rm /optimotu_targets/FinPROTAX/FinPROTAX.zip
+
+RUN wget -O /optimotu_targets/protaxAnimal_bin.zip https://nextcloud.jyu.fi/index.php/s/NJ6Kxg6Jte4GJow/download && \
+    unzip /optimotu_targets/protaxAnimal_bin.zip -d /optimotu_targets/protaxAnimal_bin && \
+    rm /optimotu_targets/protaxAnimal_bin.zip && \
+    cd /optimotu_targets/protaxAnimal_bin/protaxA_c2 && make && \
+    cp classify_v2 classify_info dist_best dist_matrix dist_bipart /optimotu_targets/bin
+
+
+# Install R packages
+RUN R -e "install.packages(c( \
+    'assertthat', 'base64enc', 'checkmate', 'clustermq', 'crew', 'crew.cluster', \
+    'curl', 'digest', 'dplyr', 'forcats', 'fs', 'fst', 'ggplot2', 'glue', \
+    'knitr', 'markdown', 'processx', 'purrr', 'qs2', 'readr', 'readxl', \
+    'rlang', 'rmarkdown', 'stringi', 'stringr', 'tarchetypes', 'targets', \
+    'tibble', 'tidyr', 'tidyselect', 'tinytex', 'vctrs', 'withr', 'yaml', \
+    'remotes'), repos='https://cloud.r-project.org')"
+
+# Install Bioconductor packages
+RUN R -e "install.packages('BiocManager', repos='https://cloud.r-project.org'); \
+    BiocManager::install(c('Biobase', 'BiocGenerics', 'Biostrings', 'dada2'))"
+
+# Install optimotu from GitHub
+RUN R -e "remotes::install_github('brendanf/optimotu', ref = 'usearch12_noversion')"
+
+
+
+# Install additional R packages
+RUN R -e "remotes::install_github('brendanf/funguildR')" && \
+    R -e "remotes::install_github('brendanf/inferrnal')" && \
+    R -e "remotes::install_github('brendanf/optimotu.pipeline')"
+        
+
+
+RUN gzip protaxAnimal/refs.aln && \
+    mv protaxAnimal/refs.aln.gz protaxAnimal/refs.aln
+
+
+
+

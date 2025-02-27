@@ -4212,6 +4212,19 @@ export default new Vuex.Store({
         Inputs: [],
       },
       {
+        tooltip: `Chimera filtering with DADA2 'removeBimeraDenovo()' function and vsearch 'uchime_ref' function`,
+        scriptName: "xxx.sh",
+        imageName: "pipecraft/optimotu:4",
+        serviceName: "chimera filtering",
+        manualLink:
+          "",
+        disabled: "never",
+        selected: "always",
+        showExtra: false,
+        extraInputs: [],
+        Inputs: [],
+      },
+      {
         tooltip: "Filter tag-jumps with UNCROSS2",
         scriptName: "xxx.sh",
         imageName: "pipecraft/optimotu:4",
@@ -4251,7 +4264,7 @@ export default new Vuex.Store({
         tooltip: `Chimera filtering with DADA2 'removeBimeraDenovo()' function and vsearch 'uchime_ref' function`,
         scriptName: "xxx.sh",
         imageName: "pipecraft/optimotu:4",
-        serviceName: "chimera filtering",
+        serviceName: "Amplicon model setting",
         manualLink:
           "",
         disabled: "never",
