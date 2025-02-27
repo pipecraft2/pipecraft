@@ -2322,7 +2322,7 @@ export default new Vuex.Store({
                 value: "undefined",
                 disabled: "never",
                 tooltip:
-                  `select database either in fasta format or already built .udb (udb must be built with vsearch (v2.23.0) --makeudb_usearch). Needs to be SINTAX-formatted. 
+                  `select database either in fasta format or already built .udb (udb must be built with vsearch (v2.29.4) --makeudb_usearch). Needs to be SINTAX-formatted. 
                   Click on the header to see the example.`,
                 type: "file",
               },
