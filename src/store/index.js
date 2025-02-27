@@ -3934,7 +3934,7 @@ export default new Vuex.Store({
       {
         tooltip: "Specify sequence orientation",
         scriptName:"xxx.sh",
-        imageName: "pipecraft/optim_otu:3",
+        imageName: "pipecraft/optimotu:4",
         serviceName: "target taxa and sequence orientation",
         manualLink:
           "",
@@ -3967,7 +3967,7 @@ export default new Vuex.Store({
       {
         tooltip: "remove primers sequences and trim the reads; discards all reads that contain N's (ambiguous bases) for following dada2 denoising",
         scriptName: "xxx.sh",
-        imageName: "pipecraft/optim_otu:3",
+        imageName: "pipecraft/optimotu:4",
         serviceName: "cut primers and trim reads",
         manualLink:
           "",
@@ -4056,7 +4056,7 @@ export default new Vuex.Store({
       {
         tooltip: "quality filtering with DADA2 'filterAndTrim' function",
         scriptName: "xxx.sh",
-        imageName: "pipecraft/optim_otu:3",
+        imageName: "pipecraft/optimotu:4",
         serviceName: "quality filtering",
         manualLink:
           "",
@@ -4089,7 +4089,7 @@ export default new Vuex.Store({
         tooltip: `DADA2 denoising with learnErrors(), dada() and mergePairs() functions with default DADA2 parameters. 
                   Sequences with binned quality scores, as produced by newer Illumina sequencers, are automatically detected, and the error model is adjusted accordingly.`,
         scriptName: "xxx.sh",
-        imageName: "pipecraft/optim_otu:3",
+        imageName: "pipecraft/optimotu:4",
         serviceName: "denoising and merging paired-end reads",
         manualLink:
           "",
@@ -4102,7 +4102,7 @@ export default new Vuex.Store({
       {
         tooltip: `Chimera filtering with DADA2 'removeBimeraDenovo()' function and vsearch 'uchime_ref' function`,
         scriptName: "xxx.sh",
-        imageName: "pipecraft/optim_otu:3",
+        imageName: "pipecraft/optimotu:4",
         serviceName: "chimera filtering",
         manualLink:
           "",
@@ -4115,7 +4115,7 @@ export default new Vuex.Store({
       {
         tooltip: "Filter tag-jumps with UNCROSS2",
         scriptName: "xxx.sh",
-        imageName: "pipecraft/optim_otu:3",
+        imageName: "pipecraft/optimotu:4",
         serviceName: "filter tag-jumps",
         manualLink:
           "",
@@ -4151,7 +4151,7 @@ export default new Vuex.Store({
       {
         tooltip: "Statistical sequence models are used for 1) aligning ASVs prior to use of protax and/or NUMT detection; 2) filtering ASVs to remove spurious sequences",
         scriptName: "xxx.sh",
-        imageName: "pipecraft/optim_otu:3",
+        imageName: "pipecraft/optimotu:4",
         serviceName: "Amplicon model setting",
         manualLink:
           "",
@@ -4236,7 +4236,7 @@ export default new Vuex.Store({
       {
         tooltip: "Settings for Protax classification",
         scriptName: "xxx.sh",
-        imageName: "pipecraft/optim_otu:3",
+        imageName: "pipecraft/optimotu:4",
         serviceName: "Protax classification",
         manualLink:
           "",
@@ -4291,7 +4291,7 @@ export default new Vuex.Store({
       {
         tooltip: "Clustering",
         scriptName: "xxx.sh",
-        imageName: "pipecraft/optim_otu:3",
+        imageName: "pipecraft/optimotu:4",
         serviceName: "Clustering",
         manualLink:
           "",

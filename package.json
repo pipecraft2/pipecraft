@@ -29,6 +29,7 @@
     "envfile": "^6.14.0",
     "fs": "^0.0.1-security",
     "fs-promise": "^2.0.3",
+    "js-yaml": "^4.1.0",
     "json-fn": "^1.1.1",
     "lodash": "^4.17.21",
     "memory-streams": "^0.1.3",
