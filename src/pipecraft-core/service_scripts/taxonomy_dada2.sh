@@ -54,9 +54,9 @@ if [[ $debugger != "true" ]]; then
     if [[ -d tempdir2 ]]; then
         rm -rf tempdir2
     fi
-    # if [[ -f $output_dir/dada2_classifier.log ]]; then
-    #     rm -f $output_dir/dada2_classifier.log
-    # fi
+    if [[ -f $output_dir/dada2_classifier.log ]]; then
+        rm -f $output_dir/dada2_classifier.log
+    fi
 fi
 
 end=$(date +%s)

@@ -34,7 +34,7 @@ if [[ -f "$workingDir/.prev_step.temp" ]]; then
     prev_step=$(cat $workingDir/.prev_step.temp) # for checking previous step (output from cut_primers_paired_end_reads.sh)
     printf "# prev_step = $prev_step\n"
 fi
-if [[ $pipeline == "vsearch_OTUs" || $pipeline == "UNOISE_ASVs" ]] && [[ $prev_step == "cut_primers" ]]; then
+if [[ -d "/input/multiRunDir" ]] && [[ $pipeline == "vsearch_OTUs" || $pipeline == "UNOISE_ASVs" ]] && [[ $prev_step == "cut_primers" ]]; then
     echo "vsearch paired-end pipeline with multiple sequencing runs in multiRunDir"
     echo "Process = assembling paired-end reads (after cut primers)"
     cd /input/multiRunDir
@@ -215,7 +215,6 @@ Core command ->
 vsearch --fastq_mergepairs input.R1 --reverse input.R2 $fastq_minoverlen $fastq_minmergelen $allowmergestagger $fastq_maxdiffs $fastq_maxns $fastq_maxmergelen $fastqout_notmerged_fwd $fastqout_notmerged_rev --fastq_qmax $fastq_qmax --fastq_qmaxout $fastq_qmax --fastqout output_file
 
 Summary of sequence counts in 'seq_count_summary.txt'
-Total run time was $runtime sec.
 
 ############################################
 ###Third-party applications for this process:

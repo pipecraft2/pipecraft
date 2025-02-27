@@ -67,7 +67,7 @@ if [[ -f "$workingDir/.prev_step.temp" ]]; then
 fi
 ###  check if working with multiple runs or with a single sequencing run
  # if working with multiRunDir, and the previous step was MERGE READS in paired_end pipeline
-if [[ $pipeline == "vsearch_OTUs" || $pipeline == "UNOISE_ASVs" ]] && [[ $prev_step == "merge_reads" ]]; then
+if [[ -d "/input/multiRunDir" ]] && [[ $pipeline == "vsearch_OTUs" || $pipeline == "UNOISE_ASVs" ]] && [[ $prev_step == "merge_reads" ]]; then
     echo "Pipeline run with multiple sequencing runs in multiRunDir (paired_end)"
     echo "Process = quality filtering"
     cd /input/multiRunDir
@@ -79,7 +79,7 @@ if [[ $pipeline == "vsearch_OTUs" || $pipeline == "UNOISE_ASVs" ]] && [[ $prev_s
     export multiDir
     rm $workingDir/.prev_step.temp
  # if working with multiRunDir, and the previous step was CUT PRIMERS in single_end pipeline
-elif [[ $pipeline == "vsearch_OTUs" || $pipeline == "UNOISE_ASVs" ]] && [[ $prev_step == "cut_primers" ]]; then
+elif [[ -d "/input/multiRunDir" ]] && [[ $pipeline == "vsearch_OTUs" || $pipeline == "UNOISE_ASVs" ]] && [[ $prev_step == "cut_primers" ]]; then
     echo "Pipeline run with multiple sequencing runs in multiRunDir (single_end)"
     echo "Process = quality filtering"
     cd /input/multiRunDir
@@ -91,7 +91,7 @@ elif [[ $pipeline == "vsearch_OTUs" || $pipeline == "UNOISE_ASVs" ]] && [[ $prev
     export multiDir
     rm $workingDir/.prev_step.temp
 # if working with multiRunDir, and the previous step was not CUT PRIMERS in single_end pipeline
-elif [[ $pipeline == "vsearch_OTUs" || $pipeline == "UNOISE_ASVs" ]] && [[ $prev_step != "cut_primers" ]] && [[ $readType == "single_end" ]]; then
+elif [[ -d "/input/multiRunDir" ]] && [[ $pipeline == "vsearch_OTUs" || $pipeline == "UNOISE_ASVs" ]] && [[ $prev_step != "cut_primers" ]] && [[ $readType == "single_end" ]]; then
     echo "Pipeline run with multiple sequencing runs in multiRunDir (single_end)"
     echo "Process = quality filtering"
     cd /input/multiRunDir
