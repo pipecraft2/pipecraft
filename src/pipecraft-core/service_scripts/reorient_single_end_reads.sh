@@ -121,15 +121,16 @@ Usually only very few such 'multi-primer' chimeric sequences are found in the am
 #Make README.txt file for this process
 printf "# Reorienting of the sequences was performed using fqgrep by searching PCR primer strings in the reads (allowed mismatches = $mismatches).
 
+Start time: $start_time
+End time: $(date)
+Runtime: $runtime seconds
+
 Files here represent sequences that have been reoriented based on PCR primers.
 Forward primer(s) [has to be 5'-3']: $fwd_tempprimer
 Reverse primer(s) [has to be 3'-5']: $rev_tempprimer
 [If primers were not specified in orientations noted above, please run this step again].
 
-
 Summary of sequence counts in 'seq_count_summary.txt'
-
-\Total run time was $runtime sec.
 
 ##############################################
 ###Third-party applications for this process:

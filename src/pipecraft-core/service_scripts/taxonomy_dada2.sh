@@ -31,16 +31,13 @@ export output_dir
 start_time=$(date)
 start=$(date +%s)
 
-### Check if files with specified extension exist in the dir
-first_file_check
 ### Check if single-end files are compressed (decompress and check)
 check_gz_zip_SE
 
 #############################
 ### Start of the workflow ###
 #############################
-### Prepare working env and check single-end data
-prepare_SE_env
+# output dir checks are done in dada2_classifier.R
 
 ###Run DADA2 classifier in R
 printf "# Running DADA2 classifier \n"
@@ -57,9 +54,9 @@ if [[ $debugger != "true" ]]; then
     if [[ -d tempdir2 ]]; then
         rm -rf tempdir2
     fi
-    if [[ -f $output_dir/dada2_classifier.log ]]; then
-        rm -f $output_dir/dada2_classifier.log
-    fi
+    # if [[ -f $output_dir/dada2_classifier.log ]]; then
+    #     rm -f $output_dir/dada2_classifier.log
+    # fi
 fi
 
 end=$(date +%s)
@@ -67,6 +64,10 @@ runtime=$((end-start))
 
 ###Make README.txt file
 printf "# Taxonomy was assigned using DADA2 classifier (see 'Core command' below for the used settings).
+
+Start time: $start_time
+End time: $(date)
+Runtime: $runtime seconds
 
 Query    = $fasta_file
 Database = $dada2_database
@@ -76,8 +77,6 @@ Database = $dada2_database
 
 Core command -> 
 assignTaxonomy($fasta_file, $dada2_database, minBoot = $minBoot, tryRC = $tryRC, outputBootstraps = TRUE)
-
-Total run time was $runtime sec.
 
 ################################################
 ###Third-party applications:

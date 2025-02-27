@@ -113,6 +113,10 @@ for seqrun in $DIRS; do
     #Make README.txt file
     printf "# Quality filtering was performed using dada2 (see 'Core command' below for the used settings).
 
+Start time: $start_time
+End time: $(date)
+Runtime: $runtime seconds
+
 Files in 'qualFiltered_out':
 ----------------------------
 # *.$extension             = quality filtered sequences per sample.
@@ -122,7 +126,6 @@ Files in 'qualFiltered_out':
 Core command -> 
 filterAndTrim(inputR1, outputR1, maxN = $maxN, maxEE = $maxEE, truncQ = $truncQ, truncLen = $truncLen, maxLen = $maxLen, minLen = $minLen, minQ = $minQ, rm.phix = TRUE)
 
-Total run time was $runtime sec.
 ##############################################
 ###Third-party applications for this process:
 #dada2 (version $dada2_version)

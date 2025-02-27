@@ -121,6 +121,10 @@ runtime=$((end-start))
 #Make README.txt file
 printf "# Quality filtering was performed using fastp (see 'Core command' below for the used settings).
 
+Start time: $start_time
+End time: $(date)
+Runtime: $runtime seconds
+
 Files in 'qualFiltered_out':
 ----------------------------
 # *.fastq               = quality filtered sequences per sample.
@@ -129,7 +133,6 @@ Files in 'qualFiltered_out':
 Core command -> 
 fastp --in1 inputR1 --in2 inputR2 --out1 outputR1 --out2 outputR2 $window_size $required_qual $min_qual $min_qual_thresh $trim_polyG $trim_polyX $maxNs $min_length $max_length $trunc_length_R1 $trunc_length_R2 $aver_qual $cores --html fastp_report/sample_name.html --disable_adapter_trimming $low_complexity_filter
 
-Total run time was $runtime sec.
 ##############################################
 ###Third-party applications for this process:
 #fastp v0.23.2

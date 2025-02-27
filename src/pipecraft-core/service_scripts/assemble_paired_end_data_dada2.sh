@@ -116,6 +116,10 @@ runtime=$((end-start))
 #Make README.txt file
 printf "# Denoising and assembling of paired-end sequencing data was performed with dada2 (see 'Core commands' below for the used settings).
 
+Start time: $start_time
+End time: $(date)
+Runtime: $runtime seconds
+
 ### NOTE: ### 
 Input sequences must be made up only of A/C/G/T for denoising (i.e maxN must = 0 in quality filtering step). Otherwise DADA2 fails, and no output is generated.
 #############
@@ -138,7 +142,6 @@ denoise:      dadaFs = dada(derepFs, err = errF, pool = $pool)
               dadaRs = dada(derepRs, err = errR, pool = $pool)
 assemble:     mergePairs(dadaFs, derepFs, dadaRs, derepRs, maxMismatch = $maxMismatch, minOverlap = $minOverlap, justConcatenate = $justConcatenate, trimOverhang = $trimOverhang)
 
-Total run time was $runtime sec.
 ##############################################
 ###Third-party applications for this process:
 #dada2 (version $dada2_version)

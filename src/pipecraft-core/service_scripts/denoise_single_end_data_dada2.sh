@@ -107,29 +107,33 @@ for seqrun in $DIRS; do
     #Make README.txt file 
     printf "# Single-end sequencing data was denoised with DADA2 (see 'Core command' below for the used settings).
 
-    ### NOTE: ### 
-    Input sequences must be made up only of A/C/G/T for denoising (i.e maxN must = 0 in quality filtering step). Otherwise DADA2 fails, and no output is generated.
-    #############
+Start time: $start_time
+End time: $(date)
+Runtime: $runtime seconds
 
-    Files in 'denoised_assembled.dada2':
-    # *.ASVs.fasta            = denoised and assembled ASVs per sample. 'Size' denotes the abundance of the ASV sequence.  
-    # Error_rates.pdf         = plots for estimated error rates
-    # seq_count_summary.csv   = summary of sequence and ASV counts per sample
-    # *.rds                   = R objects for dada2.
+### NOTE: ### 
+Input sequences must be made up only of A/C/G/T for denoising (i.e maxN must = 0 in quality filtering step). Otherwise DADA2 fails, and no output is generated.
+#############
 
-    Core commands -> 
-    setDadaOpt(OMEGA_A = $OMEGA_A, OMEGA_P = $OMEGA_P, OMEGA_C = $OMEGA_C, DETECT_SINGLETONS = $DETECT_SINGLETONS, BAND_SIZE = $BAND_SIZE)
-    dereplicate:  dereplicated <- derepFastq(input, qualityType = $qualityType)
-    learn errors: errors = learnErrors(dereplicated, errorEstimationFunction = $errorEstFun, BAND_SIZE = $BAND_SIZE)
-    denoise:      denoised = dada(dereplicated, err = errors, BAND_SIZE = $BAND_SIZE)
+Files in 'denoised_assembled.dada2':
+# *.ASVs.fasta            = denoised and assembled ASVs per sample. 'Size' denotes the abundance of the ASV sequence.  
+# Error_rates.pdf         = plots for estimated error rates
+# seq_count_summary.csv   = summary of sequence and ASV counts per sample
+# *.rds                   = R objects for dada2.
 
-    Total run time was $runtime sec.
-    ##############################################
-    ###Third-party applications for this process:
-    #dada2 (version $dada2_version)
-        #citation: Callahan, B., McMurdie, P., Rosen, M. et al. (2016) DADA2: High-resolution sample inference from Illumina amplicon data. Nat Methods 13, 581-583. https://doi.org/10.1038/nmeth.3869
-        #https://github.com/benjjneb/dada2
-    ##############################################" > $output_dir/README.txt
+Core commands -> 
+setDadaOpt(OMEGA_A = $OMEGA_A, OMEGA_P = $OMEGA_P, OMEGA_C = $OMEGA_C, DETECT_SINGLETONS = $DETECT_SINGLETONS, BAND_SIZE = $BAND_SIZE)
+dereplicate:  dereplicated <- derepFastq(input, qualityType = $qualityType)
+learn errors: errors = learnErrors(dereplicated, errorEstimationFunction = $errorEstFun, BAND_SIZE = $BAND_SIZE)
+denoise:      denoised = dada(dereplicated, err = errors, BAND_SIZE = $BAND_SIZE)
+
+Total run time was $runtime sec.
+##############################################
+###Third-party applications for this process:
+#dada2 (version $dada2_version)
+    #citation: Callahan, B., McMurdie, P., Rosen, M. et al. (2016) DADA2: High-resolution sample inference from Illumina amplicon data. Nat Methods 13, 581-583. https://doi.org/10.1038/nmeth.3869
+    #https://github.com/benjjneb/dada2
+##############################################" > $output_dir/README.txt
 
     ### if working with multiRunDir then cd /input/multiRunDir
     if [[ $multiDir == "TRUE" ]]; then 

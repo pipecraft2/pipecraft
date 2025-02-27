@@ -1985,9 +1985,7 @@ export default new Vuex.Store({
                 min: 0,
                 step: 0.01,
                 type: "slide",
-                depends_on:
-                // Disable if abundance_filt is false
-                  'state.selectedSteps[0].services[4].Inputs[0].value == "find_and_dump" && state.selectedSteps[0].services[4].Inputs[8].value === true'
+                depends_on: "state.selectedSteps[0].services[4].Inputs[0].value === 'find_and_dump' && state.selectedSteps[0].services[4].Inputs[9].value === true"
               },
             ],
           },
@@ -2129,7 +2127,7 @@ export default new Vuex.Store({
         services: [
           {
             tooltip:
-              "assign taxonomy with BLAST against a selected database [SELECT WORKDIR that contains only ONE fasta file for the process]",
+              "assign taxonomy with BLAST",
             scriptName: "taxonomy_BLAST.sh",
             imageName: "pipecraft/blast:2.14",
             serviceName: "BLAST",
@@ -2236,7 +2234,7 @@ export default new Vuex.Store({
           },
           {
             tooltip:
-              "assign taxonomy with RDP Classifier against a selected database [SELECT WORKDIR that contains only ONE fasta file for the process]",
+              "assign taxonomy with RDP Classifier",
             scriptName: "taxonomy_RDP.sh",
             imageName: "pipecraft/metaworks:1.12.0",
             serviceName: "RDP_classifier",
@@ -2272,7 +2270,7 @@ export default new Vuex.Store({
                 value: "undefined",
                 disabled: "never",
                 tooltip:
-                  "Select a fasta file containing sequences that are subjected to taxonomy assignment",
+                  "select a fasta file containing sequences that are subjected to taxonomy assignment",
                 type: "file",
               },
               {
@@ -2280,12 +2278,82 @@ export default new Vuex.Store({
                 value: 0.8,
                 disabled: "never",
                 tooltip:
-                  "default is 0.8. Assignment confidence cutoff used to determine the assignment count for each taxon. Range [0-1]",
+                  "assignment confidence cutoff used to determine the assignment count for each taxon. Default is 0.8. ",
+                type: "slide",
+                min: 0.05,
+                max: 1,
+                step: 0.05,
+              },
+            ],
+          },
+          {
+            tooltip:
+              "assign taxonomy with SINTAX classifier (in vsearch)",
+            scriptName: "taxonomy_sintax.sh",
+            imageName: "pipecraft/vsearch_dada2:2",
+            serviceName: "sintax",
+            selected: false,
+            showExtra: false,
+            extraInputs: [
+              {
+                name: "wordlength",
+                value: 8,
+                disabled: "never",
+                tooltip:
+                  "length of words (i.e. k-mers) for database indexing. Defaut is 8.",
+                type: "slide",
+                min: 3,
+                max: 15,
+                step: 1,
+              },
+              {
+                name: "cores",
+                value: 4,
+                disabled: "never",
+                tooltip: "number of cores to use",
                 type: "numeric",
-                rules: [
-                  (v) => v >= 0 || "ERROR: specify values >0",
-                  (v) => v <= 1 || "ERROR: specify values <= 1",
-                ],
+                rules: [(v) => v >= 1 || "ERROR: specify values >= 1"],
+              },
+            ],
+            Inputs: [
+              {
+                name: "database",
+                btnName: "select db",
+                value: "undefined",
+                disabled: "never",
+                tooltip:
+                  `select database either in fasta format or already built .udb (udb must be built with vsearch (v2.23.0) --makeudb_usearch). Needs to be SINTAX-formatted. 
+                  Click on the header to see the example.`,
+                type: "file",
+              },
+              {
+                name: "fasta_file",
+                btnName: "select fasta",
+                value: "undefined",
+                disabled: "never",
+                tooltip:
+                  "select a fasta file containing sequences that are subjected to taxonomy assignment",
+                type: "file",
+              },
+              {
+                name: "cutoff",
+                value: 0.8,
+                disabled: "never",
+                tooltip:
+                  "minimum level of bootstrap support for the taxonomic ranks to be reported. Default is 0.8. ",
+                type: "slide",
+                min: 0.05,
+                max: 1,
+                step: 0.05,
+              },
+              {
+                name: "strand",
+                items: ["both", "plus"],
+                disabled: "never",
+                tooltip:
+                  "check both strands (forward and reverse complementary) or the plus (fwd) strand only",
+                value: "both",
+                type: "select",
               },
             ],
           },
@@ -2306,7 +2374,7 @@ export default new Vuex.Store({
                 value: "undefined",
                 disabled: "never",
                 tooltip:
-                  "Select a reference database fasta(.gz) file for taxonomy annotation. Click on the header to download DADA2-formatted reference databases https://benjjneb.github.io/dada2/training.html",
+                  "Select a reference database fasta(.gz) file for taxonomy annotation. Needs to be DADA2-formatted. Click on the header to download DADA2-formatted reference databases https://benjjneb.github.io/dada2/training.html",
                 type: "file",
               },
               {
@@ -2324,8 +2392,10 @@ export default new Vuex.Store({
                 disabled: "never",
                 tooltip:
                   "the minimum bootstrap confidence for assigning a taxonomic level",
-                type: "numeric",
-                rules: [(v) => v >= 1 || "ERROR: specify values >= 1"],
+                type: "slide",
+                min: 1,
+                max: 100,
+                step: 1,
               },
               {
                 name: "tryRC",
@@ -3932,7 +4002,7 @@ export default new Vuex.Store({
     // # OptimOTU
     OptimOTU: [
       {
-        tooltip: "Specify sequence orientation",
+        tooltip: "Specify target taxa (Fungi or Metazoa) and sequence orientation",
         scriptName:"xxx.sh",
         imageName: "pipecraft/optimotu:4",
         serviceName: "target taxa and sequence orientation",
@@ -3965,6 +4035,39 @@ export default new Vuex.Store({
         ],
       },
       {
+        tooltip: `spike-in sequences: sequences that are added to the samples before PCR, these sequences are expected to be present in every sample.
+                    positive control sequences: sequences that are added to only a few specific positive control samples.  These sequences are expected to be present only
+                    in the positive control samples, and their presence in other samples is indicative of cross-contamination. 
+                    In practice both types are treated the same by the pipeline, they are just reported separately.`,
+        scriptName:"xxx.sh",
+        imageName: "pipecraft/optimotu:4",
+        serviceName: "control sequences",
+        manualLink:
+          "",
+        disabled: "never",
+        selected: "always",
+        showExtra: false,
+        extraInputs: [],
+        Inputs: [
+          {
+            name: "spike_in",
+            value: "undefined",
+            btnName: "select fasta",
+            disabled: "never",
+            tooltip: `specify a file with spike-in sequences in fasta format`,
+            type: "file",
+          },
+          {
+            name: "positive_control",
+            value: "undefined",
+            btnName: "select fasta",
+            disabled: "never",
+            tooltip: `specify a file with positive control sequences in fasta format`,
+            type: "file",
+          },
+        ],
+      },
+      {
         tooltip: "remove primers sequences and trim the reads; discards all reads that contain N's (ambiguous bases) for following dada2 denoising",
         scriptName: "xxx.sh",
         imageName: "pipecraft/optimotu:4",
@@ -3974,7 +4077,16 @@ export default new Vuex.Store({
         disabled: "never",
         selected: "always",
         showExtra: false,
-        extraInputs: [],
+        extraInputs: [
+          {
+            name: "custom_sample_table",
+            value: "undefined",
+            btnName: "select fasta",
+            disabled: "never",
+            tooltip: `custom primer trimming parameters per sample can be given as columns in the sample table. See example by clicking on the header. https://pipecraft2-manual.readthedocs.io/en/1.0.0/pre-defined_pipelines.html`,
+            type: "file",
+          },
+        ],
         Inputs: [
           {
             name: "forward_primer",
@@ -4149,6 +4261,19 @@ export default new Vuex.Store({
         ],
       },
       {
+        tooltip: `Chimera filtering with DADA2 'removeBimeraDenovo()' function and vsearch 'uchime_ref' function`,
+        scriptName: "xxx.sh",
+        imageName: "pipecraft/optimotu:4",
+        serviceName: "Amplicon model setting",
+        manualLink:
+          "",
+        disabled: "never",
+        selected: "always",
+        showExtra: false,
+        extraInputs: [],
+        Inputs: [],
+      },
+      {
         tooltip: "Statistical sequence models are used for 1) aligning ASVs prior to use of protax and/or NUMT detection; 2) filtering ASVs to remove spurious sequences",
         scriptName: "xxx.sh",
         imageName: "pipecraft/optimotu:4",
@@ -4156,38 +4281,9 @@ export default new Vuex.Store({
         manualLink:
           "",
         disabled: "never",
-        selected: true,
+        selected: "always",
         showExtra: false,
-        extraInputs: [],
-        Inputs: [
-          {
-            name: "model_type",
-            items: ["CM", "HMM", "none"],
-            value: "CM",
-            disabled: "never",  
-            tooltip: `CM = Codon model for Fungi; 
-            HMM = Hidden Markov Model for Metazoa; 
-            none = skip this step`,
-            type: "select",
-            onChange: (service, value) => {
-              if (value === "none") {
-                service.selected = false;
-              } else {
-                service.selected = true;
-              }
-            },
-          },
-          {
-            name: "model_file",
-            items: ["ITS3_ITS4.cm", "f/gITS7_ITS4.cm", "COI.hmm", "custom"],
-            value: "ITS3_ITS4.cm",
-            disabled: "never",  
-            tooltip: `included models: ITS3_ITS4.cm = model for ITS2 amplicons with ITS3 and ITS4 primers.
-            f/gITS7_ITS4.cm = model for ITS2 amplicons with fITS7/gITS7 and ITS4 primers.
-            COI.hmm = model for COI amplicons.
-            custom = specify your own custom model file`,
-            type: "select",
-          },
+        extraInputs: [
           {
             name: "max_model_start",
             value: 5,
@@ -4215,6 +4311,29 @@ export default new Vuex.Store({
             type: "numeric",
             rules: [(v) => v >= 0 || "ERROR: specify values >= 0"],
           },
+        ],
+        Inputs: [
+          {
+            name: "model_type",
+            items: ["CM", "HMM", "none"],
+            value: "CM",
+            disabled: "never",  
+            tooltip: `CM = Codon model for Fungi; 
+            HMM = Hidden Markov Model for Metazoa; 
+            none = skip this step`,
+            type: "select",
+          },
+          {
+            name: "model_file",
+            items: ["ITS3_ITS4.cm", "f/gITS7_ITS4.cm", "COI.hmm", "custom"],
+            value: "ITS3_ITS4.cm",
+            disabled: "never",  
+            tooltip: `included models: ITS3_ITS4.cm = model for ITS2 amplicons with ITS3 and ITS4 primers.
+            f/gITS7_ITS4.cm = model for ITS2 amplicons with fITS7/gITS7 and ITS4 primers.
+            COI.hmm = model for COI amplicons.
+            custom = specify your own custom model file`,
+            type: "select",
+          },
           {
             name: "model_align",
             value: false,
@@ -4228,7 +4347,7 @@ export default new Vuex.Store({
             value: false,
             disabled: "never",
             tooltip:
-              "Filter NUMTs; requires model_type == HMM and model_align == TRUE",
+              "Only for Metazoa: filter NUMTs; requires model_type == HMM and model_align == TRUE",
             type: "bool",
           },
         ],
@@ -4243,7 +4362,16 @@ export default new Vuex.Store({
         disabled: "never",
         selected: "always",
         showExtra: false,
-        extraInputs: [],
+        extraInputs: [
+          {
+            name: "aligned",
+            value: false,
+            disabled: "never",
+            tooltip:
+              "Are all reference and query sequences are aligned (default = FALSE)",
+            type: "bool",
+          },
+        ],
         Inputs: [
           {
             name: "location",
@@ -4255,35 +4383,16 @@ export default new Vuex.Store({
             type: "select",
           },
           {
-            name: "aligned",
-            value: false,
-            disabled: "never",
-            tooltip:
-              "Are all reference and query sequences are aligned (default = FALSE)",
-            type: "bool",
-          },
-          {
-            name: "outgroup",
-            items: ["undefined", "UNITE_SHs", "custom"],
+            name: "with_outgroup",
+            items: ["UNITE_SHs", "custom"],
             value: "UNITE_SHs",
             disabled: "never",
             tooltip:
-              `for fungi, default is UNITE_SHs, which are sh_matching_data_0_5_v9 sequences (included in the PipeCraft2 container).
+              `additional database with also outgroup sequences. For fungi, default is UNITE_SHs, which are sh_matching_data_0_5_v9 sequences (included in the PipeCraft2 container).
               for other downloadable databases for e.g. metazoa, click on the outgroup header https://pipecraft2-manual.readthedocs.io/en/1.0.0/pre-defined_pipelines.html . 
               custom -> to specify your own file in fasta format. The outgroup reference should be taxonomically annotated sequences which
               include not only the ingroup (i.e., those sequences which Protax can identify) but also (ideally) all other groups which could conceivably be encountered
               with the chosen marker.`,
-            type: "select",
-          },
-          {
-            name: "taxonomy",
-            items: ["undefined", "UNITE_SHs", "custom"],
-            value: "UNITE_SHs",
-            disabled: "never",
-            tooltip: `taxonomic annotations (optional). Used "undefined" if no taxonomic annotations are provided.
-            If given, this is also the file used for reference-based chimera checking.
-            "UNITE_SHs" (included) are for Fungi if outgroup is also UNITE_SHs (sh_matching_data_0_5_v9 data). 
-            "custom" -> to specify your own file (see the example in the manual).`,
             type: "select",
           },
         ],
@@ -4302,8 +4411,8 @@ export default new Vuex.Store({
         Inputs: [
           {
             name: "cluster_thresholds",
-            items: ["Fungi", "Metazoa", "custom"],
-            value: "Fungi",
+            items: ["Fungi_GSSP", "Metazoa_MBRAVE", "custom"],
+            value: "Fungi_GSSP",
             disabled: "never",
             tooltip:"select file with clustering thresholds. Default is pre-calculated thresholds for Fungi (x.x.2024 UNITEv XX) (included in the PipeCraft2 container)",
             type: "select",

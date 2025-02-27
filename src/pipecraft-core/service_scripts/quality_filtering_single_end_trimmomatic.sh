@@ -95,6 +95,10 @@ runtime=$((end-start))
 #Make README.txt file
 printf "# Quality filtering was performed using trimmomatic (see 'Core commands' below for the used settings).
 
+Start time: $start_time
+End time: $(date)
+Runtime: $runtime seconds
+
 Files in 'qualFiltered_out':
 ----------------------------
 # *.$extension              = quality filtered sequences in FASTQ format.
@@ -107,8 +111,6 @@ Files in 'qualFiltered_out/FASTA':
 Core commands ->
 quality filtering: trimmomatic-0.39.jar SE input_file output_file -phred$phred $LEADING $TRAILING SLIDINGWINDOW:$window_size:$required_qual MINLEN:$min_length -threads $threads
 convert output fastq files to FASTA: seqkit fq2fa -t dna --line-width 0 input_file -o FASTA/output_file.fasta
-
-Total run time was $runtime sec.
 
 ##############################################
 ###Third-party applications for this process:

@@ -351,8 +351,8 @@ function check_extension_fasta () {
 if [[ $extension == "fasta" ]] || [[ $extension == "fa" ]] || [[ $extension == "fas" ]]; then
     :
 else
-    printf '%s\n' "ERROR]: $file formatting not supported here!
-Supported extensions: fasta, fas, fa (and gz or zip compressed formats).
+    printf '%s\n' "ERROR]: $file $extension formatting not supported here!
+Supported extensions: fasta, fas, fa (and gz compressed formats).
 >Quitting" >&2
     end_process
 fi
@@ -366,7 +366,7 @@ if [[ $extension == "fasta" ]] || [[ $extension == "fa" ]] || [[ $extension == "
     :
 else
     printf '%s\n' "ERROR]: $extension formatting not supported here!
-Supported extensions: fastq, fq, fasta, fas, fa (and gz or zip compressed formats).
+Supported extensions: fastq, fq, fasta, fas, fa (and gz compressed formats).
 >Quitting" >&2
     end_process
 fi
@@ -728,7 +728,7 @@ for primer in $(echo $fwd_tempprimer | sed "s/,/ /g"); do
         fqgrep -m $mismatches -p $fwd_primer -f -e $input.$extension >> tempdir/5_3.fastx
     else
         printf '%s\n' "ERROR]: $file formatting not supported!
-Supported extensions: fastq, fq, fasta, fa, fas (and gz or zip compressed formats).
+Supported extensions: fastq, fq, fasta, fa, fas (and gz compressed formats).
 >Quitting" >&2
         end_process
     fi
@@ -749,7 +749,7 @@ for primer in $(echo $rev_tempprimer | sed "s/,/ /g"); do
         fqgrep -m $mismatches -p $rev_primer -f -e $input.$extension >> tempdir/3_5.fastx
     else
         printf '%s\n' "ERROR]: $file formatting not supported!
-Supported extensions: fastq, fq, fasta, fa, fas (and gz or zip compressed formats).
+Supported extensions: fastq, fq, fasta, fa, fas (and gz compressed formats).
 >Quitting" >&2
         end_process
     fi

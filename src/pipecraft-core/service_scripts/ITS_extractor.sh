@@ -392,30 +392,32 @@ for seqrun in $DIRS; do
     #Make README.txt file
     printf "# ITS regions extracted with ITSx (see 'Core command' below for the used settings).
 
-    Files in 'ITSx_out' directory represent sequences that passed ITS Extractor.
-    Regions are placed under corrseponding directory (i.e., ITS2 sequences are in 'ITS2' directory).
-    Files in /no_detections directory represent sequences where no ITS regions were identified.
+Start time: $start_time
+End time: $(date)
+Runtime: $runtime seconds
 
-    If input was FASTQ formatted file(s), then it was converted to FASTA, and only FASTA is outputted.
-    Input FASTA files (converted from FASTQ) are in ITSx_out/ITSx_input_to_FASTA directory.
+Files in 'ITSx_out' directory represent sequences that passed ITS Extractor.
+Regions are placed under corrseponding directory (i.e., ITS2 sequences are in 'ITS2' directory).
+Files in /no_detections directory represent sequences where no ITS regions were identified.
 
-    Core command -> 
-    ITSx -i input.unique.seqs -o output --preserve T --graphical F $organisms $partial $regions $cores $eval $score $domains $complement_in $only_full_in $truncate_in
+If input was FASTQ formatted file(s), then it was converted to FASTA, and only FASTA is outputted.
+Input FASTA files (converted from FASTQ) are in ITSx_out/ITSx_input_to_FASTA directory.
 
-    Total run time was $runtime sec.
+Core command -> 
+ITSx -i input.unique.seqs -o output --preserve T --graphical F $organisms $partial $regions $cores $eval $score $domains $complement_in $only_full_in $truncate_in
 
-    ##############################################
-    ###Third-party applications for this process:
-    #ITSx v1.1.3 for extracting ITS regions
-        #citation: Bengtsson-Palme J., et al., 2013. Improved software detection and extraction of ITS1 and ITS2 from ribosomal ITS sequences of fungi and other eukaryotes for analysis of environmental sequencing data. Methods in Ecology and Evolution 4, 914-919.
-        #microbiology.se/software/itsx/
-    #seqkit v2.3.0 for converting fastq to fasta (if input was fastq)
-        #citation: Shen W, Le S, Li Y, Hu F (2016) SeqKit: A Cross-Platform and Ultrafast Toolkit for FASTA/Q File Manipulation. PLOS ONE 11(10): e0163962. https://doi.org/10.1371/journal.pone.0163962
-        #https://bioinf.shenwei.me/seqkit/
-    #mothur 1.46.1 for unique and deunique sequences prior and after extraction
-        #citation: Schloss, P.D., et al., Introducing mothur: Open-source, platform-independent, community-supported software for describing and comparing microbial communities. Appl Environ Microbiol, 2009. 75(23):7537-41
-        #https://github.com/mothur/mothur
-    ##############################################" > $output_dir/README.txt
+##############################################
+###Third-party applications for this process:
+#ITSx v1.1.3 for extracting ITS regions
+    #citation: Bengtsson-Palme J., et al., 2013. Improved software detection and extraction of ITS1 and ITS2 from ribosomal ITS sequences of fungi and other eukaryotes for analysis of environmental sequencing data. Methods in Ecology and Evolution 4, 914-919.
+    #microbiology.se/software/itsx/
+#seqkit v2.3.0 for converting fastq to fasta (if input was fastq)
+    #citation: Shen W, Le S, Li Y, Hu F (2016) SeqKit: A Cross-Platform and Ultrafast Toolkit for FASTA/Q File Manipulation. PLOS ONE 11(10): e0163962. https://doi.org/10.1371/journal.pone.0163962
+    #https://bioinf.shenwei.me/seqkit/
+#mothur 1.46.1 for unique and deunique sequences prior and after extraction
+    #citation: Schloss, P.D., et al., Introducing mothur: Open-source, platform-independent, community-supported software for describing and comparing microbial communities. Appl Environ Microbiol, 2009. 75(23):7537-41
+    #https://github.com/mothur/mothur
+##############################################" > $output_dir/README.txt
     ### if working with multiRunDir then cd /input/multiRunDir
     if [[ $multiDir == "TRUE" ]]; then 
         cd /input/multiRunDir
