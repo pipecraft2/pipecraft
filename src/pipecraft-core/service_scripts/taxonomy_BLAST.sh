@@ -19,12 +19,6 @@ db1_temp=$(echo $database_file | grep -oP "$regex")
 db1=$(printf "/extraFiles/$db1_temp")
 echo "db1 = $db1"
 
-### input fasta file
-IN=$(echo $fasta_file | grep -oP "$regex")
-# overwrite fileFormat variable; get it from input fasta_file
-fileFormat=$(echo $IN | awk -F. '{print $NF}')
-export fileFormat
-
 #mandatory options
 task=$"-task ${task}"       # e.g. blastn, megablast
 strands=$"-strand ${strands}"   # both, plus
@@ -53,18 +47,13 @@ output_dir=$"/input/taxonomy_out"
 #############################
 ### Start of the workflow ###
 #############################
-echo "output_dir = $output_dir"
-if [[ -d $output_dir ]]; then
-    rm -rf $output_dir
-fi
-mkdir $output_dir
-
-### Start time
-start_time=$(date)
 start=$(date +%s)
 
 ### Check if files with specified extension exist in the dir
 first_file_check
+
+### Prepare working env and check single-end data
+prepare_SE_env
 
 #If input is compressed, then decompress (keeping the compressed file, but overwriting if filename exists!)
 check_gz_zip_SE
@@ -95,10 +84,9 @@ elif [[ $d1 == "fasta" ]] || [[ $d1 == "fa" ]] || [[ $d1 == "fas" ]] || [[ $d1 =
     printf '%s\n' "Note: converting fasta formatted database for BLAST"
     makeblastdb -in $db1 -input_type fasta -dbtype nucl
     database=$"-db $db1"
-    printf '%s\n' "BLAST database was converted to BLAST format (file = $db1)."
 fi
 
-## Do BLAST
+## Perform taxonomy annotation
 printf '%s\n' "Running BLAST"
 checkerror=$(blastn \
 -query $IN \
@@ -179,29 +167,39 @@ mv 10BestHits.txt tempdir/
 sed -i 's/\t/+/g' BLAST_1st_best_hit.txt
 sed -i 's/\t/+/g' BLAST_10_best_hits.txt
 
-##########################################################
-### ADD sim_score PER BLOCK IMMEDIATELY AFTER pident   ###
-##########################################################
+###################################################################
+### ADD sim_score and adj_cov PER BLOCK IMMEDIATELY AFTER pident###
+###################################################################
 # 1) For BLAST_1st_best_hit.txt, we simply append sim_score at the end (after pident).
 awk -F'+' 'BEGIN{OFS="+"}
 NR==1 {
-   print $0,"sim_score";
+   print $0,"sim_score","adj_qcov";
    next
 }
 {
-   # pident is $19, length is $12, qlen is $5
+   # pident is $19, length is $12, qlen is $5, slen is $6, sstart is $9, send is $10, qcovs is $18
    if($5+0 > 0){
      sim = $19 * ($12 / $5)
    } else {
      sim = "NA"
    }
-   print $0, sim
+   
+   # Calculate adjusted query coverage
+   if($5+0 > $6+0 && $9+0 > 0 && $10+0 > 0 && $6+0 > 0){
+     # if qlen > slen, then adjusted_qcov = ((send-sstart+1)/slen)*100
+     adj_qcov = (($10 - $9 + 1) / $6) * 100
+   } else {
+     # else adj_qcov = qcovs
+     adj_qcov = $18
+   }
+   
+   print $0, sim, adj_qcov
 }' BLAST_1st_best_hit.txt > BLAST_1st_best_hit.tmp && mv BLAST_1st_best_hit.tmp BLAST_1st_best_hit.txt
 
-# 2) For BLAST_10_best_hits.txt, each block of 17 columns becomes 18 by inserting sim_score after pident.
+# 2) For BLAST_10_best_hits.txt, each block of 17 columns becomes 19 by inserting sim_score and adj_qcov after pident.
 awk -F'+' 'BEGIN{OFS="+"}
 NR==1 {
-   # Rebuild header: each block is 17 columns, we add sim_score after pident
+   # Rebuild header: each block is 17 columns, we add sim_score and adj_qcov after pident
    split($0, head, FS)
    nblocks = length(head)/17
    new_header = ""
@@ -211,8 +209,8 @@ NR==1 {
      for(j=start; j<=end; j++){
        new_header = new_header head[j] OFS
      }
-     # Insert "sim_score" label
-     new_header = new_header "sim_score"
+     # Insert "sim_score" and "adj_qcov" labels
+     new_header = new_header "sim_score" OFS "adj_qcov"
      if(i < nblocks-1){
        new_header = new_header OFS
      }
@@ -227,21 +225,37 @@ NR==1 {
    for(i=0; i<nblocks; i++){
      start = i*17 + 1
      end   = start + 16
-     # parse columns for sim_score
+     # parse columns for sim_score and adj_qcov
      qlen      = a[start+2]
+     slen      = a[start+3]
+     sstart    = a[start+6]
+     send      = a[start+7]
      align_len = a[start+9]
+     qcovs     = a[start+15]
      pident    = a[start+16]
+     
+     # Calculate sim_score
      if(qlen+0>0){
        sim = pident * (align_len / qlen)
      } else {
        sim = "NA"
      }
+     
+     # Calculate adjusted query coverage
+     if(qlen+0 > slen+0 && sstart+0 > 0 && send+0 > 0 && slen+0 > 0){
+       # if qlen > slen, then adjusted_qcov = ((send-sstart+1)/slen)*100
+       adj_qcov = ((send - sstart + 1) / slen) * 100
+     } else {
+       # else adj_qcov = qcovs
+       adj_qcov = qcovs
+     }
+     
      block_str = ""
      for(j=start; j<=end; j++){
        block_str = block_str a[j] OFS
      }
-     # Insert sim_score
-     block_str = block_str sim
+     # Insert sim_score and adj_qcov
+     block_str = block_str sim OFS adj_qcov
      if(i < nblocks-1){
        block_str = block_str OFS
      }
@@ -272,15 +286,11 @@ db_x=$(echo $db1 | sed -e 's/\/extraFiles\///')
 # Make README.txt file
 printf "# Taxonomy was assigned using BLAST (see 'Core command' below for the used settings).
 
-Start time: $start_time
-End time: $(date)
-Runtime: $runtime seconds
-
 Query    = $IN
 Database = $db_x
 
-BLAST_1st_best_hit.txt = BLAST results for the 1st best hit in the used database (sim_score appended).
-BLAST_10_best_hits.txt = BLAST results for the 10 best hits in the used database, with sim_score inserted after pident in each block.
+BLAST_1st_best_hit.txt = BLAST results for the 1st best hit in the used database (sim_score and adj_qcov appended).
+BLAST_10_best_hits.txt = BLAST results for the 10 best hits in the used database, with sim_score and adj_qcov inserted after pident in each block.
 
 BLAST values field separator is '+'. When pasting the taxonomy results to e.g. Excel, then first denote '+' as the field separator to align the columns.
 
@@ -303,9 +313,10 @@ sstrand   = subject strand
 qcovs     = query coverage per subject
 pident    = percentage of identical matches
 sim_score = similarity score of a hit taking the query coverage into account; calculated as (pident * (alignment length / qlen))
+adj_qcov  = adjusted query coverage; if qlen > slen then ((send-sstart+1)/slen)*100, otherwise equal to qcovs
 
 Core command ->
-blastn -query $IN $strands $db_x $task -max_target_seqs 10 $evalue $wordsize $reward $penalty $gapopen $gapextend -max_hsps 1
+blastn -query $IN $strands $database $task -max_target_seqs 10 $evalue $wordsize $reward $penalty $gapopen $gapextend -max_hsps 1
 
 Total run time was $runtime sec.
 
