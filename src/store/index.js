@@ -1985,9 +1985,7 @@ export default new Vuex.Store({
                 min: 0,
                 step: 0.01,
                 type: "slide",
-                depends_on:
-                // Disable if abundance_filt is false
-                  'state.selectedSteps[0].services[4].Inputs[0].value == "find_and_dump" && state.selectedSteps[0].services[4].Inputs[8].value === true'
+                depends_on: "state.selectedSteps[0].services[4].Inputs[0].value === 'find_and_dump' && state.selectedSteps[0].services[4].Inputs[9].value === true"
               },
             ],
           },
@@ -2129,7 +2127,7 @@ export default new Vuex.Store({
         services: [
           {
             tooltip:
-              "assign taxonomy with BLAST against a selected database [SELECT WORKDIR that contains only ONE fasta file for the process]",
+              "assign taxonomy with BLAST",
             scriptName: "taxonomy_BLAST.sh",
             imageName: "pipecraft/blast:2.14",
             serviceName: "BLAST",
@@ -2236,7 +2234,7 @@ export default new Vuex.Store({
           },
           {
             tooltip:
-              "assign taxonomy with RDP Classifier against a selected database [SELECT WORKDIR that contains only ONE fasta file for the process]",
+              "assign taxonomy with RDP Classifier",
             scriptName: "taxonomy_RDP.sh",
             imageName: "pipecraft/metaworks:1.12.0",
             serviceName: "RDP_classifier",
@@ -2272,7 +2270,7 @@ export default new Vuex.Store({
                 value: "undefined",
                 disabled: "never",
                 tooltip:
-                  "Select a fasta file containing sequences that are subjected to taxonomy assignment",
+                  "select a fasta file containing sequences that are subjected to taxonomy assignment",
                 type: "file",
               },
               {
@@ -2280,12 +2278,82 @@ export default new Vuex.Store({
                 value: 0.8,
                 disabled: "never",
                 tooltip:
-                  "default is 0.8. Assignment confidence cutoff used to determine the assignment count for each taxon. Range [0-1]",
+                  "assignment confidence cutoff used to determine the assignment count for each taxon. Default is 0.8. ",
+                type: "slide",
+                min: 0.05,
+                max: 1,
+                step: 0.05,
+              },
+            ],
+          },
+          {
+            tooltip:
+              "assign taxonomy with SINTAX classifier (in vsearch)",
+            scriptName: "taxonomy_sintax.sh",
+            imageName: "pipecraft/vsearch_dada2:2",
+            serviceName: "sintax",
+            selected: false,
+            showExtra: false,
+            extraInputs: [
+              {
+                name: "wordlength",
+                value: 8,
+                disabled: "never",
+                tooltip:
+                  "length of words (i.e. k-mers) for database indexing. Defaut is 8.",
+                type: "slide",
+                min: 3,
+                max: 15,
+                step: 1,
+              },
+              {
+                name: "cores",
+                value: 4,
+                disabled: "never",
+                tooltip: "number of cores to use",
                 type: "numeric",
-                rules: [
-                  (v) => v >= 0 || "ERROR: specify values >0",
-                  (v) => v <= 1 || "ERROR: specify values <= 1",
-                ],
+                rules: [(v) => v >= 1 || "ERROR: specify values >= 1"],
+              },
+            ],
+            Inputs: [
+              {
+                name: "database",
+                btnName: "select db",
+                value: "undefined",
+                disabled: "never",
+                tooltip:
+                  `select database either in fasta format or already built .udb (udb must be built with vsearch (v2.23.0) --makeudb_usearch). Needs to be SINTAX-formatted. 
+                  Click on the header to see the example.`,
+                type: "file",
+              },
+              {
+                name: "fasta_file",
+                btnName: "select fasta",
+                value: "undefined",
+                disabled: "never",
+                tooltip:
+                  "select a fasta file containing sequences that are subjected to taxonomy assignment",
+                type: "file",
+              },
+              {
+                name: "cutoff",
+                value: 0.8,
+                disabled: "never",
+                tooltip:
+                  "minimum level of bootstrap support for the taxonomic ranks to be reported. Default is 0.8. ",
+                type: "slide",
+                min: 0.05,
+                max: 1,
+                step: 0.05,
+              },
+              {
+                name: "strand",
+                items: ["both", "plus"],
+                disabled: "never",
+                tooltip:
+                  "check both strands (forward and reverse complementary) or the plus (fwd) strand only",
+                value: "both",
+                type: "select",
               },
             ],
           },
@@ -2306,7 +2374,7 @@ export default new Vuex.Store({
                 value: "undefined",
                 disabled: "never",
                 tooltip:
-                  "Select a reference database fasta(.gz) file for taxonomy annotation. Click on the header to download DADA2-formatted reference databases https://benjjneb.github.io/dada2/training.html",
+                  "Select a reference database fasta(.gz) file for taxonomy annotation. Needs to be DADA2-formatted. Click on the header to download DADA2-formatted reference databases https://benjjneb.github.io/dada2/training.html",
                 type: "file",
               },
               {
@@ -2324,8 +2392,10 @@ export default new Vuex.Store({
                 disabled: "never",
                 tooltip:
                   "the minimum bootstrap confidence for assigning a taxonomic level",
-                type: "numeric",
-                rules: [(v) => v >= 1 || "ERROR: specify values >= 1"],
+                type: "slide",
+                min: 1,
+                max: 100,
+                step: 1,
               },
               {
                 name: "tryRC",
@@ -3504,7 +3574,8 @@ export default new Vuex.Store({
           "tick the checkbox to cluster reads with vsearch --cluster_unoise (and optionally remove chimeras with --uchime3_denovo)",
         imageName: "pipecraft/vsearch_dada2:2",
         serviceName: "unoise3",
-        selected: false,
+        disabled: "never",
+        selected: "always",
         showExtra: false,
         extraInputs: [
           {
@@ -3624,6 +3695,91 @@ export default new Vuex.Store({
             tooltip: "minimum abundance of sequences for denoising",
             type: "numeric",
             rules: [(v) => v >= 1 || "ERROR: specify values >= 1"],
+          },
+        ],
+      },
+      {
+        tooltip: "Filter tag-jumps and/or filter OTUs by length",
+        scriptName: "curate_table_wf.sh",
+        imageName: "pipecraft/vsearch_dada2:2",
+        serviceName: "curate OTU table",
+        manualLink:
+          "empty",
+        disabled: "never",
+        selected: true,
+        showExtra: false,
+        extraInputs: [],
+        Inputs: [
+          {
+            name: "f_value",
+            value: 0.03,
+            max: 0.4,
+            min: 0,
+            step: 0.01,
+            disabled: "never",
+            tooltip:
+              "for filtering tag-jumps; f-parameter of UNCROSS2, which defines the expected tag-jumps rate. Default is 0.03 (equivalent to 3%). A higher value enforces stricter filtering. Value 0 means OFF, no tag-jumps filtering",
+            type: "slide",
+            rules: [],
+            onChange: (service, value) => {
+              const p_value = service.Inputs.find(input => input.name === "p_value").value;
+              if (Number(value) === 0 && Number(p_value) <= 0) {
+                service.selected = false;
+              }
+            },
+          },
+          {
+            name: "p_value", 
+            value: 1,
+            disabled: "never",
+            tooltip:
+              "for filtering tag-jumps; p-parameter, which controls the severity of tag-jump removal. It adjusts the exponent in the UNCROSS formula. Default is 1. Opt for 0.5 or 0.3 to steepen the curve. Value 0 means OFF, no tag-jumps filtering",
+            type: "numeric",
+            rules: [(v) => v > 0 || "OFF. Turn ON with > 0.01"],
+            onChange: (service, value) => {
+              const f_value = service.Inputs.find(input => input.name === "f_value").value;
+              if (Number(value) <= 0 && Number(f_value) === 0) {
+                service.selected = false;
+              }
+            },
+          },
+          {
+            name: "min_length",
+            value: 32,
+            disabled: "never",
+            tooltip:
+              "discard OTUs that are shorter than specified value (in base pairs). Value 0 means OFF, no filtering by min length",
+            type: "numeric",
+            rules: [(v) => v > 0 || "OFF. Turn ON with values > 0"],
+            onChange: (service, value) => {
+              const allOthersOff =
+                service.Inputs.find(input => input.name == "max_length").value == 0 &&
+                service.Inputs.find(input => input.name == "f_value").value == 0 &&
+                service.Inputs.find(input => input.name == "p_value").value == 0;
+              
+              if (value == 0 && allOthersOff) {
+                service.selected = false;
+              }
+            },
+          },
+          {
+            name: "max_length",
+            value: 0,
+            disabled: "never",
+            tooltip:
+              "discard OTUs that are longer than specified value (in base pairs). Value 0 means OFF, no filtering by max length",
+            type: "numeric",
+            rules: [(v) => v > 0 || "OFF. Turn ON with values > 0"],
+            onChange: (service, value) => {
+              const allOthersOff =
+                service.Inputs.find(input => input.name == "min_length").value == 0 &&
+                service.Inputs.find(input => input.name == "f_value").value == 0 &&
+                service.Inputs.find(input => input.name == "p_value").value == 0;
+              
+              if (value == 0 && allOthersOff) {
+                service.selected = false;
+              }
+            },
           },
         ],
       },
@@ -3843,6 +3999,427 @@ export default new Vuex.Store({
     //     ],
     //   },
     // ],
+    // # OptimOTU
+    OptimOTU: [
+      {
+        tooltip: "Specify target taxa (Fungi or Metazoa) and sequence orientation",
+        scriptName:"xxx.sh",
+        imageName: "pipecraft/optimotu:4",
+        serviceName: "target taxa and sequence orientation",
+        manualLink:
+          "",
+        disabled: "never",
+        selected: "always",
+        showExtra: false,
+        extraInputs: [],
+        Inputs: [
+          {
+            name: "target_taxa",
+            items: ["fungi", "metazoa"],
+            value: "fungi",
+            disabled: "never",
+            tooltip: `fungi = target taxa are fungi; 
+            metazoa = target taxa are metazoa`,
+            type: "select",
+          },
+          {
+            name: "seq_orientation",
+            items: ["fwd", "rev", "mixed"],
+            value: "fwd",
+            disabled: "never",
+            tooltip: `fwd = all sequences are expected to be in 5'-3' orientation; 
+            rev = all sequences are expected to be in 3'-5' orientation.
+            mixed = the orientation of seqs is expected to be mixed (5'-3' and 3'-5)`,
+            type: "select",
+          },
+        ],
+      },
+      {
+        tooltip: `spike-in sequences: sequences that are added to the samples before PCR, these sequences are expected to be present in every sample.
+                    positive control sequences: sequences that are added to only a few specific positive control samples.  These sequences are expected to be present only
+                    in the positive control samples, and their presence in other samples is indicative of cross-contamination. 
+                    In practice both types are treated the same by the pipeline, they are just reported separately.`,
+        scriptName:"xxx.sh",
+        imageName: "pipecraft/optimotu:4",
+        serviceName: "control sequences",
+        manualLink:
+          "",
+        disabled: "never",
+        selected: "always",
+        showExtra: false,
+        extraInputs: [],
+        Inputs: [
+          {
+            name: "spike_in",
+            value: "undefined",
+            btnName: "select fasta",
+            disabled: "never",
+            tooltip: `specify a file with spike-in sequences in fasta format`,
+            type: "file",
+          },
+          {
+            name: "positive_control",
+            value: "undefined",
+            btnName: "select fasta",
+            disabled: "never",
+            tooltip: `specify a file with positive control sequences in fasta format`,
+            type: "file",
+          },
+        ],
+      },
+      {
+        tooltip: "remove primers sequences and trim the reads; discards all reads that contain N's (ambiguous bases) for following dada2 denoising",
+        scriptName: "xxx.sh",
+        imageName: "pipecraft/optimotu:4",
+        serviceName: "cut primers and trim reads",
+        manualLink:
+          "",
+        disabled: "never",
+        selected: "always",
+        showExtra: false,
+        extraInputs: [
+          {
+            name: "custom_sample_table",
+            value: "undefined",
+            btnName: "select fasta",
+            disabled: "never",
+            tooltip: `custom primer trimming parameters per sample can be given as columns in the sample table. See example by clicking on the header. https://pipecraft2-manual.readthedocs.io/en/1.0.0/pre-defined_pipelines.html`,
+            type: "file",
+          },
+        ],
+        Inputs: [
+          {
+            name: "forward_primer",
+            value: ["GTGARTCATCGAATCTTTG"],
+            disabled: "never",
+            tooltip: "specify forward primer (5'-3'); supports only a single fwd primer",
+            type: "chip",
+            iupac: true,
+            rules: [(v) => v.length <= 1 || "TOO MANY PRIMERS, specify ONE"],
+          },
+          {
+            name: "reverse_primer",
+            value: ["TCCTCCGCTTATTGATATGC"],
+            disabled: "never",
+            tooltip: "specify reverse primer (3'-5'); supports only a single rev primer",
+            type: "chip",
+            iupac: true,
+            rules: [(v) => v.length <= 1 || "TOO MANY PRIMERS, specify ONE"],
+          },
+          {
+            name: "max_err",
+            value: 1,
+            disabled: "never",
+            tooltip: "maximum allowed error rate in the primer search (float; e.g 0.2 = 20% error rate) in the primer sequence; or number of mismatches (int; e.g. 1 = 1 mismatch)",
+            type: "numeric",
+            rules: [(v) => v >= 0 || "ERROR: specify values >= 0"],
+          },
+          {
+            name: "truncQ_R1",
+            value: 2,
+            disabled: "never",
+            tooltip: "truncate ends (3') of R1 at first base with quality score <= N",
+            type: "numeric",
+            rules: [(v) => v >= 0 || "ERROR: specify values >= 0"],
+          },
+          {
+            name: "truncQ_R2",
+            value: 2,
+            disabled: "never",
+            tooltip: "truncate ends (3') of R2 at first base with quality score <= N",
+            type: "numeric",
+            rules: [(v) => v >= 0 || "ERROR: specify values >= 0"],
+          },
+          {
+            name: "min_length",
+            value: 100,
+            disabled: "never",
+            tooltip: "minimum length of the trimmed sequence",
+            type: "numeric",
+            rules: [(v) => v >= 1 || "ERROR: specify values >= 1"],
+          },
+          {
+            name: "cut_R1",
+            value: 0,
+            disabled: "never",
+            tooltip: "remove N bases from start of R1",
+            type: "numeric",
+            rules: [(v) => v >= 0 || "ERROR: specify values >= 0"],
+          },
+          {
+            name: "cut_R2",
+            value: 0,
+            disabled: "never",
+            tooltip: "remove N bases from start of R2",
+            type: "numeric",
+            rules: [(v) => v >= 0 || "ERROR: specify values >= 0"],
+          },
+          {
+            name: "action",
+            items: ["trim", "retain"],
+            value: "trim",
+            disabled: "never",  
+            tooltip: `trim = trim the primers from the reads; 
+            retain = retain the primers after primer has been founds`,
+            type: "select",
+          },
+        ],
+      },
+      {
+        tooltip: "quality filtering with DADA2 'filterAndTrim' function",
+        scriptName: "xxx.sh",
+        imageName: "pipecraft/optimotu:4",
+        serviceName: "quality filtering",
+        manualLink:
+          "",
+        disabled: "never",
+        selected: "always",
+        showExtra: false,
+        extraInputs: [],
+        Inputs: [
+          {
+            name: "maxEE_R1",
+            value: 1,
+            disabled: "never",
+            tooltip:
+              "discard sequences with more than the specified number of expected errors in R1 reads",
+            type: "numeric",
+            rules: [(v) => v >= 0.1 || "ERROR: specify values >= 0.1"],
+          },
+          {
+            name: "maxEE_R2",
+            value: 1,
+            disabled: "never",
+            tooltip:
+              "discard sequences with more than the specified number of expected errors in R2 reads",
+            type: "numeric",
+            rules: [(v) => v >= 0.1 || "ERROR: specify values >= 0.1"],
+          },
+        ],
+      },
+      {
+        tooltip: `DADA2 denoising with learnErrors(), dada() and mergePairs() functions with default DADA2 parameters. 
+                  Sequences with binned quality scores, as produced by newer Illumina sequencers, are automatically detected, and the error model is adjusted accordingly.`,
+        scriptName: "xxx.sh",
+        imageName: "pipecraft/optimotu:4",
+        serviceName: "denoising and merging paired-end reads",
+        manualLink:
+          "",
+        disabled: "never",
+        selected: "always",
+        showExtra: false,
+        extraInputs: [],
+        Inputs: [],
+      },
+      {
+        tooltip: `Chimera filtering with DADA2 'removeBimeraDenovo()' function and vsearch 'uchime_ref' function`,
+        scriptName: "xxx.sh",
+        imageName: "pipecraft/optimotu:4",
+        serviceName: "chimera filtering",
+        manualLink:
+          "",
+        disabled: "never",
+        selected: "always",
+        showExtra: false,
+        extraInputs: [],
+        Inputs: [],
+      },
+      {
+        tooltip: "Filter tag-jumps with UNCROSS2",
+        scriptName: "xxx.sh",
+        imageName: "pipecraft/optimotu:4",
+        serviceName: "filter tag-jumps",
+        manualLink:
+          "",
+        disabled: "never",
+        selected: "always",
+        showExtra: false,
+        extraInputs: [],
+        Inputs: [
+          {
+            name: "f_value",
+            value: 0.03,
+            max: 0.4,
+            min: 0,
+            step: 0.01,
+            disabled: "never",
+            tooltip:
+              "f-parameter defines the expected tag-jumps rate. Default is 0.03 (equivalent to 3%). A higher value enforces stricter filtering.",
+            type: "slide",
+          },
+          {
+            name: "p_value", 
+            value: 1,
+            max: 7,
+            min: 0,
+            step: 0.5,
+            disabled: "never",
+            tooltip:
+              "p-parameter  controls the severity of tag-jump removal. It adjusts the exponent in the UNCROSS formula. Default is 1.",
+            type: "slide",
+          },
+        ],
+      },
+      {
+        tooltip: `Chimera filtering with DADA2 'removeBimeraDenovo()' function and vsearch 'uchime_ref' function`,
+        scriptName: "xxx.sh",
+        imageName: "pipecraft/optimotu:4",
+        serviceName: "Amplicon model setting",
+        manualLink:
+          "",
+        disabled: "never",
+        selected: "always",
+        showExtra: false,
+        extraInputs: [],
+        Inputs: [],
+      },
+      {
+        tooltip: "Statistical sequence models are used for 1) aligning ASVs prior to use of protax and/or NUMT detection; 2) filtering ASVs to remove spurious sequences",
+        scriptName: "xxx.sh",
+        imageName: "pipecraft/optimotu:4",
+        serviceName: "Amplicon model setting",
+        manualLink:
+          "",
+        disabled: "never",
+        selected: "always",
+        showExtra: false,
+        extraInputs: [
+          {
+            name: "max_model_start",
+            value: 5,
+            disabled: "never",
+            tooltip:
+              "the match must start at this point in the model or earlier",
+            type: "numeric",
+            rules: [(v) => v >= 0 || "ERROR: specify values >= 0"],
+          },
+          {
+            name: "min_model_end",
+            value: 140,
+            disabled: "never",
+            tooltip:
+              "the match must end at this point in the model or later",
+            type: "numeric",
+            rules: [(v) => v >= 0 || "ERROR: specify values >= 0"],
+          },
+          {
+            name: "min_model_score",
+            value: 50,
+            disabled: "never",
+            tooltip:
+              "the match bit score must be at least this",
+            type: "numeric",
+            rules: [(v) => v >= 0 || "ERROR: specify values >= 0"],
+          },
+        ],
+        Inputs: [
+          {
+            name: "model_type",
+            items: ["CM", "HMM", "none"],
+            value: "CM",
+            disabled: "never",  
+            tooltip: `CM = Codon model for Fungi; 
+            HMM = Hidden Markov Model for Metazoa; 
+            none = skip this step`,
+            type: "select",
+          },
+          {
+            name: "model_file",
+            items: ["ITS3_ITS4.cm", "f/gITS7_ITS4.cm", "COI.hmm", "custom"],
+            value: "ITS3_ITS4.cm",
+            disabled: "never",  
+            tooltip: `included models: ITS3_ITS4.cm = model for ITS2 amplicons with ITS3 and ITS4 primers.
+            f/gITS7_ITS4.cm = model for ITS2 amplicons with fITS7/gITS7 and ITS4 primers.
+            COI.hmm = model for COI amplicons.
+            custom = specify your own custom model file`,
+            type: "select",
+          },
+          {
+            name: "model_align",
+            value: false,
+            disabled: "never",
+            tooltip:
+              "producing aligned sequences will be skipped if the value is false",
+            type: "bool",
+          },
+          {
+            name: "numt_filter",
+            value: false,
+            disabled: "never",
+            tooltip:
+              "Only for Metazoa: filter NUMTs; requires model_type == HMM and model_align == TRUE",
+            type: "bool",
+          },
+        ],
+      },
+      {
+        tooltip: "Settings for Protax classification",
+        scriptName: "xxx.sh",
+        imageName: "pipecraft/optimotu:4",
+        serviceName: "Protax classification",
+        manualLink:
+          "",
+        disabled: "never",
+        selected: "always",
+        showExtra: false,
+        extraInputs: [
+          {
+            name: "aligned",
+            value: false,
+            disabled: "never",
+            tooltip:
+              "Are all reference and query sequences are aligned (default = FALSE)",
+            type: "bool",
+          },
+        ],
+        Inputs: [
+          {
+            name: "location",
+            items: ["protaxFungi", "protaxAnimal", "custom"],
+            value: "protaxFungi",
+            disabled: "never",
+            tooltip:
+              "directory where protax is located. For fungi, default is protaxFungi and for protaxAnimal for metazoa (included in the PipeCraft2 container)",
+            type: "select",
+          },
+          {
+            name: "with_outgroup",
+            items: ["UNITE_SHs", "custom"],
+            value: "UNITE_SHs",
+            disabled: "never",
+            tooltip:
+              `additional database with also outgroup sequences. For fungi, default is UNITE_SHs, which are sh_matching_data_0_5_v9 sequences (included in the PipeCraft2 container).
+              for other downloadable databases for e.g. metazoa, click on the outgroup header https://pipecraft2-manual.readthedocs.io/en/1.0.0/pre-defined_pipelines.html . 
+              custom -> to specify your own file in fasta format. The outgroup reference should be taxonomically annotated sequences which
+              include not only the ingroup (i.e., those sequences which Protax can identify) but also (ideally) all other groups which could conceivably be encountered
+              with the chosen marker.`,
+            type: "select",
+          },
+        ],
+      },
+      {
+        tooltip: "Clustering",
+        scriptName: "xxx.sh",
+        imageName: "pipecraft/optimotu:4",
+        serviceName: "Clustering",
+        manualLink:
+          "",
+        disabled: "never",
+        selected: "always",
+        showExtra: false,
+        extraInputs: [],
+        Inputs: [
+          {
+            name: "cluster_thresholds",
+            items: ["Fungi_GSSP", "Metazoa_MBRAVE", "custom"],
+            value: "Fungi_GSSP",
+            disabled: "never",
+            tooltip:"select file with clustering thresholds. Default is pre-calculated thresholds for Fungi (x.x.2024 UNITEv XX) (included in the PipeCraft2 container)",
+            type: "select",
+          },
+        ],
+      },
+    ],
 
     // # NextITS
     NextITS: [
@@ -4696,7 +5273,7 @@ SINGLE-END is for PacBio data, but can be also used for single-end read Illumina
         title: "DADA2 ASVs workflow",
       },
       UNOISE_ASVs: {
-        info: "vsearch ASVs (zOTUs) workflow for for demultiplexed Illumina data",
+        info: "UNOISE3 ASVs (zOTUs) workflow with vsearch for for demultiplexed Illumina data",
         link: "https://github.com/torognes/vsearch",
         title: "UNOISE3 ASVs workflow",
       },
@@ -4714,6 +5291,11 @@ SINGLE-END is for PacBio data, but can be also used for single-end read Illumina
         info: "NextITS pipeline for demultiplexed PacBio ITS (single-end) amplicons. Please see the special requirement (folder structure) for the data input from the PipeCraft user guide",
         link: "https://github.com/vmikk/NextITS",
         title: "NextITS",
+      },
+      OptimOTU: {
+        info: `OptimOTU pipeline for demultiplexed Illumina ITS or COI amplicons.`,
+        link: "https://github.com/brendanf/optimotu.pipeline",
+        title: "OptimOTU",
       },
     },
   },

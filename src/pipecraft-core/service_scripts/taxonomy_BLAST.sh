@@ -19,6 +19,12 @@ db1_temp=$(echo $database_file | grep -oP "$regex")
 db1=$(printf "/extraFiles/$db1_temp")
 echo "db1 = $db1"
 
+### input fasta file
+IN=$(echo $fasta_file | grep -oP "$regex")
+# overwrite fileFormat variable; get it from input fasta_file
+fileFormat=$(echo $IN | awk -F. '{print $NF}')
+export fileFormat
+
 #mandatory options
 task=$"-task ${task}"       # e.g. blastn, megablast
 strands=$"-strand ${strands}"   # both, plus
@@ -47,13 +53,18 @@ output_dir=$"/input/taxonomy_out"
 #############################
 ### Start of the workflow ###
 #############################
+echo "output_dir = $output_dir"
+if [[ -d $output_dir ]]; then
+    rm -rf $output_dir
+fi
+mkdir $output_dir
+
+### Start time
+start_time=$(date)
 start=$(date +%s)
 
 ### Check if files with specified extension exist in the dir
 first_file_check
-
-### Prepare working env and check single-end data
-prepare_SE_env
 
 #If input is compressed, then decompress (keeping the compressed file, but overwriting if filename exists!)
 check_gz_zip_SE
@@ -84,9 +95,10 @@ elif [[ $d1 == "fasta" ]] || [[ $d1 == "fa" ]] || [[ $d1 == "fas" ]] || [[ $d1 =
     printf '%s\n' "Note: converting fasta formatted database for BLAST"
     makeblastdb -in $db1 -input_type fasta -dbtype nucl
     database=$"-db $db1"
+    printf '%s\n' "BLAST database was converted to BLAST format (file = $db1)."
 fi
 
-## Perform taxonomy annotation
+## Do BLAST
 printf '%s\n' "Running BLAST"
 checkerror=$(blastn \
 -query $IN \
@@ -260,6 +272,10 @@ db_x=$(echo $db1 | sed -e 's/\/extraFiles\///')
 # Make README.txt file
 printf "# Taxonomy was assigned using BLAST (see 'Core command' below for the used settings).
 
+Start time: $start_time
+End time: $(date)
+Runtime: $runtime seconds
+
 Query    = $IN
 Database = $db_x
 
@@ -286,10 +302,10 @@ gaps      = total number of gaps
 sstrand   = subject strand
 qcovs     = query coverage per subject
 pident    = percentage of identical matches
-sim_score = similarity score calculated as (pident * (alignment length / qlen))
+sim_score = similarity score of a hit taking the query coverage into account; calculated as (pident * (alignment length / qlen))
 
 Core command ->
-blastn -query $IN $strands $database $task -max_target_seqs 10 $evalue $wordsize $reward $penalty $gapopen $gapextend -max_hsps 1
+blastn -query $IN $strands $db_x $task -max_target_seqs 10 $evalue $wordsize $reward $penalty $gapopen $gapextend -max_hsps 1
 
 Total run time was $runtime sec.
 

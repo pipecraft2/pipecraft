@@ -118,6 +118,9 @@ for seqrun in $DIRS; do
     if [[ ! -z $omegaa ]]; then
         printf "# Denoising and assembling of paired-end sequencing data was performed with dada2 (see 'Core commands' below for the used settings).
 
+Start time: $start_time
+End time: $(date)
+
 ### NOTE: ### 
 Input sequences must be made up only of A/C/G/T for denoising (i.e maxN must = 0 in quality filtering step). Otherwise DADA2 fails, and no output is generated.
 #############

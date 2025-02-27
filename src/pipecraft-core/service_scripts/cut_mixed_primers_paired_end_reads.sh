@@ -331,6 +331,31 @@ for seqrun in $DIRS; do
             rm seq_count_after.txt
         fi
     fi
+
+    ## summarize seqs from primersCut_out/fwd_orient and primersCut_out/rev_orient
+    printf "# Summarizing sequences (fwd+rev) after cutting primers in $seqrun \n"
+    {
+        # Print header
+        echo -e "File\tReads_in\tReads_out_fwd\tReads_out_rev\tTotal_reads_out"
+        
+        # Read both files and process them
+        while IFS=$'\t' read -r file reads_in reads_out_fwd; do
+            # Skip header line
+            if [ "$file" = "File" ]; then continue; fi
+            
+            # Get corresponding values from rev_orient file
+            rev_line=$(grep "^$file" "$output_dir/rev_orient/seq_count_summary.txt")
+            reads_out_rev=$(echo "$rev_line" | cut -f3)
+            
+            # Calculate total reads
+            total_reads=$((reads_out_fwd + reads_out_rev))
+            
+            # Output the combined line
+            echo -e "$file\t$reads_in\t$reads_out_fwd\t$reads_out_rev\t$total_reads"
+        done < "$output_dir/fwd_orient/seq_count_summary.txt"
+    } > "$output_dir/seq_count_summary.txt"
+        
+
     # rm tempdir2
     if [[ $debugger != "true" ]]; then
         if [[ -d "$tempdir2" ]]; then

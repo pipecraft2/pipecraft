@@ -17,6 +17,15 @@
     #https://bioinf.shenwei.me/seqkit/
 #pigz v2.4
 ################################################
+# Checking tool versions
+cutadapt_version=$(cutadapt --version 2>&1)
+seqkit_version=$(seqkit version 2>&1 | awk '{print $2}')
+printf "# Checking tool versions ...\n"
+printf "# cutadapt (version $cutadapt_version)\n"
+printf "# seqkit (version $seqkit_version)\n"
+printf "# pipeline = $pipeline\n"
+printf "# service = $service\n"
+
 #Source for functions
 source /scripts/submodules/framework.functions.sh
 
@@ -32,13 +41,6 @@ discard_untrimmed="TRUE"            # fixed to TRUE
 # $pair_filter                      # both/any
 fwd_tempprimer=$forward_primers
 rev_tempprimer=$reverse_primers
-
-# Checking tool versions
-cutadapt_version=$(cutadapt --version 2>&1)
-seqkit_version=$(seqkit version 2>&1 | awk '{print $2}')
-printf "# Checking tool versions ...\n"
-printf "# cutadapt (version $cutadapt_version)\n"
-printf "# seqkit (version $seqkit_version)\n"
 
 #############################
 ### Start of the workflow ###
@@ -247,6 +249,7 @@ If no files in this folder, then all sequences were passed to files in $output_d
 
     #Make README.txt file for PrimerClipped reads
     printf "# Primers were removed using cutadapt (see 'Core command' below for the used settings).
+    
 Start time: $start_time
 End time: $(date)
 Runtime: $runtime seconds
@@ -350,7 +353,7 @@ if [[ $multiDir == "TRUE" ]]; then
     workingDir=$"/input/multiRunDir"
     echo "workingDir=$workingDir"
     # var for multiRunDir pipe
-    printf "cut_primers" > $workingDir/prev_step.temp
+    printf "cut_primers" > $workingDir/.prev_step.temp
 else
     echo "workingDir=$output_dir"
 fi

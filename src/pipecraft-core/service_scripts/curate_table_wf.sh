@@ -110,32 +110,42 @@ for seqrun in $DIRS; do
             feature_table_base_name=$(basename $feature_table_file)
             fasta_file="/input/multiRunDir/${seqrun%%/*}/ASVs_out.dada2/ASVs.fasta"
             fasta_base_name=$(basename $fasta_file)
-            output_dir="/input/multiRunDir/${seqrun%%/*}/ASVs_out.dada2/filtered"
+            output_dir="/input/multiRunDir/${seqrun%%/*}/ASVs_out.dada2/curated"
             mkdir -p $output_dir
             export output_dir
             workingDir=$output_dir
             printf "\n ASV table filtering, input = $feature_table_file\n"
-        elif [[ -f "/input/multiRunDir/${seqrun%%/*}/clustering_out/OTU_table.txt" ]] && [[ $pipeline == "vsearch_OTUs" ]]; then
-            feature_table_file="/input/multiRunDir/${seqrun%%/*}/clustering_out/OTU_table.txt"
-            feature_table_base_name=$(basename $feature_table_file)
-            fasta_file="/input/multiRunDir/${seqrun%%/*}/clustering_out/OTUs.fasta"
-            fasta_base_name=$(basename $fasta_file)
-            output_dir="/input/multiRunDir/${seqrun%%/*}/clustering_out/filtered"
-            mkdir -p $output_dir
-            export output_dir
-            workingDir=$output_dir
-            printf "\n OTU table filtering, input = $feature_table_file\n"
         elif [[ -f "/input/multiRunDir/${seqrun%%/*}/clustering_out/zOTU_table.txt" ]] && [[ $pipeline == "UNOISE_ASVs" ]]; then
             feature_table_file="/input/multiRunDir/${seqrun%%/*}/clustering_out/zOTU_table.txt"
             feature_table_base_name=$(basename $feature_table_file)
             fasta_file="/input/multiRunDir/${seqrun%%/*}/clustering_out/zOTUs.fasta"
             fasta_base_name=$(basename $fasta_file)
-            output_dir="/input/multiRunDir/${seqrun%%/*}/clustering_out/filtered"
+            printf "\n zOTU table filtering, input = $feature_table_file\n"
+            # if zOTUs were clustered and OTU table exists, then also filter OTUs in UNOISE_ASVs pipeline
+            if [[ -f "/input/multiRunDir/${seqrun%%/*}/clustering_out/OTU_table.txt" ]]; then
+                echo "curating also OTU table in addition to zOTU table"
+                feature_table_file2="/input/multiRunDir/${seqrun%%/*}/clustering_out/OTU_table.txt"
+                fasta_file2="/input/multiRunDir/${seqrun%%/*}/clustering_out/OTUs.fasta"
+                feature_table_base_name2=$(basename $feature_table_file2)
+                fasta_base_name2=$(basename $fasta_file2)
+                printf "\n OTU table filtering, input = $feature_table_file2\n"
+            fi
+            output_dir="/input/multiRunDir/${seqrun%%/*}/clustering_out/curated"
             mkdir -p $output_dir
             export output_dir
             workingDir=$output_dir
             export workingDir
-            printf "\n zOTU table filtering, input = $feature_table_file\n"
+            
+        elif [[ -f "/input/multiRunDir/${seqrun%%/*}/clustering_out/OTU_table.txt" ]] && [[ $pipeline == "vsearch_OTUs" ]]; then
+            feature_table_file="/input/multiRunDir/${seqrun%%/*}/clustering_out/OTU_table.txt"
+            feature_table_base_name=$(basename $feature_table_file)
+            fasta_file="/input/multiRunDir/${seqrun%%/*}/clustering_out/OTUs.fasta"
+            fasta_base_name=$(basename $fasta_file)
+            output_dir="/input/multiRunDir/${seqrun%%/*}/clustering_out/curated"
+            mkdir -p $output_dir
+            export output_dir
+            workingDir=$output_dir
+            printf "\n OTU table filtering, input = $feature_table_file\n"
         else
             printf '%s\n' "ERROR]: Could not find input table.
             Looked for:
@@ -149,33 +159,43 @@ for seqrun in $DIRS; do
     # Single sequencing run (full pipeline)
     elif [[ $multiDir == "FALSE" ]]; then   
         # Check for input table; define output_dir and workingDir
-        if [[ -f "/input/ASVs_out.dada2/ASVs_table.txt" ]]; then
+        if [[ -f "/input/ASVs_out.dada2/ASVs_table.txt" ]] && [[ $pipeline == "DADA2_ASVs" ]]; then
             feature_table_file="/input/ASVs_out.dada2/ASVs_table.txt"
             feature_table_base_name=$(basename $feature_table_file)
             fasta_file="/input/ASVs_out.dada2/ASVs.fasta"
             fasta_base_name=$(basename $fasta_file)
-            output_dir="/input/ASVs_out.dada2/filtered"
+            output_dir="/input/ASVs_out.dada2/curated"
             mkdir -p $output_dir
             export output_dir
             printf "\n ASV table filtering, input = $feature_table_file\n"
-        elif [[ -f "/input/clustering_out/OTU_table.txt" ]]; then
-            feature_table_file="/input/clustering_out/OTU_table.txt"
-            feature_table_base_name=$(basename $feature_table_file)
-            fasta_file="/input/clustering_out/OTUs.fasta"
-            fasta_base_name=$(basename $fasta_file)
-            output_dir="/input/clustering_out/filtered"
-            mkdir -p $output_dir
-            export output_dir
-            printf "\n OTU table filtering, input = $feature_table_file\n"
-        elif [[ -f "/input/clustering_out/zOTU_table.txt" ]]; then
+        elif [[ -f "/input/clustering_out/zOTU_table.txt" ]] && [[ $pipeline == "UNOISE_ASVs" ]]; then
             feature_table_file="/input/clustering_out/zOTU_table.txt"
             fasta_file="/input/clustering_out/zOTUs.fasta"
             feature_table_base_name=$(basename $feature_table_file)
             fasta_base_name=$(basename $fasta_file)
-            output_dir="/input/clustering_out/filtered"
+            printf "\n zOTU table filtering, input = $feature_table_file\n"
+            # if zOTUs were clustered and OTU table exists, then also filter OTUs in UNOISE_ASVs pipeline
+            if [[ -f "/input/clustering_out/OTU_table.txt" ]]; then
+                echo "curating also OTU table in addition to zOTU table"
+                feature_table_file2="/input/clustering_out/OTU_table.txt"
+                fasta_file2="/input/clustering_out/OTUs.fasta"
+                feature_table_base_name2=$(basename $feature_table_file2)
+                fasta_base_name2=$(basename $fasta_file2)   
+                printf "\n OTU table filtering, input = $feature_table_file2\n"
+            fi
+            output_dir="/input/clustering_out/curated"
             mkdir -p $output_dir
             export output_dir
-            printf "\n zOTU table filtering, input = $feature_table_file\n"
+            
+        elif [[ -f "/input/clustering_out/OTU_table.txt" ]] && [[ $pipeline == "vsearch_OTUs" ]]; then
+            feature_table_file="/input/clustering_out/OTU_table.txt"
+            feature_table_base_name=$(basename $feature_table_file)
+            fasta_file="/input/clustering_out/OTUs.fasta"
+            fasta_base_name=$(basename $fasta_file)
+            output_dir="/input/clustering_out/curated"
+            mkdir -p $output_dir
+            export output_dir
+            printf "\n OTU table filtering, input = $feature_table_file\n"
         else
         printf '%s\n' "ERROR]: CURATE TABLE. Could not find input table.
             Looked for:
@@ -198,10 +218,19 @@ for seqrun in $DIRS; do
     # Initialize output variables with input files as defaults at the start
     output_feature_table=$feature_table_file
     output_fasta=$fasta_file
+    # if OTU table exists, then also filter OTUs in UNOISE_ASVs pipeline
+    if [[ -f "/input/clustering_out/OTU_table.txt" ]] && [[ $pipeline == "UNOISE_ASVs" ]]; then
+        output_feature_table2=$feature_table_file2
+        output_fasta2=$fasta_file2
+    fi
 
+    ################
+    ### UNCROSS2 ###
+    ################
     ### Process samples with UNCROSS2 (tag-jumps filtering) in R
     if [[ $filter_tag_jumps == "true" ]]; then
         printf "# Running tag-jumps filtering (UNCROSS2) for $seqrun\n "
+        # Filter primary feature table
         Rlog=$(Rscript /scripts/submodules/tag_jump_removal.R $feature_table_file $f_value $p_value $fasta_file 2>&1)
         # Check if R script executed successfully
         if [ $? -ne 0 ]; then
@@ -212,6 +241,7 @@ for seqrun in $DIRS; do
             end_process
         fi
         echo "$Rlog" > "$output_dir/tag-jumps_filt.log"
+
         # format R-log file
         sed -i "s/;; /\n/g" $output_dir/tag-jumps_filt.log 
     
@@ -223,15 +253,43 @@ for seqrun in $DIRS; do
             end_process
         fi
 
+        # Filter secondary feature table if it exists (UNOISE_ASVs pipeline with OTUs)
+        if [[ -n "$feature_table_file2" ]]; then
+            printf "# Running tag-jumps filtering for OTU table in UNOISE_ASVs pipeline\n"
+            Rlog2=$(Rscript /scripts/submodules/tag_jump_removal.R $feature_table_file2 $f_value $p_value $fasta_file2 2>&1)
+            if [ $? -ne 0 ]; then
+                log_error "tag-jumps filtering R script failed for OTU table with the following error:
+                $Rlog2
+                Please check the parameters and input file.
+                >Quitting"
+                end_process
+            fi
+            echo "$Rlog2" >> "$output_dir/tag-jumps_filt_OTUs.log"
+            # format R-log file
+            sed -i "s/;; /\n/g" $output_dir/tag-jumps_filt_OTUs.log
+        fi
+
         printf "\n tag-jumps filtering completed \n"
+
         # Update output variables if only tag-jumps filtering is performed
         if [[ $collapseNoMismatch != "true" ]] && [[ -z $min_length_num || $min_length_num == "0" ]] && [[ -z $max_length_num || $max_length_num == "0" ]]; then
             output_feature_table=$output_dir/${feature_table_base_name%%.txt}_TagJumpFilt.txt
             output_fasta=$output_dir/$fasta_base_name
+            # if secondary feature table exists, then also update output variables (UNOISE_ASVs pipeline with OTUs clustering)
+            if [[ -n "$feature_table_file2" ]]; then
+                output_feature_table2=$output_dir/${feature_table_base_name2%%.txt}_TagJumpFilt.txt
+                output_fasta2=$output_dir/$fasta_base_name2
+            fi
         fi
-        # Set input table for next steps
+
+        # Set input tables for next steps
         input_table=$output_dir/${feature_table_base_name%%.txt}_TagJumpFilt.txt
         export input_table
+        # if secondary feature table exists, then also update input variables (UNOISE_ASVs pipeline with OTUs clustering)
+        if [[ -n "$feature_table_file2" ]]; then
+            input_table2=$output_dir/${feature_table_base_name2%%.txt}_TagJumpFilt.txt
+            export input_table2
+        fi
         
         # copy fasta file to output_dir and verify copy succeeded
         if ! cp "$fasta_file" "$output_dir/$fasta_base_name"; then
@@ -239,10 +297,21 @@ for seqrun in $DIRS; do
             >Quitting"
             end_process
         fi
-        # new fasta_file var in output_dir
+        if [[ -n "$fasta_file2" ]]; then
+            if ! cp "$fasta_file2" "$output_dir/$fasta_base_name2"; then
+                log_error "Failed to copy secondary fasta file to output directory
+                >Quitting"
+                end_process
+            fi
+        fi
+
+        # Update fasta file paths
         fasta_file=$output_dir/$fasta_base_name
+        if [[ -n "$fasta_file2" ]]; then
+            fasta_file2=$output_dir/$fasta_base_name2
+        fi
         
-        # count ASVs and verify file exists
+        # count ASVs/OTUs and verify files exist
         if [[ ! -f $fasta_file ]]; then
             log_error "Fasta file not found: $fasta_file
             >Quitting"
@@ -250,20 +319,30 @@ for seqrun in $DIRS; do
         fi
         ASVs_count=$(grep -c "^>" "$fasta_file")
         
-        # format R-log file
-        sed -i "s/;; /\n/g" "$output_dir/tag-jumps_filt.log"
-
+        if [[ -n "$fasta_file2" ]]; then
+            if [[ ! -f $fasta_file2 ]]; then
+                log_error "Secondary fasta file not found: $fasta_file2
+                >Quitting"
+                end_process
+            fi
+            OTUs_count=$(grep -c "^>" "$fasta_file2")
+        fi
+    ### skip tag-jumps filtering ###
+    # fasta_file var does not change here
     elif [[ $filter_tag_jumps == "false" ]]; then
         printf "# Skipping tag-jumps filtering\n"
         input_table=$feature_table_file
         export input_table
-        # fasta_file var does not change here
+        # if secondary feature table exists, then also update input variables (UNOISE_ASVs pipeline with OTUs clustering)
+        if [[ -n "$feature_table_file2" ]]; then
+            input_table2=$feature_table_file2
+            export input_table2
+        fi
     fi
 
-    ###################################
-    ### Filtering the ASV/OTU table ###
-    ###################################
-    # collapse identical ASVs and length filtering
+    #########################################################################
+    ### collapseNoMismatch (only for DADA2 pipeline) and length filtering ###
+    #########################################################################
     if [[ $collapseNoMismatch == "true" ]]; then
         printf "Starting collapseNoMismatch (with length filter if ON) ... \n"
         # count input ASVs
@@ -410,11 +489,12 @@ Input had $ASVs_count Features.
     - ${fasta_base_name%%.fasta}_collapsed.fasta = Representative sequences after collapsing"
                 echo -e "$ASVs_collapsed_result"
             fi
-        fi 
+        fi
 
-    #############################
-    ### only length filtering ###
-    #############################
+    #########################################################
+    ###                only length filtering              ###
+    ### for all UNOISE_ASVs, vsearch_OTUs, and DADA2_ASVs ###
+    #########################################################
     elif [[ $collapseNoMismatch == "false" ]] && \
         [[ $min_length_num != "0" && -n $min_length_num ]] || \
         [[ $max_length_num != "0" && -n $max_length_num ]]; then
@@ -541,6 +621,130 @@ Input had $ASVs_count Features.
         fi
     fi
 
+    ### length filtering for clustered zOTUs (OTU_table), UNOISE_ASVs pipeline ###
+    if [[ -n "$feature_table_file2" ]]; then
+        printf "Filtering OTUs in UNOISE_ASVs pipeline by length, min_length = $min_length_num, max_length = $max_length_num. \n"
+        # get basenames for correct naming of output files
+        input_table_base_name2=$(basename $input_table2)
+        fasta_base_name2=$(basename $fasta_file2)
+        # count input ASVs
+        ASVs_count2=$(grep -c "^>" $fasta_file2)
+        echo "Feature (ASVs/OTUs) count = $ASVs_count2"
+        # filter by length
+        checkerror=$(seqkit seq -w 0 -g \
+                    $min_length_seqkit \
+                    $max_length_seqkit \
+                    $fasta_file2 \
+                    > $output_dir/${fasta_base_name2%%.fasta}_lenFilt.fasta 2>&1)
+        check_app_error
+
+        # count length filtered ASVs and proceed with the rest of the steps
+        ASVs_lenFilt2=$(grep -c "^>" $output_dir/${fasta_base_name2%%.fasta}_lenFilt.fasta)
+        echo "length filtered Feature (ASV/OTU) count = $ASVs_lenFilt2"
+        if [[ $ASVs_lenFilt2 == 0 ]]; then
+            ASVs_lenFilt_result2=$"All Features (ASVs/OTUs) were filtered out based on the length filter
+            (min_length $min_length_num bp and max_length $max_length_num bp).
+            No new files generated.
+            Input table was $input_table_base_name2 and input fasta was $fasta_base_name2 with $ASVs_count2 sequences"
+            echo -e "$ASVs_lenFilt_result2"
+            rm $output_dir/${fasta_base_name2%%.fasta}_lenFilt.fasta
+            # Set output variables to input files since no filtering occurred
+            output_feature_table2=$input_table2
+            output_fasta2=$fasta_file2
+            
+        elif [[ $ASVs_lenFilt2 == $ASVs_count2 ]]; then
+            ASVs_lenFilt_result2=$"None of the Features (ASVs/OTUs) were filtered out based on the length filter
+            (min_length $min_length_num bp and max_length $max_length_num bp).
+            No new files generated.
+            Input table was $input_table_base_name2 and input fasta was $fasta_base_name2 with $ASVs_count2 sequences"
+            echo -e "$ASVs_lenFilt_result2"
+            export ASVs_lenFilt_result2
+            rm $output_dir/${fasta_base_name2%%.fasta}_lenFilt.fasta
+            # Set output variables to input files since no filtering occurred
+            output_feature_table2=$input_table2
+            output_fasta2=$fasta_file2
+        else          
+            # filter the table
+            checkerror=$(seqkit seq \
+                        -n $output_dir/${fasta_base_name2%%.fasta}_lenFilt.fasta \
+                        > $output_dir/${fasta_base_name2%%.fasta}_IDs.txt 2>&1)
+            check_app_error
+            checkerror=$(grep -f $output_dir/${fasta_base_name2%%.fasta}_IDs.txt $input_table2 \
+                                > $output_dir/${input_table_base_name2%%.txt}_lenFilt.temp 2>&1)
+            check_app_error
+            # remove intermediate files
+            rm $output_dir/${fasta_base_name2%%.fasta}_IDs.txt
+            # add 1st row of the $input_table to the $output_dir/${input_table_base_name%%.txt}_lenFilt.temp
+            header=$(head -n 1 $input_table2)
+            sed -i "1i\\$header" "$output_dir/${input_table_base_name2%%.txt}_lenFilt.temp"
+
+            # Remove samples (columns) with 0 abundance; does not remove 0 rows, but there cannot be 0 rows
+            checkerror=$(awk '
+            BEGIN {
+                FS = OFS = "\t"
+            }
+            NR == 1 {
+                # Store the header and identify the "Sequence" column
+                for (i = 1; i <= NF; i++) {
+                    headers[i] = $i
+                    if ($i == "Sequence") {
+                        sequence_col = i
+                    }
+                }
+                next
+            }
+            {
+                # Sum each column, excluding the first column and the "Sequence" column
+                for (i = 2; i <= NF; i++) {
+                    if (i != sequence_col) {
+                        sum[i] += $i
+                    }
+                }
+                # Store the row data
+                for (i = 1; i <= NF; i++) {
+                    data[NR, i] = $i
+                }
+            }
+            END {
+                # Print the header with non-zero columns
+                for (i = 1; i <= NF; i++) {
+                    if (i == 1 || i == sequence_col || sum[i] != 0) {
+                        printf "%s%s", headers[i], (i == NF ? "\n" : OFS)
+                    }
+                }
+                # Print the rows excluding columns with zero sum
+                for (j = 2; j <= NR; j++) {
+                    for (i = 1; i <= NF; i++) {
+                        if (i == 1 || i == sequence_col || sum[i] != 0) {
+                            printf "%s%s", data[j, i], (i == NF ? "\n" : OFS)
+                        }
+                    }
+                }
+            }
+            ' "$output_dir/${input_table_base_name2%%.txt}_lenFilt.temp" \
+            > "$output_dir/${input_table_base_name2%%.txt}_lenFilt.txt" 2>&1)
+            check_app_error
+            # remove intermediate files
+            if [[ -f $output_dir/${input_table_base_name2%%.txt}_lenFilt.temp ]]; then
+                rm $output_dir/${input_table_base_name2%%.txt}_lenFilt.temp
+            fi
+            # output files variables for the Merge sequencing runs
+            output_feature_table2=$output_dir/${input_table_base_name2%%.txt}_lenFilt.txt
+            output_fasta2=$output_dir/${fasta_base_name2%%.fasta}_lenFilt.fasta
+            # for the report
+            count_features "$output_dir/${input_table_base_name2%%.txt}_lenFilt.txt"
+            ASVs_lenFilt_result2=$"Features (ASVs/OTUs) after length filtering = $ASVs_lenFilt2.
+
+        - ${input_table_base_name2%%.txt}_lenFilt.txt = Feature table after length filtering.
+        - ${fasta_base_name2%%.fasta}_lenFilt.fasta = Representative sequences file after length filtering
+        
+        Number of Features                       = $feature_count
+        Number of sequences in the Feature table = $nSeqs
+        Number of samples in the Feature table   = $nSample"
+                echo -e "$ASVs_lenFilt_result2"
+            fi
+    fi
+
     # Remove tempdir2 if debugger is not true
     if [[ $debugger != "true" ]]; then
         if [[ -d tempdir2 ]]; then
@@ -575,9 +779,18 @@ Input had $ASVs_count Features.
         # Create arrays if they don't exist yet
         declare -a output_feature_tables
         declare -a output_fastas
+        declare -a output_feature_tables2
+        declare -a output_fastas2
+        
         # Add current run's outputs to arrays
         output_feature_tables+=("$output_feature_table")
         output_fastas+=("$output_fasta")
+        
+        # Add secondary outputs if they exist
+        if [[ -n "$output_feature_table2" ]]; then
+            output_feature_tables2+=("$output_feature_table2")
+            output_fastas2+=("$output_fasta2")
+        fi
         cd /input/multiRunDir
     else
         cd /input
@@ -588,19 +801,37 @@ done
 if [[ $multiDir == "TRUE" ]]; then
     output_feature_table=$(IFS=,; echo "${output_feature_tables[*]}")
     output_fasta=$(IFS=,; echo "${output_fastas[*]}")
-else
+    
+    # Handle secondary outputs if they exist
+    if [[ ${#output_feature_tables2[@]} -gt 0 ]]; then
+        output_feature_table2=$(IFS=,; echo "${output_feature_tables2[*]}")
+        output_fasta2=$(IFS=,; echo "${output_fastas2[*]}")
+    fi
+    
+    echo "#variables for all services: "
+    echo "workingDir=$output_dir"
+    echo "fileFormat=fasta"
+    echo "readType=single_end"
     echo "output_feature_table=$output_feature_table"
     echo "output_fasta=$output_fasta"
+    if [[ -n "$output_feature_table2" ]]; then
+        echo "output_feature_table2=$output_feature_table2"
+        echo "output_fasta2=$output_fasta2"
+    fi
+
+else
+    echo "#variables for all services: "
+    echo "workingDir=$output_dir"
+    echo "fileFormat=fasta"
+    echo "readType=single_end"
+    echo "output_feature_table=$output_feature_table"
+    echo "output_fasta=$output_fasta"
+    if [[ -n "$output_feature_table2" ]]; then
+        echo "output_feature_table2=$output_feature_table2"
+        echo "output_fasta2=$output_fasta2"
+    fi
 fi
 
 # Done
 printf "\nDONE "
 printf "Total time: $runtime sec.\n "
-
-#variables for all services
-echo "#variables for all services: "
-echo "workingDir=$output_dir"
-echo "fileFormat=fasta"
-echo "readType=single_end"
-echo "output_feature_table=$output_feature_table"
-echo "output_fasta=$output_fasta"

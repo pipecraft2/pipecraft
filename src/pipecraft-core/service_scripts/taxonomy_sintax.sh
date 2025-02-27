@@ -18,11 +18,24 @@ extension=${fileFormat} && export fileFormat
 
 # Load variables
 fasta_file=${fasta_file}
-sintax_db=${sintax_db}            # Provided SINTAX database file (FASTA or already built .udb)
-sintax_cutoff=${sintax_cutoff}    
-sintax_strand=${sintax_strand}    
-sintax_wordlength=${sintax_wordlength}  
-sintax_threads=${sintax_threads}  
+database_file=${database}      # Provided SINTAX database file (FASTA or already built .udb)
+cutoff=${cutoff}          # e.g., default is 0.8
+strand=${strand}          # [both, plus]
+wordlength=${wordlength}  # Length of words (i.e. k-mers) for database indexing. Defaut is 8.
+cores=${cores}            # number of cores to use
+
+# prep input files for container
+regex='[^/]*$'
+db1_temp=$(echo $database_file | grep -oP "$regex")
+database=$(printf "/extraFiles/$db1_temp")
+echo "database = $database"
+
+fasta_file=$(echo $fasta_file | grep -oP "$regex")
+fasta_file=$(printf "/extraFiles2/$fasta_file")
+echo "fasta_file = $fasta_file"
+# overwrite fileFormat variable; get it from input fasta_file
+fileFormat=$(echo $fasta_file | awk -F. '{print $NF}')
+export fileFormat
 
 # Source for functions
 source /scripts/submodules/framework.functions.sh
@@ -103,24 +116,103 @@ check_sintax_format() {
 }
 
 # Output directory
-output_dir=$"/input/taxonomy_out.vsearch"
+output_dir=$"/input/taxonomy_out.sintax"
 export output_dir
 
+
+# Function to check if database is in SINTAX format
+check_sintax_format() {
+    local db_path="$1"
+    
+    # If it's already a UDB file, it's valid
+    if [[ "${db_path##*.}" == "udb" ]]; then
+        return 0
+    fi
+    
+    # Check if file exists
+    if [[ ! -f "$db_path" ]]; then
+        printf "Error: Database file '%s' does not exist.\n" "$db_path"
+        return 1
+    fi
+    
+    # Check if file is FASTA format 
+    if [[ $(head -c 1 "$db_path") != ">" ]]; then
+        printf "Error: Database does not appear to be in FASTA format (should start with '>').\n"
+        return 1
+    fi
+    
+    # Get only the first 10 headers
+    local first_ten_headers=$(head -n 1000 "$db_path" | grep "^>" | head -n 10)
+    
+    # Check file size to decide if we need to check last headers
+    local file_size=$(stat -c %s "$db_path")
+    
+    # Initialize counts
+    local valid_count=0
+    local invalid_count=0
+    local first_invalid=""
+    
+    # Process first 10 headers
+    while IFS= read -r header; do
+        if [[ "$header" == *";tax="* ]] && [[ "$header" =~ \;tax=.*[dpcosfg]: ]]; then
+            valid_count=$((valid_count + 1))
+        else
+            invalid_count=$((invalid_count + 1))
+            if [[ -z "$first_invalid" ]]; then
+                first_invalid="$header"
+            fi
+        fi
+    done <<< "$first_ten_headers"
+    
+    # If file is large enough, check last headers too (only if needed)
+    if [[ "$file_size" -gt 50000 && "$invalid_count" -eq 0 ]]; then
+        # Read last ~10 headers
+        local last_ten_headers=$(tail -n 2000 "$db_path" | grep "^>" | tail -n 10)
+        
+        # Check last headers only if all first headers were valid
+        while IFS= read -r header; do
+            if [[ "$header" == *";tax="* ]] && [[ "$header" =~ \;tax=.*[dpcosfg]: ]]; then
+                valid_count=$((valid_count + 1))
+            else
+                invalid_count=$((invalid_count + 1))
+                if [[ -z "$first_invalid" ]]; then
+                    first_invalid="$header"
+                fi
+            fi
+        done <<< "$last_ten_headers"
+    fi
+    
+    # Determine if database is valid
+    if [[ "$valid_count" -gt 0 && "$invalid_count" -eq 0 ]]; then
+        return 0
+    else
+        printf "Error: Database is not in SINTAX format.\n"
+        if [[ -n "$first_invalid" ]]; then
+            printf "Example of invalid header: %s\n" "$first_invalid"
+        fi
+        printf "Headers should contain ';tax=d:Domain,p:Phylum,...;'\n"
+        return 1
+    fi
+}
+
+check_sintax_format
+
 # Check and prepare SINTAX database
-if [[ -f "$sintax_db" ]]; then
-    ext="${sintax_db##*.}"
+if [[ -f "$database" ]]; then
+    ext="${database##*.}"
     if [[ "$ext" != "udb" ]]; then
-        printf "# Building SINTAX database from FASTA file: %s\n" "$sintax_db"
-        sintax_db_formatted="${sintax_db%.*}.udb"
-        vsearch --makeudb_usearch "$sintax_db" --output "$sintax_db_formatted"
+        printf "# Building SINTAX database from FASTA file: %s\n" "$database"
+        database_formatted="${database%.*}.udb"
+        vsearch --makeudb_usearch "$database" --output "$database_formatted"
         if [[ $? -ne 0 ]]; then
-            printf "Error: Failed to build SINTAX database from %s\n" "$sintax_db"
+            printf "Error: Failed to build SINTAX database from %s\n" "$database"
             exit 1
         fi
-        sintax_db="$sintax_db_formatted"
+        printf "SINTAX database was converted to UDB format (file = %s).\n" "$database_formatted"
+        database="$database_formatted"
     fi
 else
-    printf "Error: SINTAX database file %s does not exist.\n" "$sintax_db"
+    printf "Error: SINTAX database file %s does not exist.\n" "$database"
     exit 1
 fi
 
@@ -128,27 +220,31 @@ fi
 start_time=$(date)
 start=$(date +%s)
 
-### Check if files with specified extension exist in the directory
-first_file_check
-### Check if single-end files are compressed (decompress and check)
+#If input is compressed, then decompress (keeping the compressed file, but overwriting if filename exists!)
 check_gz_zip_SE
+### Check input formats (fasta supported)
+check_extension_fasta
 
 #############################
 ### Start of the workflow ###
 #############################
-### Prepare working environment and check single-end data
-prepare_SE_env
+echo "output_dir = $output_dir"
+if [[ -d $output_dir ]]; then
+    rm -rf $output_dir
+fi
+mkdir $output_dir
 
 ### Run VSEARCH SINTAX Taxonomy Assignment
-printf "# Running VSEARCH SINTAX Taxonomy Assignment\n"
-vsearch_log=$(vsearch --sintax "$fasta_file" \
-        --db "$sintax_db" \
-        --tabbedout "$output_dir/sintax_out.txt" \
-        --sintax_cutoff "$sintax_cutoff" \
-        --strand "$sintax_strand" \
-        --wordlength "$sintax_wordlength" \
-        --threads "$sintax_threads" 2>&1)
+printf "# Running VSEARCH SINTAX \n"
+checkerror=$(vsearch --sintax "$fasta_file" \
+        --db "$database" \
+        --tabbedout "$output_dir/taxonomy.sintax.txt" \
+        --sintax_cutoff "$cutoff" \
+        --strand "$strand" \
+        --wordlength "$wordlength" \
+        --threads "$cores" 2>&1)
 check_app_error
+printf "\n SINTAX completed\n"
 
 ########################################
 ### CLEAN UP AND COMPILE README FILE ###
@@ -157,26 +253,30 @@ if [[ $debugger != "true" ]]; then
     if [[ -d tempdir2 ]]; then
         rm -rf tempdir2
     fi
-    if [[ -f $output_dir/vsearch_sintax.log ]]; then
-        rm -f $output_dir/vsearch_sintax.log
-    fi
 fi
 
 end=$(date +%s)
 runtime=$((end - start))
 
 ### Make README.txt file
-printf "# Taxonomy was assigned using VSEARCH SINTAX (with database preparation if required).
-Query    = $fasta_file
-Database = $sintax_db
+# Remove /extraFiles*/ prefix from input files
+fasta_file=$(echo $fasta_file | grep -oP "$regex")
+database=$(echo $database | grep -oP "$regex")
 
-# sintax_out.txt = VSEARCH SINTAX output file in tab-delimited format.
-[If the provided database was not in the correct format, it was converted to a SINTAX database using 'vsearch --makeudb_sintax'.]
+printf "# Taxonomy was assigned using VSEARCH SINTAX (with database preparation if required).
+
+Start time: $start_time
+End time: $(date)
+Runtime: $runtime seconds
+
+Query    = $fasta_file
+Database = $database
+
+# taxonomy.sintax.txt = VSEARCH SINTAX output file in tab-delimited format.
+[If the provided database was not in the correct format, it was converted to a SINTAX database using 'vsearch --makeudb_usearch'.]
 
 Core command -> 
-vsearch --sintax $fasta_file --db $sintax_db --tabbedout sintax_out.txt --sintax_cutoff $sintax_cutoff --strand $sintax_strand --wordlength $sintax_wordlength --threads $sintax_threads
-
-Total run time was $runtime sec.
+vsearch --sintax $fasta_file --db $database --tabbedout taxonomy.sintax.txt --sintax_cutoff $cutoff --strand $strand --wordlength $wordlength --threads $cores
 
 ################################################
 ###Third-party applications:

@@ -17,6 +17,9 @@ vsearch_version=$(vsearch --version 2>&1 | head -n 1 | awk '{print $2}' | sed -e
 seqkit_version=$(seqkit version 2>&1 | awk '{print $2}')
 printf "# vsearch (version $vsearch_version)\n"
 printf "# seqkit (version $seqkit_version)\n"
+printf "# pipeline = $pipeline\n"
+printf "# service = $service\n"
+printf "# clustering dirs = $workingDir\n"
 
 #load variables
 id=$"--id ${similarity_threshold}"          # positive float (0-1)
@@ -34,8 +37,6 @@ cores=$"--threads ${cores}"              # pos integer
 ###############################
 # Source for functions
 source /scripts/submodules/framework.functions.sh
-#output dir
-output_dir=$"/input/clustering_out"
 
 #additional options, if selection != undefined/false
 if [[ $seqsort == "size" ]]; then
@@ -51,25 +52,45 @@ else
     centroid_in=$"--sizeorder"
 fi
 
-
 # check if working with multiple runs or with a single sequencing run
 if [[ -d "/input/multiRunDir" ]]; then
-    echo "vsearch paired-end pipeline with multiple sequencing runs in multiRunDir"
-    echo "Process = clustering"
+    echo "vsearch OTUs with multiple sequencing runs in multiRunDir"
+    echo "Process = vsearch clustering"
     cd /input/multiRunDir
     # read in directories (sequencing sets) to work with. Skip directories renamed as "skip_*"
-    DIRS=$(find . -maxdepth 2 -mindepth 1 -type d | grep "chimeraFiltered_out" | grep -v "skip_" | grep -v "merged_runs" | grep -v "tempdir" | sed -e "s/^\.\///") 
+    # Choose directories based on service type
+    if [[ -f "$workingDir/.prev_step.temp" ]]; then
+        prev_step=$(cat $workingDir/.prev_step.temp) # for checking previous step (output temp file from ITS_extractor.sh)
+        printf "# prev_step = $prev_step\n"
+        ITS_region_for_clustering=$(cat $workingDir/.ITS_region_for_clustering.temp)
+        ITS_full_and_partial=$(cat $workingDir/.ITS_full_and_partial.temp)
+        printf "# ITS_region_for_clustering = $ITS_region_for_clustering\n"
+        printf "# ITS_full_and_partial = $ITS_full_and_partial (=FALSE if empty)\n"
+        rm $workingDir/.prev_step.temp
+        rm $workingDir/.ITS_region_for_clustering.temp
+        rm $workingDir/.ITS_full_and_partial.temp
+    fi
+    
+    # if working with multiRunDir, and the previous step was ITSx and full_and_partial = FALSE
+    if [[ "$prev_step" = "ITSx" ]] && [[ "$ITS_full_and_partial" == "" ]]; then 
+        DIRS=$(find . -maxdepth 3 -mindepth 1 -type d | grep "ITSx_out/${ITS_region_for_clustering}" | grep -v "skip_" | grep -v "merged_runs" | grep -v "tempdir" | sed -e "s/^\.\///")
+    # if working with multiRunDir, and the previous step was ITSx and full_and_partial = TRUE
+    elif [[ "$prev_step" = "ITSx" ]] && [[ "$ITS_full_and_partial" == "full_and_partial" ]]; then   
+        DIRS=$(find . -maxdepth 4 -mindepth 1 -type d | grep "ITSx_out/${ITS_region_for_clustering}/${ITS_full_and_partial}" | grep -v "skip_" | grep -v "merged_runs" | grep -v "tempdir" | sed -e "s/^\.\///")
+    # if working with multiRunDir, and the previous step was not ITSx
+    else
+        DIRS=$(find . -maxdepth 2 -mindepth 1 -type d | grep "chimeraFiltered_out" | grep -v "chimeraFiltered_out.dada2"| grep -v "skip_" | grep -v "merged_runs" | grep -v "tempdir" | sed -e "s/^\.\///") 
+    fi
     echo "working in dirs:"
     echo $DIRS
     multiDir=$"TRUE"
     export multiDir
 else
     echo "Working with individual sequencing run"
-    echo "Process = clustering"
+    echo "Process = vsearch clustering"
     DIRS=$(pwd)
     printf "\n workingDir = $DIRS \n"
 fi
-
 
 #############################
 ### Start of the workflow ###
@@ -100,7 +121,7 @@ for seqrun in $DIRS; do
         output_feature_tables+=("$output_dir/OTU_table.txt")
         output_fastas+=("$output_dir/OTUs.fasta")
 
-        ### Prepare working env and check paired-end data
+        ### Prepare working env and check single-end data
         first_file_check
         prepare_SE_env
     else
@@ -112,7 +133,7 @@ for seqrun in $DIRS; do
         output_fasta="$output_dir/OTUs.fasta"
         # Check if files with specified extension exist in the dir
         first_file_check
-        # Prepare working env and check paired-end data
+        # Prepare working env and check single-end data
         prepare_SE_env
     fi
 
@@ -323,7 +344,6 @@ clustering: vsearch $seqsort dereplicated_sequences.fasta $id $simtype $strands 
         cd /input/multiRunDir
     fi
 done
-
 
 # Validate and combine output files
 if [[ $multiDir == "TRUE" ]]; then

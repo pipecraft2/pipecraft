@@ -46,6 +46,9 @@
             $route.params.workflowName &&
             $route.params.workflowName.includes('NextITS')
               ? runNextITS()
+              : $route.params.workflowName &&
+                $route.params.workflowName.includes('OptimOTU')
+              ? runOptimOTU()
               : $route.params.workflowName
               ? runCustomWorkFlow($route.params.workflowName)
               : runWorkFlow()
@@ -90,14 +93,15 @@ import { ipcRenderer } from "electron";
 import { mapState } from "vuex";
 import { stringify } from "envfile";
 import os from "os";
+const fs = require('fs');
+const yaml = require('js-yaml');
+var JSONfn = require("json-fn");
 var socketPath =
   os.platform() === "win32" ? "//./pipe/docker_engine" : "/var/run/docker.sock";
 var dockerode = new Dockerode({ socketPath: socketPath });
 var stdout = new streams.WritableStream();
 var stderr = new streams.WritableStream();
 const isDevelopment = process.env.NODE_ENV !== "production";
-const fs = require("fs");
-var JSONfn = require("json-fn");
 
 export default {
   name: "Run",
@@ -634,6 +638,69 @@ export default {
         Env: envVariables,
       };
       return dockerProps;
+    },
+  async runOptimOTU() {
+    this.getOptimOTUoptions(_.cloneDeep(this.$store.state.OptimOTU))
+      try {
+        const container = await dockerode.createContainer({
+          Image: 'pipecraft/optimotu:4',
+          Cmd: ['bash', '-c', 'echo "Hello, World!"'],
+          Tty: false,
+          AttachStdout: true,
+          AttachStderr: true,
+        });
+  
+        const stream = await container.attach({
+          stream: true,
+          stdout: true,
+          stderr: true,
+        });
+  
+        stream.on('data', (data) => {
+          console.log(data.toString());
+        });
+        await container.start();
+  
+        const data = await container.wait();
+        console.log('Container exited with status code:', data.StatusCode);
+  
+        await container.remove();
+      } catch (err) {
+        console.error('Error running container:', err);
+      }          
+    },
+    getOptimOTUoptions(options) {
+      const updates = {};
+      options.forEach(option => {
+        option.Inputs.forEach(input => {
+          updates[input.name] = input.value;
+        });
+      });
+      console.log(updates);
+      const filePath = 'src/pipecraft-core/service_scripts/pipeline_options.yaml';
+      let fileContents = fs.readFileSync(filePath, 'utf8');
+      let data = yaml.load(fileContents);
+      console.log(data)
+      function updateNestedKey(obj, key, value) {
+        for (const k in obj) {
+          if (k === key) {
+            obj[k] = value;
+            return true;
+          }
+          if (typeof obj[k] === 'object' && !Array.isArray(obj[k])) {
+            if (updateNestedKey(obj[k], key, value)) {
+              return true;
+            }
+          }
+        }
+        return false;
+      }
+      for (const [key, value] of Object.entries(updates)) {
+        if (!updateNestedKey(data, key, value)) {
+          console.warn(`Key not found in YAML: ${key}`);
+        }
+      }
+      return updates;
     },
     async runNextITS() {
       this.autoSaveConfig();

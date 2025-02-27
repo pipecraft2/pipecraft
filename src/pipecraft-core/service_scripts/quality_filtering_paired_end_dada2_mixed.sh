@@ -202,7 +202,11 @@ for seqrun in $DIRS; do
         
         #Make README.txt file
         printf "# Quality filtering was performed using dada2 (see 'Core command' below for the used settings).
-Detected MIXED orient sequences as input data; note that there were independent runs for fwd_orient and rev_orient inputs.
+Input data was MIXED orient; note that there were independent runs for fwd_orient and rev_orient inputs.
+
+Start time: $start_time
+End time: $(date)
+Runtime: $runtime seconds
 
 Files in 'qualFiltered_out':
 ----------------------------
@@ -213,7 +217,6 @@ Files in 'qualFiltered_out':
 Core command -> 
 filterAndTrim(inputR1, outputR1, inputR2, outputR2, maxN = $maxN, maxEE = c($maxEE, $maxEE), truncQ = $truncQ, truncLen= c($truncLen, $truncLen_R2), maxLen = $maxLen, minLen = $minLen, minQ=$minQ, rm.phix = TRUE)
 
-Total run time was $runtime sec for $output_dir.
 ##############################################
 ###Third-party applications for this process:
 #dada2 (version $dada2_version)

@@ -22,10 +22,10 @@ source /scripts/submodules/framework.functions.sh
 
 ## check if working with multiple runs or with a single sequencing run
 # if working with multiRunDir, and the previous step was CUT PRIMERS
-if [[ -f "$workingDir/prev_step.temp" ]]; then
-    prev_step=$(cat $workingDir/prev_step.temp) # for checking previous step (output from cut_primers_paired_end_reads.sh)
+if [[ -f "$workingDir/.prev_step.temp" ]]; then
+    prev_step=$(cat $workingDir/.prev_step.temp) # for checking previous step (output from cut_primers_paired_end_reads.sh)
 fi
-if [[ $pipeline == "DADA2_ASVs" ]] && [[ $prev_step == "cut_SE_primers" ]]; then
+if [[ $pipeline == "DADA2_ASVs" ]] && [[ $prev_step == "cut_primers" ]]; then
     echo "DADA2 single-end pipeline with multiple sequencing runs in multiRunDir"
     echo "Process = quality filtering (after cut primers)"
     cd /input/multiRunDir
@@ -35,9 +35,9 @@ if [[ $pipeline == "DADA2_ASVs" ]] && [[ $prev_step == "cut_SE_primers" ]]; then
     echo $DIRS
     multiDir=$"TRUE"
     export multiDir
-    rm $workingDir/prev_step.temp
+    rm $workingDir/.prev_step.temp
 # if working with multiRunDir, but the previous step was not CUT PRIMERS
-elif [[ -d "/input/multiRunDir" ]] && [[ $prev_step != "cut_SE_primers" ]]; then
+elif [[ -d "/input/multiRunDir" ]] && [[ $prev_step != "cut_primers" ]]; then
     echo "DADA2 single-end pipeline with multiple sequencing runs in multiRunDir"
     echo "Process = quality filtering"
     cd /input/multiRunDir
@@ -113,6 +113,10 @@ for seqrun in $DIRS; do
     #Make README.txt file
     printf "# Quality filtering was performed using dada2 (see 'Core command' below for the used settings).
 
+Start time: $start_time
+End time: $(date)
+Runtime: $runtime seconds
+
 Files in 'qualFiltered_out':
 ----------------------------
 # *.$extension             = quality filtered sequences per sample.
@@ -122,7 +126,6 @@ Files in 'qualFiltered_out':
 Core command -> 
 filterAndTrim(inputR1, outputR1, maxN = $maxN, maxEE = $maxEE, truncQ = $truncQ, truncLen = $truncLen, maxLen = $maxLen, minLen = $minLen, minQ = $minQ, rm.phix = TRUE)
 
-Total run time was $runtime sec.
 ##############################################
 ###Third-party applications for this process:
 #dada2 (version $dada2_version)

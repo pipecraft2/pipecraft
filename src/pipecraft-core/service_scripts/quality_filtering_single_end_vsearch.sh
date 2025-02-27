@@ -11,6 +11,8 @@
 # checking tool versions
 vsearch_version=$(vsearch --version 2>&1 | head -n 1 | awk '{print $2}' | sed -e "s/,//g")
 printf "# vsearch (version $vsearch_version)\n"
+printf "# pipeline = $pipeline\n"
+printf "# service = $service\n"
 
 #load variables
 extension=$fileFormat && export fileFormat 
@@ -25,8 +27,6 @@ max_length=$max_length
 maxee_rate=$maxee_rate
 truncqual=${truncqual}
 truncee=${truncee}
-echo $pipeline 
-echo $service
 
 #Source for functions
 source /scripts/submodules/framework.functions.sh
@@ -60,13 +60,43 @@ else
     truncee=$"--fastq_truncee $truncee"
 fi
 
-# check if working with multiple runs or with a single sequencing run
-if [[ -d "/input/multiRunDir" ]]; then
-    echo "vsearch paired-end pipeline with multiple sequencing runs in multiRunDir"
+# if working with multiRunDir, and the previous step was CUT PRIMERS
+if [[ -f "$workingDir/.prev_step.temp" ]]; then
+    prev_step=$(cat $workingDir/.prev_step.temp) # for checking previous step (output from cut_primers_paired_end_reads.sh)
+    printf "# prev_step = $prev_step\n"
+fi
+###  check if working with multiple runs or with a single sequencing run
+ # if working with multiRunDir, and the previous step was MERGE READS in paired_end pipeline
+if [[ $pipeline == "vsearch_OTUs" || $pipeline == "UNOISE_ASVs" ]] && [[ $prev_step == "merge_reads" ]]; then
+    echo "Pipeline run with multiple sequencing runs in multiRunDir (paired_end)"
     echo "Process = quality filtering"
     cd /input/multiRunDir
     # read in directories (sequencing sets) to work with. Skip directories renamed as "skip_*"
-    DIRS=$(find . -maxdepth 3 -mindepth 1 -type d | grep "assembled_out" | grep -v "skip_" | grep -v "merged_runs" | grep -v "tempdir" | sed -e "s/^\.\///") 
+    DIRS=$(find . -maxdepth 2 -mindepth 1 -type d | grep "assembled_out" | grep -v "skip_" | grep -v "merged_runs" | grep -v "tempdir" | sed -e "s/^\.\///") 
+    echo "working in dirs:"
+    echo $DIRS
+    multiDir=$"TRUE"
+    export multiDir
+    rm $workingDir/.prev_step.temp
+ # if working with multiRunDir, and the previous step was CUT PRIMERS in single_end pipeline
+elif [[ $pipeline == "vsearch_OTUs" || $pipeline == "UNOISE_ASVs" ]] && [[ $prev_step == "cut_primers" ]]; then
+    echo "Pipeline run with multiple sequencing runs in multiRunDir (single_end)"
+    echo "Process = quality filtering"
+    cd /input/multiRunDir
+    # read in directories (sequencing sets) to work with. Skip directories renamed as "skip_*"
+    DIRS=$(find . -maxdepth 2 -mindepth 1 -type d | grep "primersCut_out" | grep -v "skip_" | grep -v "merged_runs" | grep -v "tempdir" | sed -e "s/^\.\///") 
+    echo "working in dirs:"
+    echo $DIRS
+    multiDir=$"TRUE"
+    export multiDir
+    rm $workingDir/.prev_step.temp
+# if working with multiRunDir, and the previous step was not CUT PRIMERS in single_end pipeline
+elif [[ $pipeline == "vsearch_OTUs" || $pipeline == "UNOISE_ASVs" ]] && [[ $prev_step != "cut_primers" ]] && [[ $readType == "single_end" ]]; then
+    echo "Pipeline run with multiple sequencing runs in multiRunDir (single_end)"
+    echo "Process = quality filtering"
+    cd /input/multiRunDir
+    # read in directories (sequencing sets) to work with. Skip directories renamed as "skip_*"
+    DIRS=$(find . -maxdepth 1 -mindepth 1 -type d | grep -v "skip_" | grep -v "merged_runs" | grep -v "tempdir" | sed -e "s/^\.\///") 
     echo "working in dirs:"
     echo $DIRS
     multiDir=$"TRUE"
@@ -100,7 +130,7 @@ for seqrun in $DIRS; do
         output_dir=$"/input/multiRunDir/${seqrun%%/*}/qualFiltered_out"
         export output_dir
 
-        ### Prepare working env and check paired-end data
+        ### Prepare working env and check single-end data
         first_file_check
         prepare_SE_env
     else
@@ -109,14 +139,14 @@ for seqrun in $DIRS; do
         export output_dir
         # Check if files with specified extension exist in the dir
         first_file_check
-        # Prepare working env and check paired-end data
+        # Prepare working env and check single-end data
         prepare_SE_env
     fi
 
     ### Process samples
-    for file in *.$extension; do
+    for file in *.$fileFormat; do
         #Read file name; without extension
-        input=$(echo $file | sed -e "s/.$extension//")
+        input=$(echo $file | sed -e "s/.$fileFormat//")
         ## Preparing files for the process
         printf "\n____________________________________\n"
         printf "Processing $input ...\n"
@@ -186,6 +216,11 @@ printf "Total time: $runtime sec.\n "
 
 #variables for all services
 echo "#variables for all services: "
-echo "workingDir=$output_dir"
+if [[ $multiDir == "TRUE" ]]; then
+    workingDir=$"/input/multiRunDir"
+    echo "workingDir=$workingDir"
+else
+    echo "workingDir=$output_dir"
+fi
 echo "fileFormat=$extension"
 echo "readType=single_end"

@@ -14,6 +14,7 @@ readType = Sys.getenv("readType")
 fileFormat = Sys.getenv("fileFormat")
 dataFormat = Sys.getenv("dataFormat")
 workingDir = Sys.getenv("workingDir")
+cat(";; workingDir = ", workingDir, "\n")
 
 #load variables
 method = Sys.getenv("method")
@@ -42,6 +43,12 @@ saveRDS(ASV_tab.nochim, file.path(path_ASVs, "ASVs_table.denoised.nochim.rds"))
 saveRDS(ASV_tab, file.path(path_ASVs, "ASVs_table.denoised.rds"))
 
 #seq count summary
+    # if sample_names.rds is not in the workingDir, copy it from the qualFiltered_out dir
+if (!file.exists(file.path(workingDir, "sample_names.rds"))) {
+    qualFiltered_out_dir = file.path(dirname(workingDir), "qualFiltered_out")
+    file.copy(from = file.path(qualFiltered_out_dir, "sample_names.rds"),
+              to = file.path(workingDir, "sample_names.rds"))
+}
 sample_names = readRDS(file.path(workingDir, "sample_names.rds"))
 cat(";; sample names = ", sample_names)
 

@@ -94,6 +94,10 @@ runtime=$((end-start))
 if [[ $collapseNoMismatch == "true" ]]; then
     printf "# Filtering the of the dada2 ASV table.
 
+Start time: $start_time
+End time: $(date)
+Runtime: $runtime seconds
+
 Files in 'filtered_table':
 --------------------------
 # ASVs_table_collapsed.txt = ASV table after collapsing identical ASVs. Contains $ASVs_collapsed ASVs
@@ -104,8 +108,6 @@ Files in 'filtered_table':
 # ASV_table_lenFilt.txt    = $ASVs_lenFilt_result_table
 # ASVs_lenFilt.fasta       = $ASVs_lenFilt_result_fasta
 
-
-Total run time was $runtime sec.
 ##############################################
 ###Third-party applications for this process:
 #dada2 (version $dada2_version)

@@ -324,6 +324,10 @@ if [[ $find_or_dump == "find" ]] || [[ $find_or_dump == "find_and_dump" ]]; then
 
     printf "### Used metaMATE-find to detect putative NUMT and other erroneous sequences.
 
+Start time: $start_time
+End time: $(date)
+Runtime: $runtime seconds
+
 Input parameters:
 ---------------
 - find_or_dump: ${find_or_dump}
@@ -360,7 +364,6 @@ Files in 'metamate_out' directory:
   https://github.com/tjcreedy/metamate/blob/main/analyse_results_draft.R
 
 $warn
-Total run time was $runtime sec.
 
 #################################################
 ###Third-party applications for this process:
@@ -407,7 +410,13 @@ if [[ $find_or_dump == "dump" ]] || [[ $find_or_dump == "find_and_dump" ]]; then
 
     echo "$nSeqs" > $output_dir/sequence_counts.txt
 
+    end=$(date +%s)
+    runtime=$((end-start))
     printf "### Used metaMATE-dump to discard putative NUMT and other erroneous sequences based on the specified threshold from metaMATE-find.
+
+Start time: $start_time
+End time: $(date)
+Runtime: $runtime seconds
 
 Input parameters:
 ---------------
@@ -439,8 +448,6 @@ Added files to 'metamate_out' directory:
                               selected resultindex for results.csv file for metaMATE-dump
 
 # -> more info about the outputs: https://github.com/tjcreedy/metamate?tab=readme-ov-file#outputs 
-
-Total run time was $runtime sec.
 
 #################################################
 ###Third-party applications for this process:

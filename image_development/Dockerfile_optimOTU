@@ -1,0 +1,68 @@
+FROM ubuntu:24.04
+ENV LANG=C.UTF-8
+ENV LC_ALL=C.UTF-8
+RUN apt-get update && \
+    apt-get install -y wget git zip build-essential zlib1g-dev
+
+RUN git clone --branch v4.1.0 https://github.com/brendanf/optimotu_targets.git /optimotu_targets
+RUN sed -i 's|\$PROTAX/usearch10.0.240_i86linux32|usearch -maxmem 12000|g' /optimotu_targets/scripts/runprotax && \
+    sed -i 's|BASEDIR=$(pwd)|BASEDIR="/optimotu_targets"|g' /optimotu_targets/scripts/runprotax && \
+    sed -i '1i#!/bin/bash' /optimotu_targets/scripts/runprotax
+
+WORKDIR /optimotu_targets/bin
+RUN wget https://github.com/DKFZ-ODCF/FastqIndEx/releases/download/0.9.0b/fastqindex_0.9.0b.gz && \
+    gunzip fastqindex_0.9.0b.gz && \
+    chmod +x fastqindex_0.9.0b
+
+WORKDIR /optimotu_targets
+RUN wget https://s3.hpc.ut.ee/plutof-public/original/5dcbe93a-b50c-4ff5-8898-528160c4e593.zip && \
+    unzip -j 5dcbe93a-b50c-4ff5-8898-528160c4e593.zip data/shs_out.txt data/sanger_refs_sh.fasta -d data/sh_matching_data && \
+    rm 5dcbe93a-b50c-4ff5-8898-528160c4e593.zip
+
+RUN rm -rf /optimotu_targets/protaxFungi && \
+    wget -O /optimotu_targets/protaxFungi.zip https://nextcloud.jyu.fi/index.php/s/JCdqdNPgsNqJw6o/download && \
+    unzip /optimotu_targets/protaxFungi.zip -d /optimotu_targets && \
+    rm /optimotu_targets/protaxFungi.zip
+
+RUN wget -O /optimotu_targets/protaxAnimal.zip https://nextcloud.jyu.fi/index.php/s/74p3zTjRjLX76fb/download && \
+    unzip /optimotu_targets/protaxAnimal.zip -d /optimotu_targets && \
+    rm /optimotu_targets/protaxAnimal.zip
+
+RUN wget -O /optimotu_targets/FinPROTAX.zip https://github.com/psomervuo/FinPROTAX/archive/refs/heads/main.zip && \
+    unzip /optimotu_targets/FinPROTAX.zip -d /optimotu_targets && \
+    rm /optimotu_targets/FinPROTAX.zip && \
+    mv /optimotu_targets/FinPROTAX-main /optimotu_targets/FinPROTAX && \
+    unzip /optimotu_targets/FinPROTAX/FinPROTAX.zip && \
+    rm /optimotu_targets/FinPROTAX/FinPROTAX.zip
+
+RUN wget -O /optimotu_targets/protaxAnimal_bin.zip https://nextcloud.jyu.fi/index.php/s/NJ6Kxg6Jte4GJow/download && \
+    unzip /optimotu_targets/protaxAnimal_bin.zip -d /optimotu_targets/protaxAnimal_bin && \
+    rm /optimotu_targets/protaxAnimal_bin.zip && \
+    cd /optimotu_targets/protaxAnimal_bin/protaxA_c2 && make && \
+    cp classify_v2 classify_info dist_best dist_matrix dist_bipart /optimotu_targets/bin
+
+ENV CONDA_DIR=/opt/conda
+RUN wget --quiet https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86_64.sh -O ~/miniconda.sh && \
+    /bin/bash ~/miniconda.sh -b -p /opt/conda
+
+# Put conda in path so we can use conda activate
+ENV PATH=$CONDA_DIR/bin:$PATH
+ADD image_development/OptimOTU_v4.yml /OptimOTU_v4.yml
+RUN conda env create -f /OptimOTU_v4.yml
+
+RUN wget -O /usr/local/bin/usearch https://raw.githubusercontent.com/rcedgar/usearch_old_binaries/main/bin/usearch10.0.240_i86linux64 && \
+    chmod +x /usr/local/bin/usearch
+
+
+
+RUN eval "$(conda shell.bash hook)" && \
+    conda activate OptimOTU_v4  && \
+    Rscript -e "install.packages('renv', repos='https://cloud.r-project.org')" && \
+    Rscript -e "library(renv); renv::install('brendanf/optimotu@usearch12_noversion')"
+
+RUN gzip protaxAnimal/refs.aln && \
+    mv protaxAnimal/refs.aln.gz protaxAnimal/refs.aln
+
+RUN sed -i 's|\$NUMTHREADS|4|g' /optimotu_targets/scripts/runprotax
+
+CMD ["bash", "-c", "source /opt/conda/etc/profile.d/conda.sh && conda activate OptimOTU_v4 && exec bash"]

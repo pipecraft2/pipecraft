@@ -145,6 +145,10 @@ runtime=$((end-start))
 #Make README.txt file for demultiplexed reads
 printf "# Demultiplexing was performed using cutadapt (see 'Core command' below for the used settings).
 
+Start time: $start_time
+End time: $(date)
+Runtime: $runtime seconds
+
 Files in 'demultiplex_out' directory represent per sample sequence files, that were generated based on the specified indexes file ($oligos_file).
 index_file.fasta = $oligos_file but with added search window size for cutadapt.
 
@@ -169,8 +173,6 @@ Core command ->
 cutadapt $indexes_file_in $error_rate $no_indels --revcomp $overlap $minlen
 
 Summary of sequence counts in 'seq_count_summary.txt'
-
-Total run time was $runtime sec.
 
 ##############################################
 ###Third-party applications for this process:

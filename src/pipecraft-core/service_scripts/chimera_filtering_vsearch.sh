@@ -44,7 +44,7 @@ fi
 
 # check if working with multiple runs or with a single sequencing run
 if [[ -d "/input/multiRunDir" ]]; then
-    echo "vsearch paired-end pipeline with multiple sequencing runs in multiRunDir"
+    echo "Pipeline with multiple sequencing runs in multiRunDir"
     echo "Process = chimera filtering"
     cd /input/multiRunDir
     # read in directories (sequencing sets) to work with. Skip directories renamed as "skip_*"
@@ -82,7 +82,7 @@ for seqrun in $DIRS; do
         output_dir=$"/input/multiRunDir/${seqrun%%/*}/chimeraFiltered_out"
         export output_dir
 
-        ### Prepare working env and check paired-end data
+        ### Prepare working env and check single-end data
         first_file_check
         prepare_SE_env
     else
@@ -91,7 +91,7 @@ for seqrun in $DIRS; do
         export output_dir
         # Check if files with specified extension exist in the dir
         first_file_check
-        # Prepare working env and check paired-end data
+        # Prepare working env and check single-end data
         prepare_SE_env
     fi
 

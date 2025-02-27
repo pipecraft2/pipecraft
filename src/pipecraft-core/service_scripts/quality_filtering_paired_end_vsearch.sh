@@ -15,6 +15,8 @@ vsearch_version=$(vsearch --version 2>&1 | head -n 1 | awk '{print $2}' | sed -e
 seqkit_version=$(seqkit version 2>&1 | awk '{print $2}')
 printf "# vsearch (version $vsearch_version)\n"
 printf "# seqkit (version $seqkit_version)\n"
+printf "# pipeline = $pipeline\n"
+printf "# service = $service\n"
 
 #load variables
 export fileFormat 
@@ -219,28 +221,29 @@ for seqrun in $DIRS; do
 
     #Make README.txt file
     printf "# Quality filtering was performed using vsearch (see 'Core command' below for the used settings).
-    Start time: $start_time
-    End time: $(date)
-    Runtime: $runtime seconds
 
-    Files in 'qualFiltered_out':
-    ----------------------------
-    # *.$extension          = quality filtered sequences in FASTQ format.
-    # seq_count_summary.txt = summary of sequence counts per sample.
+Start time: $start_time
+End time: $(date)
+Runtime: $runtime seconds
 
-    Core commands -> 
-    quality filtering: vsearch --fastq_filter input_file $maxee $maxns $trunc_length $minlen $cores $qmax $qmin $max_length $maxee_rate $truncqual $truncee --fastqout output_file
-    Synchronizing R1 and R2 reads (matching pair mates): seqkit pair -1 inputR1 -2 inputR2
+Files in 'qualFiltered_out':
+----------------------------
+# *.$extension          = quality filtered sequences in FASTQ format.
+# seq_count_summary.txt = summary of sequence counts per sample.
 
-    ##############################################
-    ###Third-party applications for this process:
-    #vsearch (version $vsearch_version) for quality filtering
-        #citation: Rognes T, Flouri T, Nichols B, Quince C, Mahé F (2016) VSEARCH: a versatile open source tool for metagenomics PeerJ 4:e2584
-        #https://github.com/torognes/vsearch
-    #seqkit (version $seqkit_version) for synchronizing R1 and R2 after filtering
-        #citation: Shen W, Le S, Li Y, Hu F (2016) SeqKit: A Cross-Platform and Ultrafast Toolkit for FASTA/Q File Manipulation. PLOS ONE 11(10): e0163962. https://doi.org/10.1371/journal.pone.0163962
-        #https://bioinf.shenwei.me/seqkit/
-    ##############################################" > $output_dir/README.txt
+Core commands -> 
+quality filtering: vsearch --fastq_filter input_file $maxee $maxns $trunc_length $minlen $cores $qmax $qmin $max_length $maxee_rate $truncqual $truncee --fastqout output_file
+Synchronizing R1 and R2 reads (matching pair mates): seqkit pair -1 inputR1 -2 inputR2
+
+##############################################
+###Third-party applications for this process:
+#vsearch (version $vsearch_version) for quality filtering
+    #citation: Rognes T, Flouri T, Nichols B, Quince C, Mahé F (2016) VSEARCH: a versatile open source tool for metagenomics PeerJ 4:e2584
+    #https://github.com/torognes/vsearch
+#seqkit (version $seqkit_version) for synchronizing R1 and R2 after filtering
+    #citation: Shen W, Le S, Li Y, Hu F (2016) SeqKit: A Cross-Platform and Ultrafast Toolkit for FASTA/Q File Manipulation. PLOS ONE 11(10): e0163962. https://doi.org/10.1371/journal.pone.0163962
+    #https://bioinf.shenwei.me/seqkit/
+##############################################" > $output_dir/README.txt
 
     ### if working with multiRunDir then cd /input/multiRunDir
     if [[ $multiDir == "TRUE" ]]; then 
