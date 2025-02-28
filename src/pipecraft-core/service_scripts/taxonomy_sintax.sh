@@ -40,81 +40,6 @@ export fileFormat
 # Source for functions
 source /scripts/submodules/framework.functions.sh
 
-# Function to check if database is in SINTAX format
-check_sintax_format() {
-    local db_path="$1"
-    
-    # If it's already a UDB file, it's valid
-    if [[ "${db_path##*.}" == "udb" ]]; then
-        return 0
-    fi
-    
-    # Check if file exists
-    if [[ ! -f "$db_path" ]]; then
-        printf "Error: Database file '%s' does not exist.\n" "$db_path"
-        return 1
-    fi
-    
-    # Check if file is FASTA format 
-    if [[ $(head -c 1 "$db_path") != ">" ]]; then
-        printf "Error: Database does not appear to be in FASTA format (should start with '>').\n"
-        return 1
-    fi
-    
-    # Get only the first 10 headers
-    local first_ten_headers=$(head -n 1000 "$db_path" | grep "^>" | head -n 10)
-    
-    # Check file size to decide if we need to check last headers
-    local file_size=$(stat -c %s "$db_path")
-    
-    # Initialize counts
-    local valid_count=0
-    local invalid_count=0
-    local first_invalid=""
-    
-    # Process first 10 headers
-    while IFS= read -r header; do
-        if [[ "$header" == *";tax="* ]] && [[ "$header" =~ \;tax=.*[dpcosfg]: ]]; then
-            valid_count=$((valid_count + 1))
-        else
-            invalid_count=$((invalid_count + 1))
-            if [[ -z "$first_invalid" ]]; then
-                first_invalid="$header"
-            fi
-        fi
-    done <<< "$first_ten_headers"
-    
-    # If file is large enough, check last headers too (only if needed)
-    if [[ "$file_size" -gt 50000 && "$invalid_count" -eq 0 ]]; then
-        # Read last ~10 headers
-        local last_ten_headers=$(tail -n 2000 "$db_path" | grep "^>" | tail -n 10)
-        
-        # Check last headers only if all first headers were valid
-        while IFS= read -r header; do
-            if [[ "$header" == *";tax="* ]] && [[ "$header" =~ \;tax=.*[dpcosfg]: ]]; then
-                valid_count=$((valid_count + 1))
-            else
-                invalid_count=$((invalid_count + 1))
-                if [[ -z "$first_invalid" ]]; then
-                    first_invalid="$header"
-                fi
-            fi
-        done <<< "$last_ten_headers"
-    fi
-    
-    # Determine if database is valid
-    if [[ "$valid_count" -gt 0 && "$invalid_count" -eq 0 ]]; then
-        return 0
-    else
-        printf "Error: Database is not in SINTAX format.\n"
-        if [[ -n "$first_invalid" ]]; then
-            printf "Example of invalid header: %s\n" "$first_invalid"
-        fi
-        printf "Headers should contain ';tax=d:Domain,p:Phylum,...;'\n"
-        return 1
-    fi
-}
-
 # Output directory
 output_dir=$"/input/taxonomy_out.sintax"
 export output_dir
@@ -195,7 +120,7 @@ check_sintax_format() {
     fi
 }
 
-check_sintax_format
+check_sintax_format "$database"
 
 # Check and prepare SINTAX database
 if [[ -f "$database" ]]; then
