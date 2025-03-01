@@ -1,7 +1,12 @@
 #!/usr/bin/env Rscript
 
+# merge multiple OTU tables
+
+# usage: Rscript mergeOtuTables.R <comma_separated_input_tables> <output_dir> <output_filename>
+ # example: Rscript mergeOtuTables.R "table1.txt,table2.txt,table3.txt" "output_dir" "merged_table.txt"
+ # Sys.getenv variable may be spece separeted list of table paths
+
 ####################################################################
-# function to merge multiple OTU tables
 # input OTU table format:
 # OTU_ID    Sequence    Sample1    Sample2    Sample3
 # seq1      TGCGTACGTA    10         20         30
@@ -109,8 +114,15 @@ mergeOtuTables <- function(tables = NULL, merge_method = "error") {
 ####################################################################
 merge_method = "sum" # "error" or "sum". "error" will stop if duplicate sample names are found. "sum" will sum samples with same name.
 
-input_tables <- Sys.getenv("output_feature_table")
-output_dir <- Sys.getenv("output_dir")
+# Get command line arguments
+args <- commandArgs(trailingOnly = TRUE)
+if (length(args) < 3) {
+    stop("Usage: Rscript mergeOtuTables.R <comma_separated_input_tables> <output_dir> <output_filename>")
+}
+
+input_tables <- args[1]  # comma-separated list of input table paths
+output_dir <- args[2]    # output directory path
+output_filename <- args[3]  # output file name
 
 # get input tables (txt files)
 cat(";; output_feature_table: ", input_tables, "\n")
@@ -132,7 +144,7 @@ merged_result <- mergeOtuTables(tables = input_table_paths, merge_method = merge
 # Write output
 cat(";; Writing merged OTU table...\n")
 write.table(merged_result, 
-            file = file.path(output_dir, "OTU_table.txt"),
+            file = file.path(output_dir, output_filename),
             sep = "\t",
             quote = FALSE,
             row.names = FALSE)

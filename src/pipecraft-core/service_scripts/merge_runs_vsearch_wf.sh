@@ -3,7 +3,7 @@
 # Merge sequencing runs processed with vsearch OTUs workflow if working with multuple runs in multiRunDir. 
  # vsearch clustering for all fasta files in either chimeraFiltered_out or ITSx_out directories.
   # + apply 'curate otu table' when this is applied.
- # Samples with the same name across runs are not automatically merged together; each sample will be tagged with RunID__SampleID.
+ # Samples with the same name across runs are not automatically merged together.
 
  # 1. clustering all samples from all runs.
  # 2. Split tables per run
@@ -23,10 +23,6 @@ printf "# seqkit version: $seqkit_version\n"
 
 start_time=$(date)
 start=$(date +%s)
-
-# read parameters
-# prev_step=$(cat $workingDir/.prev_step.temp) # for checking previous step (output temp file from ITS_extractor.sh)
-# printf "# prev_step = $prev_step\n"
 
 # Source the clustering parameters from previous step
 if [[ -f "/input/multiRunDir/.clustering_params" ]]; then
@@ -320,7 +316,6 @@ for table_file in /input/multiRunDir/merged_runs/split_tables/OTU_table_*.txt; d
 
         printf "# Running tag-jumps filtering (UNCROSS2) for $table_file_basename\n "
         # Filter primary feature table
-        echo "Rscript /scripts/submodules/tag_jump_removal.R $table_file $f_value $p_value $output_dir/split_tables/OTUs_${run}.fasta $curated_dir" 
         Rlog=$(Rscript /scripts/submodules/tag_jump_removal.R $table_file $f_value $p_value $output_dir/split_tables/OTUs_${run}.fasta $curated_dir 2>&1)
         # Check if R script executed successfully
         if [ $? -ne 0 ]; then
@@ -536,7 +531,7 @@ export output_feature_table
 export output_fasta
 
 # Merge tables in R 
-Rlog=$(Rscript /scripts/submodules/mergeOtuTables.R 2>&1)
+Rlog=$(Rscript /scripts/submodules/mergeOtuTables.R $output_feature_table $output_dir OTU_table.txt 2>&1)
 # Check if R script executed successfully
 if [ $? -ne 0 ]; then
     log_error "mergeOtuTables R script failed with the following error:
@@ -593,7 +588,6 @@ Runtime: $runtime seconds
         strands = $strands
         remove_singletons = $remove_singletons
         similarity_type = $simtype
-        centroid_in = $centroid_in
         maxaccepts = $maxaccepts
         mask = $mask
  # 2. Split OTU tables per run\n" > $output_dir/README.txt

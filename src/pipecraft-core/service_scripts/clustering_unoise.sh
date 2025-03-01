@@ -26,7 +26,6 @@ printf "# clustering dirs = $workingDir\n"
 #load variables
 id=$"--id ${similarity_threshold}"              # positive float (0-1)  # OTU clustering if id < 1
 id_float=${similarity_threshold}
-zid=$"--id ${zOTUs_similarity_threshold}"       # positive float (0-1)  # for zOTU table
 strands=$"--strand ${strands}"                  # both/plus
 minsize=$"--minsize ${minsize}"                 # positive integer (default, 8)
 
@@ -50,8 +49,16 @@ if [[ -d "/input/multiRunDir" ]]; then
     echo "UNOISE pipeline with multiple sequencing runs in multiRunDir"
     echo "Process = unoise3"
     cd /input/multiRunDir
-    # read in directories (sequencing sets) to work with. Skip directories renamed as "skip_*"
-    # Choose directories based on service type
+
+    # rm old clustering params if they exist
+    if [[ -f "/input/multiRunDir/.clustering_params" ]]; then
+        rm /input/multiRunDir/.clustering_params
+    fi
+    if [[ -f "/input/multiRunDir/.derep_seqs_dirs" ]]; then
+        rm /input/multiRunDir/.derep_seqs_dirs
+    fi
+
+    # check if prev_step.temp exists
     if [[ -f "$workingDir/.prev_step.temp" ]]; then
         prev_step=$(cat $workingDir/.prev_step.temp) # for checking previous step (output temp file from ITS_extractor.sh)
         printf "# prev_step = $prev_step\n"
@@ -166,6 +173,11 @@ for seqrun in $DIRS; do
     fi
     mkdir -p tempdir
 
+    if [[ ! -d dereplicated_sequences ]]; then
+        rm -rf dereplicated_sequences
+    fi
+    mkdir -p dereplicated_sequences
+
     printf "Dereplication of individual samples ... \n"
     ## Dereplication of individual samples, add sample ID to the header
     derep_rename () {
@@ -176,14 +188,14 @@ for seqrun in $DIRS; do
         --output - \
         --fasta_width 0 \
         --sizein --sizeout \
-      | sed 's/>.*/&;sample='"$samp_name"'/' > tempdir/"$samp_name".fasta
+      | sed 's/>.*/&;sample='"$samp_name"'/' > dereplicated_sequences/"$samp_name".fasta
     }
     export -f derep_rename
     find . -maxdepth 1 -name "*.$extension" | parallel -j 1 "derep_rename {}"
 
     ### Global dereplication
     printf "Dereplicating globally ... \n"
-    find tempdir -maxdepth 1 -name "*.fasta" | parallel -j 1 "cat {}" \
+    find dereplicated_sequences -maxdepth 1 -name "*.fasta" | parallel -j 1 "cat {}" \
     | vsearch \
     --derep_fulllength - \
     --uc tempdir/Glob_derep.uc \
@@ -295,7 +307,7 @@ for seqrun in $DIRS; do
 
       ## Take dereplicated samples and apply denoising function
       printf "Denoizing sequences individually ... \n"
-      find tempdir -maxdepth 1 -name "*.fasta" | parallel -j 1 "denoise_and_chim {}"
+      find dereplicated_sequences -maxdepth 1 -name "*.fasta" | parallel -j 1 "denoise_and_chim {}"
 
       if [[ $chimerarm == "true" ]]; then
         printf "Removing chimeras ... \n"
@@ -329,7 +341,7 @@ for seqrun in $DIRS; do
 
     ### OTU tables
     ### Cat dereplicated individual samples for making an OTU table
-    cat tempdir/*.fasta > $output_dir/Dereplicated_samples.fasta
+    cat dereplicated_sequences/*.fasta > $output_dir/Dereplicated_samples.fasta
 
     ## Prepare table with sequence abundance per sample
     seqkit seq --name $output_dir/Dereplicated_samples.fasta \
@@ -520,6 +532,15 @@ done
 
 # Validate and combine output files
 if [[ $multiDir == "TRUE" ]]; then
+    # Create an array of dereplicated_sequences directories (for merge_runs_unoise_wf.sh)
+    derep_dirs=()
+    for dir in $DIRS; do
+        derep_dir="${dir}/dereplicated_sequences"
+        derep_dirs+=("$derep_dir")
+    done
+    printf "%s\n" "${derep_dirs[@]}" > /input/multiRunDir/.derep_seqs_dirs
+
+
     # Check each file in the arrays
     valid_feature_tables=()
     valid_fastas=()
@@ -588,6 +609,25 @@ else
             exit 1
         fi
     fi
+fi
+
+if [[ $multiDir == "TRUE" ]]; then
+# write clustering parameters into file for the merge_runs_vsearch_wf.sh
+    cat > /input/multiRunDir/.clustering_params << EOF
+id="${id}"
+id_float="${id_float}"
+strands="${strands}"
+chimerarm="${chimerarm}"
+denoise_level="${denoise_level}"
+unoise_alpha="${unoise_alpha}"
+minsize="${minsize}"
+cores="${cores}"
+abskew="${abskew}"
+simtype="${simtype}"
+maxaccepts="${maxaccepts}"
+maxrejects="${maxrejects}"
+mask="${mask}"
+EOF
 fi
 
 #Done

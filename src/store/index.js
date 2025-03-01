@@ -1340,14 +1340,6 @@ export default new Vuex.Store({
                 type: "select",
               },
               {
-                name: "remove_chimeras",
-                value: true,
-                disabled: "never",
-                tooltip:
-                  "perform chimera removal with UCHIME3 de novo algoritm",
-                type: "bool",
-              },
-              {
                 name: "abskew",
                 value: 16,
                 disabled: "never",
@@ -1402,24 +1394,13 @@ export default new Vuex.Store({
             ],
             Inputs: [
               {
-                name: "zOTUs_thresh",
-                value: 1,
-                disabled: "never",
-                tooltip:
-                  "sequence similarity threshold for zOTU table creation; 1 = 100% similarity threshold for zOTUs",
-                max: 1,
-                min: 0,
-                step: 0.01,
-                type: "slide",
-              },
-              {
                 name: "similarity_threshold",
                 value: 1,
                 disabled: "never",
                 tooltip:
-                  "cluster zOTUs to OTUs based on the sequence similarity threshold; if id = 1, no OTU clustering will be performed",
+                  "similarity threshold to further cluster zOTUs. If similarity_threshold = 1, no OTU clustering will be performed, and only zOTUs will be outputted",
                 max: 1,
-                min: 0,
+                min: 0.65,
                 step: 0.01,
                 type: "slide",
               },
@@ -1439,6 +1420,14 @@ export default new Vuex.Store({
                 tooltip: "minimum abundance of sequences for denoising",
                 type: "numeric",
                 rules: [(v) => v >= 1 || "ERROR: specify values >= 1"],
+              },
+              {
+                name: "remove_chimeras",
+                value: true,
+                disabled: "never",
+                tooltip:
+                  "perform chimera removal with UCHIME3 de novo algoritm",
+                type: "bool",
               },
             ],
           },
@@ -3112,8 +3101,7 @@ export default new Vuex.Store({
       },
       {
         tooltip: "Merge sequencing runs if working with multuple runs in the 'multiRunDir' directory. \
-        Performs vsearch clustering with filteres sequences from all sequencing runs. \
-        Samples with the same name across runs are not merged together (each sample will be tagged with RunID__SampleID)",
+        Samples with the same name across runs are not merged together.",
         scriptName: "merge_runs_vsearch_wf.sh",
         imageName: "pipecraft/vsearch_dada2:3", 
         serviceName: "Merge sequencing runs",
@@ -3597,13 +3585,6 @@ export default new Vuex.Store({
             type: "select",
           },
           {
-            name: "remove_chimeras",
-            value: true,
-            disabled: "never",
-            tooltip: "perform chimera removal with UCHIME3 de novo algoritm",
-            type: "bool",
-          },
-          {
             name: "abskew",
             value: 16,
             disabled: "never",
@@ -3658,24 +3639,13 @@ export default new Vuex.Store({
         ],
         Inputs: [
           {
-            name: "zOTUs_thresh",
-            value: 1,
-            disabled: "never",
-            tooltip:
-              "sequence similarity threshold for zOTU table creation; 1 = 100% similarity threshold for zOTUs",
-            max: 1,
-            min: 0,
-            step: 0.01,
-            type: "slide",
-          },
-          {
             name: "similarity_threshold",
             value: 1,
             disabled: "never",
             tooltip:
-              "cluster zOTUs to OTUs based on the sequence similarity threshold; if id = 1, no OTU clustering will be performed",
+              "similarity threshold to further cluster zOTUs. If similarity_threshold = 1, no OTU clustering will be performed, and only zOTUs will be outputted",
             max: 1,
-            min: 0,
+            min: 0.65,
             step: 0.01,
             type: "slide",
           },
@@ -3696,10 +3666,17 @@ export default new Vuex.Store({
             type: "numeric",
             rules: [(v) => v >= 1 || "ERROR: specify values >= 1"],
           },
+          {
+            name: "remove_chimeras",
+            value: true,
+            disabled: "never",
+            tooltip: "perform chimera removal with UCHIME3 de novo algoritm",
+            type: "bool",
+          },
         ],
       },
       {
-        tooltip: "Filter tag-jumps and/or filter OTUs by length",
+        tooltip: "Filter tag-jumps and/or filter zOTUs by length (if zOTUs are clustered to OTUs in the clustering step, then this step will be applied also to the OTUs)",
         scriptName: "curate_table_wf.sh",
         imageName: "pipecraft/vsearch_dada2:3",
         serviceName: "curate OTU table",
@@ -3783,6 +3760,37 @@ export default new Vuex.Store({
           },
         ],
       },
+      {
+        tooltip: "Merge sequencing runs if working with multuple runs in the 'multiRunDir' directory. \
+        Samples with the same name across runs are not merged together",
+        scriptName: "merge_runs_unoise_wf.sh",
+        imageName: "pipecraft/vsearch_dada2:3", 
+        serviceName: "Merge sequencing runs",
+        manualLink: "empty",
+        disabled: "never",
+        selected: false,
+        showExtra: false,
+        extraInputs: [],
+        Inputs: [
+          {
+            name: "merge_runs",
+            value: true,
+            disabled: "never",
+            tooltip: "Merge sequencing runs if working with multuple runs in the 'multiRunDir' directory",
+            type: "bool",
+            onChange: (state, value) => {
+              // When merge_runs is set to false, also set service selection to false
+              if (!value) {
+                state.selected = false;
+              }
+              else {
+                state.selected = true;
+              }
+            }
+          },
+        ],
+      },
+      
     ],
     // Metaworks_COI: [
     //   {

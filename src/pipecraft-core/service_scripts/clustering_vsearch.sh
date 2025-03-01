@@ -352,7 +352,7 @@ done
 
 # Validate and combine output files
 if [[ $multiDir == "TRUE" ]]; then
-    # Create an array of dereplicated_sequences directories
+    # Create an array of dereplicated_sequences directories (for merge_runs_vsearch_wf.sh)
     derep_dirs=()
     for dir in $DIRS; do
         derep_dir="${dir}/dereplicated_sequences"
