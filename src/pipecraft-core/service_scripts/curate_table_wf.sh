@@ -81,6 +81,12 @@ if [[ -d "/input/multiRunDir" ]]; then
     echo $DIRS
     multiDir="TRUE"
     export multiDir
+
+    # rm old params if they exist
+    if [[ -f /input/multiRunDir/.curate_table_params ]]; then
+        rm /input/multiRunDir/.curate_table_params
+    fi
+
 else
     cd /input
     echo "Working with individual sequencing run"
@@ -796,6 +802,21 @@ Input had $ASVs_count Features.
         cd /input
     fi
 done
+
+# write clustering parameters into file if multiDir=TRUE & merge_runs=true
+if [[ $multiDir == "TRUE" ]]; then
+    cat > /input/multiRunDir/.curate_table_params << EOF
+f_value="${f_value}"
+p_value="${p_value}"
+collapseNoMismatch="${collapseNoMismatch}"
+max_length="${max_length}"
+min_length="${min_length}"
+max_length_seqkit="${max_length_seqkit}"
+min_length_seqkit="${min_length_seqkit}"
+min_length_num="${min_length_num}"
+max_length_num="${max_length_num}"
+EOF
+fi
 
 # output_feature_tables to output_feature_table when multiDir is true
 if [[ $multiDir == "TRUE" ]]; then

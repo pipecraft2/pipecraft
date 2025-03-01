@@ -57,8 +57,16 @@ if [[ -d "/input/multiRunDir" ]]; then
     echo "vsearch OTUs with multiple sequencing runs in multiRunDir"
     echo "Process = vsearch clustering"
     cd /input/multiRunDir
-    # read in directories (sequencing sets) to work with. Skip directories renamed as "skip_*"
-    # Choose directories based on service type
+
+    # rm old clustering params if they exist
+    if [[ -f "/input/multiRunDir/.clustering_params" ]]; then
+        rm /input/multiRunDir/.clustering_params
+    fi
+    if [[ -f "/input/multiRunDir/.derep_seqs_dirs" ]]; then
+        rm /input/multiRunDir/.derep_seqs_dirs
+    fi
+
+    # check if prev_step.temp exists
     if [[ -f "$workingDir/.prev_step.temp" ]]; then
         prev_step=$(cat $workingDir/.prev_step.temp) # for checking previous step (output temp file from ITS_extractor.sh)
         printf "# prev_step = $prev_step\n"
@@ -228,13 +236,14 @@ for seqrun in $DIRS; do
     | sed 's/size=//; s/sample=//' \
     > tempdir/ASV_table_long.txt
 
-    ### OTU table creation
+    ### OTU table creation (--fasta is added to write OTU seqs to OTU_table.txt)
     printf "Making OTU table ... \n"
     Rlog=$(Rscript /scripts/submodules/ASV_OTU_merging_script.R \
     --derepuc      tempdir/Glob_derep.uc \
     --uc           "$output_dir"/OTUs.uc \
     --asv          tempdir/ASV_table_long.txt \
     --rmsingletons $remove_singletons \
+    --fasta        $output_dir/OTUs.temp.fasta \
     --output       "$output_dir"/OTU_table.txt 2>&1)
     echo $Rlog > tempdir/OTU_table_creation.log 
     wait
@@ -279,24 +288,20 @@ for seqrun in $DIRS; do
     fi
 
     #Delete tempdirs
-    if [[ $multiDir != "TRUE" ]]; then
-        if [[ $debugger != "true" ]]; then
-            if [[ -d tempdir ]]; then
-                rm -rf tempdir
-            fi
-            if [[ -d tempdir2 ]]; then
-                rm -rf tempdir2
-            fi
-            if [[ -f $output_dir/OTU_table_creation.log ]]; then
-                rm -f $output_dir/OTU_table_creation.log
-            fi
-            else 
-            compress files in /tempdir
-            if [[ -d tempdir ]]; then
-                pigz tempdir/*
-            fi
+    if [[ $debugger != "true" ]]; then
+        if [[ -d tempdir ]]; then
+            rm -rf tempdir
+        fi
+        if [[ -d tempdir2 ]]; then
+            rm -rf tempdir2
+        fi
+        else 
+        # compress files in /tempdir
+        if [[ -d tempdir ]]; then
+            pigz tempdir/*
         fi
     fi
+
 
     #Make README.txt file
     count_features "$output_dir/OTU_table.txt"
@@ -347,6 +352,14 @@ done
 
 # Validate and combine output files
 if [[ $multiDir == "TRUE" ]]; then
+    # Create an array of dereplicated_sequences directories
+    derep_dirs=()
+    for dir in $DIRS; do
+        derep_dir="${dir}/dereplicated_sequences"
+        derep_dirs+=("$derep_dir")
+    done
+    printf "%s\n" "${derep_dirs[@]}" > /input/multiRunDir/.derep_seqs_dirs
+
     # Check each file in the arrays
     valid_feature_tables=()
     valid_fastas=()
@@ -379,6 +392,22 @@ else
         printf "Error: FASTA file not found or empty: $output_fasta\n" >&2
         exit 1
     fi
+fi
+
+if [[ $multiDir == "TRUE" ]]; then
+# write clustering parameters into file for the merge_runs_vsearch_wf.sh
+    cat > /input/multiRunDir/.clustering_params << EOF
+id="${id}"
+otutype="${otutype}"
+strands="${strands}"
+remove_singletons="${remove_singletons}"
+seqsort="${seqsort}"
+simtype="${simtype}"
+centroid_in="${centroid_in}"
+maxaccepts="${maxaccepts}"
+mask="${mask}"
+cores="${cores}"
+EOF
 fi
 
 #Done

@@ -344,6 +344,7 @@ for seqrun in $DIRS; do
       --uc           "$output_dir"/zOTUs.uc \
       --asv          tempdir/ASV_table_long.txt \
       --rmsingletons FALSE \
+      --fasta        $output_dir/zOTUs.fasta \
       --output       "$output_dir"/zOTU_table.txt 2>&1)
     echo $Rlog > tempdir/zOTU_table_creation.log 
     wait
@@ -375,6 +376,7 @@ for seqrun in $DIRS; do
         --uc           "$output_dir"/OTUs.uc \
         --asv          tempdir/ASV_table_long.txt \
         --rmsingletons FALSE \
+        --fasta        $output_dir/OTUs.fasta \
         --output       "$output_dir"/OTU_table.txt 2>&1)
       echo $Rlog > tempdir/OTU_table_creation.log 
       wait

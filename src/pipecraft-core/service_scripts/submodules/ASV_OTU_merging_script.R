@@ -30,6 +30,7 @@ option_list <- list(
   make_option(c("-u", "--uc"),      action="store", default=NA, type='character', help="UC-file from the clustering step"),
   make_option(c("-a", "--asv"),     action="store", default=NA, type='character', help="ASV sequence counts per sample"),
   make_option(c("-s", "--rmsingletons"), action="store", default=TRUE, type='logical', help="Remove global singletons"),
+  make_option(c("-f", "--fasta"),   action="store", default=NA, type='character', help="FASTA file containing OTU sequences"),
   make_option(c("-o", "--output"),  action="store", default="OTU_table.txt", type='character', help="Output file")
 )
 opt <- parse_args(OptionParser(option_list=option_list))
@@ -37,9 +38,11 @@ opt <- parse_args(OptionParser(option_list=option_list))
 INP_DEREPUC <- opt$derepuc       # e.g., INP_DEREPUC <- "Glob_derep.uc"
 INP_UC      <- opt$uc            # e.g., INP_UC  <- "OTUs.uc"
 INP_ASV     <- opt$asv           # e.g., INP_ASV <- "ASV_table_long.txt"
+INP_FASTA   <- opt$fasta         # e.g., INP_FASTA <- "OTUs.fasta"
 RMSINGLETON <- opt$rmsingletons  # e.g., RMSINGLETON <- TRUE
 OUTPUT      <- opt$output        # e.g., OUTPUT <- "OTU_table.txt"
 
+cat(";; Making OTU table ...\n")
 ## Load input data - ASV table
 ASV <- fread(file = INP_ASV, header = FALSE, sep = "\t",
   col.names = c("SampleID", "SequenceID", "Abundance"))
@@ -65,7 +68,7 @@ ASV <- merge(x = ASV, y = DUC,
 
 ## Clean up, to save some RAM
 rm(DUC)
-gc()
+invisible(gc())
 
 ## Load clustering UC file
 UC <- fread(file = INP_UC, header = FALSE, sep = "\t")
@@ -121,5 +124,28 @@ RES <- dcast(data = ASV,
 TotAb <- rowSums(x = RES[, -1])
 RES <- RES[ order(TotAb, decreasing = T) , ]
 
-## Export
-fwrite(x = RES, file = OUTPUT, sep = "\t")
+invisible(gc())
+
+## Add sequences back to the table
+cat(";; Adding sequences back to the table\n")
+suppressMessages(library(Biostrings))
+suppressMessages(library(dplyr))
+# read the FASTA file
+cat(";; Loading input FASTA:", INP_FASTA, "\n")
+fasta_sequences = readDNAStringSet(INP_FASTA)
+sequences = as.character(fasta_sequences)
+# remove the ";sample=.*"  from the sequence names
+names(sequences) = sub(";sample=.*$", "", names(fasta_sequences))
+# add the sequences as 2nd column
+RES = RES %>%
+  mutate(Sequence = sequences[OTU]) %>%
+  select(OTU, Sequence, everything())
+
+## Export table
+cat(";; Exporting table (2nd col is sequence)\n")
+cat(OUTPUT, "\n")
+fwrite(x = RES,
+  file = OUTPUT,
+  sep = "\t", compress = "none")
+
+cat(";; Done\n")

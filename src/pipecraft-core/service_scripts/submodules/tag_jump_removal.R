@@ -1,19 +1,18 @@
 #!/usr/bin/env Rscript
 
 ## Script to perform tag-jump removal
-#   by Vladimir Mikryukov
+#   (core function by Vladimir Mikryukov)
 
 # Input is given as positional arguments:
 #   1. OTU table
-#   2. f-parameter of UNCROSS 
+#   2. f-parameter of UNCROSS
 #   3. p-parameter (e.g., 1.0)
+#   4. fasta file (optional); if provided, sequences will be added back to the output table
+#   5. output directory (optional); defaults to $output_dir environment variable
 
 # Outputs:
 #  - Tag-jumpfiltered OTU table (`*_TagJumpFilt.txt`)
 #  - Plot (`TagJump_plot.pdf`)
-
-# edit 29.01.2025:
-#  - add sequences back to the output table (Biostrings and dplyr); needed merge runs process. 
 
 args = commandArgs(trailingOnly = TRUE)
 
@@ -21,8 +20,20 @@ suppressMessages(library(data.table))
 suppressMessages(library(ggplot2))
 theme_set(theme_classic(base_size = 14))
 
-# load env variables
-output_dir = Sys.getenv('output_dir')
+# Determine if fasta file is provided (4th arg ends with .fasta or .fa)
+has_fasta = FALSE
+if (length(args) >= 4) {
+    has_fasta = grepl("\\.fa$|\\.fasta$", args[4], ignore.case = TRUE)
+    cat(";; has_fasta: ", has_fasta, "\n")
+}
+# load output directory from args if provided, otherwise from env variable
+output_dir = if (length(args) >= (if (has_fasta) 5 else 4)) {
+    args[if (has_fasta) 5 else 4]
+} else {
+    Sys.getenv('output_dir')
+}
+cat(";; output_dir: ", output_dir, "\n")
+
 # Get input file name and create output name
 input_file = args[1]
 base_name = tools::file_path_sans_ext(basename(input_file))
@@ -132,24 +143,29 @@ otu_sums = rowSums(RES[, ..clz], na.rm = TRUE)
 RES = RES[ order(otu_sums, decreasing = TRUE) ]
 
 ## Add sequences back to the table
-cat(";; Adding sequences back to the table\n")
 suppressMessages(library(Biostrings))
 suppressMessages(library(dplyr))
-# read the FASTA file
-cat(";; Loading input FASTA:", args[4], "\n")
-fasta_sequences = readDNAStringSet(args[4])
-sequences = as.character(fasta_sequences)
-names(sequences) = names(fasta_sequences)
-# add the sequences as 2nd column
-RES = RES %>%
-  mutate(Sequence = sequences[OTU]) %>%
-  select(OTU, Sequence, everything())
+
+## Add sequences back to the table (if FASTA file provided)
+if (has_fasta) {
+    cat(";; Adding sequences back to the table\n")
+    suppressMessages(library(Biostrings))
+    suppressMessages(library(dplyr))
+    # read the FASTA file
+    cat(";; Loading input FASTA:", args[4], "\n")
+    fasta_sequences = readDNAStringSet(args[4])
+    sequences = as.character(fasta_sequences)
+    names(sequences) = names(fasta_sequences)
+    # add the sequences as 2nd column
+    RES = RES %>%
+    mutate(Sequence = sequences[OTU]) %>%
+    select(OTU, Sequence, everything())
+}
 
 ## Export table
-cat(";; Exporting tag-jump filtered table (2nd col is sequence)\n")
+cat(";; Exporting tag-jump filtered table", 
+    if(length(args) >= 4) "(2nd col is sequence)" else "", "\n")
 cat(paste0(output_dir, "/", output_name))
-fwrite(x = RES,
-  file = paste0(output_dir, "/", output_name),
-  sep = "\t", compress = "none")
+fwrite(x = RES, file = paste0(output_dir, "/", output_name), sep = "\t", compress = "none")
 
 cat(";; Done\n")

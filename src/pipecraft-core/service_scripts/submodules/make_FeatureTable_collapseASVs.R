@@ -111,6 +111,8 @@ cat(";; Sorting by total OTU/ASV abundance.\n")
 TotAb <- rowSums(x = RES[, -1])
 RES <- RES[ order(TotAb, decreasing = T) , ]
 
+invisible(gc())
+
 ## Add sequences back to the table
 cat(";; Adding sequences back to the table\n")
 suppressMessages(library(Biostrings))
