@@ -4,6 +4,7 @@ desktop.ini
 /dist
 /testData
 /src/pipecraft-core/service_scripts/NextFlowConfig.json
+/image_development/*.zip
 
 
 # local env files
