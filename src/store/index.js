@@ -4029,6 +4029,34 @@ export default new Vuex.Store({
             tooltip: `fungi = target taxa are fungi; 
             metazoa = target taxa are metazoa`,
             type: "select",
+            linked_updates: [
+              {
+                serviceIndex: 7,
+                inputName: "model_align",
+                getValue: (value) => value === "metazoa" ? true : false
+              },
+              {
+                serviceIndex: 7,
+                inputName: "numt_filter",
+                getValue: (value) => value === "metazoa" ? true : false
+              },
+              {
+                serviceIndex: 7,
+                inputName: "model_type",
+                getValue: (value) => value === "fungi" ? "CM" : "HMM"
+              },
+              {
+                serviceIndex: 7,
+                inputName: "model_file",
+                getValue: (value) => value === "fungi" ? "ITS3_ITS4.cm" : "COI.hmm"
+              },
+              {
+                serviceIndex: 9,
+                inputName: "cluster_thresholds",
+                getValue: (value) => value === "fungi" ? "Fungi_GSSP" : 
+                value === "metazoa" ? "Metazoa_MBRAVE" : undefined
+              },
+            ]
           },
           {
             name: "seq_orientation",
@@ -4317,6 +4345,8 @@ export default new Vuex.Store({
             HMM = Hidden Markov Model for Metazoa; 
             none = skip this step`,
             type: "select",
+            depends_on:
+            'state.OptimOTU[0].Inputs[0].value == "fungi"',
           },
           {
             name: "model_file",
@@ -4328,6 +4358,30 @@ export default new Vuex.Store({
             COI.hmm = model for COI amplicons.
             custom = specify your own custom model file`,
             type: "select",
+            linked_updates: [
+              {
+                serviceIndex: 7,
+                listName: "extraInputs",
+                inputName: "max_model_start",
+                getValue: (value) => value === "ITS3_ITS4.cm" || value === "f/gITS7_ITS4.cm" ? 5 : 
+                                    value === "COI.hmm" ? 245 : undefined
+              },
+              {
+                serviceIndex: 7,
+                listName: "extraInputs",
+                inputName: "min_model_end",
+                getValue: (value) => value === "ITS3_ITS4.cm" ? 140 : 
+                                    value === "f/gITS7_ITS4.cm" ? 90 : 
+                                    value === "COI.hmm" ? 652 : undefined
+              },
+              {
+                serviceIndex: 7,
+                listName: "extraInputs",
+                inputName: "min_model_score",
+                getValue: (value) => value === "ITS3_ITS4.cm" || value === "f/gITS7_ITS4.cm" ? 50 :
+                                    value === "COI.hmm" ? 200 : undefined
+              }
+            ]
           },
           {
             name: "model_align",
@@ -5652,9 +5706,31 @@ SINGLE-END is for PacBio data, but can be also used for single-end read Illumina
       const input = state[payload.workflowName][payload.serviceIndex][payload.listName][payload.inputIndex];
       input.value = payload.value;
       
-      // Call onChange handler if it exists
+      // Call onChange handler if it exists (for same-service updates)
       if (input.onChange) {
         input.onChange(state[payload.workflowName][payload.serviceIndex], payload.value);
+      }
+
+      // Handle linked_updates if they exist (for cross-service updates)
+      if (input.linked_updates) {
+        const processUpdates = (updates, currentValue) => {
+          updates.forEach(update => {
+            const targetService = state[payload.workflowName][update.serviceIndex];
+            const targetList = update.listName || 'Inputs';
+            const targetInput = targetService[targetList].find(input => input.name === update.inputName);
+            if (targetInput) {
+              const newValue = update.getValue(currentValue);
+              targetInput.value = newValue;
+              
+              // If this input has its own linked_updates, process them too
+              if (targetInput.linked_updates) {
+                processUpdates(targetInput.linked_updates, newValue);
+              }
+            }
+          });
+        };
+    
+        processUpdates(input.linked_updates, payload.value);
       }
     },
     toggleActive(state, payload) {
