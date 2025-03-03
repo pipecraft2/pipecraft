@@ -1,9 +1,9 @@
 #!/bin/bash
 
-# Make pairwise comparison for sequences in a fasta file
+# Make self comparison for sequences in a fasta file
  # method = vsearch/blast
  # input = fasta file
- # output = pairwise comparison file
+ # output = file with self-fasta-comparisons
 
 ################################################
 ###Third-party applications:
@@ -50,14 +50,14 @@ fi
 
 
 
-### Pairwise comparison
-# Pairwise comparison with BLAST
+### Self-fasta comparison
+# Self-fasta comparison with BLAST
 if [[ $method == "BLAST" ]]; then
     printf "\n#Making blast database from the input fasta \n"
     checkerror=$(makeblastdb -in $input_fasta -parse_seqids -dbtype nucl 2>&1)
     check_app_error
 
-    printf "# Pairwise comparison with BLASTn \n"
+    printf "# Self-fasta comparison with BLASTn \n"
     checkerror=$(blastn -db $input_fasta \
             -outfmt '6 qseqid sseqid pident length mismatch gapopen qstart qend sstart send evalue bitscore qlen slen qcovs qcovhsp sstrand' \
             -out $output_dir/$fasta_basename.self_comp.blast.temp \
@@ -82,9 +82,9 @@ if [[ $method == "BLAST" ]]; then
 fi
 
 
-# Pairwise comparison with vsearch
+# Self-fasta comparison with vsearch
 if [[ $method == "vsearch" ]]; then
-    printf "# Pairwise comparison with vsearch --usearch_global \n"
+    printf "# Self-fasta comparison with vsearch --usearch_global \n"
     #convert perc_identity and coverage_perc for vsearch
     vsearch_perc_identity=$(awk "BEGIN {print $identity/100}")
     vsearch_coverage_perc=$(awk "BEGIN {print $coverage/100}")
@@ -120,7 +120,7 @@ runtime=$((end-start))
 
 ###Make README.txt file
 if [[ $method == "BLAST" ]]; then
-    pairwise_comarison=$"blastn -db $fasta_basename -outfmt 6 -out $fasta_basename.self_comp.blast.temp -qcov_hsp_perc $coverage -perc_identity $identity -query $input_fasta -num_threads $cores -strand $strand
+    self_comarison_log=$"blastn -db $fasta_basename -outfmt 6 -out $fasta_basename.self_comp.blast.temp -qcov_hsp_perc $coverage -perc_identity $identity -query $input_fasta -num_threads $cores -strand $strand
 
 qseqid   - Query sequence ID
 sseqid   - Subject sequence ID
@@ -142,7 +142,7 @@ sstrand  - Subject strand"
 fi
 
 if [[ $method == "vsearch" ]]; then
-    pairwise_comarison=$"vsearch --usearch_global $fasta_basename --db $fasta_basename --strand $strand --self --id $vsearch_perc_identity --iddef 2 --userout $fasta_basename.self_comp.vsearch.txt --userfields query+target+id+alnlen+qcov+tcov+ql+tl+ids+mism+gaps+qilo+qihi+qstrand+tstrand --maxaccepts 0 --maxrejects 0 --query_cov $vsearch_coverage_perc --threads $cores
+    self_comarison_log=$"vsearch --usearch_global $fasta_basename --db $fasta_basename --strand $strand --self --id $vsearch_perc_identity --iddef 2 --userout $fasta_basename.self_comp.vsearch.txt --userfields query+target+id+alnlen+qcov+tcov+ql+tl+ids+mism+gaps+qilo+qihi+qstrand+tstrand --maxaccepts 0 --maxrejects 0 --query_cov $vsearch_coverage_perc --threads $cores
 
 query   - Query sequence ID
 target  - Subject sequence ID
@@ -162,14 +162,14 @@ tstrand - Subject strand orientation
 "
 fi
 
-printf "# Performed pairwise comparison with $method (see 'Core commands' below for the used settings).
+printf "# Performed self-fasta comparison with $method (see 'Core commands' below for the used settings).
 
 Start time: $start_time
 End time: $(date)
 Runtime: $runtime seconds
 
 Core commands -> 
-pairwise comparison: $pairwise_comarison
+self-fasta comparison: $self_comarison_log
 
 ################################################
 ###Third-party applications:
