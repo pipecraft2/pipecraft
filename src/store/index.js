@@ -72,6 +72,17 @@ export default new Vuex.Store({
                   "do not allow insertions or deletions in the index sequence",
                 type: "bool",
               },
+              {
+                name: "min_length",
+                value: 30,
+                disabled: "never",
+                tooltip:
+                  "minimum length of the output sequence",
+                type: "slide",
+                min: 30,
+                max: 2000,
+                step: 10,
+              },
             ],
             Inputs: [
               {
