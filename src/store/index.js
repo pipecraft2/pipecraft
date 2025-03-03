@@ -2409,6 +2409,100 @@ export default new Vuex.Store({
           },
         ],
       },
+      {
+        stepName: "utilities",
+        disabled: "never",
+        services: [
+          {
+            tooltip:
+              "sequence file [fasta(.gz)/fastq(.gz)] statistics per file (number of seqs, min length, average length, max length)",
+            scriptName: "seqkit_stats.sh",
+            imageName: "pipecraft/vsearch_dada2:3",
+            serviceName: "seqkit stats",
+            selected: false,
+            showExtra: false,
+            extraInputs: [],
+            Inputs: [
+              {
+                name: "seqkit_stats",
+                value:
+                  "seqkit stats",
+                disabled: "never",
+                type: "link",
+                tooltip: "check the box above to run seqkit stats for a files in the folder [SELECT WORKDIR] with specified file extension",
+              },
+            ],
+          },
+          {
+            tooltip:
+              "compare sequences in a fasta file with themselves using vsearch (global alignment) or BLAST (local alignment)",
+            scriptName: "self_comparison.sh",
+            imageName: "pipecraft/vsearch_dada2:3",
+            serviceName: "self-comparison",
+            selected: false,
+            showExtra: false,
+            extraInputs: [
+              {
+                name: "cores",
+                value: 4,
+                disabled: "never",
+                tooltip: "number of cores to use",
+                type: "numeric",
+                rules: [(v) => v >= 1 || "ERROR: specify values >= 1"],
+              },
+              {
+              name: "strand",
+              items: ["both", "plus"],
+              disabled: "never",
+              tooltip:
+                "when comparing sequences check both strands (forward and reverse complementary) or the plus (fwd) strand only",
+              value: "both",
+              type: "select",
+            },
+            ],
+            Inputs: [
+              {
+                name: "fasta_file",
+                value: "undefined",
+                btnName: "select fasta",
+                disabled: "never",
+                tooltip: `select a fasta file containing sequences that are subjected to comparison [fasta file must be in the SELECT WORKDIR directory]`,
+                type: "file",
+              },
+              {
+                name: "method",
+                items: ["vsearch", "BLAST"],
+                value: "vsearch",
+                disabled: "never",
+                tooltip:
+                  "use either 'vsearch' (global alignment) or 'BLAST' (local alignment) to make pairwise comparison. Default is 'vsearch' (--usearch_global)",
+                type: "select",
+              },
+              {
+                name: "identity",
+                value: 60,
+                disabled: "never",
+                tooltip: `percent identity per hit. Excluding pairwise comparisons with lower sequence identity than specified threshold. If value = 0, then all sequence comparisons are attempted (note that BLAST not output pairwise comparisons with identity < 60%)`,
+                type: "slide",
+                min: 0,
+                max: 100,
+                step: 1,
+              },
+              {
+                name: "coverage",
+                value: 60,
+                disabled: "never",
+                tooltip: `percent query coverage per hit. Excluding pairwise comparisons with lower sequence coverage than specified threshold. If value = 0, then all sequence comparisons are attempted`,
+                type: "slide",
+                min: 0,
+                max: 100,
+                step: 1,
+              },
+
+            ],
+          },
+        ],
+      },
     ],
     // ############################# 
     // ### pre-compile pipelines ###

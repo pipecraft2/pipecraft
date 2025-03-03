@@ -120,7 +120,7 @@ if (pool != ""){
           mergers[[sample]] = merger
         }
         rm(derepF); rm(derepR)
-        gc()
+        invisible(gc())
         saveRDS(mergers, (file.path(path_results, "mergers.rds")))
     }
 }

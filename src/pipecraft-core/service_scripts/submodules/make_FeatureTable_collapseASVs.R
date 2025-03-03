@@ -62,7 +62,7 @@ ASV <- merge(x = ASV, y = DUC,
 
 ## Clean up, to save some RAM
 rm(DUC)
-gc()
+invisible(gc())
 
 ## Load clustering UC file
 cat(";; Loading clustering UC file. File = ", INP_UC, "\n")
@@ -81,7 +81,7 @@ ASV <- merge(x = ASV, y = UC,
 
 ## Clean up, to save some RAM
 rm(UC)
-gc()
+invisible(gc())
 ASV[, ASVuniq := NULL ]
 
 ## Check if there are some missing data
