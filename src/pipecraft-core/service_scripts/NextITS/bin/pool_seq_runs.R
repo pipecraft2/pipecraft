@@ -400,7 +400,8 @@ if(n_cll < 50000000){
 
   ## Clean up
   cat("...Cleaning up\n")
-  rm(REWL); gc()
+  rm(REWL)
+  invisible(gc())
 
   ## Replace NAs with zeros
   cat("...Filling missing values with zeros\n")

@@ -4071,8 +4071,8 @@ export default new Vuex.Store({
         ],
       },
       {
-        tooltip: `spike-in sequences: sequences that are added to the samples before PCR, these sequences are expected to be present in every sample.
-                    positive control sequences: sequences that are added to only a few specific positive control samples.  These sequences are expected to be present only
+        tooltip: `(optional)spike-in sequences: sequences that are added to the samples before PCR, these sequences are expected to be present in every sample.
+                    positive control sequences: sequences that are added to only a few specific positive control samples. These sequences are expected to be present only
                     in the positive control samples, and their presence in other samples is indicative of cross-contamination. 
                     In practice both types are treated the same by the pipeline, they are just reported separately.`,
         scriptName:"xxx.sh",
@@ -4090,7 +4090,7 @@ export default new Vuex.Store({
             value: "undefined",
             btnName: "select fasta",
             disabled: "never",
-            tooltip: `specify a file with spike-in sequences in fasta format`,
+            tooltip: `(optional) specify a file with spike-in sequences in fasta format. Leave it "undefined" if not provided.`,
             type: "file",
           },
           {
@@ -4098,7 +4098,7 @@ export default new Vuex.Store({
             value: "undefined",
             btnName: "select fasta",
             disabled: "never",
-            tooltip: `specify a file with positive control sequences in fasta format`,
+            tooltip: `(optional) specify a file with positive control sequences in fasta format. Leave it "undefined" if not provided.`,
             type: "file",
           },
         ],
