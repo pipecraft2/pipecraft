@@ -1,0 +1,59 @@
+project_name: OptimOTU_in_PipeCraft2
+file_extension: "fastq.gz"
+orient: mixed
+custom_sample_table: FALSE
+added_reference:
+  fasta:
+  table:
+max_batchsize: 10000
+workers_per_seqrun: 2
+max_jobs: 100
+min_jobs: 1
+forward_primer: "GCATCGATGAAGAACGCAGC"
+reverse_primer: "TCCTCCGCTTATTGATATGC"
+trimming:
+  max_err: 0.2
+  min_overlap: 10
+  truncQ_R1: [2, 2]
+  truncQ_R2: [2, 2]
+  max_n: 0
+  min_length: 100
+  cut_R1: 0
+  cut_R2: 0
+  action: "trim"
+filtering:
+  maxEE_R1: 1
+  maxEE_R2: 1
+tag_jump:
+  f: 0.05
+  p: 1
+amplicon_model:
+  model_type: CM
+  model_file: data/ITS3_ITS4.cm
+  model_filter:
+    max_model_start: 5
+    min_model_end: 140
+    min_model_score: 50
+  model_align: no
+  numt_filter: no
+repeats: "sum"
+dense_table: no
+control:
+  spike: protaxFungi/addedmodel/amptk_synmock.fasta
+  positive: no
+protax:
+  aligned: no
+  location: "protaxFungi"
+  ranks:
+    - kingdom: Fungi
+    - phylum
+    - class
+    - order
+    - family
+    - genus
+    - species
+outgroup_reference:
+  sequences: data/sh_matching_data/sanger_refs_sh.fasta
+  taxonomy: data/sh_matching_data/shs_out.txt
+cluster_thresholds: metadata/GSSP_thresholds.tsv
+guilds: no

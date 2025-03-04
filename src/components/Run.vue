@@ -94,7 +94,6 @@ import { mapState } from "vuex";
 import { stringify } from "envfile";
 import os from "os";
 const fs = require('fs');
-const yaml = require('js-yaml');
 var JSONfn = require("json-fn");
 var socketPath =
   os.platform() === "win32" ? "//./pipe/docker_engine" : "/var/run/docker.sock";
@@ -581,7 +580,77 @@ export default {
       });
       return Binds;
     },
-    findAndRemoveContainer() {},
+    getOptimOTUBinds() {
+      const scriptsPath = isDevelopment 
+        ? `${slash(process.cwd())}/src/pipecraft-core/service_scripts`
+        : `${process.resourcesPath}/src/pipecraft-core/service_scripts`;
+      const DataDir = this.$store.state.inputDir;
+      let binds = [
+        `${scriptsPath}:/scripts`,
+        `${DataDir}:/input`,
+      ];
+
+      // Process all inputs from OptimOTU workflow
+      this.$store.state.OptimOTU.forEach((service) => {
+        // Combine regular and extra inputs
+        const allInputs = [...(service.Inputs || []), ...(service.extraInputs || [])];
+        allInputs.forEach((input) => {
+          // Handle specific boolfile inputs
+          if (input.type === "boolfile" && input.active === true && input.value) {
+            const correctedPath = path.dirname(slash(input.value));
+
+            // Handle each boolfile input specifically
+            if (input.name === "custom_sample_table") {
+              binds.push(`${correctedPath}:/optimotu_targets/custom_sample_tables`);
+              // Note: In your YAML, you'd reference this as /optimotu_targets/data/sample_tables/${fileName}
+            } 
+            else if (input.name === "positive_control") {
+              binds.push(`${correctedPath}:/optimotu_targets/positive_control`);
+              // Note: In your YAML, you'd reference this as /optimotu_targets/data/controls/positive/${fileName}
+            }
+            else if (input.name === "spike_in") {
+              binds.push(`${correctedPath}:/optimotu_targets/spike_in`);
+              // Note: In your YAML, you'd reference this as /optimotu_targets/data/controls/spike_in/${fileName}
+            }
+          }
+          // Special handling for specific inputs
+          if (input.name === "cluster_thresholds" && 
+              input.value !== "Fungi_GSSP" && 
+              input.value !== "Metazoa_MBRAVE") {
+              
+            const correctedPath = path.dirname(slash(input.value));
+            binds.push(`${correctedPath}:/optimotu_targets/metadata/custom_thresholds`);
+          }
+
+          if (input.name === "model_file" && 
+              input.value !== "ITS3_ITS4.cm" && 
+              input.value !== "f/gITS7_ITS4.cm" && 
+              input.value !== "COI.hmm") {
+              
+            const correctedPath = path.dirname(slash(input.value));
+            binds.push(`${correctedPath}:/optimotu_targets/data/custom_models`);
+          }
+
+          if (input.name === "with_outgroup" && 
+              input.value !== "UNITE_SHs" && 
+              input.value !== "none") {
+              
+            const correctedPath = path.dirname(slash(input.value));
+            binds.push(`${correctedPath}:/optimotu_targets/data/sh_matching_data/custom_shs`);
+          }
+
+          if (input.name === "location" && 
+              input.value !== "protaxFungi" && 
+              input.value !== "protaxAnimal") {
+              
+            const correctedPath = path.dirname(slash(input.value));
+            binds.push(`${correctedPath}:/optimotu_targets/protaxCustom`);
+          }
+        });
+      });
+      console.log("OptimOTU container binds:", binds);
+      return binds;
+    },
     findSelectedService(i) {
       let result;
       this.selectedSteps[i].services.forEach((input) => {
@@ -640,7 +709,8 @@ export default {
       return dockerProps;
     },
   async runOptimOTU() {
-    this.getOptimOTUoptions(_.cloneDeep(this.$store.state.OptimOTU))
+    await this.$store.dispatch('generateOptimOTUYamlConfig');
+
       try {
         const container = await dockerode.createContainer({
           Image: 'pipecraft/optimotu:4',
@@ -669,38 +739,16 @@ export default {
         console.error('Error running container:', err);
       }          
     },
-    getOptimOTUoptions(options) {
-      const updates = {};
-      options.forEach(option => {
-        option.Inputs.forEach(input => {
-          updates[input.name] = input.value;
-        });
-      });
-      console.log(updates);
-      const filePath = 'src/pipecraft-core/service_scripts/pipeline_options.yaml';
-      let fileContents = fs.readFileSync(filePath, 'utf8');
-      let data = yaml.load(fileContents);
-      console.log(data)
-      function updateNestedKey(obj, key, value) {
-        for (const k in obj) {
-          if (k === key) {
-            obj[k] = value;
-            return true;
-          }
-          if (typeof obj[k] === 'object' && !Array.isArray(obj[k])) {
-            if (updateNestedKey(obj[k], key, value)) {
-              return true;
-            }
-          }
-        }
-        return false;
+    generateAndSaveYaml() {
+      try {
+        const yamlString = this.$store.dispatch('generateOptimOTUYamlConfig');
+        console.log('Generated YAML:', yamlString);
+        console.log('YAML configuration generated successfully');
+        // Maybe show a success message to the user
+      } catch (error) {
+        console.error('Error generating YAML configuration:', error);
+        // Handle the error, maybe show an error message to the user
       }
-      for (const [key, value] of Object.entries(updates)) {
-        if (!updateNestedKey(data, key, value)) {
-          console.warn(`Key not found in YAML: ${key}`);
-        }
-      }
-      return updates;
     },
     async runNextITS() {
       this.autoSaveConfig();

@@ -2,6 +2,8 @@ import Vue from "vue";
 import Vuex from "vuex";
 import router from "../router/index.js";
 var _ = require("lodash");
+import yaml from 'js-yaml';
+import fs from 'fs';
 
 Vue.use(Vuex);
 
@@ -4136,6 +4138,16 @@ export default new Vuex.Store({
             type: "select",
             linked_updates: [
               {
+                serviceIndex: 8,
+                inputName: "with_outgroup",
+                getValue: (value) => value === "fungi" ? 'UNITE_SHs' : 'none'
+              }, 
+              {
+                serviceIndex: 8,
+                inputName: "location",
+                getValue: (value) => value === "fungi" ? 'protaxFungi' : 'protaxAnimal'
+              },              
+              {
                 serviceIndex: 7,
                 inputName: "model_align",
                 getValue: (value) => value === "metazoa" ? true : false
@@ -4196,7 +4208,7 @@ export default new Vuex.Store({
             btnName: "select fasta",
             disabled: "never",
             tooltip: `(optional) specify a file with spike-in sequences in fasta format. Leave it "undefined" if not provided.`,
-            type: "file",
+            type: "boolfile",
           },
           {
             name: "positive_control",
@@ -4204,7 +4216,7 @@ export default new Vuex.Store({
             btnName: "select fasta",
             disabled: "never",
             tooltip: `(optional) specify a file with positive control sequences in fasta format. Leave it "undefined" if not provided.`,
-            type: "file",
+            type: "boolfile",
           },
         ],
       },
@@ -4225,7 +4237,7 @@ export default new Vuex.Store({
             btnName: "select fasta",
             disabled: "never",
             tooltip: `custom primer trimming parameters per sample can be given as columns in the sample table. See example by clicking on the header. https://pipecraft2-manual.readthedocs.io/en/1.0.0/pre-defined_pipelines.html`,
-            type: "file",
+            type: "boolfile",
           },
         ],
         Inputs: [
@@ -4538,7 +4550,7 @@ export default new Vuex.Store({
           },
           {
             name: "with_outgroup",
-            items: ["UNITE_SHs", "custom"],
+            items: ["UNITE_SHs", "custom",],
             value: "UNITE_SHs",
             disabled: "never",
             tooltip:
@@ -5452,6 +5464,233 @@ SINGLE-END is for PacBio data, but can be also used for single-end read Illumina
         title: "OptimOTU",
       },
     },
+    optimotuToYamlMap:{
+      // Service 0: "target taxa and sequence orientation"
+      "seq_orientation": {
+        yamlKey: "orient",
+        transform: (value) => value
+      },
+      // Service 1: "control sequences"
+      "spike_in": {
+        yamlKey: "control.spike",
+        transform: (value) => {
+          if (value === "undefined") {
+            return undefined;
+          } else {
+            const filename = value.split(/[/\\]/).pop();
+            return `/optimotu_targets/spike_in/${filename}`;
+          }
+        }
+      },
+      "positive_control": {
+        yamlKey: "control.positive",
+        transform: (value) => {
+          if (value === "undefined") {
+            return undefined;
+          } else {
+            const filename = value.split(/[/\\]/).pop();
+            return `/optimotu_targets/positive_control/${filename}`;
+          }
+        }
+      },
+      
+      // Service 2: "cut primers and trim reads"
+      "custom_sample_table": {
+        yamlKey: "custom_sample_table",
+        transform: (value) => {
+          if (value === "undefined") {
+            return "FALSE";
+          } else {
+            const filename = value.split(/[/\\]/).pop();
+            return `/optimotu_targets/custom_sample_tables/${filename}`;
+          }
+        }
+      },
+      "forward_primer": {
+        yamlKey: "forward_primer",
+        transform: (value) => `"${value}"`
+      },
+      "reverse_primer": {
+        yamlKey: "reverse_primer",
+        transform: (value) => `"${value}"`
+      },
+      "max_err": {
+        yamlKey: "trimming.max_err",
+        transform: (value) => value
+      },
+      "truncQ_R1": {
+        yamlKey: "trimming.truncQ_R1",
+        transform: (value) => value
+      },
+      "truncQ_R2": {
+        yamlKey: "trimming.truncQ_R2",
+        transform: (value) => value
+      },
+      "min_length": {
+        yamlKey: "trimming.min_length",
+        transform: (value) => value
+      },
+      "cut_R1": {
+        yamlKey: "trimming.cut_R1",
+        transform: (value) => value
+      },
+      "cut_R2": {
+        yamlKey: "trimming.cut_R2",
+        transform: (value) => value
+      },
+      "action": {
+        yamlKey: "trimming.action",
+        transform: (value) => `"${value}"`
+      },
+      
+      // Service 3: "quality filtering"
+      "maxEE_R1": {
+        yamlKey: "filtering.maxEE_R1",
+        transform: (value) => value
+      },
+      "maxEE_R2": {
+        yamlKey: "filtering.maxEE_R2",
+        transform: (value) => value
+      },
+      
+      // Service 6: "filter tag-jumps"
+      "f_value": {
+        yamlKey: "tag_jump.f",
+        transform: (value) => value
+      },
+      "p_value": {
+        yamlKey: "tag_jump.p",
+        transform: (value) => value
+      },
+      
+      // Service 7: "Amplicon model setting"
+      "model_type": {
+        yamlKey: "amplicon_model.model_type",
+        transform: (value) => value
+      },
+      "model_file": {
+        yamlKey: "amplicon_model.model_file",
+        transform: (value) => {
+          // Handle the special case for f/gITS7_ITS4.cm
+          if (value === "f/gITS7_ITS4.cm") {
+            return `/optimotu_targets/data/fITS7_ITS4.cm`; // Remove the /g
+          }
+          // Handle other predefined model files
+          else if (value === "ITS3_ITS4.cm" || value === "COI.hmm") {
+            return `/optimotu_targets/data/${value}`;
+          }
+          // Handle custom file paths
+          else {
+            const filename = value.split(/[/\\]/).pop();
+            return `/optimotu_targets/data/custom_models/${filename}`;
+          }
+        }
+      },
+      "model_align": {
+        yamlKey: "amplicon_model.model_align",
+        transform: (value) => value === true ? "yes" : "no"
+      },
+      "numt_filter": {
+        yamlKey: "amplicon_model.numt_filter",
+        transform: (value) => value === true ? "yes" : "no"
+      },
+      "max_model_start": {
+        yamlKey: "amplicon_model.model_filter.max_model_start",
+        transform: (value) => value
+      },
+      "min_model_end": {
+        yamlKey: "amplicon_model.model_filter.min_model_end",
+        transform: (value) => value
+      },
+      "min_model_score": {
+        yamlKey: "amplicon_model.model_filter.min_model_score",
+        transform: (value) => value
+      },
+      
+      // Service 8: "Protax classification"
+      "location": {
+        yamlKey: "protax.location",
+        transform: (value) => {
+          // Add path prefix based on value
+          if (value === "protaxFungi") {
+            return "/optimotu_targets/protaxFungi";
+          } else if (value === "protaxAnimal") {
+            return "/optimotu_targets/protaxAnimal";
+          } else { 
+            return `/optimotu_targets/protaxCustom`;
+          }
+        }
+      },
+      "aligned": {
+        yamlKey: "protax.aligned",
+        transform: (value) => value === true ? "yes" : "no"
+      },
+      
+      // Service 9: "Clustering"
+      "cluster_thresholds": {
+        yamlKey: "cluster_thresholds",
+        transform: (value) => {
+          if (value === "Fungi_GSSP") {
+            return "/optimotu_targets/metadata/GSSP_thresholds.tsv";
+          } else if (value === "Metazoa_MBRAVE") {
+            return "/optimotu_targets/metadata/MBRAVE_thresholds.tsv";
+          } else { 
+            const filename = value.split(/[/\\]/).pop();
+            return `/optimotu_targets/metadata/custom_thresholds/${filename}`;
+          }
+        }
+      },
+      "target_taxa": {
+        yamlKey: "protax",
+        transform: (value) => {
+          if (value === "fungi") {
+            return {
+              aligned: "no",
+              location: '"/optimotu_targets/protaxFungi"',
+              ranks: [
+                { kingdom: "Fungi" },
+                "phylum",
+                "class",
+                "order",
+                "family",
+                "genus",
+                "species"
+              ]
+            };
+          } else if (value === "metazoa") {
+            return {
+              aligned: "no",
+              location: '"/optimotu_targets/protaxAnimal"',
+              ranks: [
+                { kingdom: "Animalia" },
+                { phylum: "Arthropoda" },
+                "class",
+                "order",
+                "family",
+                "genus",
+                "species"
+              ]
+            };
+          }
+        }
+      },
+      "with_outgroup": {
+        yamlKey: "outgroup_reference",
+        transform: (value) => {
+          if (value === "UNITE_SHs") {
+            return {
+                'sequences': "/optimotu_targets/data/sh_matching_data/sanger_refs_sh.fasta",
+                'taxonomy': "/optimotu_targets/data/sh_matching_data/shs_out.txt"
+            };
+          } else  {
+            const filename = value.split(/[/\\]/).pop();
+            return {
+                'sequences': `/optimotu_targets/data/sh_matching_data/custom_shs/${filename}`,
+            };
+          }
+        }
+      }
+    },
   },
   getters: {
     dada2modeIndex: (state) => {
@@ -5809,6 +6048,14 @@ SINGLE-END is for PacBio data, but can be also used for single-end read Illumina
     },
     premadeInputUpdate(state, payload) {
       const input = state[payload.workflowName][payload.serviceIndex][payload.listName][payload.inputIndex];
+      if (input.items && 
+          input.items.includes('custom') && 
+          payload.value !== 'custom' && 
+          !input.items.includes(payload.value)) {
+        input.items.push(payload.value);
+        console.log(`Updated items list for ${input.name}:`, input.items);
+      }
+
       input.value = payload.value;
       
       // Call onChange handler if it exists (for same-service updates)
@@ -5837,6 +6084,10 @@ SINGLE-END is for PacBio data, but can be also used for single-end read Illumina
     
         processUpdates(input.linked_updates, payload.value);
       }
+        // Log just the key information about the service
+      console.log(`Final value of ${input.name}:`, input.value);
+      console.log(`Service ${payload.serviceIndex} has been updated`);
+      console.log(state[payload.workflowName][payload.serviceIndex][payload.listName][payload.inputIndex].value)
     },
     toggleActive(state, payload) {
       state.selectedSteps[payload.stepIndex].services[payload.serviceIndex][
@@ -5881,6 +6132,78 @@ SINGLE-END is for PacBio data, but can be also used for single-end read Illumina
       state.data.debugger = !state.data.debugger;
     },
   },
-  actions: {},
+  actions: {
+    async generateOptimOTUYamlConfig({state}) {
+      try {// Set default values
+      const yamlConfig = {
+        project_name: "OptimOTU_in_PipeCraft2",
+        file_extension: `"${state.data.fileFormat}"`,
+        added_reference: {
+          fasta: '',
+          table: ''
+        },
+        max_batchsize: 10000,
+        workers_per_seqrun: 2,
+        max_jobs: 100,
+        min_jobs: 1,
+        repeats: '"sum"',
+        dense_table: "yes",
+        guilds: "no"
+      };
+      // Process each service in OptimOTU
+      state.OptimOTU.forEach(service => {
+        const allInputs = [
+          ...(service.Inputs || []),
+          ...(service.extraInputs || [])
+        ];
+        allInputs.forEach(input => {
+            const mapping = state.optimotuToYamlMap[input.name];
+            if (mapping) {
+              if (mapping.yamlKey) {
+                const keys = mapping.yamlKey.split('.');
+                
+                // Handle special cases that return complete objects
+                if (keys.length === 1 && typeof mapping.transform(input.value) === 'object') {
+                  // Direct assignment of complete object
+                  yamlConfig[keys[0]] = mapping.transform(input.value);
+                } else {
+                  // Handle nested properties
+                  let current = yamlConfig;
+                  
+                  // Create nested objects if needed
+                  for (let i = 0; i < keys.length - 1; i++) {
+                    if (!current[keys[i]]) {
+                      current[keys[i]] = {};
+                    }
+                    current = current[keys[i]];
+                  }
+                  
+                  // Set the value
+                  current[keys[keys.length - 1]] = mapping.transform(input.value);
+                }
+              }
+            }
+          });
+      });
+      // Convert to YAML string
+      let yamlString = yaml.dump(yamlConfig, {
+        lineWidth: -1,  // Don't wrap lines
+        noRefs: true,   // Don't output YAML references
+        noCompatMode: true // Use the newest YAML standard
+      });
+      
+      // Write to file
+      const filePath = 'src/pipecraft-core/service_scripts/pipeline_options.yaml';
+      yamlString = yamlString.replace(/: '"([^"]*)"'/g, ': "$1"');
+      yamlString = yamlString.replace(/: 'FALSE'/g, ': FALSE');
+      await fs.promises.writeFile(filePath, yamlString, 'utf8');
+      
+        return yamlString;
+      } catch (error) {
+        console.error('Error generating YAML configuration:', error);
+        throw error;
+      }
+    },
+  },
   modules: {},
 });

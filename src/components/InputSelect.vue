@@ -37,7 +37,21 @@
             @change="inputUpdate(input.value)"
             :items="input.items"
             outlined
-          ></v-select>
+          >
+          <template v-slot:selection="{ item }">
+            <div class="text-truncate" :title="item">
+              {{ getDisplayText(item) }}
+            </div>
+          </template>
+          <template v-slot:item="{ item }">
+            <div class="d-flex flex-column">
+              <div>{{ getDisplayText(item) }}</div>
+              <div class="caption text-truncate grey--text" v-if="isFilePath(item)">
+                {{ item }}
+              </div>
+            </div>
+          </template>
+        </v-select>
         </v-col>
       </v-row>
     </v-card-actions>
@@ -66,6 +80,18 @@ export default {
     },
   },
   methods: {
+    getDisplayText(item) {
+    // If item is a string and looks like a file path, extract the filename
+    if (this.isFilePath(item)) {
+      return item.split(/[/\\]/).pop();
+    }
+    // Otherwise return the item as is
+    return item;
+  },
+  
+  isFilePath(item) {
+    return typeof item === 'string' && (item.includes('/') || item.includes('\\'));
+  },
     inputUpdate(value) {
       if (this.$route.params.workflowName) {
         if (value =='custom') {
@@ -145,5 +171,11 @@ export default {
 }
 .v-text-field input {
   text-align: center;
+}
+.text-truncate {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 100%;
 }
 </style>
