@@ -1406,17 +1406,18 @@ export default new Vuex.Store({
               },
             ],
             Inputs: [
-              {
-                name: "similarity_threshold",
-                value: 1,
-                disabled: "never",
-                tooltip:
-                  "similarity threshold to further cluster zOTUs. If similarity_threshold = 1, no OTU clustering will be performed, and only zOTUs will be outputted",
-                max: 1,
-                min: 0.65,
-                step: 0.01,
-                type: "slide",
-              },
+              // disabling zOTUs clustering to OTUs for v1.1.0. Number of sequences in OTU table does not match with the seqs in zOTU table (but they should match)
+              // {
+              //   name: "similarity_threshold",
+              //   value: 1,
+              //   disabled: "never",
+              //   tooltip:
+              //     "similarity threshold to further cluster zOTUs. If similarity_threshold = 1, no OTU clustering will be performed, and only zOTUs will be outputted",
+              //   max: 1,
+              //   min: 0.65,
+              //   step: 0.01,
+              //   type: "slide",
+              // },
               {
                 name: "strands",
                 items: ["both", "plus"],
@@ -3212,7 +3213,7 @@ export default new Vuex.Store({
         scriptName: "merge_runs_vsearch_wf.sh",
         imageName: "pipecraft/vsearch_dada2:3", 
         serviceName: "Merge sequencing runs",
-        manualLink: "empty",
+        manualLink: "https://pipecraft2-manual.readthedocs.io/en/latest/pre-defined_pipelines.html#merge-sequencing-runs",
         disabled: "never",
         selected: false,
         showExtra: false,
@@ -3666,7 +3667,7 @@ export default new Vuex.Store({
       {
         scriptName: "clustering_unoise.sh",
         tooltip:
-          "tick the checkbox to cluster reads with vsearch --cluster_unoise (and optionally remove chimeras with --uchime3_denovo)",
+          "cluster reads with vsearch --cluster_unoise (and optionally remove chimeras with --uchime3_denovo)",
         imageName: "pipecraft/vsearch_dada2:3",
         serviceName: "unoise3",
         disabled: "never",
@@ -3745,17 +3746,18 @@ export default new Vuex.Store({
           },
         ],
         Inputs: [
-          {
-            name: "similarity_threshold",
-            value: 1,
-            disabled: "never",
-            tooltip:
-              "similarity threshold to further cluster zOTUs. If similarity_threshold = 1, no OTU clustering will be performed, and only zOTUs will be outputted",
-            max: 1,
-            min: 0.65,
-            step: 0.01,
-            type: "slide",
-          },
+          // disabling zOTUs clustering to OTUs for v1.1.0. Number of sequences in OTU table does not match with the seqs in zOTU table (but they should match)
+          // {
+          //   name: "similarity_threshold",
+          //   value: 1,
+          //   disabled: "never",
+          //   tooltip:
+          //     "similarity threshold to further cluster zOTUs. If similarity_threshold = 1, no OTU clustering will be performed, and only zOTUs will be outputted",
+          //   max: 1,
+          //   min: 0.65,
+          //   step: 0.01,
+          //   type: "slide",
+          // },
           {
             name: "strands",
             items: ["both", "plus"],
@@ -3873,7 +3875,7 @@ export default new Vuex.Store({
         scriptName: "merge_runs_unoise_wf.sh",
         imageName: "pipecraft/vsearch_dada2:3", 
         serviceName: "Merge sequencing runs",
-        manualLink: "empty",
+        manualLink: "https://pipecraft2-manual.readthedocs.io/en/latest/pre-defined_pipelines.html#merge-sequencing-runs",
         disabled: "never",
         selected: false,
         showExtra: false,
@@ -4121,8 +4123,7 @@ export default new Vuex.Store({
         scriptName:"xxx.sh",
         imageName: "pipecraft/optimotu:4",
         serviceName: "target taxa and sequence orientation",
-        manualLink:
-          "",
+        manualLink: "https://pipecraft2-manual.readthedocs.io/en/latest/pre-defined_pipelines.html#target-taxa-and-sequence-orientation",
         disabled: "never",
         selected: "always",
         showExtra: false,
@@ -4196,7 +4197,7 @@ export default new Vuex.Store({
         imageName: "pipecraft/optimotu:4",
         serviceName: "control sequences",
         manualLink:
-          "",
+          "https://pipecraft2-manual.readthedocs.io/en/latest/pre-defined_pipelines.html#control-sequences",
         disabled: "never",
         selected: "always",
         showExtra: false,
@@ -4226,7 +4227,7 @@ export default new Vuex.Store({
         imageName: "pipecraft/optimotu:4",
         serviceName: "cut primers and trim reads",
         manualLink:
-          "",
+          "https://pipecraft2-manual.readthedocs.io/en/latest/pre-defined_pipelines.html#cut-primers-and-trim-reads",
         disabled: "never",
         selected: "always",
         showExtra: false,
@@ -4236,8 +4237,8 @@ export default new Vuex.Store({
             value: "undefined",
             btnName: "select fasta",
             disabled: "never",
-            tooltip: `custom primer trimming parameters per sample can be given as columns in the sample table. See example by clicking on the header. https://pipecraft2-manual.readthedocs.io/en/1.0.0/pre-defined_pipelines.html`,
-            type: "boolfile",
+            tooltip: `custom primer trimming parameters per sample can be given as columns in the sample table. See example by clicking on the header https://pipecraft2-manual.readthedocs.io/en/latest/pre-defined_pipelines.html#custom-sample-table`,
+            type: "file",
           },
         ],
         Inputs: [
@@ -4324,7 +4325,7 @@ export default new Vuex.Store({
         imageName: "pipecraft/optimotu:4",
         serviceName: "quality filtering",
         manualLink:
-          "",
+          "https://pipecraft2-manual.readthedocs.io/en/latest/pre-defined_pipelines.html#id12",
         disabled: "never",
         selected: "always",
         showExtra: false,
@@ -4357,7 +4358,7 @@ export default new Vuex.Store({
         imageName: "pipecraft/optimotu:4",
         serviceName: "denoising and merging paired-end reads",
         manualLink:
-          "",
+          "https://pipecraft2-manual.readthedocs.io/en/latest/pre-defined_pipelines.html#denoising-and-merging-paired-end-reads",
         disabled: "never",
         selected: "always",
         showExtra: false,
@@ -4370,7 +4371,7 @@ export default new Vuex.Store({
         imageName: "pipecraft/optimotu:4",
         serviceName: "chimera filtering",
         manualLink:
-          "",
+          "https://pipecraft2-manual.readthedocs.io/en/latest/pre-defined_pipelines.html#id13",
         disabled: "never",
         selected: "always",
         showExtra: false,
@@ -4383,7 +4384,7 @@ export default new Vuex.Store({
         imageName: "pipecraft/optimotu:4",
         serviceName: "filter tag-jumps",
         manualLink:
-          "",
+          "https://pipecraft2-manual.readthedocs.io/en/latest/pre-defined_pipelines.html#filter-tag-jumps",
         disabled: "never",
         selected: "always",
         showExtra: false,
@@ -4419,7 +4420,7 @@ export default new Vuex.Store({
         imageName: "pipecraft/optimotu:4",
         serviceName: "Amplicon model setting",
         manualLink:
-          "",
+          "https://pipecraft2-manual.readthedocs.io/en/latest/pre-defined_pipelines.html#amplicon-model-setting",
         disabled: "never",
         selected: "always",
         showExtra: false,
@@ -4524,7 +4525,7 @@ export default new Vuex.Store({
         imageName: "pipecraft/optimotu:4",
         serviceName: "Protax classification",
         manualLink:
-          "",
+          "https://pipecraft2-manual.readthedocs.io/en/latest/pre-defined_pipelines.html#protax-classification",
         disabled: "never",
         selected: "always",
         showExtra: false,
@@ -4554,8 +4555,9 @@ export default new Vuex.Store({
             value: "UNITE_SHs",
             disabled: "never",
             tooltip:
-              `additional database with also outgroup sequences. For fungi, default is UNITE_SHs, which are sh_matching_data_0_5_v9 sequences (included in the PipeCraft2 container).
-              for other downloadable databases for e.g. metazoa, click on the outgroup header https://pipecraft2-manual.readthedocs.io/en/1.0.0/pre-defined_pipelines.html . 
+              `additional database which contains also outgroup (non-target) sequences from the same locus. 
+              For fungi, default is UNITE_SHs, which is sh_matching_data_0_5_v9 sequences (included in the PipeCraft2 container).
+              For other downloadable databases for e.g. metazoa, click on the outgroup header https://pipecraft2-manual.readthedocs.io/en/latest/pre-defined_pipelines.html#protax-classification . 
               custom -> to specify your own file in fasta format. The outgroup reference should be taxonomically annotated sequences which
               include not only the ingroup (i.e., those sequences which Protax can identify) but also (ideally) all other groups which could conceivably be encountered
               with the chosen marker.`,
@@ -4569,7 +4571,7 @@ export default new Vuex.Store({
         imageName: "pipecraft/optimotu:4",
         serviceName: "Clustering",
         manualLink:
-          "",
+          "https://pipecraft2-manual.readthedocs.io/en/latest/pre-defined_pipelines.html#id14",
         disabled: "never",
         selected: "always",
         showExtra: false,
@@ -5395,7 +5397,7 @@ export default new Vuex.Store({
         scriptName: "merge_runs_dada2_wf.sh",
         imageName: "pipecraft/vsearch_dada2:3", 
         serviceName: "Merge sequencing runs",
-        manualLink: "empty",
+        manualLink: "https://pipecraft2-manual.readthedocs.io/en/latest/pre-defined_pipelines.html#merge-sequencing-runs",
         disabled: "never",
         selected: false,
         showExtra: false,

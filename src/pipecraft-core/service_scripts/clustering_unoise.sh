@@ -5,9 +5,12 @@
 
 # Sequence denoising and clustering
 
+# disabling zOTUs clustering to OTUs for v1.1.0. Number of sequences in OTU table does not match with the seqs in zOTU table (but they should match)
+
+
 ################################################
 ###Third-party applications:
-#vsearch v2.23.0
+#vsearch v2.29.4
 #GNU Parallel 20210422
 #pigz
 ################################################
@@ -24,8 +27,8 @@ printf "# clustering dirs = $workingDir\n"
 ###############################
 ###############################
 #load variables
-id=$"--id ${similarity_threshold}"              # positive float (0-1)  # OTU clustering if id < 1
-id_float=${similarity_threshold}
+id=$"--id 1"                                    # positive float (0-1)  # OTU clustering if id < 1. fixed to 1 for v1.1.0 to disable OTU clustering
+id_float="1"                                    # fixed to 1 for v1.1.0 to disable OTU clustering
 strands=$"--strand ${strands}"                  # both/plus
 minsize=$"--minsize ${minsize}"                 # positive integer (default, 8)
 
@@ -357,9 +360,36 @@ for seqrun in $DIRS; do
       --asv          tempdir/ASV_table_long.txt \
       --rmsingletons FALSE \
       --fasta        $output_dir/zOTUs.fasta \
-      --output       "$output_dir"/zOTU_table.txt 2>&1)
+      --output       "$output_dir"/zOTU_table.temp 2>&1)
     echo $Rlog > tempdir/zOTU_table_creation.log 
     wait
+
+    #format R-log file
+    sed -i "s/;; /\n/g" $output_dir/zOTU_table_creation.log
+
+    ### remove ";sample=.*;" and ";size=" from zOTUs.fasta file.
+    if [[ -f $output_dir/zOTUs.fasta ]]; then
+      sed -i 's/;sample=.*//' $output_dir/zOTUs.fasta
+    fi
+
+    # match zOTUs in a zOTU table with the IDs in the zOTUs.fasta file (may be different because of chimera removal step)
+    checkerror=$(seqkit seq \
+                -n $output_dir/zOTUs.fasta \
+                > $output_dir/zOTUs_IDs.txt 2>&1)
+    check_app_error
+    checkerror=$(grep -f $output_dir/zOTUs_IDs.txt $output_dir/zOTU_table.temp \
+                        > $output_dir/zOTU_table.txt 2>&1)
+    check_app_error
+    # remove intermediate files
+    rm $output_dir/zOTUs_IDs.txt
+    # add 1st row of the $input_table to the $output_dir/${input_table_base_name%%.txt}_lenFilt.temp
+    header=$(head -n 1 $output_dir/zOTU_table.temp)
+    sed -i "1i\\$header" "$output_dir/zOTU_table.txt"
+
+    # remove intermediate files
+    if [[ -f $output_dir/zOTU_table.temp ]]; then
+        rm $output_dir/zOTU_table.temp
+    fi
 
     ## Perform OTU clustering (if required, id < 1)
     if [[ $id_float != 1 ]]; then
@@ -403,10 +433,6 @@ for seqrun in $DIRS; do
     if [[ -f $output_dir/OTUs.fasta ]]; then
       sed -i 's/;sample=.*;/;/' $output_dir/OTUs.fasta
       sed -i 's/;size=.*//' $output_dir/OTUs.fasta
-    fi
-    if [[ -f $output_dir/zOTUs.fasta ]]; then
-      sed -i 's/;sample=.*;/;/' $output_dir/zOTUs.fasta
-      sed -i 's/;size=.*//' $output_dir/zOTUs.fasta
     fi
 
     #################################################
