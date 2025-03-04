@@ -6,14 +6,14 @@
     # ASV table format = ASVs in rows, samples in columns; 2nd column must be SEQUENCE column (default PipeCraft2 ASVs workflow output)
 #Output = FASTA formated representative OTU sequences and OTU table
 
-################################################
+#############################
 ###Third-party applications:
-#vsearch v2.23.0
-    #citation: Rognes T, Flouri T, Nichols B, Quince C, Mahé F (2016) VSEARCH: a versatile open source tool for metagenomics PeerJ 4:e2584
-    #Copyright (C) 2014-2021, Torbjorn Rognes, Frederic Mahe and Tomas Flouri
-    #Distributed under the GNU General Public License version 3 by the Free Software Foundation
-    #https://github.com/torognes/vsearch
-################################################
+# vsearch
+#############################
+# checking tool versions
+vsearch_version=$(vsearch --version 2>&1 | head -n 1 | awk '{print $2}' | sed -e "s/,//g")
+printf "# vsearch (version $vsearch_version)\n"
+
 # Source for functions
 source /scripts/submodules/framework.functions.sh
 
@@ -177,8 +177,6 @@ else
     mv $output_dir/OTUs.temp.fasta tempdir/
 fi
 
-
-
 #################################################
 ### COMPILE FINAL STATISTICS AND README FILES ###
 #################################################
@@ -192,13 +190,17 @@ if [[ $debugger != "true" ]]; then
     if [[ -d tempdir2 ]]; then
         rm -rf tempdir2
     fi
+    if [[ -f $output_dir/ASVs2OTUs.log ]]; then
+        rm $output_dir/ASVs2OTUs.log 
+    fi
 fi
 
 # count features and sequences; outputs variables feature_count, nSeqs, nSample
 count_features "$output_dir/OTU_table.txt"
 input_ASV_count=$(grep -c "^>" $ASV_fasta_size)
+ASV_table_basename=$(basename $ASV_table)
 
-end=$(date +%s)
+end=$(date +%s) 
 runtime=$((end-start))
 
 #Make README.txt file
@@ -216,7 +218,7 @@ Files in 'ASVs2OTUs' directory:
 # OTUs.fasta            = FASTA formated representative OTU sequences. 
 # OTU_table.txt         = OTU distribution table per sample (tab delimited file).
 # OTUs.uc               = uclust-like formatted clustering results for OTUs.
-# $fastasize.size.fasta = size annotated input sequences [size annotation based on the input table $ASV_table] 
+# $fastasize.size.fasta = size annotated input sequences [size annotation based on the input table $ASV_table_basename] 
 
 Number of OTUs                       = $feature_count
 Number of sequences in the OTU table = $nSeqs
@@ -229,7 +231,7 @@ vsearch $seqsort input.fasta $id $simtype $strands $mask $centroid_in $maxaccept
 Total run time was $runtime sec.\n\n
 ##############################################
 ###Third-party applications for this process:
-#vsearch v2.23.0 for clustering
+#vsearch (version $vsearch_version)
     #citation: Rognes T, Flouri T, Nichols B, Quince C, Mahé F (2016) VSEARCH: a versatile open source tool for metagenomics PeerJ 4:e2584
     #https://github.com/torognes/vsearch
 ################################################" > $output_dir/README.txt

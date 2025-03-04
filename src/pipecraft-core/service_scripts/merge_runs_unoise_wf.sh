@@ -757,7 +757,7 @@ if [[ ${#output_zfeature_tables[@]} -gt 0 ]]; then
         >Quitting"
         end_process
     fi
-    echo "$Rlog" > "$output_dir/mergezOtuTables.log"
+    echo "$Rlog" > "$output_dir/mergedOtuTables.log"
 
     # Merge FASTA files
     printf "Merging zOTU FASTA files...\n"

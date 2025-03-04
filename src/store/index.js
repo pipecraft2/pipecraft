@@ -1404,17 +1404,18 @@ export default new Vuex.Store({
               },
             ],
             Inputs: [
-              {
-                name: "similarity_threshold",
-                value: 1,
-                disabled: "never",
-                tooltip:
-                  "similarity threshold to further cluster zOTUs. If similarity_threshold = 1, no OTU clustering will be performed, and only zOTUs will be outputted",
-                max: 1,
-                min: 0.65,
-                step: 0.01,
-                type: "slide",
-              },
+              // disabling zOTUs clustering to OTUs for v1.1.0. Number of sequences in OTU table does not match with the seqs in zOTU table (but they should match)
+              // {
+              //   name: "similarity_threshold",
+              //   value: 1,
+              //   disabled: "never",
+              //   tooltip:
+              //     "similarity threshold to further cluster zOTUs. If similarity_threshold = 1, no OTU clustering will be performed, and only zOTUs will be outputted",
+              //   max: 1,
+              //   min: 0.65,
+              //   step: 0.01,
+              //   type: "slide",
+              // },
               {
                 name: "strands",
                 items: ["both", "plus"],
@@ -3664,7 +3665,7 @@ export default new Vuex.Store({
       {
         scriptName: "clustering_unoise.sh",
         tooltip:
-          "tick the checkbox to cluster reads with vsearch --cluster_unoise (and optionally remove chimeras with --uchime3_denovo)",
+          "cluster reads with vsearch --cluster_unoise (and optionally remove chimeras with --uchime3_denovo)",
         imageName: "pipecraft/vsearch_dada2:3",
         serviceName: "unoise3",
         disabled: "never",
@@ -3743,17 +3744,18 @@ export default new Vuex.Store({
           },
         ],
         Inputs: [
-          {
-            name: "similarity_threshold",
-            value: 1,
-            disabled: "never",
-            tooltip:
-              "similarity threshold to further cluster zOTUs. If similarity_threshold = 1, no OTU clustering will be performed, and only zOTUs will be outputted",
-            max: 1,
-            min: 0.65,
-            step: 0.01,
-            type: "slide",
-          },
+          // disabling zOTUs clustering to OTUs for v1.1.0. Number of sequences in OTU table does not match with the seqs in zOTU table (but they should match)
+          // {
+          //   name: "similarity_threshold",
+          //   value: 1,
+          //   disabled: "never",
+          //   tooltip:
+          //     "similarity threshold to further cluster zOTUs. If similarity_threshold = 1, no OTU clustering will be performed, and only zOTUs will be outputted",
+          //   max: 1,
+          //   min: 0.65,
+          //   step: 0.01,
+          //   type: "slide",
+          // },
           {
             name: "strands",
             items: ["both", "plus"],
