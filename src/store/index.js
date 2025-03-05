@@ -4141,7 +4141,7 @@ export default new Vuex.Store({
               {
                 serviceIndex: 8,
                 inputName: "with_outgroup",
-                getValue: (value) => value === "fungi" ? 'UNITE_SHs' : 'none'
+                getValue: (value) => value === "fungi" ? 'UNITE_SHs' : 'undefined'
               }, 
               {
                 serviceIndex: 8,
@@ -4238,7 +4238,7 @@ export default new Vuex.Store({
             btnName: "select fasta",
             disabled: "never",
             tooltip: `custom primer trimming parameters per sample can be given as columns in the sample table. See example by clicking on the header https://pipecraft2-manual.readthedocs.io/en/latest/pre-defined_pipelines.html#custom-sample-table`,
-            type: "file",
+            type: "boolfile",
           },
         ],
         Inputs: [
@@ -5477,7 +5477,7 @@ SINGLE-END is for PacBio data, but can be also used for single-end read Illumina
         yamlKey: "control.spike",
         transform: (value) => {
           if (value === "undefined") {
-            return undefined;
+            return null
           } else {
             const filename = value.split(/[/\\]/).pop();
             return `/optimotu_targets/spike_in/${filename}`;
@@ -5488,7 +5488,7 @@ SINGLE-END is for PacBio data, but can be also used for single-end read Illumina
         yamlKey: "control.positive",
         transform: (value) => {
           if (value === "undefined") {
-            return undefined;
+            return null
           } else {
             const filename = value.split(/[/\\]/).pop();
             return `/optimotu_targets/positive_control/${filename}`;
@@ -5518,7 +5518,7 @@ SINGLE-END is for PacBio data, but can be also used for single-end read Illumina
       },
       "max_err": {
         yamlKey: "trimming.max_err",
-        transform: (value) => value
+        transform: (value) => parseFloat(value)
       },
       "truncQ_R1": {
         yamlKey: "trimming.truncQ_R1",
@@ -5615,11 +5615,11 @@ SINGLE-END is for PacBio data, but can be also used for single-end read Illumina
         transform: (value) => {
           // Add path prefix based on value
           if (value === "protaxFungi") {
-            return "/optimotu_targets/protaxFungi";
+            return '"/optimotu_targets/protaxFungi"';
           } else if (value === "protaxAnimal") {
-            return "/optimotu_targets/protaxAnimal";
+            return '"/optimotu_targets/protaxAnimal"';
           } else { 
-            return `/optimotu_targets/protaxCustom`;
+            return '"/optimotu_targets/protaxCustom"';
           }
         }
       },
@@ -6141,8 +6141,8 @@ SINGLE-END is for PacBio data, but can be also used for single-end read Illumina
         project_name: "OptimOTU_in_PipeCraft2",
         file_extension: `"${state.data.fileFormat}"`,
         added_reference: {
-          fasta: '',
-          table: ''
+          fasta: null,
+          table: null
         },
         max_batchsize: 10000,
         workers_per_seqrun: 2,
@@ -6150,7 +6150,11 @@ SINGLE-END is for PacBio data, but can be also used for single-end read Illumina
         min_jobs: 1,
         repeats: '"sum"',
         dense_table: "yes",
-        guilds: "no"
+        guilds: "no",
+        trimming: {
+          min_overlap: 10,  // Add missing parameter
+          max_n: 0,         // Add missing parameter
+        }
       };
       // Process each service in OptimOTU
       state.OptimOTU.forEach(service => {
@@ -6198,6 +6202,7 @@ SINGLE-END is for PacBio data, but can be also used for single-end read Illumina
       const filePath = 'src/pipecraft-core/service_scripts/pipeline_options.yaml';
       yamlString = yamlString.replace(/: '"([^"]*)"'/g, ': "$1"');
       yamlString = yamlString.replace(/: 'FALSE'/g, ': FALSE');
+      yamlString = yamlString.replace(/: null$/gm, ':');
       await fs.promises.writeFile(filePath, yamlString, 'utf8');
       
         return yamlString;

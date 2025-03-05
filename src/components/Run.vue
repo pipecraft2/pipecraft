@@ -107,10 +107,38 @@ export default {
   computed: mapState({
     selectedSteps: (state) => state.selectedSteps,
   }),
-  data: () => ({
-    items: [],
-  }),
+  data() {
+    return {
+      userId: null,
+      groupId: null
+    };
+  },
+  created() {
+    this.initUserAndGroupId();
+  },
   methods: {
+    initUserAndGroupId() {
+      try {
+        const { execSync } = require('child_process');
+        
+        try {
+          // For Linux/macOS
+          this.userId = parseInt(execSync('id -u').toString().trim());
+          this.groupId = parseInt(execSync('id -g').toString().trim());
+          console.log(`User ID: ${this.userId}, Group ID: ${this.groupId}`);
+        } catch (error) {
+          // Fallback for Windows or if command fails
+          console.log(error);
+          console.warn('Could not get user/group ID, using default');
+          this.userId = 1000; // Default user ID
+          this.groupId = 1000; // Default group ID
+        }
+      } catch (error) {
+        console.error('Error initializing user and group IDs:', error);
+        this.userId = 1000;
+        this.groupId = 1000;
+      }
+    },
     async confirmRun(name) {
       let result = await Swal.fire({
         title: `Run ${name.replace(/_/g, " ")}?`,
@@ -587,7 +615,7 @@ export default {
       const DataDir = this.$store.state.inputDir;
       let binds = [
         `${scriptsPath}:/scripts`,
-        `${DataDir}:/input`,
+        `${DataDir}:/optimotu_targets/sequences`,
       ];
 
       // Process all inputs from OptimOTU workflow
@@ -632,8 +660,7 @@ export default {
           }
 
           if (input.name === "with_outgroup" && 
-              input.value !== "UNITE_SHs" && 
-              input.value !== "none") {
+              input.value !== "UNITE_SHs") {
               
             const correctedPath = path.dirname(slash(input.value));
             binds.push(`${correctedPath}:/optimotu_targets/data/sh_matching_data/custom_shs`);
@@ -708,36 +735,81 @@ export default {
       };
       return dockerProps;
     },
-  async runOptimOTU() {
-    await this.$store.dispatch('generateOptimOTUYamlConfig');
-
-      try {
-        const container = await dockerode.createContainer({
-          Image: 'pipecraft/optimotu:4',
-          Cmd: ['bash', '-c', 'echo "Hello, World!"'],
-          Tty: false,
-          AttachStdout: true,
-          AttachStderr: true,
-        });
-  
-        const stream = await container.attach({
-          stream: true,
-          stdout: true,
-          stderr: true,
-        });
-  
-        stream.on('data', (data) => {
-          console.log(data.toString());
-        });
-        await container.start();
-  
-        const data = await container.wait();
-        console.log('Container exited with status code:', data.StatusCode);
-  
-        await container.remove();
-      } catch (err) {
-        console.error('Error running container:', err);
-      }          
+    async runOptimOTU() {
+      this.confirmRun('OptimOTU').then(async (result) => {
+        if (result.isConfirmed) {
+          this.autoSaveConfig();
+          await this.$store.dispatch('generateOptimOTUYamlConfig');
+          await this.imageCheck('pipecraft/optimotu:4');
+          await this.clearContainerConflicts('optimotu');
+          this.$store.state.runInfo.active = true;
+          let logStream;
+          try {            
+            const logDir = this.$store.state.inputDir;
+            const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
+            const logFile = path.join(logDir, `optimotu-${timestamp}.log`);
+            const logStream = fs.createWriteStream(logFile, { flags: 'a' });
+            const container = await dockerode.createContainer({
+              Image: 'pipecraft/optimotu:4',
+              Hostname: 'optimotu',
+              Cmd: ['/scripts/run_optimotu.sh'],
+              Tty: false,
+              AttachStdout: true,
+              AttachStderr: true,
+              Env: [
+                `HOST_UID=${this.userId}`,
+                `HOST_GID=${this.groupId}`
+              ],
+              HostConfig: {
+                Binds: this.getOptimOTUBinds()
+              }
+            });
+    
+            const stream = await container.attach({
+              stream: true,
+              stdout: true,
+              stderr: true,
+            });
+    
+            stream.on('data', (data) => {
+              const output = data.toString();
+              console.log(output);
+              logStream.write(output);
+            });
+            
+            await container.start();
+    
+            const data = await container.wait();
+            console.log('Container exited with status code:', data.StatusCode);
+            this.$store.commit("resetRunInfo");
+            // Close the log stream
+            logStream.end();
+            console.log(`Container log written to ${logFile}`);
+            if (data.StatusCode == 0) {
+              Swal.fire("Workflow finished");
+            } else {
+              Swal.fire({
+                title: "An error has occured while processing your data",
+                text: "Check the log file for more information",
+                confirmButtonText: "Quit",
+              });
+            }
+            await container.remove();
+          } catch (err) {
+            console.error('Error running container:', err);
+            if (logStream) {
+              logStream.write(`\nERROR: ${err.message}\n${err.stack}\n`);
+              logStream.end();
+            }
+            this.$store.commit("resetRunInfo");
+            Swal.fire({
+              title: "An error has occured while processing your data",
+              text: err.toString(),
+              confirmButtonText: "Quit",
+            });
+          } 
+        }
+      });
     },
     generateAndSaveYaml() {
       try {
