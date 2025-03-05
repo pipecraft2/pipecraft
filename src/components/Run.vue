@@ -743,12 +743,13 @@ export default {
           await this.imageCheck('pipecraft/optimotu:4');
           await this.clearContainerConflicts('optimotu');
           this.$store.state.runInfo.active = true;
+          this.$store.state.runInfo.containerID = 'optimotu';
           let logStream;
           try {            
             const logDir = this.$store.state.inputDir;
             const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
             const logFile = path.join(logDir, `optimotu-${timestamp}.log`);
-            const logStream = fs.createWriteStream(logFile, { flags: 'a' });
+            logStream = fs.createWriteStream(logFile, { flags: 'a' });
             const container = await dockerode.createContainer({
               Image: 'pipecraft/optimotu:4',
               Hostname: 'optimotu',
