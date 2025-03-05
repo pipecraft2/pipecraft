@@ -4,6 +4,7 @@ import router from "./router";
 import store from "./store";
 import vuetify from "./plugins/vuetify";
 import { sync } from "vuex-router-sync";
+import os from 'os'
 sync(store, router);
 Vue.config.productionTip = false;
 
@@ -13,6 +14,7 @@ new Vue({
   vuetify,
   render: (h) => h(App),
   created() {
+    this.$store.commit('setOsType', os.type());
     // Prevent blank screen in Electron builds
     if (this.$route.path != "/home") {
       this.$router.push("/home");

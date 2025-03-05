@@ -101,6 +101,16 @@ var dockerode = new Dockerode({ socketPath: socketPath });
 var stdout = new streams.WritableStream();
 var stderr = new streams.WritableStream();
 const isDevelopment = process.env.NODE_ENV !== "production";
+let userId, groupId;
+if (os.platform() === 'win32') {
+  // Windows-specific logic
+  userId = 'default';
+  groupId = 'default';
+} else {
+  // Unix-like system logic
+  userId = process.getuid();
+  groupId = process.getgid();
+}
 
 export default {
   name: "Run",
@@ -183,10 +193,13 @@ export default {
       let dockerProps = {
         Tty: false,
         WorkingDir: WorkingDir,
+        User: `${userId}:${groupId}`,
         name: Hostname,
         Volumes: {},
         HostConfig: {
           Binds: Binds,
+          Memory: this.$store.state.dockerInfo.MemTotal,
+          NanoCpus: this.$store.state.dockerInfo.NCPU * 1e9,
         },
         Env: envVariables,
       };
@@ -725,11 +738,14 @@ export default {
       let dockerProps = {
         Tty: false,
         WorkingDir: WorkingDir,
+        User: `${userId}:${groupId}`,
         name: Hostname,
         platform: "linux/amd64",
         Volumes: {},
         HostConfig: {
           Binds: Binds,
+          Memory: this.$store.state.dockerInfo.MemTotal,
+          NanoCpus: this.$store.state.dockerInfo.NCPU * 1e9,
         },
         Env: envVariables,
       };
@@ -749,7 +765,10 @@ export default {
             const logDir = this.$store.state.inputDir;
             const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
             const logFile = path.join(logDir, `optimotu-${timestamp}.log`);
-            logStream = fs.createWriteStream(logFile, { flags: 'a' });
+            logStream = fs.createWriteStream(logFile, { 
+              flags: 'a',
+              mode: 0o666  // Read/write permissions for all users
+            });
             const container = await dockerode.createContainer({
               Image: 'pipecraft/optimotu:4',
               Hostname: 'optimotu',

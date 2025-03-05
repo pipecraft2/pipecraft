@@ -3,13 +3,26 @@ import Vuex from "vuex";
 import router from "../router/index.js";
 var _ = require("lodash");
 import yaml from 'js-yaml';
-import fs from 'fs';
+import os from "os";
+import fs from "fs";
+const DockerDesktopLinux = !fs.existsSync("/var/run/docker.sock");
+var socketPath =
+  os.platform() === "win32"
+    ? "//./pipe/docker_engine"
+    : DockerDesktopLinux
+    ? `${os.homedir()}/.docker/desktop/docker.sock`
+    : "/var/run/docker.sock";
+
+var Docker = require("dockerode");
+var docker = new Docker({ socketPath: socketPath });
 
 Vue.use(Vuex);
 
 export default new Vuex.Store({
   state: {
+    dockerInfo: { NCPU: 1, MemTotal: 1073741824 },
     dockerStatus: "",
+    OStype: "",
     Qcheck: {
       fileExtension: "",
       folderPath: "",
@@ -5695,6 +5708,11 @@ SINGLE-END is for PacBio data, but can be also used for single-end read Illumina
     },
   },
   getters: {
+    /*     getDockerInfo: async (state) => {
+      docker.info().then((info) => {
+        state.dockerInfo = info;
+      });
+    }, */
     dada2modeIndex: (state) => {
       if (state.data.dada2mode == "FORWARD") {
         return 0;
@@ -5787,6 +5805,18 @@ SINGLE-END is for PacBio data, but can be also used for single-end read Illumina
     },
   },
   mutations: {
+    setOsType(state, osType) {
+      state.OStype = osType;
+    },
+    setNCPU(state, value) {
+      state.dockerInfo.NCPU = value;
+    },
+    setMemTotal(state, value) {
+      state.dockerInfo.MemTotal = value;
+    },
+    setDockerInfo(state, info) {
+      state.dockerInfo = info;
+    },
     activatePullLoader(state) {
       state.pullLoader.active = true;
     },
@@ -6209,6 +6239,19 @@ SINGLE-END is for PacBio data, but can be also used for single-end read Illumina
       } catch (error) {
         console.error('Error generating YAML configuration:', error);
         throw error;
+      }
+    },
+    async fetchDockerInfo({ commit, state }) {
+      if (state.OStype === 'Linux') {
+        state.dockerInfo.NCPU = os.cpus().length
+        state.dockerInfo.MemTotal = os.totalmem()
+      } else {
+        try {
+          const info = await docker.info();
+          commit("setDockerInfo", info);
+        } catch (error) {
+          console.error("Failed to fetch Docker info:", error);
+        }
       }
     },
   },

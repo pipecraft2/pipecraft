@@ -4,7 +4,7 @@ const isDevelopment = process.env.NODE_ENV !== "production";
 const log = require("electron-log");
 import { app, protocol, BrowserWindow, dialog, ipcMain } from "electron";
 import { createProtocol } from "vue-cli-plugin-electron-builder/lib";
-import installExtension, { VUEJS_DEVTOOLS } from "electron-devtools-installer";
+import installExtension from "electron-devtools-installer";
 import * as remoteMain from "@electron/remote/main";
 import { autoUpdater } from "electron-updater";
 remoteMain.initialize();
@@ -12,9 +12,8 @@ autoUpdater.logger = require("electron-log");
 autoUpdater.logger.transports.file.level = "info";
 autoUpdater.autoDownload = false;
 var win;
-const createDesktopShortcut = require('create-desktop-shortcuts');
+const createDesktopShortcut = require("create-desktop-shortcuts");
 const fs = require("fs");
-
 
 function update() {
   autoUpdater.checkForUpdates();
@@ -145,27 +144,29 @@ app.on("ready", async () => {
     }
   }
   createWindow();
-  if (isDevelopment != true) {
-    if (process.env.APPIMAGE.includes('AppImage')) {
-      fs.copyFile(`${process.resourcesPath}/src/pipecraft-core/icon32x32.png`, "/var/tmp/icon32x32.png", (err) => {
+  if (process.env.APPIMAGE && !process.env.WEBPACK_DEV_SERVER_URL) {
+    fs.copyFile(
+      `${process.resourcesPath}/src/pipecraft-core/icon32x32.png`,
+      "/var/tmp/icon32x32.png",
+      (err) => {
         if (err) {
           console.log("Error Found:", err);
         }
-      });
-      createDesktopShortcut({
-        onlyCurrentOS: true,
-        verbose: true,
-        linux: {
-          filePath: `${process.env.APPIMAGE}`,
-          name: 'Pipecraft',
-          description: 'My app description',
-          icon: `/var/tmp/icon32x32.png`,
-          type: 'Application',
-          terminal: false,
-          chmod: true,
-        },
-      })
-    }
+      }
+    );
+    createDesktopShortcut({
+      onlyCurrentOS: true,
+      verbose: true,
+      linux: {
+        filePath: `${process.env.APPIMAGE}`,
+        name: "Pipecraft",
+        description: "metabarcoding",
+        icon: `/var/tmp/icon32x32.png`,
+        type: "Application",
+        terminal: false,
+        chmod: true,
+      },
+    });
   }
 });
 
