@@ -37,7 +37,21 @@
             @change="inputUpdate(input.value)"
             :items="input.items"
             outlined
-          ></v-select>
+          >
+          <template v-slot:selection="{ item }">
+            <div class="text-truncate" :title="item">
+              {{ getDisplayText(item) }}
+            </div>
+          </template>
+          <template v-slot:item="{ item }">
+            <div class="d-flex flex-column">
+              <div>{{ getDisplayText(item) }}</div>
+              <div class="caption text-truncate grey--text" v-if="isFilePath(item)">
+                {{ item }}
+              </div>
+            </div>
+          </template>
+        </v-select>
         </v-col>
       </v-row>
     </v-card-actions>
@@ -45,6 +59,8 @@
 </template>
 
 <script>
+const slash = require("slash");
+const { dialog } = require("@electron/remote");
 export default {
   computed: {
     input() {
@@ -64,8 +80,23 @@ export default {
     },
   },
   methods: {
+    getDisplayText(item) {
+    // If item is a string and looks like a file path, extract the filename
+    if (this.isFilePath(item)) {
+      return item.split(/[/\\]/).pop();
+    }
+    // Otherwise return the item as is
+    return item;
+  },
+  
+  isFilePath(item) {
+    return typeof item === 'string' && (item.includes('/') || item.includes('\\'));
+  },
     inputUpdate(value) {
       if (this.$route.params.workflowName) {
+        if (value =='custom') {
+          this.fileSelect();
+        }
         this.blastSwitch(value);
         this.unoiseSwitch(this.$route.params.workflowName, value);
         this.$store.commit("premadeInputUpdate", {
@@ -76,6 +107,9 @@ export default {
           value: value,
         });
       } else {
+        if (value =='custom') {
+          this.fileSelect();
+        }
         this.blastSwitch2(
           value,
           this.$route.params.order,
@@ -108,6 +142,23 @@ export default {
         this.$store.state.NextITS[1].Inputs[4].value = false;
       }
     },
+    fileSelect() {
+      dialog
+        .showOpenDialog({
+          title: "Select input files",
+          properties: ["openFile", "multiSelections", "showHiddenFiles"],
+        })
+        .then((result) => {
+          console.log(result);
+          if (typeof result.filePaths[0] !== "undefined") {
+            let correctedPath = slash(result.filePaths[0]);
+            this.inputUpdate(correctedPath);
+          }
+        })
+        .catch((err) => {
+          console.log(err);
+        });
+    },
   },
 };
 </script>
@@ -120,5 +171,11 @@ export default {
 }
 .v-text-field input {
   text-align: center;
+}
+.text-truncate {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 100%;
 }
 </style>

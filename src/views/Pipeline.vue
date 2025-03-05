@@ -59,7 +59,7 @@
           <v-tab
             :disabled="$store.state.data.readType == 'paired_end'"
             @click="$store.commit('setDADAmode', 'SINGLE_END')"
-            >SINGLE-READ</v-tab
+            >SINGLE-END</v-tab
           >
         </v-tabs>
       </v-card-actions>

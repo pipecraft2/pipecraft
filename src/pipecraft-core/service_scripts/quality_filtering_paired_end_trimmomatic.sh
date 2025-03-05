@@ -4,7 +4,7 @@
 
 # Quality filter PAIRED-END sequencing data with trimmomatic
 
-##########################################################
+################################################
 ###Third-party applications:
 #trimmomatic v0.39
     #citation: Bolger, A. M., Lohse, M., & Usadel, B. (2014). Trimmomatic: A flexible trimmer for Illumina Sequence Data. Bioinformatics, btu1
@@ -16,7 +16,7 @@
     #Copyright © 2016-2019 Wei Shen, 2019 Oxford Nanopore Technologies.
     #https://bioinf.shenwei.me/seqkit/
 #pigz v2.4
-##########################################################
+################################################
 
 #load variables
 window_size=${window_size}
@@ -47,6 +47,7 @@ fi
 #############################
 ### Start of the workflow ###
 #############################
+start_time=$(date)
 start=$(date +%s)
 ### Check if files with specified extension exist in the dir
 first_file_check
@@ -106,30 +107,36 @@ If no files in this folder, then all sequences were passed to files in $output_d
 #Make README.txt file
 printf "# Quality filtering was performed using trimmomatic (see 'Core commands' below for the used settings).
 
+Start time: $start_time
+End time: $(date)
+Runtime: $runtime seconds
+
 Files in 'qualFiltered_out':
+----------------------------
 # *.$extension              = quality filtered sequences in FASTQ format.
 # seq_count_summary.txt     = summary of sequence counts per sample.
 
 Files in 'qualFiltered_out/FASTA':
+----------------------------------
 # *.fasta                   = quality filtered sequences in FASTA format.
+
 Files in 'qualFiltered_out/discarded':
+--------------------------------------
 # *.discarded.$extension = discarded sequences.
 
 Core commands -> 
 quality filtering: trimmomatic-0.39.jar PE inputR1 inputR2 outputR1 discarded/outputR1.discarded outputR2 discarded/outputR2.discarded $LEADING $TRAILING -phred$phred SLIDINGWINDOW:$window_size:$required_qual MINLEN:$min_length -threads $threads
 convert output fastq files to FASTA: seqkit fq2fa -t dna --line-width 0 input_file -o FASTA/output_file.fasta
 
-Total run time was $runtime sec.
-
-##################################################################
-###Third-party applications for this process [PLEASE CITE]:
+##############################################
+###Third-party applications for this process:
 #trimmomatic v0.39 for quality filtering
     #citation: Bolger, A. M., Lohse, M., & Usadel, B. (2014). Trimmomatic: A flexible trimmer for Illumina Sequence Data. Bioinformatics, btu1
     #https://github.com/usadellab/Trimmomatic
 #seqkit v2.3.0 for converting filtered fastq to fasta 
     #citation: Shen W, Le S, Li Y, Hu F (2016) SeqKit: A Cross-Platform and Ultrafast Toolkit for FASTA/Q File Manipulation. PLOS ONE 11(10): e0163962. https://doi.org/10.1371/journal.pone.0163962
     #https://bioinf.shenwei.me/seqkit/
-##########################################################" > $output_dir/README.txt
+################################################" > $output_dir/README.txt
 
 #Done
 printf "\nDONE "

@@ -46,6 +46,9 @@
             $route.params.workflowName &&
             $route.params.workflowName.includes('NextITS')
               ? runNextITS()
+              : $route.params.workflowName &&
+                $route.params.workflowName.includes('OptimOTU')
+              ? runOptimOTU()
               : $route.params.workflowName
               ? runCustomWorkFlow($route.params.workflowName)
               : runWorkFlow()
@@ -90,24 +93,52 @@ import { ipcRenderer } from "electron";
 import { mapState } from "vuex";
 import { stringify } from "envfile";
 import os from "os";
+const fs = require('fs');
+var JSONfn = require("json-fn");
 var socketPath =
   os.platform() === "win32" ? "//./pipe/docker_engine" : "/var/run/docker.sock";
 var dockerode = new Dockerode({ socketPath: socketPath });
 var stdout = new streams.WritableStream();
 var stderr = new streams.WritableStream();
 const isDevelopment = process.env.NODE_ENV !== "production";
-const fs = require("fs");
-var JSONfn = require("json-fn");
 
 export default {
   name: "Run",
   computed: mapState({
     selectedSteps: (state) => state.selectedSteps,
   }),
-  data: () => ({
-    items: [],
-  }),
+  data() {
+    return {
+      userId: null,
+      groupId: null
+    };
+  },
+  created() {
+    this.initUserAndGroupId();
+  },
   methods: {
+    initUserAndGroupId() {
+      try {
+        const { execSync } = require('child_process');
+        
+        try {
+          // For Linux/macOS
+          this.userId = parseInt(execSync('id -u').toString().trim());
+          this.groupId = parseInt(execSync('id -g').toString().trim());
+          console.log(`User ID: ${this.userId}, Group ID: ${this.groupId}`);
+        } catch (error) {
+          // Fallback for Windows or if command fails
+          console.log(error);
+          console.warn('Could not get user/group ID, using default');
+          this.userId = 1000; // Default user ID
+          this.groupId = 1000; // Default group ID
+        }
+      } catch (error) {
+        console.error('Error initializing user and group IDs:', error);
+        this.userId = 1000;
+        this.groupId = 1000;
+      }
+    },
     async confirmRun(name) {
       let result = await Swal.fire({
         title: `Run ${name.replace(/_/g, " ")}?`,
@@ -168,6 +199,7 @@ export default {
           let startTime = Date.now();
           let steps2Run = this.$store.getters.steps2Run(name);
           this.autoSaveConfig();
+          this.$store.state.data.pipeline = name.replace(/ /g, "_");
           let log;
           if (this.$store.state.data.debugger == true) {
             log = fs.createWriteStream(
@@ -178,6 +210,10 @@ export default {
           }
           for (let [i, step] of this.$store.state[name].entries()) {
             if (step.selected == true || step.selected == "always") {
+              this.$store.state.data.service = step.serviceName.replace(
+                / /g,
+                "_"
+              );
               let dockerProps = await this.getDockerProps(step);
               this.updateRunInfo(i, steps2Run, dockerProps.name, name);
               await this.imageCheck(step.imageName);
@@ -185,6 +221,7 @@ export default {
               console.log(dockerProps);
               let scriptName;
               if (typeof step.scriptName === "object") {
+                console.log(step.scriptName[this.$store.state.data.dada2mode]);
                 scriptName = step.scriptName[this.$store.state.data.dada2mode];
               } else {
                 scriptName = step.scriptName;
@@ -228,6 +265,14 @@ export default {
                     "fileFormat"
                   ),
                   readType: this.getVariableFromLog(result.stdout, "readType"),
+                  output_fasta: this.getVariableFromLog(
+                    result.stdout,
+                    "output_fasta"
+                  ),
+                  output_feature_table: this.getVariableFromLog(
+                    result.stdout,
+                    "output_feature_table"
+                  ),
                 };
                 this.$store.commit(
                   "toggle_PE_SE_scripts",
@@ -306,8 +351,15 @@ export default {
                 .slice(0, 10)}.txt`
             );
           }
+          this.$store.state.data.pipeline =
+            `quick_tools_${this.selectedSteps.stepName}`.replace(/ /g, "_");
           for (let [i, step] of this.selectedSteps.entries()) {
             let selectedStep = this.findSelectedService(i);
+
+            this.$store.state.data.service = selectedStep.serviceName.replace(
+              / /g,
+              "_"
+            );
             let dockerProps = await this.getDockerProps(selectedStep);
             console.log(dockerProps);
             this.updateRunInfo(i, steps2Run, dockerProps.name, "workflow");
@@ -401,9 +453,22 @@ export default {
       });
     },
     getVariableFromLog(log, varName) {
-      var re = new RegExp(`(${varName}=.*)`, "g");
-      let value = log.match(re)[0].replace('"', "").split("=")[1];
-      return value;
+      try {
+        var re = new RegExp(`(${varName}=.*)`, "g");
+        const matches = log.match(re);
+        
+        // Check if we found any matches
+        if (!matches || matches.length === 0) {
+          console.warn(`No match found for variable: ${varName}`);
+          return null;
+        }
+        
+        let value = matches[0].replace('"', "").split("=")[1];
+        return value || null;
+      } catch (error) {
+        console.error(`Error parsing ${varName} from log:`, error);
+        return null;
+      }
     },
     createVariableObj(stepIndex, serviceIndex) {
       let envVariables = [];
@@ -427,6 +492,8 @@ export default {
         readType: this.$store.state.data.readType,
         debugger: this.$store.sate.data.debugger,
         dada2mode: this.$store.state.data.dada2mode,
+        pipeline: this.$store.state.data.pipeline,
+        service: this.$store.state.data.service,
       };
       Object.entries(dataInfo).forEach(([key, value]) => {
         let varObj = {};
@@ -457,6 +524,10 @@ export default {
         readType: this.$store.state.data.readType,
         debugger: this.$store.state.data.debugger,
         dada2mode: this.$store.state.data.dada2mode,
+        pipeline: this.$store.state.data.pipeline,
+        service: this.$store.state.data.service,
+        output_fasta: this.$store.state.data.output_fasta,
+        output_feature_table: this.$store.state.data.output_feature_table,
       };
       Object.entries(dataInfo).forEach(([key, value]) => {
         let varObj = {};
@@ -489,15 +560,19 @@ export default {
       let serviceInputs = element.Inputs.concat(element.extraInputs);
       serviceInputs.forEach((input, index) => {
         if (
-          input.type == "file" ||
+          (input.type == "file" &&
+            (input.depends_on == undefined ||
+              !this.$store.getters.check_depends_on(input))) ||
           (input.type == "boolfile" && input.active == true)
         ) {
           let correctedPath = path.dirname(slash(input.value));
           if (index == 0) {
             let bind = `${correctedPath}:/extraFiles`;
+            console.log(bind);
             Binds.push(bind);
           } else {
             let bind = `${correctedPath}:/extraFiles${index + 1}`;
+            console.log(bind);
             Binds.push(bind);
           }
         }
@@ -533,7 +608,76 @@ export default {
       });
       return Binds;
     },
-    findAndRemoveContainer() {},
+    getOptimOTUBinds() {
+      const scriptsPath = isDevelopment 
+        ? `${slash(process.cwd())}/src/pipecraft-core/service_scripts`
+        : `${process.resourcesPath}/src/pipecraft-core/service_scripts`;
+      const DataDir = this.$store.state.inputDir;
+      let binds = [
+        `${scriptsPath}:/scripts`,
+        `${DataDir}:/optimotu_targets/sequences`,
+      ];
+
+      // Process all inputs from OptimOTU workflow
+      this.$store.state.OptimOTU.forEach((service) => {
+        // Combine regular and extra inputs
+        const allInputs = [...(service.Inputs || []), ...(service.extraInputs || [])];
+        allInputs.forEach((input) => {
+          // Handle specific boolfile inputs
+          if (input.type === "boolfile" && input.active === true && input.value) {
+            const correctedPath = path.dirname(slash(input.value));
+
+            // Handle each boolfile input specifically
+            if (input.name === "custom_sample_table") {
+              binds.push(`${correctedPath}:/optimotu_targets/custom_sample_tables`);
+              // Note: In your YAML, you'd reference this as /optimotu_targets/data/sample_tables/${fileName}
+            } 
+            else if (input.name === "positive_control") {
+              binds.push(`${correctedPath}:/optimotu_targets/positive_control`);
+              // Note: In your YAML, you'd reference this as /optimotu_targets/data/controls/positive/${fileName}
+            }
+            else if (input.name === "spike_in") {
+              binds.push(`${correctedPath}:/optimotu_targets/spike_in`);
+              // Note: In your YAML, you'd reference this as /optimotu_targets/data/controls/spike_in/${fileName}
+            }
+          }
+          // Special handling for specific inputs
+          if (input.name === "cluster_thresholds" && 
+              input.value !== "Fungi_GSSP" && 
+              input.value !== "Metazoa_MBRAVE") {
+              
+            const correctedPath = path.dirname(slash(input.value));
+            binds.push(`${correctedPath}:/optimotu_targets/metadata/custom_thresholds`);
+          }
+
+          if (input.name === "model_file" && 
+              input.value !== "ITS3_ITS4.cm" && 
+              input.value !== "f/gITS7_ITS4.cm" && 
+              input.value !== "COI.hmm") {
+              
+            const correctedPath = path.dirname(slash(input.value));
+            binds.push(`${correctedPath}:/optimotu_targets/data/custom_models`);
+          }
+
+          if (input.name === "with_outgroup" && 
+              input.value !== "UNITE_SHs") {
+              
+            const correctedPath = path.dirname(slash(input.value));
+            binds.push(`${correctedPath}:/optimotu_targets/data/sh_matching_data/custom_shs`);
+          }
+
+          if (input.name === "location" && 
+              input.value !== "protaxFungi" && 
+              input.value !== "protaxAnimal") {
+              
+            const correctedPath = path.dirname(slash(input.value));
+            binds.push(`${correctedPath}:/optimotu_targets/protaxCustom`);
+          }
+        });
+      });
+      console.log("OptimOTU container binds:", binds);
+      return binds;
+    },
     findSelectedService(i) {
       let result;
       this.selectedSteps[i].services.forEach((input) => {
@@ -590,6 +734,94 @@ export default {
         Env: envVariables,
       };
       return dockerProps;
+    },
+    async runOptimOTU() {
+      this.confirmRun('OptimOTU').then(async (result) => {
+        if (result.isConfirmed) {
+          this.autoSaveConfig();
+          await this.$store.dispatch('generateOptimOTUYamlConfig');
+          await this.imageCheck('pipecraft/optimotu:4');
+          await this.clearContainerConflicts('optimotu');
+          this.$store.state.runInfo.active = true;
+          this.$store.state.runInfo.containerID = 'optimotu';
+          let logStream;
+          try {            
+            const logDir = this.$store.state.inputDir;
+            const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
+            const logFile = path.join(logDir, `optimotu-${timestamp}.log`);
+            logStream = fs.createWriteStream(logFile, { flags: 'a' });
+            const container = await dockerode.createContainer({
+              Image: 'pipecraft/optimotu:4',
+              Hostname: 'optimotu',
+              Cmd: ['/scripts/run_optimotu.sh'],
+              Tty: false,
+              AttachStdout: true,
+              AttachStderr: true,
+              Env: [
+                `HOST_UID=${this.userId}`,
+                `HOST_GID=${this.groupId}`
+              ],
+              HostConfig: {
+                Binds: this.getOptimOTUBinds()
+              }
+            });
+    
+            const stream = await container.attach({
+              stream: true,
+              stdout: true,
+              stderr: true,
+            });
+    
+            stream.on('data', (data) => {
+              const output = data.toString();
+              console.log(output);
+              logStream.write(output);
+            });
+            
+            await container.start();
+    
+            const data = await container.wait();
+            console.log('Container exited with status code:', data.StatusCode);
+            this.$store.commit("resetRunInfo");
+            // Close the log stream
+            logStream.end();
+            console.log(`Container log written to ${logFile}`);
+            if (data.StatusCode == 0) {
+              Swal.fire("Workflow finished");
+            } else {
+              Swal.fire({
+                title: "An error has occured while processing your data",
+                text: "Check the log file for more information",
+                confirmButtonText: "Quit",
+              });
+            }
+            await container.remove();
+          } catch (err) {
+            console.error('Error running container:', err);
+            if (logStream) {
+              logStream.write(`\nERROR: ${err.message}\n${err.stack}\n`);
+              logStream.end();
+            }
+            this.$store.commit("resetRunInfo");
+            Swal.fire({
+              title: "An error has occured while processing your data",
+              text: err.toString(),
+              confirmButtonText: "Quit",
+            });
+          } 
+        }
+      });
+    },
+    generateAndSaveYaml() {
+      try {
+        const yamlString = this.$store.dispatch('generateOptimOTUYamlConfig');
+        console.log('Generated YAML:', yamlString);
+        console.log('YAML configuration generated successfully');
+        // Maybe show a success message to the user
+      } catch (error) {
+        console.error('Error generating YAML configuration:', error);
+        // Handle the error, maybe show an error message to the user
+      }
     },
     async runNextITS() {
       this.autoSaveConfig();

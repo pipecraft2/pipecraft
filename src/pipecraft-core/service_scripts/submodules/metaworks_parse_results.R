@@ -20,7 +20,7 @@ results_sub$ESVsize = as.integer(results_sub$ESVsize)
 #reshape fun table with taxonomy
 
     # !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! do the edit: if pseudogene = nom then ORFseq = EMPTY!! 
-    # "!"!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!"
+    # "!"!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!" ! 
 full_table = reshape2::dcast(results_sub, SampleName ~ GlobalESV + ORFseq +
                                 Root + rBP + SuperKingdom + skBP + Kingdom +
                                 kBP + Phylum + pBP + Class + cBP +

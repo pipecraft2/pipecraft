@@ -3,15 +3,15 @@
 # ASSEMBLE PAIRED-END data with dada2
 # Input = paired-end fastq files.
 
-##########################################################
+################################################
 ###Third-party applications:
 #dada2 v1.28
-    #citation: Callahan, B., McMurdie, P., Rosen, M. et al. (2016) DADA2: High-resolution sample inference from Illumina amplicon data. Nat Methods 13, 581-583. https://doi.org/10.1038/nmeth.3869
-    #Copyright (C) 2007 Free Software Foundation, Inc.
-    #Distributed under the GNU LESSER GENERAL PUBLIC LICENSE
-    #https://github.com/benjjneb/dada2
-##########################################################
-set -e 
+################################################
+# Checking tool versions
+printf "# Checking tool versions ...\n"
+dada2_version=$(Rscript -e "packageVersion('dada2')" 2>/dev/null | awk '{print $2}' | sed -e "s/‘//g" -e 's/’//g')
+printf "# DADA2 version: $dada2_version\n"
+
 #load env variables
 readType=${readType}
 extension=${fileFormat}
@@ -19,8 +19,6 @@ dataFormat=${dataFormat}
 workingDir=${workingDir}
 
 ### variables
-# read_R1         = identifyer string that is common for all R1 reads.
-# read_R2         = identifyer string that is common for all R2 reads.
 # minOverlap      = the minimum length of the overlap required for merging the forward and reverse reads
 # maxMismatch     = the maximum mismatches allowed in the overlap region
 # trimOverhang    = if TRUE, overhangs in the alignment between the forwards and reverse read are trimmed off
@@ -50,6 +48,7 @@ fi
 #############################
 ### Start of the workflow ###
 #############################
+start_time=$(date)
 start=$(date +%s)
 ### Check if files with specified extension exist in the dir
 first_file_check
@@ -67,20 +66,11 @@ Supported extensions: fastq, fq (and gz or zip compressed formats).
 fi
 
 #Check identifiers
-if [[ -z $read_R1 ]] || [[ -z $read_R2 ]]; then
-    printf '%s\n' "ERROR]: 'read R1/R2' are not specified.
+if [[ -z $read_R1 ]]; then
+    printf '%s\n' "ERROR]: 'read_R1' is not detected.
     >Quitting" >&2
     end_process
 fi
-while read file; do
-    if [[ $file == *"$read_R1"* ]]; then
-        :
-    else
-        printf '%s\n' "ERROR]: 'read R1/R2' identifiers are incorrectly specified.
-        >Quitting" >&2
-        end_process
-    fi
-done < tempdir2/paired_end_files.txt
 
 #Check Ns in the fastq files (not allowed for DADA2 denoising)
 while read file; do
@@ -118,7 +108,7 @@ if [[ $debugger != "true" ]]; then
     if [[ -d tempdir2 ]]; then
         rm -rf tempdir2
     fi
-    rm $output_dir/denoise_assemble.log
+   # rm $output_dir/denoise_assemble.log
 fi
 end=$(date +%s)
 runtime=$((end-start))
@@ -126,11 +116,16 @@ runtime=$((end-start))
 #Make README.txt file
 printf "# Denoising and assembling of paired-end sequencing data was performed with dada2 (see 'Core commands' below for the used settings).
 
+Start time: $start_time
+End time: $(date)
+Runtime: $runtime seconds
+
 ### NOTE: ### 
 Input sequences must be made up only of A/C/G/T for denoising (i.e maxN must = 0 in quality filtering step). Otherwise DADA2 fails, and no output is generated.
 #############
 
 Files in 'denoised_assembled.dada2':
+-----------------------------------
 # *ASVs.fasta   = denoised and assembled sequences per sample in FASTA format (no fastq output). 'Size' denotes the abundance of the ASV sequence.  
 # Error_rates_R1.pdf    = plots for estimated R1 error rates
 # Error_rates_R2.pdf    = plots for estimated R2 error rates
@@ -147,13 +142,12 @@ denoise:      dadaFs = dada(derepFs, err = errF, pool = $pool)
               dadaRs = dada(derepRs, err = errR, pool = $pool)
 assemble:     mergePairs(dadaFs, derepFs, dadaRs, derepRs, maxMismatch = $maxMismatch, minOverlap = $minOverlap, justConcatenate = $justConcatenate, trimOverhang = $trimOverhang)
 
-Total run time was $runtime sec.
-##################################################################
-###Third-party applications for this process [PLEASE CITE]:
-#dada2 v1.28
+##############################################
+###Third-party applications for this process:
+#dada2 (version $dada2_version)
     #citation: Callahan, B., McMurdie, P., Rosen, M. et al. (2016) DADA2: High-resolution sample inference from Illumina amplicon data. Nat Methods 13, 581-583. https://doi.org/10.1038/nmeth.3869
     #https://github.com/benjjneb/dada2
-########################################################" > $output_dir/README.txt
+##############################################" > $output_dir/README.txt
 
 #Done
 printf "\nDONE "

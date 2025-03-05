@@ -9,7 +9,7 @@
 
 ## See method description in Martino et al., 2019 (DOI 10.1128/mSystems.00016-19)
 
-##########################################################
+################################################
 ###Third-party applications:
 #DEICODE v0.2.4
     #citation: Martino C., Morton J.T., Marotz C.A., Thompson L.R., Tripathi A., Knight R., et al. (2019). A Novel Sparse Compositional Technique Reveals Microbial Perturbations. mSystems. doi: 10.1128/mSystems.00016-19. 
@@ -19,7 +19,7 @@
     #citation: McDonald D., Clemente J.C., Kuczynski J., Rideout J.R., Stombaugh J., Wendel D., et al. (2012). The Biological Observation Matrix (BIOM) format or: how I learned to stop worrying and love the ome-ome. GigaScience 1, 2047-217X-1–7. doi: 10.1186/2047-217X-1-7.
     #Distributed under the Modified BSD License
     #https://biom-format.org/
-##################################################################
+##############################################
 
 ## Input:
 # otu_table = tab-delimited OTU table (columns = samples, rows = OTUs)
@@ -44,24 +44,11 @@ source /scripts/submodules/framework.functions.sh
 #output dir
 output_dir=$"/input/DEICODE_out"
 
-#Automatic search for OTU_table.txt or ASVs_table.txt (standard PipeCraft2 output file names), otherwise use the file that was specified in the panel
-if [[ -e "$workingDir/OTU_table.txt" ]]; then
-    otu_table=$"$workingDir/OTU_table.txt"
-    printf "\n input table = $otu_table \n"
-elif [[ -e "$workingDir/ASVs_table.txt" ]]; then
-    otu_table=$"$workingDir/ASVs_table.txt"
-    printf "\n input table = $otu_table \n"
-elif [[ $table == "undefined" ]]; then
-    printf '%s\n' "ERROR]: input table was not specified and cannot find OTU_table.txt or ASVs_table.txt in the working dir.
-    >Quitting" >&2
-    end_process
-else
-    #get input OTU table file
-    regex='[^/]*$'
-    otu_table_temp=$(echo $table | grep -oP "$regex")
-    otu_table=$(printf "/extraFiles/$otu_table_temp")
-    printf "\n input table = $otu_table \n "
-fi
+# get input OTU table file
+regex='[^/]*$'
+otu_table_temp=$(echo $table | grep -oP "$regex")
+otu_table=$(printf "/extraFiles/$otu_table_temp")
+printf "\n input table = $otu_table \n "
 
 #If specified, get OTUs subset
 if [[ $subset_IDs == "undefined" ]]; then
@@ -85,6 +72,7 @@ fi
 mkdir -p "$output_dir"
 
 #start time
+start_time=$(date)
 start=$(date +%s)
 
 ## Prepare BIOM file
@@ -132,6 +120,10 @@ runtime=$((end-start))
 ###Make README.txt file
 printf "## DEICODE (Robust Aitchison PCA on sparse compositional metabarcoding data)
 
+Start time: $start_time
+End time: $(date)
+Runtime: $runtime seconds
+
 # Step 1. rCLR
 #   Data transformation using centered log ratio on only non-zero values (no pseudo count added)
 # Step 2. RPCA
@@ -141,6 +133,7 @@ printf "## DEICODE (Robust Aitchison PCA on sparse compositional metabarcoding d
 ## See method description in Martino et al., 2019 (DOI 10.1128/mSystems.00016-19)
 
 Files in 'DEICODE_out' directory:
+--------------------------------
 #   - otutab.biom          =  full OTU table in BIOM format
 #   - rclr_subset.tsv      =  rCLR-transformed subset of OTU table *
 # DEICODE_out/full/
@@ -157,15 +150,13 @@ Core commands ->
 biom convert -i $otu_table -o $output_biom --table-type='OTU table' --to-hdf5
 deicode auto-rpca --in-biom $output_biom --min-feature-count $min_otu_reads --min-sample-count $min_sample_reads --output-dir $output_deicode_full
 
-Total run time was $runtime sec.
-
-##########################################################
-###Third-party applications [PLEASE CITE]:
+################################################
+###Third-party applications:
 #DEICODE v0.2.4
     #citation: Martino C., Morton J.T., Marotz C.A., Thompson L.R., Tripathi A., Knight R., et al. (2019). A Novel Sparse Compositional Technique Reveals Microbial Perturbations. mSystems. doi: 10.1128/mSystems.00016-19. 
 #biom-format v2.1.12 (for preparing BIOM file)
     #citation: McDonald D., Clemente J.C., Kuczynski J., Rideout J.R., Stombaugh J., Wendel D., et al. (2012). The Biological Observation Matrix (BIOM) format or: how I learned to stop worrying and love the ome-ome. GigaScience 1, 2047-217X-1–7. doi: 10.1186/2047-217X-1-7.
-##################################################################" > $output_dir/README.txt
+##############################################" > $output_dir/README.txt
 
 #Done
 printf "\nDONE "

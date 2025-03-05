@@ -3,20 +3,17 @@
 # Chimera filtering with --uchime3_denovo for denoizsed amplicons.
 # Input = single-end fasta/fastq files. FASTQ files will be converted to FASTA files; output is only FASTA.
 
-##########################################################
+################################################
 ###Third-party applications:
 #vsearch v2.23.0
-    #citation: Rognes T, Flouri T, Nichols B, Quince C, Mahé F (2016) VSEARCH: a versatile open source tool for metagenomics PeerJ 4:e2584
-    #Copyright (C) 2014-2021, Torbjorn Rognes, Frederic Mahe and Tomas Flouri
-    #Distributed under the GNU General Public License version 3 by the Free Software Foundation
-    #https://github.com/torognes/vsearch
 #seqkit v2.3.0
-    #citation: Shen W, Le S, Li Y, Hu F (2016) SeqKit: A Cross-Platform and Ultrafast Toolkit for FASTA/Q File Manipulation. PLOS ONE 11(10): e0163962. https://doi.org/10.1371/journal.pone.0163962
-    #Distributed under the MIT License
-    #Copyright © 2016-2019 Wei Shen, 2019 Oxford Nanopore Technologies.
-    #https://bioinf.shenwei.me/seqkit/
 #pigz v2.4
-##########################################################
+################################################
+# checking tool versions
+vsearch_version=$(vsearch --version 2>&1 | head -n 1 | awk '{print $2}' | sed -e "s/,//g")
+seqkit_version=$(seqkit version 2>&1 | awk '{print $2}')
+printf "# vsearch (version $vsearch_version)\n"
+printf "# seqkit (version $seqkit_version)\n"
 
 #load variables
 id=$"--id ${pre_cluster}" #float (0-1)
@@ -49,6 +46,7 @@ fi
 #############################
 ### Start of the workflow ###
 #############################
+start_time=$(date)
 start=$(date +%s)
 ### Check if files with specified extension exist in the dir
 first_file_check
@@ -214,7 +212,13 @@ end=$(date +%s)
 runtime=$((end-start))
 
 #Make README.txt file
-printf "Files in 'chimeraFiltered_out' directory represent chimera filtered sequences.
+printf "# Chimeras were filtered out with vsearch --uchime3_denovo.
+
+Start time: $start_time
+End time: $(date)
+Runtime: $runtime seconds
+
+Files in 'chimeraFiltered_out' directory represent chimera filtered sequences.
 Files in 'chimeraFiltered_out/chimeras' directory represent identified putative chimeric sequences.
 If input was FASTQ formatted file(s), then it was converted to FASTA (location = chimeraFiltered_out/chimeraFilt_input_to_FASTA), and only FASTA is outputted.
 
@@ -228,15 +232,15 @@ fi
 
 printf "\nSummary of sequence counts in 'seq_count_summary.txt'\n
 \nTotal run time was $runtime sec.\n\n
-##################################################################
-###Third-party applications for this process [PLEASE CITE]:
+##############################################
+###Third-party applications for this process:
 #vsearch v2.23.0 for chimera filtering
     #citation: Rognes T, Flouri T, Nichols B, Quince C, Mahé F (2016) VSEARCH: a versatile open source tool for metagenomics PeerJ 4:e2584
     #https://github.com/torognes/vsearch
 #seqkit v2.3.0 for converting fastq to fasta (if input was fastq)
     #citation: Shen W, Le S, Li Y, Hu F (2016) SeqKit: A Cross-Platform and Ultrafast Toolkit for FASTA/Q File Manipulation. PLOS ONE 11(10): e0163962. https://doi.org/10.1371/journal.pone.0163962
     #https://bioinf.shenwei.me/seqkit/
-##########################################################" >> $output_dir/README.txt
+################################################" >> $output_dir/README.txt
 
 #Done
 printf "\nDONE "

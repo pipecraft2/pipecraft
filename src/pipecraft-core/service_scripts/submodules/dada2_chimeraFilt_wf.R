@@ -14,21 +14,21 @@ readType = Sys.getenv("readType")
 fileFormat = Sys.getenv("fileFormat")
 dataFormat = Sys.getenv("dataFormat")
 workingDir = Sys.getenv("workingDir")
+cat(";; workingDir = ", workingDir, "\n")
 
 #load variables
 method = Sys.getenv("method")
+path_results = Sys.getenv("output_dir1")
+path_ASVs = Sys.getenv("output_dir2")
 
-#check for output dir and delete if needed
-if (dir.exists("/input/chimeraFiltered_out.dada2")) {
-    unlink("/input/chimeraFiltered_out.dada2", recursive = TRUE)
+#check for output dirs and delete if needed
+if (dir.exists(path_results)) {
+    unlink(path_results, recursive = TRUE)
 }
-if (dir.exists("/input/ASVs_out.dada2")) {
-    unlink("/input/ASVs_out.dada2", recursive = TRUE)
-}
-#create output dir
-path_results = "/input/chimeraFiltered_out.dada2"
 dir.create(path_results)
-path_ASVs = "/input/ASVs_out.dada2"
+if (dir.exists(path_ASVs)) {
+    unlink(path_ASVs, recursive = TRUE)
+}
 dir.create(path_ASVs)
 
 #load data
@@ -40,9 +40,16 @@ ASV_tab.nochim = removeBimeraDenovo(ASV_tab, method = method, multithread = TRUE
 
 #save rds
 saveRDS(ASV_tab.nochim, file.path(path_ASVs, "ASVs_table.denoised.nochim.rds"))
+saveRDS(ASV_tab, file.path(path_ASVs, "ASVs_table.denoised.rds"))
 
 #seq count summary
-sample_names = readRDS("/input/qualFiltered_out/sample_names.rds")
+    # if sample_names.rds is not in the workingDir, copy it from the qualFiltered_out dir
+if (!file.exists(file.path(workingDir, "sample_names.rds"))) {
+    qualFiltered_out_dir = file.path(dirname(workingDir), "qualFiltered_out")
+    file.copy(from = file.path(qualFiltered_out_dir, "sample_names.rds"),
+              to = file.path(workingDir, "sample_names.rds"))
+}
+sample_names = readRDS(file.path(workingDir, "sample_names.rds"))
 cat(";; sample names = ", sample_names)
 
 no_of_ASVs_list = list() #add ASVs per sample count

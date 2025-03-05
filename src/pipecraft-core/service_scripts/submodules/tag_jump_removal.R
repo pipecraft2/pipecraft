@@ -1,48 +1,68 @@
 #!/usr/bin/env Rscript
 
 ## Script to perform tag-jump removal
-#   by Vladimir Mikryukov
+#   (core function by Vladimir Mikryukov)
 
 # Input is given as positional arguments:
 #   1. OTU table
-#   2. f-parameter of UNCROSS 
+#   2. f-parameter of UNCROSS
 #   3. p-parameter (e.g., 1.0)
+#   4. fasta file (optional); if provided, sequences will be added back to the output table
+#   5. output directory (optional); defaults to $output_dir environment variable
 
 # Outputs:
-#  - Tag-jumpfiltered OTU table (`TagJumpFiltered_FeatureTable.txt`)
-#  - Table with tag-jumps (`TagJump_OTUs.RData`)
+#  - Tag-jumpfiltered OTU table (`*_TagJumpFilt.txt`)
 #  - Plot (`TagJump_plot.pdf`)
 
-args <- commandArgs(trailingOnly = TRUE)
+args = commandArgs(trailingOnly = TRUE)
 
 suppressMessages(library(data.table))
 suppressMessages(library(ggplot2))
 theme_set(theme_classic(base_size = 14))
 
+# Determine if fasta file is provided (4th arg ends with .fasta or .fa)
+has_fasta = FALSE
+if (length(args) >= 4) {
+    has_fasta = grepl("\\.fa$|\\.fasta$", args[4], ignore.case = TRUE)
+    cat(";; has_fasta: ", has_fasta, "\n")
+}
+# load output directory from args if provided, otherwise from env variable
+output_dir = if (length(args) >= (if (has_fasta) 5 else 4)) {
+    args[if (has_fasta) 5 else 4]
+} else {
+    Sys.getenv('output_dir')
+}
+cat(";; output_dir: ", output_dir, "\n")
+
+# Get input file name and create output name
+input_file = args[1]
+base_name = tools::file_path_sans_ext(basename(input_file))
+output_name = paste0(base_name, "_TagJumpFilt.txt")
+
 ## Load OTU table
-cat(";; Loading OTU table\n")
-OTUTABW <- fread(
-  file = args[1],
+cat(";; Loading input table:", input_file, "\n")
+OTUTABW = fread(
+  file = input_file,
   sep = "\t", header = TRUE)
 
-## Check OTU table; if 2nd col is sequence, then remove
+## Check table; if 2nd col is sequence, then remove
 if (colnames(OTUTABW)[2] == "Sequence") {
-  cat(";; 2nd column was 'Sequence', removing this ... \n")
-  OTUTABW <- OTUTABW[, -2]
+  cat(";; 2nd column was 'Sequence', removing for now (adding sequences back later) \n")
+  OTUTABW = OTUTABW[, -2]
 }
 
-colnames(OTUTABW)[1] <- "OTU"
+colnames(OTUTABW)[1] = "OTU"
 
-cat(";; Number of OTUs: ", nrow(OTUTABW), "\n")
+cat(";; Number of ASVs/OTUs: ", nrow(OTUTABW), "\n")
 cat(";; Number of samples: ", ncol(OTUTABW) - 1, "\n")
 
 ## Convert to long format
 cat(";; Converting OTU table to long format\n")
-OTUTAB <- melt(data = OTUTABW, id.vars = "OTU",
+OTUTAB = melt(data = OTUTABW, id.vars = "OTU",
   variable.name = "SampleID", value.name = "Abundance")
 
 ## Remove zero-OTUs
-OTUTAB <- OTUTAB[ Abundance > 0 ]
+OTUTAB = OTUTAB[ Abundance > 0 ]
 cat(";; Number of non-zero records: ", nrow(OTUTAB), "\n")
 
 ## Estimate total abundance of sequence per plate
@@ -50,7 +70,7 @@ cat(";; Estimating total OTU abundance\n")
 OTUTAB[ , Total := sum(Abundance, na.rm = TRUE), by = "OTU" ]
 
 ## UNCROSS score (with original parameter - take a root from the exp in denominator, to make curves more steep)
-uncross_score <- function(x, N, n, f = 0.01, tmin = 0.1, p = 1){
+uncross_score = function(x, N, n, f = 0.01, tmin = 0.1, p = 1){
   # x = OTU abundance in a sample
   # N = total OTU abundance
   # n = number of samples
@@ -58,15 +78,15 @@ uncross_score <- function(x, N, n, f = 0.01, tmin = 0.1, p = 1){
   # tmin = min score to be considered as cross-talk
   # p = power to rise the exponent (default, 1; use 1/2 or 1/3 to make cureves more stepp)
 
-  z <- f * N / n               # Expected treshold
-  sc <- 2 / (1 + exp(x/z)^p)   # t-score
-  res <- data.table(Score = sc, TagJump = sc >= tmin)
+  z = f * N / n               # Expected treshold
+  sc = 2 / (1 + exp(x/z)^p)   # t-score
+  res = data.table(Score = sc, TagJump = sc >= tmin)
   return(res)
 }
 
 ## Esimate UNCROSS score
 cat(";; Estimating UNCROSS score\n")
-OTUTAB <- cbind(
+OTUTAB = cbind(
   OTUTAB,
   uncross_score(
     x = OTUTAB$Abundance,
@@ -83,59 +103,69 @@ OTUTAB <- cbind(
 
 cat(";; Number of tag-jumps: ", sum(OTUTAB$TagJump, na.rm = TRUE), "\n")
 
-
 ## Plot
 cat(";; Making a plot\n")
-PP <- ggplot(data = OTUTAB, aes(x = Total, y = Abundance, color = TagJump)) +
+PP = ggplot(data = OTUTAB, aes(x = Total, y = Abundance, color = TagJump)) +
     geom_point() + scale_x_log10() + scale_y_log10() +
     scale_color_manual(values = c("#0C7C59", "#D64933")) +
     labs(x = "Total abundance of OTU, reads", y = "Abundance of OTU in a sample, reads")
 
 cat(";; Exporting a plot\n")
-pdf(file = "TagJump_plot.pdf", width = 12, height = 9.5, useDingbats = FALSE)
+pdf(file = paste0(output_dir, "/TagJump_plot.pdf"), width = 12, height = 9.5, useDingbats = FALSE)
   PP
 dev.off()
 
-
 ## TJ stats
 cat(";; Calculating tag-jump summary\n")
-TJ <- data.table(
+TJ = data.table(
     Total_reads = sum(OTUTAB$Abundance),
     Number_of_TagJump_Events = sum(OTUTAB$TagJump),
     TagJump_reads = sum(OTUTAB[ TagJump == TRUE ]$Abundance, na.rm = T)
     )
 
-TJ$ReadPercent_removed <- with(TJ, (TagJump_reads / Total_reads * 100))
+TJ$ReadPercent_removed = with(TJ, (TagJump_reads / Total_reads * 100))
 
-fwrite(x = TJ, file = "TagJump_stats.txt", sep = "\t")
-
-
-## Exporting tag-jump data
-cat(";; Exporting tag-jump data\n")
-JMPS <- OTUTAB[ TagJump == TRUE, .(OTU, SampleID) ]
-
-saveRDS(object = JMPS,
-  file = "TagJump_OTUs.RData",
-  compress = "xz")
+fwrite(x = TJ, file = paste0(output_dir, "/TagJump_stats.txt"), sep = "\t")
 
 ## Prepare OTU tables, remove tag-jumps
 cat(";; Removing tag-jumps\n")
 
-OTUTAB <- OTUTAB[ TagJump == FALSE ]
+OTUTAB = OTUTAB[ TagJump == FALSE ]
 
 ## Convert to wide format
-RES <- dcast(data = OTUTAB,
+RES = dcast(data = OTUTAB,
   formula = OTU ~ SampleID,
   value.var = "Abundance", fill = 0)
 
 ## Sort rows (by total abundance)
-clz <- colnames(RES)[-1]
-otu_sums <- rowSums(RES[, ..clz], na.rm = TRUE)
-RES <- RES[ order(otu_sums, decreasing = TRUE) ]
+clz = colnames(RES)[-1]
+otu_sums = rowSums(RES[, ..clz], na.rm = TRUE)
+RES = RES[ order(otu_sums, decreasing = TRUE) ]
 
+## Add sequences back to the table
+suppressMessages(library(Biostrings))
+suppressMessages(library(dplyr))
 
-cat(";; Exporting tag-jump filtered table\n")
+## Add sequences back to the table (if FASTA file provided)
+if (has_fasta) {
+    cat(";; Adding sequences back to the table\n")
+    suppressMessages(library(Biostrings))
+    suppressMessages(library(dplyr))
+    # read the FASTA file
+    cat(";; Loading input FASTA:", args[4], "\n")
+    fasta_sequences = readDNAStringSet(args[4])
+    sequences = as.character(fasta_sequences)
+    names(sequences) = names(fasta_sequences)
+    # add the sequences as 2nd column
+    RES = RES %>%
+    mutate(Sequence = sequences[OTU]) %>%
+    select(OTU, Sequence, everything())
+}
 
-fwrite(x = RES,
-  file = "TagJumpFiltered_FeatureTable.txt",
-  sep = "\t", compress = "none")
+## Export table
+cat(";; Exporting tag-jump filtered table", 
+    if(length(args) >= 4) "(2nd col is sequence)" else "", "\n")
+cat(paste0(output_dir, "/", output_name))
+fwrite(x = RES, file = paste0(output_dir, "/", output_name), sep = "\t", compress = "none")
+
+cat(";; Done\n")

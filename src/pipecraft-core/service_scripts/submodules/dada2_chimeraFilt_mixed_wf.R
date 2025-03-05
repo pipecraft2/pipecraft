@@ -14,29 +14,30 @@ readType = Sys.getenv('readType')
 fileFormat = Sys.getenv('fileFormat')
 dataFormat = Sys.getenv('dataFormat')
 workingDir = Sys.getenv('workingDir')
+workingDir_fwd = Sys.getenv('workingDir_fwd')
+workingDir_rev = Sys.getenv('workingDir_rev')
 
 #load variables
 method = Sys.getenv('method')
+path_results = Sys.getenv("output_dir1")
+path_ASVs = Sys.getenv("output_dir2")
 
-#check for output dir and delete if needed
-if (dir.exists("/input/chimeraFiltered_out.dada2")) {
-    unlink("/input/chimeraFiltered_out.dada2", recursive=TRUE)
+#check for output dirs and delete if needed
+if (dir.exists(path_results)) {
+    unlink(path_results, recursive = TRUE)
 }
-if (dir.exists("/input/ASVs_out.dada2")) {
-    unlink("/input/ASVs_out.dada2", recursive=TRUE)
-}
-#create output dir
-path_results = "/input/chimeraFiltered_out.dada2"
 dir.create(path_results)
-path_ASVs = "/input/ASVs_out.dada2"
+if (dir.exists(path_ASVs)) {
+    unlink(path_ASVs, recursive = TRUE)
+}
 dir.create(path_ASVs)
-
 
 ### combine fwd_orient and rev_orient runs with mergeSequenceTables
 cat(";; Combining fwd_orient and rev_orient runs with mergeSequenceTables ")
+cat(";; workingDirs = ", workingDir_fwd, " and ", workingDir_rev, ";; ")
 #load fwd and rev tables
-fwd = readRDS("/input/primersCut_out/fwd_orient/denoised_assembled.dada2/ASVs_table.denoised.rds")
-rev = readRDS("/input/primersCut_out/rev_orient/denoised_assembled.dada2/ASVs_table.denoised.rds")
+fwd = readRDS(file.path(workingDir_fwd, "ASVs_table.denoised.rds"))
+rev = readRDS(file.path(workingDir_rev, "ASVs_table.denoised.rds"))
 ### RevComp ASV sequences in rev tables 
 colnames(rev) = dada2:::rc(colnames(rev))
 

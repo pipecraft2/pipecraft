@@ -3,7 +3,7 @@
 # Quality filter SINGLE-END sequencing data with fastp
 # Input = single-end fastq files
 
-##########################################################
+################################################
 ###Third-party applications:
 #fastp v0.23.2
     #citation: Shifu Chen, Yanqing Zhou, Yaru Chen, Jia Gu; fastp: an ultra-fast all-in-one FASTQ preprocessor, Bioinformatics, Volume 34, Issue 17, 1 September 2018, Pages i884–i890, https://doi.org/10.1093/bioinformatics/bty560
@@ -11,7 +11,7 @@
     #Distributed under the MIT License
     #https://github.com/OpenGene/fastp
 #pigz v2.4
-##########################################################
+################################################
 
 #load variables
 window_size=$"--cut_window_size ${window_size}"
@@ -55,6 +55,7 @@ fi
 #############################
 ### Start of the workflow ###
 #############################
+start_time=$(date)
 start=$(date +%s)
 ### Check if files with specified extension exist in the dir
 first_file_check
@@ -106,21 +107,24 @@ runtime=$((end-start))
 #Make README.txt file
 printf "# Quality filtering was performed using fastp (see 'Core command' below for the used settings).
 
+Start time: $start_time
+End time: $(date)
+Runtime: $runtime seconds
+
 Files in 'qualFiltered_out':
+----------------------------
 # *.fastq               = quality filtered sequences per sample.
 # seq_count_summary.txt = summary of sequence counts per sample.
 
 Core command -> 
 fastp --in1 input --out1 output $window_size $required_qual $min_qual $min_qual_thresh $trim_polyG $trim_polyX $maxNs $min_length $max_length $trunc_length $aver_qual $cores --html fastp_report/sample_name.html --disable_adapter_trimming $low_complexity_filter
 
-Total run time was $runtime sec.
-
-##################################################################
-###Third-party applications for this process [PLEASE CITE]:
+##############################################
+###Third-party applications for this process:
 #fastp v0.23.2
     #citation: Shifu Chen, Yanqing Zhou, Yaru Chen, Jia Gu; fastp: an ultra-fast all-in-one FASTQ preprocessor, Bioinformatics, Volume 34, Issue 17, 1 September 2018, Pages i884–i890, https://doi.org/10.1093/bioinformatics/bty560
     #https://github.com/OpenGene/fastp
-########################################################" > $output_dir/README.txt
+##############################################" > $output_dir/README.txt
 
 #Done
 printf "\nDONE "

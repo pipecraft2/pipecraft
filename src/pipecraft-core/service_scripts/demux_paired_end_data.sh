@@ -4,7 +4,7 @@
 # Demultiplexing of paired-end reads in mixed orientation using single-end or paired-end indexes is supported.
 # Input = a directory with fastq/fasta files (R1.fastq; R2.fastq); and indexes file in fasta format (header as a sample name).
 
-##########################################################
+################################################
 ###Third-party applications:
 #cutadapt v4.4
     #citation: Martin, Marcel (2011) Cutadapt removes adapter sequences from high-throughput sequencing reads. EMBnet.journal, 17(1), 10-12.
@@ -17,7 +17,7 @@
     #https://bioinf.shenwei.me/seqkit/
 #pigz v2.4
 #python3 with biopython
-##################################################################
+##############################################
 
 #Load variables
 regex='[^/]*$'
@@ -31,7 +31,7 @@ if [ "$no_indels" = true ] ; then
 else
     no_indels=''
 fi
-minlen=$"--minimum-length 32"
+minlen=$"--minimum-length ${min_length}"
 cores=$"--cores ${cores}"
 overlap=$"--overlap ${overlap}"
 
@@ -52,6 +52,7 @@ run_python_module=$"python3 /scripts/submodules/assign_sample_names.demuxModule.
 #############################
 ### Start of the workflow ###
 #############################
+start_time=$(date)
 start=$(date +%s)
 ### Check if files with specified extension exist in the dir
 first_file_check
@@ -252,6 +253,10 @@ runtime=$((end-start))
 #Make README.txt file for demultiplexed reads
 printf "# Demultiplexing was performed using cutadapt (see 'Core command' below for the used settings).
 
+Start time: $start_time
+End time: $(date)
+Runtime: $runtime seconds
+
 Files in 'demultiplex_out' directory represent per sample sequence files, that were generated based on the specified indexes file ($oligos_file).
 index_*fasta file(s) = $oligos_file but with added search window size for cutadapt.
 
@@ -270,17 +275,15 @@ Round2 (RC; R1 and R2 position switched!): cutadapt $indexes_file_round2 $error_
 
 Summary of sequence counts in 'seq_count_summary.txt'
 
-Total run time was $runtime sec.
-
-##########################################################
-###Third-party applications used for this process [PLEASE CITE]:
+################################################
+###Third-party applications used for this process:
 #cutadapt v4.4 for demultiplexing
     #citation: Martin, Marcel (2011) Cutadapt removes adapter sequences from high-throughput sequencing reads. EMBnet.journal, 17(1), 10-12.
     #https://cutadapt.readthedocs.io/en/stable/index.html
 #seqkit v2.3.0 for validating indexes file and adjusting sample names
     #citation: Shen W, Le S, Li Y, Hu F (2016) SeqKit: A Cross-Platform and Ultrafast Toolkit for FASTA/Q File Manipulation. PLOS ONE 11(10): e0163962. https://doi.org/10.1371/journal.pone.0163962
     #https://bioinf.shenwei.me/seqkit/
-##################################################################" > $output_dir/README.txt
+##############################################" > $output_dir/README.txt
 
 ###Done, files in $output_dir folder
 printf "\nDONE "

@@ -1,6 +1,19 @@
 #!/bin/bash
 
 # Set of functions for PipeCraft (2.0) workflows, for checking data integrity.
+##############################
+### Error logging function ###
+##############################
+log_error() {
+    local error_message="$1"
+    local timestamp=$(date '+%Y-%m-%d_%H.%M.%S')
+    local log_file="$output_dir/log_$timestamp.log"
+      
+    # Log to file
+    echo "[$timestamp] ERROR: $error_message" >> "$log_file"
+    # Print to stderr
+    printf '%s\n' "ERROR]: $error_message" >&2
+}
 
 ###############################
 ### Quit process upon ERROR ###
@@ -65,9 +78,9 @@ else
 fi
 }
 
-#################################################################
+#######################################################
 ### Check if files with specified extension exist in the dir ###
-#################################################################
+#######################################################
 function first_file_check () {
 count=$(ls -1 *.$fileFormat 2>/dev/null | wc -l)
 if (( $count != 0 )); then 
@@ -117,39 +130,48 @@ done
 while read file; do
     if [[ $file == *" "* ]]; then
         printf '%s\n' "WARNING]: File $file name contains empty spaces, replaced 'space' with '_'" >&2
-        rename 's/ /_/g' "$file"
+        mv "$file" "${file// /_}"
     fi
 done < tempdir2/files_in_folder.txt
 #Fix also names in files_in_folder file if they contained space
 sed -i 's/ /_/g' tempdir2/files_in_folder.txt
-#Check if R1 string is in the file name (if so, then assume that then reverse file has R2 in the file name)
+
+#Grep R1 string is in the file names
 grep "R1" < tempdir2/files_in_folder.txt > tempdir2/paired_end_files.txt || true
-    #Check if everything is ok considering file names
-if [[ -s tempdir2/paired_end_files.txt ]]; then
-    :
-else
+
+#Detect R1 pattern from the first R1 file
+read_R1=$(head -n1 tempdir2/paired_end_files.txt | grep -o '[._]R1' | tail -n1)
+if [[ -z "$read_R1" ]]; then
     printf '%s\n' "ERROR]: no paired-end read files found.
-File names must contain 'R1' and 'R2' strings! (e.g. s01_R1.fastq and s01_R2.fastq)
+File names must contain '_R1' or '.R1' strings! (e.g. s01_R1.fastq and s01_R2.fastq)
 >Quitting" >&2
     end_process
-fi
-#Check multiple occurrences of R1 and R2 strings (e.g. R123.R1.fq). 
-while read file; do
-    x=$(echo $file | grep -o -E '(R1|R2)' | wc -l)
-    if [[ $x == "1" ]]; then
-        :
-    elif [[ $x == "0" ]]; then
-        printf '%s\n' "ERROR]: $file name does not contain R1/R2 strings to identify paired-end reads. Remove file from folder or fix the name.
+else 
+    # Verify all files have the same R1 pattern
+    while read file; do
+        # Check for multiple R1/R2 occurrences first
+        r1_count=$(echo "$file" | grep -o "R1" | wc -l)
+        if [[ $r1_count -gt 1 ]]; then
+            printf '%s\n' "ERROR]: File '$file' contains multiple R1 strings (i.e. there was other R1 stings besides just read identifier).
+Sample names cannot contain R1 strings (e.g. 'sampleR1_R1.fastq' or 'sampleR11.R1.fastq' are not allowed).
 >Quitting" >&2
-        end_process
-    else    
-        printf '%s\n' "ERROR]: $file name contains multiple R1/R2 strings -> change names (e.g. R123.R1.fastq to S123.R1.fastq)
->Quitting" >&2
-        end_process
-    fi
-done < tempdir2/files_in_folder.txt
-}
+            end_process
+        fi
 
+        # Then check for consistent R1 pattern
+        if ! echo "$file" | grep -q "$(echo $read_R1 | sed 's/\./\\./g')"; then
+            printf '%s\n' "ERROR]: File '$file' has inconsistent R1 pattern (did not contain '${read_R1}').
+All files must use the same pattern ('_R1' or '.R1'). 
+>Quitting" >&2
+            end_process
+        fi
+    done < tempdir2/paired_end_files.txt
+    
+    echo "Detected R1 pattern: ${read_R1}"
+    read_R1="${read_R1}" 
+    export read_R1
+fi
+}
 
 ####################################################
 ### Check SINGLE-END data and pepare working env ###
@@ -173,15 +195,82 @@ done
 while read file; do
     if [[ $file == *" "* ]]; then
         printf '%s\n' "WARNING]: File $file name contains empty spaces, replaced 'space' with '_'" >&2
-        rename 's/ /_/g' "$file"
+        mv "$file" "${file// /_}"
     fi
 done < tempdir2/files_in_folder.txt
+# replace empty spaces in file names with _
+sed -i 's/ /_/g' tempdir2/files_in_folder.txt
 }
 
+############################################
+### Prepare primers file for CUT PRIMERS ###
+############################################
+function prepare_primers () {
+# Primer arrays
+fwd_primer_array=$(echo $fwd_tempprimer | sed 's/,/ /g' | sed 's/I/N/g')
+rev_primer_array=$(echo $rev_tempprimer | sed 's/,/ /g' | sed 's/I/N/g')
+# Forward primer(s) to fasta file
+i=1
+for primer in $fwd_primer_array; do
+    echo ">fwd_primer$i" >> tempdir2/fwd_primer.fasta
+    echo $primer >> tempdir2/fwd_primer.fasta
+    ((i=i+1))
+done
+# Reverse primer(s) to fasta file
+i=1
+for primer in $rev_primer_array; do
+    echo ">rev_primer$i" >> tempdir2/rev_primer.fasta
+    echo $primer >> tempdir2/rev_primer.fasta
+    ((i=i+1))
+done
+# Reverse complement FWD and REV primers
+checkerror=$(seqkit seq --quiet -t dna -r -p tempdir2/fwd_primer.fasta >> tempdir2/fwd_primer_RC.fasta 2>&1)
+check_app_error
+checkerror=$(seqkit seq --quiet -t dna -r -p tempdir2/rev_primer.fasta >> tempdir2/rev_primer_RC.fasta 2>&1)
+check_app_error
 
-#######################################################################
+# Make linked primer files
+i=1
+while read LINE; do
+    fwd_primer=$(echo $LINE | grep -v ">")
+    if [ -z "$fwd_primer" ]; then
+        :
+    else
+        while read LINE; do
+            rev_primer_RC=$(echo $LINE | grep -v ">")
+            if [ -z "$rev_primer_RC" ]; then
+                :
+            else
+                echo ">primer$i" >> tempdir2/liked_fwd_revRC.fasta
+                echo "$fwd_primer;$required_optional...$rev_primer_RC;$required_optional" >> tempdir2/liked_fwd_revRC.fasta
+                ((i=i+1))
+            fi
+        done < tempdir2/rev_primer_RC.fasta
+    fi
+done < tempdir2/fwd_primer.fasta
+i=1
+while read LINE; do
+    rev_primer=$(echo $LINE | grep -v ">")
+    if [ -z "$rev_primer" ]; then
+        :
+    else
+        while read LINE; do
+            fwd_primer_RC=$(echo $LINE | grep -v ">")
+            if [ -z "$fwd_primer_RC" ]; then
+                :
+            else
+                echo ">primer$i" >> tempdir2/liked_rev_fwdRC.fasta
+                echo "$rev_primer;$required_optional...$fwd_primer_RC;$required_optional" >> tempdir2/liked_rev_fwdRC.fasta
+                ((i=i+1))
+            fi
+        done < tempdir2/fwd_primer_RC.fasta
+    fi
+done < tempdir2/rev_primer.fasta
+}
+
+###################################################
 ### Check if single-end files are compressed (decompress and check) ###
-#######################################################################
+###################################################
 #If input is compressed, then decompress (keeping the compressed file, but overwriting if filename exists!)
 function check_gz_zip_SE () {
     #Read user specified input extension
@@ -207,9 +296,9 @@ Decompressing other formats is not supported, please decompress manually.
 }
 
 
-#######################################################################
+###################################################
 ### Check if paired-end files are compressed (decompress and check) ###
-#######################################################################
+###################################################
 #If input is compressed, then decompress (keeping the compressed file, but overwriting if filename exists!)
 function check_gz_zip_PE () {
 check_compress=$(echo $fileFormat | (awk 'BEGIN{FS=OFS="."} {print $NF}';))
@@ -262,8 +351,8 @@ function check_extension_fasta () {
 if [[ $extension == "fasta" ]] || [[ $extension == "fa" ]] || [[ $extension == "fas" ]]; then
     :
 else
-    printf '%s\n' "ERROR]: $file formatting not supported here!
-Supported extensions: fasta, fas, fa (and gz or zip compressed formats).
+    printf '%s\n' "ERROR]: $file $extension formatting not supported here!
+Supported extensions: fasta, fas, fa (and gz compressed formats).
 >Quitting" >&2
     end_process
 fi
@@ -277,7 +366,7 @@ if [[ $extension == "fasta" ]] || [[ $extension == "fa" ]] || [[ $extension == "
     :
 else
     printf '%s\n' "ERROR]: $extension formatting not supported here!
-Supported extensions: fastq, fq, fasta, fas, fa (and gz or zip compressed formats).
+Supported extensions: fastq, fq, fasta, fas, fa (and gz compressed formats).
 >Quitting" >&2
     end_process
 fi
@@ -297,9 +386,9 @@ Supported extensions: fastq, fq, fasta, fas, fa (and gz compressed formats).
 fi
 }
 
-#######################################################################
+###################################################
 ### Cleaning up and compiling final stats file, only for demux data ###
-#######################################################################
+###################################################
 function clean_and_make_stats_demux () {
 #Delete empty output files
 find $output_dir -empty -type f -delete
@@ -368,9 +457,9 @@ if [[ $debugger != "true" ]]; then
 fi
 }
 
-#############################################################################
+###############################################
 ### Cleaning up and compiling final stats file, only for assemble PE data ###
-#############################################################################
+###############################################
 function clean_and_make_stats_assemble () {
 #Delete empty output files
 find $output_dir -empty -type f -delete
@@ -426,9 +515,9 @@ fi
 }
 
 
-################################################################################################################
+##################################################################################
 ### Cleaning up and compiling final stats file UNIVERSAL fastx (but not for PE assembly and demux and GeneX) ###
-################################################################################################################
+##################################################################################
 function clean_and_make_stats () {
 countstart=$(date +%s)
 
@@ -495,9 +584,9 @@ if [[ $debugger != "true" ]]; then
 fi
 }
 
-########################################################################################
+##########################################################
 ### Cleaning up and compiling final stats file, when outputting multiple directories ###
-########################################################################################
+##########################################################
 function clean_and_make_stats_multidir () {
 ### Count reads before and after the process
 mkdir -p tempdir2
@@ -585,9 +674,9 @@ fi
 }
 
 
-###########################################################
+#################################################
 ### Paired-end data reorient reads based on FWD primers ###
-###########################################################
+#################################################
 function PE_reorient_FWD () {
 touch tempdir/R1.5_3.fastq
 touch tempdir/R2.5_3.fastq
@@ -603,9 +692,9 @@ for primer in $(echo $fwd_tempprimer | sed "s/,/ /g"); do
 done
 }
 
-###########################################################
+#################################################
 ### Paired-end data reorient reads based on REV primers ###
-###########################################################
+#################################################
 function PE_reorient_REV () {
 touch tempdir/R1.3_5.fastq
 touch tempdir/R2.3_5.fastq
@@ -639,7 +728,7 @@ for primer in $(echo $fwd_tempprimer | sed "s/,/ /g"); do
         fqgrep -m $mismatches -p $fwd_primer -f -e $input.$extension >> tempdir/5_3.fastx
     else
         printf '%s\n' "ERROR]: $file formatting not supported!
-Supported extensions: fastq, fq, fasta, fa, fas (and gz or zip compressed formats).
+Supported extensions: fastq, fq, fasta, fa, fas (and gz compressed formats).
 >Quitting" >&2
         end_process
     fi
@@ -660,7 +749,7 @@ for primer in $(echo $rev_tempprimer | sed "s/,/ /g"); do
         fqgrep -m $mismatches -p $rev_primer -f -e $input.$extension >> tempdir/3_5.fastx
     else
         printf '%s\n' "ERROR]: $file formatting not supported!
-Supported extensions: fastq, fq, fasta, fa, fas (and gz or zip compressed formats).
+Supported extensions: fastq, fq, fasta, fa, fas (and gz compressed formats).
 >Quitting" >&2
         end_process
     fi
@@ -771,3 +860,167 @@ else
 fi
 }
 
+
+#######################################################
+### Function to count features and sequences in OTU/ASV table ###
+#######################################################
+ # Handles "Sequence" column in the table
+    # output variables:
+    # feature_count - numbers of ASVs/OTUs in the table
+    # nSeqs - numbers of sequences in the table
+    # nSample - numbers of samples in the table
+function count_features() {
+    local table=$1
+    
+    # count ASVs/OTUs (rows minus header)
+    feature_count=$(awk 'NR>1' "$table" | wc -l)
+    
+    # count sequences and samples
+    while IFS='=' read -r key value; do
+        case $key in
+            "samples") nSample=$value ;;
+            "sequences") nSeqs=$value ;;
+        esac
+    done < <(awk -F'\t' '
+    NR==1 {
+        seq_col = -1
+        for(i=1; i<=NF; i++) {
+            if($i == "Sequence") {
+                seq_col = i
+                break
+            }
+        }
+        nSample = NF - 1 - (seq_col > 0 ? 1 : 0)
+        print "samples=" nSample
+    }
+    NR>1 {
+        sum = 0
+        for(i=2; i<=NF; i++) {
+            if(i != seq_col) {
+                sum += $i
+            }
+        }
+        total_seqs += sum
+    }
+    END {
+        print "sequences=" total_seqs
+    }' "$table")
+    
+    export feature_count
+    export nSeqs
+    export nSample
+}
+  
+
+################################################
+### generate README.txt for table filtering (curate_table_wf.sh) ###
+################################################
+function readme_table_filtering() {
+    local output_dir=$1
+    local runtime=$2
+
+    # Start README with basic info
+    cat << EOF > "$output_dir/README.txt"
+# Feature table curation.
+
+Start time: $start_time
+End time: $(date)
+Runtime: $runtime seconds
+
+Input parameters:
+---------------
+Tag-jumps filtering: ${filter_tag_jumps}
+- f-value: ${f_value}
+- p-value: ${p_value}
+Length filtering:
+- min length: ${min_length_num} (0 means OFF)
+- max length: ${max_length_num} (0 means OFF)
+Collapse identical ASVs/OTUs: ${collapseNoMismatch}
+
+Output files:
+------------
+EOF
+
+    # Add file descriptions based on what was generated
+    if [[ $filter_tag_jumps == "true" ]]; then
+        count_features "$output_dir/${feature_table_base_name%%.txt}_TagJumpFilt.txt"
+
+        cat << EOF >> "$output_dir/README.txt"
+## Tag-jumps filtering output (applied first):
+   - *_TagJumpFilt.txt = Feature table after tag-jumps filtering
+   - $fasta_base_name = Representative sequences after tag-jumps filtering (number of seqs = $ASVs_count, here always same as input)
+   - TagJump_plot.pdf = Visualization of tag-jumps based on parameters
+   - TagJump_stats.txt = Statistics about tag-jumps filtering including:
+                             * Total reads
+                             * Number of tag-jump events
+                             * Tag-jump reads
+                             * Read percent removed
+   - tag-jumps_filt.log = R log file for tag-jumps filtering
+
+    Number of Features                       = $feature_count
+    Number of sequences in the Feature table = $nSeqs
+    Number of samples in the Feature table   = $nSample
+
+EOF
+    fi
+
+    if [[ -n "$feature_table_file2" ]]; then
+        echo "   [clustered zOTUs (OTU_table) was also tag-jumps filtered, but stats not given in this file]" >> "$output_dir/README.txt"
+        echo "" >> "$output_dir/README.txt"
+    fi
+
+    if [[ $collapseNoMismatch == "true" ]]; then
+        count_features "$output_dir/${feature_table_base_name%%.txt}_collapsed.txt"
+        cat << EOF >> "$output_dir/README.txt"
+## Collapsing identical ASVs/OTUs output (applied after tag-jumps filtering, if ON):
+[before collapsing, length filter is also applied (if ON)]
+$ASVs_collapsed_result
+
+EOF
+     if [[ $feature_count > 0 ]]; then
+     cat << EOF >> "$output_dir/README.txt"
+        Number of Features                       = $feature_count
+        Number of sequences in the Feature table = $nSeqs
+        Number of samples in the Feature table   = $nSample
+EOF
+    fi 
+    
+    elif [[ $collapseNoMismatch == "false" ]] && \
+         [[ ($min_length_num != "0" && -n $min_length_num) || \
+            ($max_length_num != "0" && -n $max_length_num) ]]; then
+        
+        cat << EOF >> "$output_dir/README.txt"
+## Length filtering output (applied after tag-jumps filtering, if ON):
+$ASVs_lenFilt_result
+
+EOF
+
+    if [[ -n "$feature_table_file2" ]]; then
+        echo "  [clustered zOTUs (OTU_table) was also length filtered (after tag-jumps filtering), but stats not given in this file]" >> "$output_dir/README.txt"
+    fi
+
+
+    fi
+
+    # Add citations
+    cat << EOF >> "$output_dir/README.txt"
+
+##############################################
+### Third-party applications for this process:
+##############################################
+# vsearch (version $vsearch_version)
+   Citation: Rognes T, Flouri T, Nichols B, Quince C, Mahé F (2016) VSEARCH: a versatile open source tool for metagenomics. PeerJ 4:e2584 https://doi.org/10.7717/peerj.2584
+   https://github.com/torognes/vsearch
+# seqkit (version $seqkit_version)
+   Citation: Shen W, Le S, Li Y, Hu F (2016) 
+   SeqKit: A Cross-Platform and Ultrafast Toolkit for FASTA/Q File Manipulation. 
+   PLOS ONE 11(10): e0163962. https://doi.org/10.1371/journal.pone.0163962
+# UNCROSS2
+   Citation: R.C. Edgar (2018), UNCROSS2: identification of cross-talk in 16S rRNA OTU tables, https://doi.org/10.1101/400762
+# R (version $R_version)
+   Citation: R Core Team (2023). R: A language and environment for statistical computing. 
+   R Foundation for Statistical Computing, Vienna, Austria.
+   https://www.R-project.org/
+##############################################
+EOF
+}
