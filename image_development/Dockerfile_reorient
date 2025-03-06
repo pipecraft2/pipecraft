@@ -1,0 +1,7 @@
+FROM alpine:3.14
+RUN apk add --no-cache bash wget unzip pigz build-base zlib-dev \
+    && apk add tre-dev --repository=http://dl-cdn.alpinelinux.org/alpine/edge/testing \
+	&& wget https://github.com/shenwei356/seqkit/releases/download/v2.3.0/seqkit_linux_amd64.tar.gz -O /tmp/seqkit.tar.gz  \
+	&& tar zxvf /tmp/seqkit.tar.gz -C /usr/bin/ && rm /tmp/seqkit.tar.gz \
+    && wget https://github.com/indraniel/fqgrep/archive/v0.4.4.zip  && unzip v0.4.4.zip && rm v0.4.4.zip && cd fqgrep-0.4.4 && make
+ENV PATH "$PATH:/fqgrep-0.4.4"

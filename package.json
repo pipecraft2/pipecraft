@@ -1,0 +1,97 @@
+{
+  "name": "PipeCraft2_v1.1.0",
+  "version": "1.1.0",
+  "private": true,
+  "author": {
+    "name": "Martin Metsoja",
+    "email": "martin.metsoja@gmail.com",
+    "url": "https://github.com/pipecraft2/pipecraft"
+  },
+  "scripts": {
+    "serve": "vue-cli-service serve",
+    "build": "vue-cli-service build",
+    "lint": "vue-cli-service lint",
+    "electron:build": "vue-cli-service electron:build",
+    "electron:serve": "vue-cli-service electron:serve",
+    "install_pipe": "yarn install --ignore-optional --ignore-platform",
+    "postinstall": "electron-builder install-app-deps",
+    "postuninstall": "electron-builder install-app-deps"
+  },
+  "main": "background.js",
+  "dependencies": {
+    "@electron/remote": "^2.0.1",
+    "core-js": "^3.6.5",
+    "create-desktop-shortcuts": "^1.10.1",
+    "dockerode": "^3.2.1",
+    "dockerode-utils": "^0.0.7",
+    "electron-log": "^4.4.7",
+    "electron-updater": "^4.6.5",
+    "envfile": "^6.14.0",
+    "fs": "^0.0.1-security",
+    "fs-promise": "^2.0.3",
+    "js-yaml": "^4.1.0",
+    "json-fn": "^1.1.1",
+    "lodash": "^4.17.21",
+    "memory-streams": "^0.1.3",
+    "node-pty-prebuilt-multiarch": "^0.10.1-pre.5",
+    "path": "^0.12.7",
+    "slash": "^3.0.0",
+    "sockjs": "^0.3.21",
+    "sweetalert2": "^10.15.5",
+    "vue": "^2.6.11",
+    "vue-router": "^3.2.0",
+    "vuedraggable": "^2.24.3",
+    "vuetify": "^2.4.0",
+    "vuex": "^3.4.0",
+    "vuex-router-sync": "^5.0.0",
+    "xterm": "^4.15.0",
+    "xterm-addon-fit": "^0.5.0"
+  },
+  "devDependencies": {
+    "@vue/cli-plugin-babel": "~4.5.0",
+    "@vue/cli-plugin-eslint": "~4.5.0",
+    "@vue/cli-plugin-router": "~4.5.0",
+    "@vue/cli-plugin-vuex": "~4.5.0",
+    "@vue/cli-service": "~4.5.0",
+    "@vue/eslint-config-prettier": "^6.0.0",
+    "babel-eslint": "^10.1.0",
+    "electron": "^13.0.0",
+    "electron-devtools-installer": "^4.0.0",
+    "electron-rebuild": "^3.2.7",
+    "eslint": "^6.7.2",
+    "eslint-plugin-prettier": "^3.3.1",
+    "eslint-plugin-vue": "^6.2.2",
+    "native-ext-loader": "^2.3.0",
+    "prettier": "2.6.2",
+    "sass": "~1.32.0",
+    "sass-loader": "^10.0.0",
+    "vue-cli-plugin-electron-builder": "~2.1.1",
+    "vue-cli-plugin-vuetify": "~2.4.4",
+    "vue-template-compiler": "^2.6.11",
+    "vuetify-loader": "^1.7.0"
+  },
+  "resolutions": {
+    "electron-builder": "^23.0.3"
+  },
+  "eslintConfig": {
+    "root": true,
+    "env": {
+      "node": true
+    },
+    "extends": [
+      "plugin:vue/essential",
+      "eslint:recommended",
+      "@vue/prettier"
+    ],
+    "parserOptions": {
+      "parser": "babel-eslint"
+    },
+    "rules": {}
+  },
+  "browserslist": [
+    "> 1%",
+    "last 2 versions",
+    "not dead"
+  ],
+  "productName": "pipecraft"
+}

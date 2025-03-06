@@ -1,0 +1,12 @@
+name: vsearch_dada2_v3
+channels:
+  - conda-forge
+  - bioconda
+  - defaults
+dependencies:
+  - vsearch=2.29.4
+  - seqkit=2.9.0
+  - pigz=2.8
+  - cutadapt=5.0
+  - bioconductor-dada2=1.34.0
+  - r-devtools 2.4.5

@@ -1,0 +1,14 @@
+pigz --version > 2.8
+seqkit version > 2.8.2
+rdp_classifier (no help or version command) > 2.14
+blastn -version > 2.16
+cutadapt --version > 4.9
+metamate -h > 0.4.3
+vsearch -v > 2.28
+R > library(dada2); packageVersion("dada2") > 1.30
+R > library(lulu); packageVersion("lulu") > 0.1.0
+
+
+Image ise 6.4 GB, üpris pirakas
+DockerHub-is compressed size: 2.9 GB
+Allalaadimiseks: docker pull pipecraft/bioscanflow:1

@@ -1,0 +1,18 @@
+FROM ubuntu:22.04
+RUN apt-get update -y \
+&& apt-get install parallel -y \
+&& apt-get install build-essential -y \
+&& apt-get install wget -y \
+&& apt-get install pigz -y \
+&& apt-get install git -y \
+&& apt-get install bc \
+&& TZ=Europe/Tallinn \
+&& ln -snf /usr/share/zoneinfo/$TZ /etc/localtime && echo $TZ > /etc/timezone \
+&& apt-get install r-base -y \
+&& apt-get install autoconf -y \
+&& wget https://github.com/shenwei356/seqkit/releases/download/v2.3.0/seqkit_linux_amd64.tar.gz -O /tmp/seqkit.tar.gz  \
+&& tar zxvf /tmp/seqkit.tar.gz -C /usr/bin/ && rm /tmp/seqkit.tar.gz \
+&& git clone --branch v2.18.0 https://github.com/torognes/vsearch.git \
+&& cd vsearch && ./autogen.sh && ./configure && make && make install \
+&& Rscript -e 'install.packages("data.table", dependencies=TRUE , repos="https://cloud.r-project.org")' \
+&& Rscript -e 'install.packages("optparse", repos="https://cloud.r-project.org")'

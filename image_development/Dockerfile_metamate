@@ -1,0 +1,5 @@
+FROM continuumio/miniconda3
+COPY image_development/metamate_env.yaml /metamate_env.yaml
+RUN conda env create -f /metamate_env.yaml
+RUN conda clean --all --yes
+RUN git clone https://github.com/tjcreedy/metamate.git

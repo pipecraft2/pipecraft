@@ -1,0 +1,14 @@
+FROM alpine:3.14
+
+RUN wget https://github.com/shenwei356/seqkit/releases/download/v2.3.0/seqkit_linux_amd64.tar.gz -O /tmp/seqkit.tar.gz  \
+    && tar zxvf /tmp/seqkit.tar.gz -C /usr/bin/ && rm /tmp/seqkit.tar.gz
+RUN apk add build-base \
+    && apk add parallel \
+    && apk add --no-cache --upgrade grep \
+    && apk add pigz  \
+    && apk add bash  \
+    && apk add wget  \
+    && apk add zlib-dev \
+    && apk add bzip2-dev \
+    && wget http://opengene.org/fastp/fastp.0.23.2 && mv fastp.0.23.2 fastp && chmod a+x ./fastp && mv fastp /usr/bin/
+RUN apk del wget

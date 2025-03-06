@@ -1,0 +1,38 @@
+name: CI
+
+on: [push, pull_request]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    services:
+      docker:
+        image: docker:20.10.2-dind
+        options: --privileged
+        env:
+          DOCKER_TLS_CERTDIR: /certs
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v2
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v2
+        with:
+          node-version: "14"
+
+      - name: Install dependencies
+        run: |
+          yarn install
+
+      - name: Pull Docker container
+        run: |
+          docker pull pipecraft/cutadapt:4.4
+
+      - name: Run bioinformatics tests
+        run: |
+          node testData/cutadapt_test.js
+
+      - name: Clean up
+        run: docker system prune -f

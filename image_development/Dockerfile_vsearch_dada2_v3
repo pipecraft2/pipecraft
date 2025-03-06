@@ -1,0 +1,48 @@
+FROM ubuntu:24.10
+ARG DEBIAN_FRONTEND=noninteractive
+ENV LANG=C.UTF-8
+ENV LC_ALL=C.UTF-8
+RUN apt-get update -y \
+    && apt-get install build-essential -y \
+    && apt-get install wget -y \
+    && apt-get install pigz -y \
+    && apt-get install git -y \
+    && apt-get install r-base=4.4.1-1 -y \
+    && apt-get install parallel -y \
+    && apt-get install ncbi-blast+ -y \
+    && apt-get install autoconf -y \
+    && apt-get install libcurl4-gnutls-dev -y \
+    && apt-get install libxml2-dev -y \
+    && apt-get install libssl-dev -y \
+    && apt-get install libfontconfig1-dev -y \
+    && apt-get install libharfbuzz-dev -y \
+    && apt-get install libfribidi-dev -y \
+    && apt-get install libfreetype6-dev -y \
+    && apt-get install libpng-dev -y \
+    && apt-get install libtiff5-dev -y \
+    && apt-get install libjpeg-dev -y \
+    && apt-get install perl -y \
+    && apt-get install -y libdw1 \
+    && apt-get install -y libuv1 \
+    && apt-get install libnghttp2-14 \
+    && apt-get install locales -y
+RUN wget https://github.com/shenwei356/seqkit/releases/download/v2.9.0/seqkit_linux_amd64.tar.gz -O /tmp/seqkit.tar.gz && \
+    tar zxvf /tmp/seqkit.tar.gz -C /usr/bin/ && rm /tmp/seqkit.tar.gz
+RUN git clone --branch v2.29.4 https://github.com/torognes/vsearch.git \
+    && cd vsearch && ./autogen.sh && ./configure && make && make install
+RUN Rscript -e 'install.packages("data.table", dependencies=TRUE , repos="https://cloud.r-project.org")' \
+    && Rscript -e 'install.packages("optparse", repos="https://cloud.r-project.org")' \
+    && Rscript -e 'install.packages("dplyr", repos = "https://cloud.r-project.org/" )' \
+    && Rscript -e 'install.packages("remotes", repos = "https://cloud.r-project.org/")' \
+    && Rscript -e 'install.packages("openssl", dependencies=TRUE, repos = "https://cloud.r-project.org/")' \
+    && Rscript -e 'install.packages("devtools", dependencies=TRUE, repos = "https://cloud.r-project.org/")' \
+    && Rscript -e 'install.packages("seqinr", dependencies=TRUE, repos = "https://cloud.r-project.org/")'
+RUN Rscript -e 'install.packages("BiocManager")'
+RUN Rscript -e 'BiocManager::install(version = "3.20", ask=FALSE)'
+RUN Rscript -e 'BiocManager::install("dada2")'
+RUN Rscript -e 'remotes::install_github("tobiasgf/lulu")'
+RUN wget ftp://ftp.ncbi.nlm.nih.gov/genomes/TOOLS/ORFfinder/linux-i64/ORFfinder.gz
+RUN gunzip ORFfinder.gz
+RUN chmod 755 ORFfinder
+RUN mv ORFfinder /bin/.
+#ADD src/pipecraft-core/service_scripts/submodules /bin/submodules

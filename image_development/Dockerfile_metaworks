@@ -1,0 +1,48 @@
+FROM ubuntu:22.04
+
+# Install base utilities
+RUN apt-get update && \
+    apt-get install -y build-essential  && \
+    apt-get install -y wget && \
+    apt-get install -y unzip && \
+    apt-get install -y pigz && \
+    apt-get install -y gzip && \
+    apt-get install libuv1 -y  && \
+    apt-get install libdw1 -y  && \
+    apt-get install libnghttp2-14 -y  && \
+    apt-get clean && \
+    rm -rf /var/lib/apt/lists/*
+
+# Install miniconda
+ENV CONDA_DIR /opt/conda
+RUN wget --quiet https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86_64.sh -O ~/miniconda.sh && \
+    /bin/bash ~/miniconda.sh -b -p /opt/conda
+
+# Put conda in path so we can use conda activate
+ENV PATH=$CONDA_DIR/bin:$PATH
+
+# Install Metaworks
+RUN wget https://github.com/terrimporter/MetaWorks/releases/download/v1.12.0/MetaWorks1.12.0.zip
+RUN unzip MetaWorks1.12.0.zip
+RUN rm MetaWorks1.12.0.zip
+RUN cd MetaWorks1.12.0 && conda env create -f environment.yml
+
+# Install ORFfinder and seqkit
+RUN wget ftp://ftp.ncbi.nlm.nih.gov/genomes/TOOLS/ORFfinder/linux-i64/ORFfinder.gz
+RUN gunzip ORFfinder.gz
+RUN chmod 755 ORFfinder
+RUN mv ORFfinder /bin/.
+RUN wget https://github.com/shenwei356/seqkit/releases/download/v2.3.0/seqkit_linux_amd64.tar.gz -O /tmp/seqkit.tar.gz && \
+    tar zxvf /tmp/seqkit.tar.gz -C /usr/bin/ && rm /tmp/seqkit.tar.gz
+
+# Install R and reshape2
+ARG DEBIAN_FRONTEND=noninteractive
+RUN apt-get update && apt-get install -y --no-install-recommends r-base
+RUN Rscript -e 'install.packages("reshape2", repos="https://cloud.r-project.org")'
+RUN Rscript -e 'install.packages("tidyr", repos = "https://cloud.r-project.org/")'
+
+
+
+#RUN  !!! wget metaworks_environment.yml from SuvalineVana github 
+#RUN . /root/.bashrc && \
+#    conda init bash

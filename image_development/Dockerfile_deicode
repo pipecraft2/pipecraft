@@ -1,0 +1,15 @@
+FROM conda/miniconda3:latest
+
+RUN apt-get update -y \
+  && apt-get install wget -y \
+  && conda install -y -c conda-forge mamba \
+  && wget https://data.qiime2.org/distro/core/qiime2-2022.2-py38-linux-conda.yml \
+  && mamba env update -n base --file qiime2-2022.2-py38-linux-conda.yml \
+  && mamba install -n base -y -c conda-forge deicode=0.2.4 \
+  && wget -O /usr/local/lib/python3.8/site-packages/deicode/rpca.py https://raw.githubusercontent.com/SuvalineVana/pipecraft/main/src/pipecraft-core/service_scripts/rpca.py \
+  && wget -O /usr/local/lib/python3.8/site-packages/deicode/scripts/_standalone_rpca.py https://raw.githubusercontent.com/SuvalineVana/pipecraft/main/src/pipecraft-core/service_scripts/_standalone_rpca.py \
+  && R -e "install.packages('optparse', dependencies=TRUE, repos='http://cran.rstudio.com/')" \
+  && conda clean --all --yes \
+  && apt remove wget -y \
+  && apt-get clean \
+  && rm qiime2-2022.2-py38-linux-conda.yml
