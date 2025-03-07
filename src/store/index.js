@@ -4523,6 +4523,14 @@ export default new Vuex.Store({
             tooltip:
               "producing aligned sequences will be skipped if the value is false",
             type: "bool",
+            linked_updates: [
+              {
+                serviceIndex: 8,
+                listName: "extraInputs",
+                inputName: "aligned",
+                getValue: (value) => value === true ? true : false
+              },
+            ],
           },
           {
             name: "numt_filter",
@@ -5537,23 +5545,23 @@ SINGLE-END is for PacBio data, but can be also used for single-end read Illumina
       },
       "truncQ_R1": {
         yamlKey: "trimming.truncQ_R1",
-        transform: (value) => value
+        transform: (value) => parseFloat(value)
       },
       "truncQ_R2": {
         yamlKey: "trimming.truncQ_R2",
-        transform: (value) => value
+        transform: (value) => parseFloat(value)
       },
       "min_length": {
         yamlKey: "trimming.min_length",
-        transform: (value) => value
+        transform: (value) => parseFloat(value)
       },
       "cut_R1": {
         yamlKey: "trimming.cut_R1",
-        transform: (value) => value
+        transform: (value) => parseFloat(value)
       },
       "cut_R2": {
         yamlKey: "trimming.cut_R2",
-        transform: (value) => value
+        transform: (value) => parseFloat(value)
       },
       "action": {
         yamlKey: "trimming.action",
@@ -5563,21 +5571,21 @@ SINGLE-END is for PacBio data, but can be also used for single-end read Illumina
       // Service 3: "quality filtering"
       "maxEE_R1": {
         yamlKey: "filtering.maxEE_R1",
-        transform: (value) => value
+        transform: (value) => parseFloat(value)
       },
       "maxEE_R2": {
         yamlKey: "filtering.maxEE_R2",
-        transform: (value) => value
+        transform: (value) => parseFloat(value)
       },
       
       // Service 6: "filter tag-jumps"
       "f_value": {
         yamlKey: "tag_jump.f",
-        transform: (value) => value
+        transform: (value) => parseFloat(value) 
       },
       "p_value": {
         yamlKey: "tag_jump.p",
-        transform: (value) => value
+        transform: (value) => parseFloat(value)
       },
       
       // Service 7: "Amplicon model setting"
@@ -5613,15 +5621,15 @@ SINGLE-END is for PacBio data, but can be also used for single-end read Illumina
       },
       "max_model_start": {
         yamlKey: "amplicon_model.model_filter.max_model_start",
-        transform: (value) => value
+        transform: (value) => parseFloat(value)
       },
       "min_model_end": {
         yamlKey: "amplicon_model.model_filter.min_model_end",
-        transform: (value) => value
+        transform: (value) => parseFloat(value)
       },
       "min_model_score": {
         yamlKey: "amplicon_model.model_filter.min_model_score",
-        transform: (value) => value
+        transform: (value) => parseFloat(value)
       },
       
       // Service 8: "Protax classification"
@@ -6087,7 +6095,6 @@ SINGLE-END is for PacBio data, but can be also used for single-end read Illumina
           payload.value !== 'custom' && 
           !input.items.includes(payload.value)) {
         input.items.push(payload.value);
-        console.log(`Updated items list for ${input.name}:`, input.items);
       }
 
       input.value = payload.value;
@@ -6118,10 +6125,6 @@ SINGLE-END is for PacBio data, but can be also used for single-end read Illumina
     
         processUpdates(input.linked_updates, payload.value);
       }
-        // Log just the key information about the service
-      console.log(`Final value of ${input.name}:`, input.value);
-      console.log(`Service ${payload.serviceIndex} has been updated`);
-      console.log(state[payload.workflowName][payload.serviceIndex][payload.listName][payload.inputIndex].value)
     },
     toggleActive(state, payload) {
       state.selectedSteps[payload.stepIndex].services[payload.serviceIndex][
