@@ -4595,7 +4595,7 @@ export default new Vuex.Store({
             items: ["Fungi_GSSP", "Metazoa_MBRAVE", "custom"],
             value: "Fungi_GSSP",
             disabled: "never",
-            tooltip:"select file with clustering thresholds. Default is pre-calculated thresholds for Fungi (x.x.2024 UNITEv XX) (included in the PipeCraft2 container)",
+            tooltip:"select file with clustering thresholds. Default is pre-calculated thresholds for Fungi (included in the PipeCraft2 container)",
             type: "select",
           },
         ],

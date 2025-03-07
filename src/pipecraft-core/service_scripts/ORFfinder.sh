@@ -1,6 +1,6 @@
 #!/bin/bash
 
-#Using ORFfinder to identify open reading frames + arthropod COI HMM based filtering
+#Using ORFfinder to identify open reading frames
 #Workflow based on implementations in MetaWorks v1.12.0 (by Teresita M. Porter)
 # Input = fasta file.
 

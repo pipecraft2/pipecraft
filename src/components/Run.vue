@@ -101,16 +101,7 @@ var dockerode = new Dockerode({ socketPath: socketPath });
 var stdout = new streams.WritableStream();
 var stderr = new streams.WritableStream();
 const isDevelopment = process.env.NODE_ENV !== "production";
-let userId, groupId;
-if (os.platform() === 'win32') {
-  // Windows-specific logic
-  userId = 'default';
-  groupId = 'default';
-} else {
-  // Unix-like system logic
-  userId = process.getuid();
-  groupId = process.getgid();
-}
+
 
 export default {
   name: "Run",
@@ -128,25 +119,23 @@ export default {
   },
   methods: {
     initUserAndGroupId() {
-      try {
-        const { execSync } = require('child_process');
-        
+      if (os.platform() === 'win32') {
+        // Windows - use default values
+        console.log('Windows system detected, using default user/group IDs');
+        this.userId = 1000;
+        this.groupId = 1000;
+      } else {
+        // Linux/macOS
         try {
-          // For Linux/macOS
+          const { execSync } = require('child_process');
           this.userId = parseInt(execSync('id -u').toString().trim());
           this.groupId = parseInt(execSync('id -g').toString().trim());
           console.log(`User ID: ${this.userId}, Group ID: ${this.groupId}`);
         } catch (error) {
-          // Fallback for Windows or if command fails
-          console.log(error);
           console.warn('Could not get user/group ID, using default');
-          this.userId = 1000; // Default user ID
-          this.groupId = 1000; // Default group ID
+          this.userId = 1000;
+          this.groupId = 1000;
         }
-      } catch (error) {
-        console.error('Error initializing user and group IDs:', error);
-        this.userId = 1000;
-        this.groupId = 1000;
       }
     },
     async confirmRun(name) {
@@ -193,7 +182,7 @@ export default {
       let dockerProps = {
         Tty: false,
         WorkingDir: WorkingDir,
-        User: `${userId}:${groupId}`,
+        User: `${this.userId}:${this.groupId}`,
         name: Hostname,
         Volumes: {},
         HostConfig: {
@@ -738,7 +727,7 @@ export default {
       let dockerProps = {
         Tty: false,
         WorkingDir: WorkingDir,
-        User: `${userId}:${groupId}`,
+        User: `${this.userId}:${this.groupId}`,
         name: Hostname,
         platform: "linux/amd64",
         Volumes: {},
@@ -754,12 +743,13 @@ export default {
     async runOptimOTU() {
       this.confirmRun('OptimOTU').then(async (result) => {
         if (result.isConfirmed) {
+          console.log(this.$route.params.workflowName);
           this.autoSaveConfig();
+          this.$store.state.runInfo.active = true;
+          this.$store.state.runInfo.containerID = 'optimotu';
           await this.$store.dispatch('generateOptimOTUYamlConfig');
           await this.imageCheck('pipecraft/optimotu:4');
           await this.clearContainerConflicts('optimotu');
-          this.$store.state.runInfo.active = true;
-          this.$store.state.runInfo.containerID = 'optimotu';
           let logStream;
           try {            
             const logDir = this.$store.state.inputDir;
@@ -771,7 +761,7 @@ export default {
             });
             const container = await dockerode.createContainer({
               Image: 'pipecraft/optimotu:4',
-              Hostname: 'optimotu',
+              name: 'optimotu',
               Cmd: ['/scripts/run_optimotu.sh'],
               Tty: false,
               AttachStdout: true,
@@ -814,7 +804,7 @@ export default {
                 confirmButtonText: "Quit",
               });
             }
-            await container.remove();
+            await container.remove({ v: true, force: true });
           } catch (err) {
             console.error('Error running container:', err);
             if (logStream) {
@@ -822,11 +812,20 @@ export default {
               logStream.end();
             }
             this.$store.commit("resetRunInfo");
-            Swal.fire({
-              title: "An error has occured while processing your data",
-              text: err.toString(),
-              confirmButtonText: "Quit",
-            });
+            
+            // Check if the error is due to the user stopping the container
+            if (err.message && err.message.includes('HTTP code 404')) {
+              Swal.fire({
+                title: "Workflow stopped",
+                confirmButtonText: "Quit",
+              });
+            } else {
+              Swal.fire({
+                title: "An error has occurred while processing your data",
+                text: err.toString(),
+                confirmButtonText: "Quit",
+              });
+            }
           } 
         }
       });

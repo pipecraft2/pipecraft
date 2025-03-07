@@ -2,7 +2,8 @@ FROM ubuntu:24.04
 ENV LANG=C.UTF-8
 ENV LC_ALL=C.UTF-8
 RUN apt-get update && \
-    apt-get install -y wget git zip build-essential zlib1g-dev
+    apt-get install -y wget git zip build-essential zlib1g-dev && \
+    
 
 RUN git clone --branch v4.1.1 https://github.com/brendanf/optimotu_targets.git /optimotu_targets
 RUN sed -i 's|BASEDIR=$(pwd)|BASEDIR="/optimotu_targets"|g' /optimotu_targets/scripts/runprotax && \
@@ -66,7 +67,7 @@ RUN rm -f /optimotu_targets/5dcbe93a-b50c-4ff5-8898-528160c4e593.zip && \
     rm -f /optimotu_targets/FinPROTAX.zip && \
     rm -f /optimotu_targets/protaxAnimal_bin.zip
 
-    RUN chmod +x protaxFungi/scripts/usearch10.0.240_i86linux32 && \
+RUN chmod +x protaxFungi/scripts/usearch10.0.240_i86linux32 && \
     protaxFungi/scripts/usearch10.0.240_i86linux32 -udb2fasta protaxFungi/addedmodel/sintaxits2.udb -output protaxFungi/addedmodel/sintaxits2.fasta && \
     usearch -makeudb_usearch protaxFungi/addedmodel/sintaxits2.fasta -output protaxFungi/addedmodel/sintaxits2.udb && \
     usearch -makeudb_usearch protaxFungi/addedmodel/amptk_synmock.fasta -output protaxFungi/addedmodel/amptk_synmock.udb && \
