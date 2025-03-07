@@ -4,7 +4,7 @@ ENV LC_ALL=C.UTF-8
 ENV CONDA_DIR=/opt/conda
 ENV PATH=$CONDA_DIR/bin:$PATH
 
-COPY image_development/protaxFungi.zip image_development/protaxAnimal.zip image_development/OptimOTU_v4.yml /
+COPY image_development/protaxFungi.zip image_development/protaxAnimal.zip image_development/OptimOTU_v5.yaml /
 
 RUN apt-get update && \
     apt-get install -y wget git zip build-essential zlib1g-dev && \
@@ -34,9 +34,9 @@ RUN apt-get update && \
     mv protaxAnimal/refs.aln.gz protaxAnimal/refs.aln && \
     wget --quiet https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86_64.sh -O ~/miniconda.sh && \
     /bin/bash ~/miniconda.sh -b -p /opt/conda && \
-    conda env create -f /OptimOTU_v4.yml && \
+    conda env create -f /OptimOTU_v5.yaml && \
     eval "$(conda shell.bash hook)" && \
-    conda activate OptimOTU_v4 && \
+    conda activate OptimOTU_v5 && \
     Rscript -e "install.packages('renv', repos='https://cloud.r-project.org')" && \
     Rscript -e "library(renv); renv::install('brendanf/optimotu')" && \
     wget -O /usr/local/bin/usearch https://raw.githubusercontent.com/rcedgar/usearch_old_binaries/main/bin/usearch11.0.667_i86linux64 && \

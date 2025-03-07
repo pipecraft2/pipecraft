@@ -13,7 +13,8 @@ cp -f /scripts/pipeline_options.yaml /optimotu_targets/sequences/pipeline_option
 
 # Activate the conda environment
 source /opt/conda/etc/profile.d/conda.sh
-conda activate OptimOTU_v4
+conda activate OptimOTU_v5
+cd /optimotu_targets
 
 # Print current environment for debugging
 echo "PATH: $PATH"

@@ -15,6 +15,8 @@ var socketPath =
 
 var Docker = require("dockerode");
 var docker = new Docker({ socketPath: socketPath });
+const isDevelopment = process.env.NODE_ENV !== "production";
+const slash = require("slash");
 
 Vue.use(Vuex);
 
@@ -4134,7 +4136,7 @@ export default new Vuex.Store({
       {
         tooltip: "Specify target taxa (Fungi or Metazoa) and sequence orientation",
         scriptName:"xxx.sh",
-        imageName: "pipecraft/optimotu:4",
+        imageName: "pipecraft/optimotu:5",
         serviceName: "target taxa and sequence orientation",
         manualLink: "https://pipecraft2-manual.readthedocs.io/en/latest/pre-defined_pipelines.html#target-taxa-and-sequence-orientation",
         disabled: "never",
@@ -4207,7 +4209,7 @@ export default new Vuex.Store({
                     in the positive control samples, and their presence in other samples is indicative of cross-contamination. 
                     In practice both types are treated the same by the pipeline, they are just reported separately.`,
         scriptName:"xxx.sh",
-        imageName: "pipecraft/optimotu:4",
+        imageName: "pipecraft/optimotu:5",
         serviceName: "control sequences",
         manualLink:
           "https://pipecraft2-manual.readthedocs.io/en/latest/pre-defined_pipelines.html#control-sequences",
@@ -4237,7 +4239,7 @@ export default new Vuex.Store({
       {
         tooltip: "remove primers sequences and trim the reads; discards all reads that contain N's (ambiguous bases) for following dada2 denoising",
         scriptName: "xxx.sh",
-        imageName: "pipecraft/optimotu:4",
+        imageName: "pipecraft/optimotu:5",
         serviceName: "cut primers and trim reads",
         manualLink:
           "https://pipecraft2-manual.readthedocs.io/en/latest/pre-defined_pipelines.html#cut-primers-and-trim-reads",
@@ -4335,7 +4337,7 @@ export default new Vuex.Store({
       {
         tooltip: "quality filtering with DADA2 'filterAndTrim' function",
         scriptName: "xxx.sh",
-        imageName: "pipecraft/optimotu:4",
+        imageName: "pipecraft/optimotu:5",
         serviceName: "quality filtering",
         manualLink:
           "https://pipecraft2-manual.readthedocs.io/en/latest/pre-defined_pipelines.html#id12",
@@ -4368,7 +4370,7 @@ export default new Vuex.Store({
         tooltip: `DADA2 denoising with learnErrors(), dada() and mergePairs() functions with default DADA2 parameters. 
                   Sequences with binned quality scores, as produced by newer Illumina sequencers, are automatically detected, and the error model is adjusted accordingly.`,
         scriptName: "xxx.sh",
-        imageName: "pipecraft/optimotu:4",
+        imageName: "pipecraft/optimotu:5",
         serviceName: "denoising and merging paired-end reads",
         manualLink:
           "https://pipecraft2-manual.readthedocs.io/en/latest/pre-defined_pipelines.html#denoising-and-merging-paired-end-reads",
@@ -4381,7 +4383,7 @@ export default new Vuex.Store({
       {
         tooltip: `Chimera filtering with DADA2 'removeBimeraDenovo()' function and vsearch 'uchime_ref' function`,
         scriptName: "xxx.sh",
-        imageName: "pipecraft/optimotu:4",
+        imageName: "pipecraft/optimotu:5",
         serviceName: "chimera filtering",
         manualLink:
           "https://pipecraft2-manual.readthedocs.io/en/latest/pre-defined_pipelines.html#id13",
@@ -4394,7 +4396,7 @@ export default new Vuex.Store({
       {
         tooltip: "Filter tag-jumps with UNCROSS2",
         scriptName: "xxx.sh",
-        imageName: "pipecraft/optimotu:4",
+        imageName: "pipecraft/optimotu:5",
         serviceName: "filter tag-jumps",
         manualLink:
           "https://pipecraft2-manual.readthedocs.io/en/latest/pre-defined_pipelines.html#filter-tag-jumps",
@@ -4430,7 +4432,7 @@ export default new Vuex.Store({
       {
         tooltip: "Statistical sequence models are used for 1) aligning ASVs prior to use of protax and/or NUMT detection; 2) filtering ASVs to remove spurious sequences",
         scriptName: "xxx.sh",
-        imageName: "pipecraft/optimotu:4",
+        imageName: "pipecraft/optimotu:5",
         serviceName: "Amplicon model setting",
         manualLink:
           "https://pipecraft2-manual.readthedocs.io/en/latest/pre-defined_pipelines.html#amplicon-model-setting",
@@ -4535,7 +4537,7 @@ export default new Vuex.Store({
       {
         tooltip: "Settings for Protax classification",
         scriptName: "xxx.sh",
-        imageName: "pipecraft/optimotu:4",
+        imageName: "pipecraft/optimotu:5",
         serviceName: "Protax classification",
         manualLink:
           "https://pipecraft2-manual.readthedocs.io/en/latest/pre-defined_pipelines.html#protax-classification",
@@ -4581,7 +4583,7 @@ export default new Vuex.Store({
       {
         tooltip: "Clustering",
         scriptName: "xxx.sh",
-        imageName: "pipecraft/optimotu:4",
+        imageName: "pipecraft/optimotu:5",
         serviceName: "Clustering",
         manualLink:
           "https://pipecraft2-manual.readthedocs.io/en/latest/pre-defined_pipelines.html#id14",
@@ -5700,7 +5702,7 @@ SINGLE-END is for PacBio data, but can be also used for single-end read Illumina
           } else  {
             const filename = value.split(/[/\\]/).pop();
             return {
-                'sequences': `/optimotu_targets/data/sh_matching_data/custom_shs/${filename}`,
+                'sequences': `/optimotu_targets/data/${filename}`,
             };
           }
         }
@@ -6229,7 +6231,9 @@ SINGLE-END is for PacBio data, but can be also used for single-end read Illumina
       });
       
       // Write to file
-      const filePath = 'src/pipecraft-core/service_scripts/pipeline_options.yaml';
+      let filePath = isDevelopment == true
+        ? `${slash(process.cwd())}/src/pipecraft-core/service_scripts/pipeline_options.yaml`
+        : `${process.resourcesPath}/src/pipecraft-core/service_scripts/pipeline_options.yaml`;
       yamlString = yamlString.replace(/: '"([^"]*)"'/g, ': "$1"');
       yamlString = yamlString.replace(/: 'FALSE'/g, ': FALSE');
       yamlString = yamlString.replace(/: null$/gm, ':');

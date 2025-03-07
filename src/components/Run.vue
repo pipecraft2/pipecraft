@@ -6,7 +6,9 @@
       $store.state.inputDir != '' &&
       (('workflowName' in $route.params &&
         $store.getters.customWorkflowReady) ||
-        $store.getters.selectedStepsReady)
+        $store.getters.selectedStepsReady) &&
+    !($route.params.workflowName === 'OptimOTU' && 
+      $store.state.OptimOTU[8].Inputs[1].value === 'undefined')
     "
   >
     <template v-slot:activator="{ on }">
@@ -19,7 +21,9 @@
             (!('workflowName' in $route.params) &&
               !$store.getters.selectedStepsReady) ||
             ('workflowName' in $route.params &&
-              !$store.getters.customWorkflowReady)
+              !$store.getters.customWorkflowReady) ||
+            ($route.params.workflowName === 'OptimOTU' && 
+              $store.state.OptimOTU[8].Inputs[1].value === 'undefined')
           "
           block
           :style="
@@ -28,7 +32,9 @@
             (!('workflowName' in $route.params) &&
               !$store.getters.selectedStepsReady) ||
             ('workflowName' in $route.params &&
-              !$store.getters.customWorkflowReady)
+              !$store.getters.customWorkflowReady) ||
+            ($route.params.workflowName === 'OptimOTU' && 
+              $store.state.OptimOTU[8].Inputs[1].value === 'undefined')
               ? {
                   borderBottom: 'thin #E57373 solid',
                   borderTop: 'thin white solid',
@@ -58,6 +64,12 @@
         </v-btn>
       </div>
     </template>
+    <div
+    v-if="$route.params.workflowName === 'OptimOTU' && 
+          $store.state.OptimOTU[8].Inputs[1].value === 'undefined'"
+  >
+    Missing outgroup database for protax classification
+  </div>
     <div v-if="this.$store.state.dockerStatus == 'stopped'">
       Failed to find docker desktop!
     </div>
@@ -665,7 +677,7 @@ export default {
               input.value !== "UNITE_SHs") {
               
             const correctedPath = path.dirname(slash(input.value));
-            binds.push(`${correctedPath}:/optimotu_targets/data/sh_matching_data/custom_shs`);
+            binds.push(`${correctedPath}:/optimotu_targets/data/`);
           }
 
           if (input.name === "location" && 
@@ -748,7 +760,7 @@ export default {
           this.$store.state.runInfo.active = true;
           this.$store.state.runInfo.containerID = 'optimotu';
           await this.$store.dispatch('generateOptimOTUYamlConfig');
-          await this.imageCheck('pipecraft/optimotu:4');
+          await this.imageCheck('pipecraft/optimotu:5');
           await this.clearContainerConflicts('optimotu');
           let logStream;
           try {            
@@ -760,7 +772,7 @@ export default {
               mode: 0o666  // Read/write permissions for all users
             });
             const container = await dockerode.createContainer({
-              Image: 'pipecraft/optimotu:4',
+              Image: 'pipecraft/optimotu:5',
               name: 'optimotu',
               Cmd: ['/scripts/run_optimotu.sh'],
               Tty: false,

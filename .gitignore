@@ -5,7 +5,7 @@ desktop.ini
 /testData
 /src/pipecraft-core/service_scripts/NextFlowConfig.json
 /src/pipecraft-core/service_scripts/pipeline_options.yaml
-
+/image_development/*.zip
 
 # local env files
 .env.local

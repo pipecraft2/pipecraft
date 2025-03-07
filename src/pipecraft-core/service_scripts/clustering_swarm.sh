@@ -23,7 +23,7 @@ printf "# seqkit (version %s)\n" "$seqkit_version"
 
 # Load variables (these can be set in the environment or upstream)
 # SWARM clustering options with defaults:
-swarm_d=${swarm_d:-1}                      # Resolution (differences), default 1.
+swarm_d=${swarm_d:1}                      # Resolution (differences), default 1.
 swarm_no_break=${swarm_no_break}           # If defined (default "true"), adds --no-otu-breaking.
 # Fastidious options (only applicable if swarm_d == 1)
 swarm_boundary=${swarm_boundary}           # default 3
@@ -48,7 +48,7 @@ swarm_gap_open=${swarm_gap_open}           # Gap open penalty, default 12.
 swarm_gap_ext=${swarm_gap_ext}             # Gap extension penalty, default 4.
 swarm_disable_sse3=${swarm_disable_sse3}   # Flag, default "true" to disable SSE3.
 # Thread setting: default to 4 but can be overridden.
-swarm_threads=${swarm_threads:-4}
+swarm_threads=${swarm_threads:4}
 
 # File format and input file variables
 fileFormat=${fileFormat}                   # "fasta", "fastq", etc.
@@ -189,7 +189,7 @@ for seqrun in $DIRS; do
     swarm_opts+=" -o ${swarm_output_file}"
     swarm_opts+=" -s ${swarm_stats_file}"
     swarm_opts+=" -w ${swarm_seeds_file}"
-    # Add threads option (if supported by swarm)
+    # Add threads option
     swarm_opts+=" -t ${swarm_threads}"
     # Additional input/output options if set by user
     [[ -n "$swarm_append" ]] && swarm_opts+=" -a ${swarm_append}"
