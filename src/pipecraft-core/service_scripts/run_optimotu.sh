@@ -29,7 +29,6 @@ wait
 # Check if the R command was successful
 if [ $? -eq 0 ]; then
     echo "OptimOTU pipeline completed successfully."
-    echo "OptimOTU pipeline completed successfully." >> /optimotu_targets/sequences/optimotu_targets.log
 
     # Copy the output folder to the sequences folder
     echo "Copying output files to sequences folder..."
