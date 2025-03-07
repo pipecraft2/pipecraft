@@ -62,8 +62,9 @@ fi
 ### Make README.txt 
 end=$(date +%s)
 runtime=$((end-start))
-in=$(echo $in_name | sed -e 's/\/extraFiles\///')
-printf "# OptimOTU workflow:
+
+cat << EOF > /optimotu_targets/sequences/README.txt
+# OptimOTU workflow:
 
 Start time: $start_time
 End time: $(date)
@@ -72,16 +73,16 @@ Runtime: $runtime seconds
 The outputs of the pipeline are a set of tables in TSV format (tab-delimited files) and 
 RDS format (for easy loading in R), as well as sequences in gzipped FASTA format.
 
-The plausible and reliable ({conf}) versions of the table are based on taxonomic assignments at the 50% and 90% probability thresholds, respectively.
+The plausible and reliable (conf) versions of the table are based on taxonomic assignments at the 50% and 90% probability thresholds, respectively.
 
 Output files:
 # asv_table               = ASV table as a sparse matrix (long format) with five columns: sample, seqrun, seq_id, seq_idx, and nread.
-# asv2tax_{conf}          = Taxonomic assignments for each ASV at the 50% and 90% probability thresholds, respectively.
-# otu_taxonomy_{conf}     = Taxonomy for each OTU at the 50% and 90% probability thresholds, respectively.
-# otu_table_sparse_{conf} = OTU table as a sparse matrix (long format) with five columns: sample, seqrun, seq_id, seq_idx, and nread.
-# otu_table_{conf}        = OTU table as a dense matrix (wide format) with columns as samples and rows as OTUs.
-# otu_{conf}.fasta        = representative OTU sequences for the 50% and 90% probability thresholds for plausible and reliable OTUs, respectively.
-# read_counts_{conf}.tsv  = the number of reads in each sample present after each stage of the pipeline.
+# asv2tax_(conf)          = Taxonomic assignments for each ASV at the 50% and 90% probability thresholds, respectively.
+# otu_taxonomy_(conf)     = Taxonomy for each OTU at the 50% and 90% probability thresholds, respectively.
+# otu_table_sparse_(conf) = OTU table as a sparse matrix (long format) with five columns: sample, seqrun, seq_id, seq_idx, and nread.
+# otu_table_(conf)        = OTU table as a dense matrix (wide format) with columns as samples and rows as OTUs.
+# otu_(conf).fasta        = representative OTU sequences for the 50% and 90% probability thresholds for plausible and reliable OTUs, respectively.
+# read_counts_(conf).tsv  = the number of reads in each sample present after each stage of the pipeline.
 # optimotu_targets.log    = R log file about the OptimOTU pipeline
 
 All output files are also zipped into OptimOTU_in_PipeCraft2_*.zip (except for the log file).
@@ -89,9 +90,9 @@ All output files are also zipped into OptimOTU_in_PipeCraft2_*.zip (except for t
 ##############################################
 ###Third-party applications for this process:
 # OptimOTU pipeline v5.0.0 (https://github.com/brendanf/optimotu_targets/releases/tag/v5.0.0)
-  # wraps optimotu=0.9.3 and optimotu.pipeline=0.5.2
     citation: Furneaux, B., Anslan, S., Somervuo, P., Hultman, J., Abrego, N., Roslin, T., & Ovaskainen, O. (2025). OptimOTU: Taxonomically aware OTU clustering with optimized thresholds and a bioinformatics workflow for metabarcoding data. arXiv preprint arXiv:2502.10350.
-##############################################" > /optimotu_targets/sequences/README.txt
+##############################################
+EOF
 
 #Done
 printf "\nDONE "

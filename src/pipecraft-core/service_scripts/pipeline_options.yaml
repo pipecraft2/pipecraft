@@ -35,8 +35,8 @@ orient: fwd
 control:
   spike:
   positive:
-forward_primer: "CCHGAYATRGCHTTYCCHCG"
-reverse_primer: "TCDGGRTGNCCRAARAAYCA"
+forward_primer: "GTGARTCATCGAATCTTTG"
+reverse_primer: "TCCTCCGCTTATTGATATGC"
 custom_sample_table: FALSE
 filtering:
   maxEE_R1: 1
@@ -45,14 +45,14 @@ tag_jump:
   f: 0.03
   p: 1
 amplicon_model:
-  model_type: HMM
-  model_file: /optimotu_targets/data/COI.hmm
-  model_align: yes
-  numt_filter: yes
+  model_type: CM
+  model_file: /optimotu_targets/data/fITS7_ITS4.cm
+  model_align: no
+  numt_filter: no
   model_filter:
-    max_model_start: 245
-    min_model_end: 652
-    min_model_score: 200
+    max_model_start: 5
+    min_model_end: 90
+    min_model_score: 50
 outgroup_reference:
   sequences: /optimotu_targets/data/BOLD_Public.27-Sep-2024.part_001.fasta
 cluster_thresholds: /optimotu_targets/metadata/MBRAVE_thresholds.tsv
