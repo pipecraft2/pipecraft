@@ -5710,7 +5710,7 @@ SINGLE-END is for PacBio data, but can be also used for single-end read Illumina
           } else  {
             const filename = value.split(/[/\\]/).pop();
             return {
-                'sequences': `/optimotu_targets/data/${filename}`,
+                'sequences': `/optimotu_targets/data/outgroup/${filename}`,
             };
           }
         }

@@ -677,7 +677,7 @@ export default {
               input.value !== "UNITE_SHs") {
               
             const correctedPath = path.dirname(slash(input.value));
-            binds.push(`${correctedPath}:/optimotu_targets/data/`);
+            binds.push(`${correctedPath}:/optimotu_targets/data/outgroup`);
           }
 
           if (input.name === "location" && 
