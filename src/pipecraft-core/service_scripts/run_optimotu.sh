@@ -88,6 +88,7 @@ All output files are also zipped into OptimOTU_in_PipeCraft2_*.zip (except for t
 ##############################################
 ###Third-party applications for this process:
 # OptimOTU pipeline v5.0.0 (https://github.com/brendanf/optimotu_targets/releases/tag/v5.0.0)
+  # wraps optimotu=0.9.3 and optimotu.pipeline=0.5.2
     citation: Furneaux, B., Anslan, S., Somervuo, P., Hultman, J., Abrego, N., Roslin, T., & Ovaskainen, O. (2025). OptimOTU: Taxonomically aware OTU clustering with optimized thresholds and a bioinformatics workflow for metabarcoding data. arXiv preprint arXiv:2502.10350.
 ##############################################" > /optimotu_targets/sequences/README.txt
 
