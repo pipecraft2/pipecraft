@@ -100,6 +100,13 @@ async function createWindow() {
   });
   win.webContents.openDevTools();
   win.removeMenu();
+    // Add keyboard shortcut for DevTools
+  win.webContents.on('before-input-event', (event, input) => {
+    // Ctrl+Shift+I (Windows/Linux) or Cmd+Opt+I (Mac)
+    if ((input.control || input.meta) && input.shift && input.key.toLowerCase() === 'i') {
+      win.webContents.toggleDevTools();
+    }
+  })
   win.webContents.on("new-window", function (e, url) {
     e.preventDefault();
     require("electron").shell.openExternal(url);
@@ -115,6 +122,8 @@ async function createWindow() {
     win.loadURL("app://./index.html");
   }
 }
+
+
 
 // Quit when all windows are closed.
 app.on("window-all-closed", () => {

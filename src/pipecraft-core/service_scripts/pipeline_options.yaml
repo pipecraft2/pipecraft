@@ -54,5 +54,5 @@ amplicon_model:
     min_model_end: 652
     min_model_score: 200
 outgroup_reference:
-  sequences: /optimotu_targets/data/cleaned.fasta
+  sequences: /optimotu_targets/data/BOLD_Public.27-Sep-2024.part_001.fasta
 cluster_thresholds: /optimotu_targets/metadata/MBRAVE_thresholds.tsv
