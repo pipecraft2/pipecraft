@@ -31,11 +31,11 @@ protax:
     - family
     - genus
     - species
-orient: mixed
+orient: fwd
 control:
   spike:
   positive:
-forward_primer: "GCATCGATGAAGAACGCAGC"
+forward_primer: "GTGARTCATCGAATCTTTG"
 reverse_primer: "TCCTCCGCTTATTGATATGC"
 custom_sample_table: FALSE
 filtering:
@@ -46,12 +46,12 @@ tag_jump:
   p: 1
 amplicon_model:
   model_type: CM
-  model_file: /optimotu_targets/data/ITS3_ITS4.cm
+  model_file: /optimotu_targets/data/fITS7_ITS4.cm
   model_align: no
   numt_filter: no
   model_filter:
     max_model_start: 5
-    min_model_end: 140
+    min_model_end: 90
     min_model_score: 50
 outgroup_reference:
   sequences: /optimotu_targets/data/sh_matching_data/sanger_refs_sh.fasta
