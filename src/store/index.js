@@ -4257,7 +4257,7 @@ export default new Vuex.Store({
         Inputs: [
           {
             name: "forward_primer",
-            value: ["GTGARTCATCGAATCTTTG"],
+            value: ["GCATCGATGAAGAACGCAGC"],
             disabled: "never",
             tooltip: "specify forward primer (5'-3'); supports only a single fwd primer",
             type: "chip",
