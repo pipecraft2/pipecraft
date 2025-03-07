@@ -59,6 +59,7 @@ if [ ! -z "$HOST_UID" ] && [ ! -z "$HOST_GID" ]; then
 fi
 
 ### Make README.txt 
+end=$(date +%s)
 runtime=$((end-start))
 in=$(echo $in_name | sed -e 's/\/extraFiles\///')
 printf "# OptimOTU workflow:
@@ -88,7 +89,7 @@ All output files are also zipped into OptimOTU_in_PipeCraft2_*.zip (except for t
 ###Third-party applications for this process:
 # OptimOTU pipeline v5.0.0 (https://github.com/brendanf/optimotu_targets/releases/tag/v5.0.0)
     citation: Furneaux, B., Anslan, S., Somervuo, P., Hultman, J., Abrego, N., Roslin, T., & Ovaskainen, O. (2025). OptimOTU: Taxonomically aware OTU clustering with optimized thresholds and a bioinformatics workflow for metabarcoding data. arXiv preprint arXiv:2502.10350.
-##############################################" > /optimotu_targets/sequences//README.txt
+##############################################" > /optimotu_targets/sequences/README.txt
 
 #Done
 printf "\nDONE "
