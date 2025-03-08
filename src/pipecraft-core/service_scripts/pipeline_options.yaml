@@ -1,5 +1,6 @@
 project_name: OptimOTU_in_PipeCraft2
 file_extension: "fastq.gz"
+file_extension: "fastq.gz"
 added_reference:
   fasta:
   table:
@@ -13,7 +14,7 @@ guilds: no
 trimming:
   min_overlap: 10
   max_n: 0
-  max_err: 1
+  max_err: 2
   truncQ_R1: 2
   truncQ_R2: 2
   min_length: 100
@@ -31,7 +32,7 @@ protax:
     - family
     - genus
     - species
-orient: fwd
+orient: mixed
 control:
   spike:
   positive:

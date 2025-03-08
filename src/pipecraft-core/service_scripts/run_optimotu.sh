@@ -1,7 +1,33 @@
 #!/bin/bash
 
-# OptimOTU workflow
+#####################
+# OptimOTU workflow #
+#####################
 
+# # Check if input files match expected format
+# fileFormat=${fileFormat}
+# export fileFormat
+
+# echo "specified fileFormat: $fileFormat"
+
+# # check files in 01_raw and subdirectories
+# # Find all subdirectories in 01_raw
+# while IFS= read -r subdir; do
+#     echo "Checking files in $subdir..."
+    
+#     # Count files with the specified extension in the subdirectory
+#     file_count=$(find "$subdir" -maxdepth 1 -type f -name "*.${fileFormat}" | wc -l)
+    
+#     if [ "$file_count" -eq 0 ]; then
+#         printf "[ERROR]: No %s files found in %s\n" "${fileFormat}" "${subdir}" >&2
+#         printf "[ERROR]: No %s files found in %s\n" "${fileFormat}" "${subdir}" > /optimotu_targets/sequences/optimotu_targets.log
+#         exit 1
+#     else
+#         echo "Found $file_count .${fileFormat} files in $subdir"
+#     fi
+# done < <(find /optimotu_targets/sequences/01_raw -mindepth 1 -maxdepth 1 -type d)
+
+# echo "All directories contain valid .${fileFormat} files. Proceeding with pipeline."
 
 # Start time
 start_time=$(date)
