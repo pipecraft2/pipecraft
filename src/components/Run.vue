@@ -780,7 +780,9 @@ export default {
               AttachStderr: true,
               Env: [
                 `HOST_UID=${this.userId}`,
-                `HOST_GID=${this.groupId}`
+                `HOST_GID=${this.groupId}`,
+                `fileFormat=${this.$store.state.data.fileFormat}`,
+                `readType=${this.$store.state.data.readType}`
               ],
               HostConfig: {
                 Binds: this.getOptimOTUBinds()

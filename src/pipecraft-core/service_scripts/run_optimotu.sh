@@ -6,6 +6,8 @@
 # Start time
 start_time=$(date)
 start=$(date +%s)
+echo $fileFormat
+echo $readType
 
 # Copy the configuration file
 cp -f /scripts/pipeline_options.yaml /optimotu_targets/pipeline_options.yaml # to targets

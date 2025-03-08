@@ -1,5 +1,5 @@
 project_name: OptimOTU_in_PipeCraft2
-file_extension: "fastq"
+file_extension: "fastq.gz"
 added_reference:
   fasta:
   table:
@@ -35,12 +35,12 @@ orient: fwd
 control:
   spike:
   positive:
-forward_primer: "CCHGAYATRGCHTTYCCHCG"
-reverse_primer: "TCDGGRTGNCCRAARAAYCA"
+forward_primer: "GCATCGATGAAGAACGCAGC"
+reverse_primer: "TCCTCCGCTTATTGATATGC"
 custom_sample_table: FALSE
 filtering:
-  maxEE_R1: 3
-  maxEE_R2: 3
+  maxEE_R1: 1
+  maxEE_R2: 1
 tag_jump:
   f: 0.03
   p: 1
@@ -54,5 +54,5 @@ amplicon_model:
     min_model_end: 652
     min_model_score: 200
 outgroup_reference:
-  sequences: /optimotu_targets/data/COI_with_outgroup.fasta
+  sequences: /optimotu_targets/data/outgroup/BOLD_Public.27-Sep-2024.part_001.m300.fasta
 cluster_thresholds: /optimotu_targets/metadata/MBRAVE_thresholds.tsv
