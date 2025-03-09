@@ -5,29 +5,29 @@
 #####################
 
 # # Check if input files match expected format
-# fileFormat=${fileFormat}
-# export fileFormat
+fileFormat=${fileFormat}
+export fileFormat
 
-# echo "specified fileFormat: $fileFormat"
+echo "specified fileFormat: $fileFormat"
 
 # # check files in 01_raw and subdirectories
 # # Find all subdirectories in 01_raw
-# while IFS= read -r subdir; do
-#     echo "Checking files in $subdir..."
+ while IFS= read -r subdir; do
+     echo "Checking files in $subdir..."
     
 #     # Count files with the specified extension in the subdirectory
-#     file_count=$(find "$subdir" -maxdepth 1 -type f -name "*.${fileFormat}" | wc -l)
+     file_count=$(find "$subdir" -maxdepth 1 -type f -name "*.${fileFormat}" | wc -l)
     
-#     if [ "$file_count" -eq 0 ]; then
-#         printf "[ERROR]: No %s files found in %s\n" "${fileFormat}" "${subdir}" >&2
-#         printf "[ERROR]: No %s files found in %s\n" "${fileFormat}" "${subdir}" > /optimotu_targets/sequences/optimotu_targets.log
-#         exit 1
-#     else
-#         echo "Found $file_count .${fileFormat} files in $subdir"
-#     fi
-# done < <(find /optimotu_targets/sequences/01_raw -mindepth 1 -maxdepth 1 -type d)
+     if [ "$file_count" -eq 0 ]; then
+         printf "[ERROR]: No %s files found in %s\n" "${fileFormat}" "${subdir}" >&2
+         printf "[ERROR]: No %s files found in %s\n" "${fileFormat}" "${subdir}" > /optimotu_targets/sequences/optimotu_targets.log
+         exit 1
+     else
+         echo "Found $file_count .${fileFormat} files in $subdir"
+     fi
+ done < <(find /optimotu_targets/sequences/01_raw -mindepth 1 -maxdepth 1 -type d)
 
-# echo "All directories contain valid .${fileFormat} files. Proceeding with pipeline."
+echo "All directories contain valid .${fileFormat} files. Proceeding with pipeline."
 
 # Start time
 start_time=$(date)
@@ -49,13 +49,13 @@ echo "PATH: $PATH"
 echo "Current directory: $(pwd)"
 echo "Conda environment: $CONDA_DEFAULT_ENV"
 
-# Run the OptimOTU pipeline
-Rlog=$(R -e "targets::tar_config_set(script='/optimotu_targets/_targets.R'); targets::tar_make(callr_function=NULL)" 2>&1)
-echo $Rlog >> /optimotu_targets/sequences/optimotu_targets.log
-wait
+# Run the OptimOTU pipeline and capture output
+Rlog=$(R --vanilla -e "targets::tar_config_set(script='/optimotu_targets/_targets.R'); targets::tar_make(callr_function=NULL)" 2>&1)
+R_EXIT_STATUS=$?
+echo "$Rlog" >> /optimotu_targets/sequences/optimotu_targets.log
 
-# Check if the R command was successful
-if [ $? -eq 0 ]; then
+# Check the actual R script exit status
+if [ $R_EXIT_STATUS -eq 0 ]; then
     echo "OptimOTU pipeline completed successfully."
 
     # Copy the output folder to the sequences folder
@@ -74,9 +74,11 @@ if [ $? -eq 0 ]; then
         exit 1
     fi
 else
-    echo "Error: OptimOTU pipeline failed."
-    echo "Error: OptimOTU pipeline failed." >> /optimotu_targets/sequences/optimotu_targets.log
-    exit 1
+    echo "Error: OptimOTU pipeline failed with exit status $R_EXIT_STATUS"
+    echo "Error: OptimOTU pipeline failed with exit status $R_EXIT_STATUS" >> /optimotu_targets/sequences/optimotu_targets.log
+    echo "Last 50 lines of R output:"
+    echo "$Rlog" | tail -n 50
+    exit $R_EXIT_STATUS
 fi
 
 echo "All operations completed."

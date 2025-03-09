@@ -4146,7 +4146,7 @@ export default new Vuex.Store({
         Inputs: [
           {
             name: "target_taxa",
-            items: ["fungi", "metazoa"],
+            items: ["fungi"],
             value: "fungi",
             disabled: "never",
             tooltip: `fungi = target taxa are fungi; 

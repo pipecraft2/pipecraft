@@ -98,7 +98,6 @@ async function createWindow() {
       enableRemoteModule: true,
     },
   });
-  win.webContents.openDevTools();
   win.removeMenu();
     // Add keyboard shortcut for DevTools
   win.webContents.on('before-input-event', (event, input) => {
