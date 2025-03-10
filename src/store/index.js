@@ -4367,7 +4367,7 @@ export default new Vuex.Store({
         ],
       },
       {
-        tooltip: `DADA2 denoising with learnErrors(), dada() and mergePairs() functions with default DADA2 parameters. 
+        tooltip: `NON-COSTUMIZABLE SETTINGS here! DADA2 denoising with learnErrors(), dada() and mergePairs() functions with default DADA2 parameters. 
                   Sequences with binned quality scores, as produced by newer Illumina sequencers, are automatically detected, and the error model is adjusted accordingly.`,
         scriptName: "xxx.sh",
         imageName: "pipecraft/optimotu:5",
@@ -4381,7 +4381,7 @@ export default new Vuex.Store({
         Inputs: [],
       },
       {
-        tooltip: `Chimera filtering with DADA2 'removeBimeraDenovo()' function and vsearch 'uchime_ref' function`,
+        tooltip: `NON-COSTUMIZABLE SETTINGS here! Chimera filtering with DADA2 'removeBimeraDenovo()' function and vsearch 'uchime_ref' function`,
         scriptName: "xxx.sh",
         imageName: "pipecraft/optimotu:5",
         serviceName: "chimera filtering",
