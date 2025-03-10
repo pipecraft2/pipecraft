@@ -192,6 +192,9 @@ fi
 if [[ $debugger != "true" ]]; then
     rm $output_dir/make_FeatureTable_collapseASVs.log 
     rm $output_dir/dada2_mergeRuns.log
+    if [[ -f "/input/multiRunDir/.curate_table_params" ]]; then
+        rm /input/multiRunDir/.curate_table_params
+    fi
 fi
 
 # count features and sequences; outputs variables feature_count, nSeqs, nSample

@@ -5484,7 +5484,7 @@ SINGLE-END is for PacBio data, but can be also used for single-end read Illumina
         title: "NextITS",
       },
       OptimOTU: {
-        info: `OptimOTU pipeline for demultiplexed paired-end Illumina ITS or COI amplicons`,
+        info: `OptimOTU pipeline for demultiplexed paired-end Illumina ITS amplicons for Fungi`,
         link: "https://github.com/brendanf/optimotu.pipeline",
         title: "OptimOTU",
       },

@@ -15,7 +15,7 @@ echo "specified fileFormat: $fileFormat"
  while IFS= read -r subdir; do
      echo "Checking files in $subdir..."
     
-#     # Count files with the specified extension in the subdirectory
+     # Count files with the specified extension in the subdirectory
      file_count=$(find "$subdir" -maxdepth 1 -type f -name "*.${fileFormat}" | wc -l)
     
      if [ "$file_count" -eq 0 ]; then
