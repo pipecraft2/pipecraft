@@ -176,12 +176,12 @@ export default {
             "Green = debugging mode ON; PipeCraft will retain all temporary files",
           action: this.debug,
         },
-        {
+/*         {
           title: "update",
           icon: "mdi-update",
           tooltip: "Check for updates",
           action: this.update,
-        },
+        }, */
       ],
     };
   },
