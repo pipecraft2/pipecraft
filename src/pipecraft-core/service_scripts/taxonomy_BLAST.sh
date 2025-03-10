@@ -19,6 +19,12 @@ db1_temp=$(echo $database_file | grep -oP "$regex")
 db1=$(printf "/extraFiles/$db1_temp")
 echo "db1 = $db1"
 
+### input fasta file
+IN=$(echo $fasta_file | grep -oP "$regex")
+# overwrite fileFormat variable; get it from input fasta_file
+fileFormat=$(echo $IN | awk -F. '{print $NF}')
+export fileFormat
+
 #mandatory options
 task=$"-task ${task}"       # e.g. blastn, megablast
 strands=$"-strand ${strands}"   # both, plus
@@ -42,18 +48,23 @@ fi
 source /scripts/submodules/framework.functions.sh
 
 #output dir
-output_dir=$"/input/taxonomy_out"
+output_dir=$"/input/taxonomy_out.blast"
 
 #############################
 ### Start of the workflow ###
 #############################
+echo "output_dir = $output_dir"
+if [[ -d $output_dir ]]; then
+    rm -rf $output_dir
+fi
+mkdir $output_dir
+
+### Start time
+start_time=$(date)
 start=$(date +%s)
 
 ### Check if files with specified extension exist in the dir
 first_file_check
-
-### Prepare working env and check single-end data
-prepare_SE_env
 
 #If input is compressed, then decompress (keeping the compressed file, but overwriting if filename exists!)
 check_gz_zip_SE
@@ -61,11 +72,6 @@ check_gz_zip_SE
 ### Check input formats (fasta supported)
 check_extension_fasta
 
-### Select last fasta file in the folder as input for BLAST
-for file in *.$fileFormat; do
-    IN=$(echo $file)
-done
-echo "input = $IN"
 
 ### Check and assign BLAST database
 d1=$(echo $db1 | awk 'BEGIN{FS=OFS="."}{print $NF}') #get the extension
@@ -286,11 +292,15 @@ db_x=$(echo $db1 | sed -e 's/\/extraFiles\///')
 # Make README.txt file
 printf "# Taxonomy was assigned using BLAST (see 'Core command' below for the used settings).
 
+Start time: $start_time
+End time: $(date)
+Runtime: $runtime seconds
+
 Query    = $IN
 Database = $db_x
 
-BLAST_1st_best_hit.txt = BLAST results for the 1st best hit in the used database (sim_score and adj_qcov appended).
-BLAST_10_best_hits.txt = BLAST results for the 10 best hits in the used database, with sim_score and adj_qcov inserted after pident in each block.
+BLAST_1st_best_hit.txt = BLAST results for the 1st best hit in the used database
+BLAST_10_best_hits.txt = BLAST results for the 10 best hits in the used database
 
 BLAST values field separator is '+'. When pasting the taxonomy results to e.g. Excel, then first denote '+' as the field separator to align the columns.
 
@@ -317,8 +327,6 @@ adj_qcov  = adjusted query coverage; if qlen > slen then ((send-sstart+1)/slen)*
 
 Core command ->
 blastn -query $IN $strands $database $task -max_target_seqs 10 $evalue $wordsize $reward $penalty $gapopen $gapextend -max_hsps 1
-
-Total run time was $runtime sec.
 
 ##########################################################
 ###Third-party applications [PLEASE CITE]:
