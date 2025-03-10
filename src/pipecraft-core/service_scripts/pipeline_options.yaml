@@ -31,7 +31,7 @@ protax:
     - family
     - genus
     - species
-orient: mixed
+orient: fwd
 control:
   spike:
   positive:
