@@ -785,7 +785,9 @@ export default {
                 `readType=${this.$store.state.data.readType}`
               ],
               HostConfig: {
-                Binds: this.getOptimOTUBinds()
+                Binds: this.getOptimOTUBinds(),
+                Memory: this.$store.state.dockerInfo.MemTotal,
+                NanoCpus: this.$store.state.dockerInfo.NCPU * 1e9,
               }
             });
     

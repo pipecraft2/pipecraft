@@ -1,6 +1,6 @@
 import Vue from "vue";
 import Vuex from "vuex";
-import router from "../router/index.js";
+// import router from "../router/index.js";
 var _ = require("lodash");
 import yaml from 'js-yaml';
 import os from "os";
@@ -4146,7 +4146,7 @@ export default new Vuex.Store({
         Inputs: [
           {
             name: "target_taxa",
-            items: ["fungi"],
+            items: ["fungi", "metazoa"],
             value: "fungi",
             disabled: "never",
             tooltip: `fungi = target taxa are fungi; 
@@ -5914,11 +5914,6 @@ SINGLE-END is for PacBio data, but can be also used for single-end read Illumina
           state.selectedSteps = state.selectedSteps.filter(
             (item) => !(item.stepName == "assemble paired-end")
           );
-          if (router.currentRoute != "/home") {
-            router.push("/home").catch(() => {
-              /* ignore */
-            });
-          }
         }
       }
     },
@@ -5945,11 +5940,6 @@ SINGLE-END is for PacBio data, but can be also used for single-end read Illumina
           state.selectedSteps = state.selectedSteps.filter(
             (item) => !(item.stepName == "demultiplex")
           );
-          if (router.currentRoute != "/home") {
-            router.push("/home").catch(() => {
-              /* ignore */
-            });
-          }
         }
       }
     },

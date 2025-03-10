@@ -8,7 +8,7 @@ COPY image_development/protaxFungi.zip image_development/protaxAnimal.zip image_
 
 RUN apt-get update && \
     apt-get install -y wget git zip build-essential zlib1g-dev && \
-    git clone --branch v5.0.0 https://github.com/brendanf/optimotu_targets.git /optimotu_targets && \
+    git clone --branch main https://github.com/brendanf/optimotu_targets.git /optimotu_targets && \
     sed -i 's|BASEDIR=$(pwd)|BASEDIR="/optimotu_targets"|g' /optimotu_targets/scripts/runprotax && \
     sed -i '1i#!/bin/bash' /optimotu_targets/scripts/runprotax && \
     sed -i 's|$PROTAX/usearch10.0.240_i86linux32|usearch|g' /optimotu_targets/scripts/runprotax && \
