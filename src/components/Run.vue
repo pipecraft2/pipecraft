@@ -244,7 +244,7 @@ export default {
               let result = await dockerode
                 .run(
                   step.imageName,
-                  ["sh", "-c", `/scripts/${scriptName}`],
+                  ["sh", "-c", `chmod +x /scripts/${scriptName} && /scripts/${scriptName}`],
                   [stdout, stderr],
                   dockerProps
                 )
@@ -382,7 +382,7 @@ export default {
             let result = await dockerode
               .run(
                 selectedStep.imageName,
-                ["sh", "-c", `/scripts/${selectedStep.scriptName}`],
+                ["sh", "-c", `chmod +x /scripts/${selectedStep.scriptName} && /scripts/${selectedStep.scriptName}`],
                 [stdout, stderr],
                 dockerProps
               )
