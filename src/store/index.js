@@ -723,7 +723,7 @@ export default new Vuex.Store({
                 value: 0,
                 disabled: "never",
                 tooltip:
-                  "discard sequences with more than the specified number of N's (ambiguous bases)",
+                  "discard sequences with more than the specified number of N's (ambiguous bases). This should be set to 0 if denoising is performed with DADA2",
                 type: "numeric",
                 rules: [(v) => v >= 0 || "ERROR: specify values >= 0"],
               },
@@ -5064,7 +5064,7 @@ export default new Vuex.Store({
             value: 0,
             disabled: "never",
             tooltip:
-              "discard sequences with more than the specified number of Ns (ambiguous bases)",
+              "discard sequences with more than the specified number of N's (ambiguous bases). This should be set to 0 if denoising is performed with DADA2",
             type: "numeric",
             rules: [(v) => v >= 0 || "ERROR: specify values >= 0"],
           },

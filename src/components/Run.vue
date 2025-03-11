@@ -244,7 +244,7 @@ export default {
               let result = await dockerode
                 .run(
                   step.imageName,
-                  ["sh", "-c", `chmod +x /scripts/${scriptName} && /scripts/${scriptName}`],
+                  ["bash", "-c", `bash /scripts/${scriptName}`],
                   [stdout, stderr],
                   dockerProps
                 )
@@ -382,7 +382,7 @@ export default {
             let result = await dockerode
               .run(
                 selectedStep.imageName,
-                ["sh", "-c", `chmod +x /scripts/${selectedStep.scriptName} && /scripts/${selectedStep.scriptName}`],
+                ["bash", "-c", `bash /scripts/${selectedStep.scriptName}`],
                 [stdout, stderr],
                 dockerProps
               )
@@ -762,15 +762,7 @@ export default {
           await this.$store.dispatch('generateOptimOTUYamlConfig');
           await this.imageCheck('pipecraft/optimotu:5');
           await this.clearContainerConflicts('optimotu');
-          let logStream;
           try {            
-            const logDir = this.$store.state.inputDir;
-            const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
-            const logFile = path.join(logDir, `optimotu-${timestamp}.log`);
-            logStream = fs.createWriteStream(logFile, { 
-              flags: 'a',
-              mode: 0o666  // Read/write permissions for all users
-            });
             const container = await dockerode.createContainer({
               Image: 'pipecraft/optimotu:5',
               name: 'optimotu',
@@ -798,9 +790,7 @@ export default {
             });
     
             stream.on('data', (data) => {
-              const output = data.toString();
-              console.log(output);
-              logStream.write(output);
+              console.log(data.toString());
             });
             
             await container.start();
@@ -808,9 +798,7 @@ export default {
             const data = await container.wait();
             console.log('Container exited with status code:', data.StatusCode);
             this.$store.commit("resetRunInfo");
-            // Close the log stream
-            logStream.end();
-            console.log(`Container log written to ${logFile}`);
+
             if (data.StatusCode == 0) {
               Swal.fire("Workflow finished");
             } else {
@@ -823,10 +811,6 @@ export default {
             await container.remove({ v: true, force: true });
           } catch (err) {
             console.error('Error running container:', err);
-            if (logStream) {
-              logStream.write(`\nERROR: ${err.message}\n${err.stack}\n`);
-              logStream.end();
-            }
             this.$store.commit("resetRunInfo");
             
             // Check if the error is due to the user stopping the container
@@ -883,7 +867,7 @@ export default {
             dockerode
               .run(
                 "vmikk/nextits:0.5.0",
-                ["sh", "-c", `/scripts/NextITS_Pipeline.sh`],
+                ["bash", "-c", `bash /scripts/NextITS_Pipeline.sh`],
                 false,
                 props,
                 (err, data, container) => {
