@@ -34,7 +34,12 @@ module.exports = {
           }
         },
         mac: { 
-          target: "default", 
+          target: [
+            {
+              target: "dmg",
+              arch: ["arm64", "x64"]  // Architectures specified in target
+            }
+          ],
           icon: "build/icon.icns", 
           hardenedRuntime: true,      // Required for macOS 10.15+ (Catalina)
           gatekeeperAssess: false,    // Skip Gatekeeper assessment

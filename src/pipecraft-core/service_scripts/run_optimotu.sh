@@ -42,6 +42,19 @@ cp -f /scripts/pipeline_options.yaml /optimotu_targets/sequences/pipeline_option
 # Activate the conda environment
 source /opt/conda/etc/profile.d/conda.sh
 conda activate OptimOTU_v5
+
+# Try to install a compatible version of qs2
+echo "Installing compatible version of qs2..."
+R --vanilla -e '
+  # Remove existing qs2 if present
+  if("qs2" %in% installed.packages()[,"Package"]) remove.packages("qs2")
+  
+  # Install from source with minimal optimizations
+  Sys.setenv(PKG_CFLAGS="-O0 -march=x86-64")
+  Sys.setenv(PKG_CXXFLAGS="-O0 -march=x86-64")
+  install.packages("qs2", type="source", repos="https://cloud.r-project.org")
+'
+
 cd /optimotu_targets
 
 # Print current environment for debugging
