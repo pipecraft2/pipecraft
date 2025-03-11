@@ -14,9 +14,44 @@ autoUpdater.autoDownload = false;
 var win;
 const createDesktopShortcut = require("create-desktop-shortcuts");
 const fs = require("fs");
+const sudo = require('sudo-prompt');
+
 
 function update() {
   autoUpdater.checkForUpdates();
+}
+
+async function checkScriptsPermissions() {
+  const scriptsPath = `${process.resourcesPath}/src/pipecraft-core/service_scripts`;
+
+  if (process.platform === 'linux' && !isDevelopment) {
+    try {
+      const stats = fs.statSync(scriptsPath);
+      const currentPermissions = (stats.mode & 0o777).toString(8);
+      
+      if (currentPermissions !== '777') {
+        await new Promise((resolve, reject) => {
+          sudo.exec(
+            `chmod -R 777 "${scriptsPath}"`,
+            { name: 'PipeCraft' },
+            (error, stdout, stderr) => {
+              if (error) {
+                console.error('Sudo exec error:', error);
+                console.error('Stderr:', stderr);
+                reject(error);
+              } else {
+                log.info('Scripts directory permissions updated successfully');
+                resolve(stdout);
+              }
+            }
+          );
+        });
+      }
+    } catch (error) {
+      log.error('Error checking/setting permissions:', error);
+      throw error;
+    }
+  }
 }
 
 log.info("App starting...");
@@ -150,6 +185,16 @@ app.on("ready", async () => {
     } catch (e) {
       console.error("Vue Devtools failed to install:", e.toString());
     }
+  }
+  try {
+    await checkScriptsPermissions();
+  } catch (error) {
+    log.error('Failed to set permissions:', error);
+    // You might want to show a dialog here to inform the user
+    dialog.showErrorBox(
+      'Permission Error',
+      'Failed to set required permissions. Some features might not work correctly.'
+    );
   }
   createWindow();
   if (process.env.APPIMAGE && !process.env.WEBPACK_DEV_SERVER_URL) {
