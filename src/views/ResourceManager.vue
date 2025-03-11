@@ -190,7 +190,7 @@ export default {
           return;
         }
         let settingsJSON = JSON.parse(data);
-        settingsJSON.cpus = processors;
+        settingsJSON.Cpus = processors;
         settingsJSON.MemoryMiB = memory;
         const updatedSettings = JSON.stringify(settingsJSON, null, 2);
         fs.writeFile(dockerSettingsPath, updatedSettings, "utf-8", (err) => {
