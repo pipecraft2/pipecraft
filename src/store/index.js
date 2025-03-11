@@ -653,7 +653,7 @@ export default new Vuex.Store({
                 value: 0,
                 disabled: "never",
                 tooltip:
-                  "discard sequences with more than the specified number of N's (ambiguous bases). This should be set to 0 if denoising is performed with DADA2",
+                 "discard sequences with more than the specified number of N's (ambiguous bases). This should be set to 0 if denoising is performed with DADA2",
                 type: "numeric",
                 rules: [(v) => v >= 0 || "ERROR: specify values >= 0"],
               },
@@ -6102,6 +6102,7 @@ SINGLE-END is for PacBio data, but can be also used for single-end read Illumina
         noRefs: true,   // Don't output YAML references
         noCompatMode: true // Use the newest YAML standard
       });
+
       
       // Write to file
       let filePath = isDevelopment == true

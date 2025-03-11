@@ -110,8 +110,6 @@ Start time: $start_time
 End time: $(date)
 Runtime: $runtime seconds
 
-
-
 The outputs of the pipeline are a set of tables in TSV format (tab-delimited files) and 
 RDS format (for easy loading in R), as well as sequences in gzipped FASTA format.
 
@@ -139,7 +137,6 @@ EOF
 #Done
 printf "\nDONE "
 printf "Total time: $runtime sec.\n "
-
 echo "All operations completed."
 
 if [ ! -z "$HOST_UID" ] && [ ! -z "$HOST_GID" ]; then
