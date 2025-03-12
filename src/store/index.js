@@ -150,49 +150,6 @@ export default new Vuex.Store({
         ],
       },
       {
-        stepName: "reorient",
-        disabled: "never",
-        services: [
-          {
-            tooltip: "reorient reads based on specified primer sequences",
-            scriptName: "reorient_paired_end_reads.sh",
-            imageName: "pipecraft/reorient:1",
-            serviceName: "reorient",
-            selected: false,
-            showExtra: false,
-            extraInputs: [],
-            Inputs: [
-              {
-                name: "mismatches",
-                value: 1,
-                disabled: "never",
-                tooltip: "allowed mismatches in the primer search",
-                type: "numeric",
-                rules: [(v) => v >= 0 || "ERROR: specify values >= 0"],
-              },
-              {
-                name: "forward_primers",
-                value: [],
-                disabled: "never",
-                tooltip: "specify forward primer (5'-3'); add up to 13 primers",
-                type: "chip",
-                iupac: true,
-                rules: [(v) => v.length <= 13 || "TOO MANY PRIMERS"],
-              },
-              {
-                name: "reverse_primers",
-                value: [],
-                disabled: "never",
-                tooltip: "specify reverse primer (3'-5'); add up to 13 primers",
-                type: "chip",
-                iupac: true,
-                rules: [(v) => v.length <= 13 || "TOO MANY PRIMERS"],
-              },
-            ],
-          },
-        ],
-      },
-      {
         stepName: "cut primers",
         disabled: "never",
         services: [
@@ -2431,6 +2388,43 @@ export default new Vuex.Store({
         stepName: "utilities",
         disabled: "never",
         services: [
+          {
+            tooltip: "reorient reads based on specified primer sequences",
+            scriptName: "reorient_paired_end_reads.sh",
+            imageName: "pipecraft/reorient:1",
+            serviceName: "reorient",
+            selected: false,
+            showExtra: false,
+            extraInputs: [],
+            Inputs: [
+              {
+                name: "mismatches",
+                value: 1,
+                disabled: "never",
+                tooltip: "allowed mismatches in the primer search",
+                type: "numeric",
+                rules: [(v) => v >= 0 || "ERROR: specify values >= 0"],
+              },
+              {
+                name: "forward_primers",
+                value: [],
+                disabled: "never",
+                tooltip: "specify forward primer (5'-3'); add up to 13 primers",
+                type: "chip",
+                iupac: true,
+                rules: [(v) => v.length <= 13 || "TOO MANY PRIMERS"],
+              },
+              {
+                name: "reverse_primers",
+                value: [],
+                disabled: "never",
+                tooltip: "specify reverse primer (3'-5'); add up to 13 primers",
+                type: "chip",
+                iupac: true,
+                rules: [(v) => v.length <= 13 || "TOO MANY PRIMERS"],
+              },
+            ],
+          },
           {
             tooltip:
               "sequence file [fasta(.gz)/fastq(.gz)] statistics per file (number of seqs, min length, average length, max length)",

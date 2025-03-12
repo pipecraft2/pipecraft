@@ -8,12 +8,12 @@ module.exports = {
         publish: ["github"],
         win: {
           icon: "build/icon.ico",
-          target: [
-            {
-              target: "portable",
-              arch: ["x64"]
-            }
-          ]
+          // target: [
+          //   {
+          //     target: "portable",
+          //     arch: ["x64"]
+          //   }
+          // ]
         },
         linux: {
           target: "AppImage",
