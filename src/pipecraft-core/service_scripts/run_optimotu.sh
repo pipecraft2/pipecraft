@@ -10,6 +10,8 @@ export fileFormat
 
 echo "specified fileFormat: $fileFormat"
 
+
+
 # # check files in 01_raw and subdirectories
 # # Find all subdirectories in 01_raw
  while IFS= read -r subdir; do
@@ -54,6 +56,7 @@ R --vanilla -e '
   Sys.setenv(PKG_CXXFLAGS="-O0 -march=x86-64")
   install.packages("qs2", type="source", repos="https://cloud.r-project.org")
 '
+
 
 cd /optimotu_targets
 

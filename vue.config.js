@@ -37,7 +37,7 @@ module.exports = {
           target: [
             {
               target: "dmg",
-              arch: ["arm64", "x64"]  // Architectures specified in target
+              arch: ["arm64", "x64" ]  // Architectures specified in target
             }
           ],
           icon: "build/icon.icns", 
