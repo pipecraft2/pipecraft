@@ -10,6 +10,8 @@ export fileFormat
 
 echo "specified fileFormat: $fileFormat"
 
+
+
 # # check files in 01_raw and subdirectories
 # # Find all subdirectories in 01_raw
  while IFS= read -r subdir; do
@@ -42,6 +44,20 @@ cp -f /scripts/pipeline_options.yaml /optimotu_targets/sequences/pipeline_option
 # Activate the conda environment
 source /opt/conda/etc/profile.d/conda.sh
 conda activate OptimOTU_v5
+
+# Try to install a compatible version of qs2
+echo "Installing compatible version of qs2..."
+R --vanilla -e '
+  # Remove existing qs2 if present
+  if("qs2" %in% installed.packages()[,"Package"]) remove.packages("qs2")
+  
+  # Install from source with minimal optimizations
+  Sys.setenv(PKG_CFLAGS="-O0 -march=x86-64")
+  Sys.setenv(PKG_CXXFLAGS="-O0 -march=x86-64")
+  install.packages("qs2", type="source", repos="https://cloud.r-project.org")
+'
+
+
 cd /optimotu_targets
 
 # Print current environment for debugging
@@ -94,12 +110,7 @@ Start time: $start_time
 End time: $(date)
 Runtime: $runtime seconds
 
-echo "All operations completed."
 
-if [ ! -z "$HOST_UID" ] && [ ! -z "$HOST_GID" ]; then
-  echo "Setting ownership of /optimotu_targets to $HOST_UID:$HOST_GID"
-  chown -R $HOST_UID:$HOST_GID /optimotu_targets/sequences
-fi
 
 The outputs of the pipeline are a set of tables in TSV format (tab-delimited files) and 
 RDS format (for easy loading in R), as well as sequences in gzipped FASTA format.
@@ -128,3 +139,10 @@ EOF
 #Done
 printf "\nDONE "
 printf "Total time: $runtime sec.\n "
+
+echo "All operations completed."
+
+if [ ! -z "$HOST_UID" ] && [ ! -z "$HOST_GID" ]; then
+  echo "Setting ownership of /optimotu_targets to $HOST_UID:$HOST_GID"
+  chown -R $HOST_UID:$HOST_GID /optimotu_targets/sequences
+fi
