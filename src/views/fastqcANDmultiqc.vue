@@ -10,7 +10,7 @@
         </v-img>
       </div>
       <div class="column">
-        <v-img class="white--text align-end" src="../assets/fastqc_icon.png">
+        <v-img class="white--text align-end" src="../assets/fastqc_logo.png">
         </v-img>
       </div>
     </div>

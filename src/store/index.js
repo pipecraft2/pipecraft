@@ -1891,7 +1891,7 @@ export default new Vuex.Store({
                 disabled: "never",
                 tooltip:
                   "find setting; select specifications file for metaMATE-find function. By default, using the 'default' metaMATE specifications file: https://github.com/tjcreedy/metamate/blob/main/specifications.txt",
-                type: "file",
+                type: "boolfile",
                 depends_on:
                   'state.selectedSteps[0].services[4].Inputs[0].value == "find" || state.selectedSteps[0].services[4].Inputs[0].value == "find_and_dump"',
               },
