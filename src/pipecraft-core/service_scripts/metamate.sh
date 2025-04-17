@@ -12,7 +12,7 @@
     #Distributed under the GNU General Public License
     #https://github.com/tjcreedy/metamate
 ################################################
-
+mkdir -p /extraFiles2
 #load variables
 find_or_dump=${find_or_dump}       # find, dump or find_and_dump
 specifications=${specifications}   # file
@@ -36,8 +36,7 @@ if [[ $specifications != "/metamate/specifications.txt" ]]; then
     specifications=$(printf "/extraFiles2/$specifications")
 fi
 if [[ $abundance_filt != "true" ]]; then
-     printf '%s\n' "[library; n; 0-1/2]" > /extraFiles2/specifications0.txt
-     specifications="/extraFiles2/specifications0.txt"
+     specifications="/default_specs/specifications0.txt"
  fi
 
 # Reference seqs (database) handling
@@ -207,7 +206,7 @@ if [[ $find_or_dump == "find" ]] || [[ $find_or_dump == "find_and_dump" ]]; then
     fi
 
     printf "# Running metaMATE-find\n"
-    checkerror=$(python3 /metamate/metamate/metamate.py find \
+    checkerror=$(metamate find \
         --asvs /input/${rep_seqs_shuffled%.*}_shuffled.fasta \
         --readmap $table \
         --specification $specifications \
@@ -245,7 +244,7 @@ if [[ $find_or_dump == "dump" ]] || [[ $find_or_dump == "find_and_dump" ]]; then
         # if $find_or_dump == "dump"
         if [[ $find_or_dump == "dump" ]]; then
             printf "# Running metaMATE-dump\n"
-            checkerror=$(python3 /metamate/metamate/metamate.py dump \
+            checkerror=$(metamate dump \
             --asvs $rep_seqs \
             --resultcache $output_dir/resultcache \
             --output $output_dir/${dump_seqs%.*}_metaMATE.filt \
@@ -271,7 +270,7 @@ if [[ $find_or_dump == "dump" ]] || [[ $find_or_dump == "find_and_dump" ]]; then
             # if no results correspond with the NA_abund_thresh, then get the next best 
 
             # run metaMATE-dump
-            checkerror=$(python3 /metamate/metamate/metamate.py dump \
+            checkerror=$(metamate dump \
             --asvs $rep_seqs \
             --resultcache $output_dir/resultcache \
             --output $output_dir/${dump_seqs%.*}_metaMATE.filt \

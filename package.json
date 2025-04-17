@@ -3,10 +3,17 @@
   "version": "1.1.0",
   "private": true,
   "author": {
-    "name": "Martin Metsoja",
-    "email": "martin.metsoja@gmail.com",
+    "name": "Sten Anslan",
+    "email": "sten.anslan@ut.ee",
     "url": "https://github.com/pipecraft2/pipecraft"
   },
+  "contributors": [
+    {
+      "name": "Martin Metsoja",
+      "email": "martin.metsoja@ut.ee",
+      "url": "https://github.com/pipecraft2/pipecraft"
+    }
+  ],
   "scripts": {
     "serve": "vue-cli-service serve",
     "build": "vue-cli-service build",
@@ -38,7 +45,7 @@
     "path": "^0.12.7",
     "slash": "^3.0.0",
     "sockjs": "^0.3.21",
-    "sweetalert2": "^10.15.5",
+    "sweetalert2": "^11.17.2",
     "vue": "^2.6.11",
     "vue-router": "^3.2.0",
     "vuedraggable": "^2.24.3",

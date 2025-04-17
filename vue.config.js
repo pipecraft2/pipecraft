@@ -19,14 +19,14 @@ module.exports = {
           target: ["deb", "rpm", "AppImage"],  // Build both DEB and RPM packages
           icon: "build/icons",     // Directory containing multiple icon sizes
           category: "Science",
-          maintainer: "PipeCraft Team martin.metsoja@ut.ee",
-          vendor: "PipeCraft",
-          synopsis: "Metabarcoding application",
+          maintainer: "PipeCraft2 Team: martin.metsoja@ut.ee, sten.anslan@ut.ee",
+          vendor: "PipeCraft2",
+          synopsis: "Bioinformatics application that implements various popular tools for metabarcoding data analyses.",
           description: "PipeCraft is a desktop application for metabarcoding data analysis.",
           desktop: {
-            Name: "Pipecraft",
-            Comment: "Metabarcoding application",
-            Categories: "Science;Biology;",
+            Name: "PipeCraft2",
+            Comment: "Software for metabarcoding data analysis",
+            Categories: "Science;Biology;Bioinformatics",
             Terminal: true,
             Type: "Application",
             StartupNotify: true,

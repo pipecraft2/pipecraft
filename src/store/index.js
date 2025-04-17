@@ -5,6 +5,8 @@ var _ = require("lodash");
 import yaml from 'js-yaml';
 import os from "os";
 import fs from "fs";
+import path from "path";
+import { pullImageAsync, imageExists } from "dockerode-utils";
 const DockerDesktopLinux = !fs.existsSync("/var/run/docker.sock");
 var socketPath =
   os.platform() === "win32"
@@ -16,6 +18,8 @@ var socketPath =
 var Docker = require("dockerode");
 var docker = new Docker({ socketPath: socketPath });
 const isDevelopment = process.env.NODE_ENV !== "production";
+const Swal = require("sweetalert2");
+const { dialog } = require("@electron/remote");
 const slash = require("slash");
 const arch = process.arch;
 const vsearch_dada_image = arch === 'arm64' 
@@ -28,6 +32,10 @@ Vue.use(Vuex);
 
 export default new Vuex.Store({
   state: {
+    SUPPORTED_EXTENSIONS: [
+      '.fastq', '.fasta', '.fq', '.fa', '.txt',
+      '.fastq.gz', '.fasta.gz', '.fq.gz', '.fa.gz', '.txt.gz'
+    ],
     dockerInfo: { NCPU: 1, MemTotal: 1073741824 },
     dockerStatus: "",
     OStype: "",
@@ -79,14 +87,6 @@ export default new Vuex.Store({
             selected: false,
             showExtra: false,
             extraInputs: [
-              {
-                name: "cores",
-                value: 1,
-                disabled: "never",
-                tooltip: "number of cores to use",
-                type: "numeric",
-                rules: [(v) => v >= 1 || "ERROR: specify values >= 1"],
-              },
               {
                 name: "no_indels",
                 value: true,
@@ -167,15 +167,6 @@ export default new Vuex.Store({
             selected: false,
             showExtra: false,
             extraInputs: [
-              {
-                name: "cores",
-                value: 1,
-                disabled: "never",
-                tooltip:
-                  "number of cores to use. For paired-end data in fasta format, set to 1 [default]. For fastq formats you may set the value to 0 to use all cores",
-                type: "numeric",
-                rules: [(v) => v >= 1 || "ERROR: specify values >= 1"],
-              },
               {
                 name: "no_indels",
                 value: true,
@@ -316,14 +307,6 @@ export default new Vuex.Store({
                     "ERROR: specify values >=0.001 or leave it empty (= no action taken)",
                 ],
               },
-              {
-                name: "cores",
-                value: 1,
-                disabled: "never",
-                tooltip: "number of cores to use",
-                type: "numeric",
-                rules: [(v) => v >= 1 || "ERROR: specify values >= 1"],
-              },
             ],
             Inputs: [
               {
@@ -410,14 +393,6 @@ export default new Vuex.Store({
                     (v >= 1) | (v == "") ||
                     "ERROR: specify values >= 1 or leave it empty (=no action taken)",
                 ],
-              },
-              {
-                name: "cores",
-                value: 1,
-                disabled: "never",
-                tooltip: "number of cores to use",
-                type: "numeric",
-                rules: [(v) => v >= 1 || "ERROR: specify values >= 1"],
               },
               {
                 name: "phred",
@@ -531,14 +506,6 @@ export default new Vuex.Store({
                     (v >= 1) | (v == "") ||
                     "ERROR: specify values >= 1 or leave it empty (=no action taken)",
                 ],
-              },
-              {
-                name: "cores",
-                value: 4,
-                disabled: "never",
-                tooltip: "number of cores to use",
-                type: "numeric",
-                rules: [(v) => v >= 1 || "ERROR: specify values >= 1"],
               },
             ],
             Inputs: [
@@ -930,15 +897,6 @@ export default new Vuex.Store({
             showExtra: false,
             extraInputs: [
               {
-                name: "cores",
-                value: 4,
-                disabled: "never",
-                tooltip:
-                  "Number of cores to use (only for reference based chimera filtering)",
-                type: "numeric",
-                rules: [(v) => v >= 1 || "ERROR: specify values >= 1"],
-              },
-              {
                 name: "abundance_skew",
                 value: 2,
                 disabled: "never",
@@ -1010,15 +968,6 @@ export default new Vuex.Store({
             showExtra: false,
             extraInputs: [
               {
-                name: "cores",
-                value: 4,
-                disabled: "never",
-                tooltip:
-                  "Number of cores to use (only for reference based chimera filtering)",
-                type: "numeric",
-                rules: [(v) => v >= 1 || "ERROR: specify values >= 1"],
-              },
-              {
                 name: "abundance_skew",
                 value: 16,
                 disabled: "never",
@@ -1084,14 +1033,6 @@ export default new Vuex.Store({
             selected: false,
             showExtra: false,
             extraInputs: [
-              {
-                name: "cores",
-                value: 6,
-                disabled: "never",
-                tooltip: "number of cores to use",
-                type: "numeric",
-                rules: [(v) => v >= 1 || "ERROR: specify values >= 1"],
-              },
               {
                 name: "e_value",
                 value: (0.01).toExponential(),
@@ -1254,14 +1195,6 @@ export default new Vuex.Store({
                   'mask regions in sequences using the "dust" method, or do not mask ("none").',
                 type: "select",
               },
-              {
-                name: "cores",
-                value: 4,
-                disabled: "never",
-                tooltip: "number of cores to use",
-                type: "numeric",
-                rules: [(v) => v >= 1 || "ERROR: specify values >= 1"],
-              },
             ],
             Inputs: [
               {
@@ -1373,14 +1306,6 @@ export default new Vuex.Store({
                 tooltip:
                   'mask regions in sequences using the "dust" method, or do not mask ("none").',
                 type: "select",
-              },
-              {
-                name: "cores",
-                value: 4,
-                disabled: "never",
-                tooltip: "number of cores to use",
-                type: "numeric",
-                rules: [(v) => v >= 1 || "ERROR: specify values >= 1"],
               },
             ],
             Inputs: [
@@ -1557,14 +1482,6 @@ export default new Vuex.Store({
                   'mask regions in sequences using the "dust" method, or do not mask ("none").',
                 type: "select",
               },
-              {
-                name: "cores",
-                value: 4,
-                disabled: "never",
-                tooltip: "number of cores to use",
-                type: "numeric",
-                rules: [(v) => v >= 1 || "ERROR: specify values >= 1"],
-              },
             ],
             Inputs: [
               {
@@ -1659,15 +1576,6 @@ export default new Vuex.Store({
                 tooltip:
                   "query strand to search against database. Both = search also reverse complement",
                 type: "select",
-              },
-              {
-                name: "cores",
-                value: 4,
-                disabled: "never",
-                tooltip:
-                  "number of cores to use for generating match list for LULU",
-                type: "numeric",
-                rules: [(v) => v >= 1 || "ERROR: specify values >= 1"],
               },
             ],
             Inputs: [
@@ -1796,7 +1704,7 @@ export default new Vuex.Store({
             tooltip:
               "metaMATE (metabarcoding Multiple Abundance Threshold Evaluator) analyses a set of amplicons derived through metabarcoding of a mitochondrial coding locus to determine putative NUMT and other erroneous sequences",
             scriptName: "metamate.sh",
-            imageName: "pipecraft/metamate:1",
+            imageName: "pipecraft/metamate:0.4.3",
             serviceName: "metaMATE",
             selected: false,
             showExtra: false,
@@ -1825,14 +1733,6 @@ export default new Vuex.Store({
                   "find setting (optional); if sequence binning is to be performed on a per-taxon basis (as in specifications file) \
                   then specify the taxon grouping file",
                 type: "boolfile",
-              },
-              {
-                name: "cores",
-                value: 6,
-                disabled: "never",
-                tooltip: "number of cores to use",
-                type: "numeric",
-                rules: [(v) => v >= 1 || "ERROR: specify values >= 1"],
               },
             ],
             Inputs: [
@@ -2166,14 +2066,6 @@ export default new Vuex.Store({
                 type: "numeric",
                 // rules: [(v) => v >= 0 || "ERROR: specify values >= 0"],
               },
-              {
-                name: "cores",
-                value: 4,
-                disabled: "never",
-                tooltip: "number of cores to use",
-                type: "numeric",
-                rules: [(v) => v >= 1 || "ERROR: specify values >= 1"],
-              },
             ],
             Inputs: [
               {
@@ -2286,14 +2178,6 @@ export default new Vuex.Store({
                 min: 3,
                 max: 15,
                 step: 1,
-              },
-              {
-                name: "cores",
-                value: 4,
-                disabled: "never",
-                tooltip: "number of cores to use",
-                type: "numeric",
-                rules: [(v) => v >= 1 || "ERROR: specify values >= 1"],
               },
             ],
             Inputs: [
@@ -2461,14 +2345,6 @@ export default new Vuex.Store({
             showExtra: false,
             extraInputs: [
               {
-                name: "cores",
-                value: 4,
-                disabled: "never",
-                tooltip: "number of cores to use",
-                type: "numeric",
-                rules: [(v) => v >= 1 || "ERROR: specify values >= 1"],
-              },
-              {
               name: "strand",
               items: ["both", "plus"],
               disabled: "never",
@@ -2538,15 +2414,6 @@ export default new Vuex.Store({
         selected: false,
         showExtra: false,
         extraInputs: [
-          {
-            name: "cores",
-            value: 1,
-            disabled: "never",
-            tooltip:
-              "number of cores to use. For paired-end data in fasta format, set to 1 [default]. For fastq formats you may set the value to 0 to use all cores",
-            type: "numeric",
-            rules: [(v) => v >= 1 || "ERROR: specify values >= 1"],
-          },
           {
             name: "no_indels",
             value: true,
@@ -2714,14 +2581,6 @@ export default new Vuex.Store({
         showExtra: false,
         extraInputs: [
           {
-            name: "cores",
-            value: 1,
-            disabled: "never",
-            tooltip: "number of cores to use",
-            type: "numeric",
-            rules: [(v) => v >= 1 || "ERROR: specify values >= 1"],
-          },
-          {
             name: "max_length",
             value: null,
             disabled: "never",
@@ -2822,15 +2681,6 @@ export default new Vuex.Store({
         showExtra: false,
         extraInputs: [
           {
-            name: "cores",
-            value: 4,
-            disabled: "never",
-            tooltip:
-              "Number of cores to use (only for reference based chimera filtering)",
-            type: "numeric",
-            rules: [(v) => v >= 1 || "ERROR: specify values >= 1"],
-          },
-          {
             name: "abundance_skew",
             value: 2,
             disabled: "never",
@@ -2904,14 +2754,6 @@ export default new Vuex.Store({
         selected: false,
         showExtra: false,
         extraInputs: [
-          {
-            name: "cores",
-            value: 6,
-            disabled: "never",
-            tooltip: "number of cores to use",
-            type: "numeric",
-            rules: [(v) => v >= 1 || "ERROR: specify values >= 1"],
-          },
           {
             name: "e_value",
             value: (0.01).toExponential(),
@@ -3088,14 +2930,6 @@ export default new Vuex.Store({
               'mask regions in sequences using the "dust" method, or do not mask ("none")',
             type: "select",
           },
-          {
-            name: "cores",
-            value: 4,
-            disabled: "never",
-            tooltip: "number of cores to use",
-            type: "numeric",
-            rules: [(v) => v >= 1 || "ERROR: specify values >= 1"],
-          },
         ],
         Inputs: [
           {
@@ -3268,15 +3102,6 @@ export default new Vuex.Store({
         showExtra: false,
         extraInputs: [
           {
-            name: "cores",
-            value: 1,
-            disabled: "never",
-            tooltip:
-              "number of cores to use. For paired-end data in fasta format, set to 1 [default]. For fastq formats you may set the value to 0 to use all cores",
-            type: "numeric",
-            rules: [(v) => v >= 1 || "ERROR: specify values >= 1"],
-          },
-          {
             name: "no_indels",
             value: true,
             disabled: "never",
@@ -3443,14 +3268,6 @@ export default new Vuex.Store({
         showExtra: false,
         extraInputs: [
           {
-            name: "cores",
-            value: 1,
-            disabled: "never",
-            tooltip: "number of cores to use",
-            type: "numeric",
-            rules: [(v) => v >= 1 || "ERROR: specify values >= 1"],
-          },
-          {
             name: "max_length",
             value: null,
             disabled: "never",
@@ -3550,14 +3367,6 @@ export default new Vuex.Store({
         selected: false,
         showExtra: false,
         extraInputs: [
-          {
-            name: "cores",
-            value: 6,
-            disabled: "never",
-            tooltip: "number of cores to use",
-            type: "numeric",
-            rules: [(v) => v >= 1 || "ERROR: specify values >= 1"],
-          },
           {
             name: "e_value",
             value: (0.01).toExponential(),
@@ -3750,14 +3559,6 @@ export default new Vuex.Store({
             tooltip:
               'mask regions in sequences using the "dust" method, or do not mask ("none").',
             type: "select",
-          },
-          {
-            name: "cores",
-            value: 4,
-            disabled: "never",
-            tooltip: "number of cores to use",
-            type: "numeric",
-            rules: [(v) => v >= 1 || "ERROR: specify values >= 1"],
           },
         ],
         Inputs: [
@@ -4051,14 +3852,6 @@ export default new Vuex.Store({
     //           "Pseudogene filtering setting. Minimum length of an open reading frame",
     //         type: "numeric",
     //         rules: [(v) => v >= 0 || "ERROR: specify values >= 0"],
-    //       },
-    //       {
-    //         name: "cores",
-    //         value: 4,
-    //         disabled: "never",
-    //         tooltip: "number of cores to use (for vsearch)",
-    //         type: "numeric",
-    //         rules: [(v) => v >= 1 || "ERROR: specify values >= 1"],
     //       },
     //     ],
     //     Inputs: [
@@ -4618,7 +4411,7 @@ export default new Vuex.Store({
         tooltip:
           "Settings for STEP_1 (sequence filtering processes per sequencing run) in NextITS pipeline",
         scriptName: "",
-        imageName: "vmikk/nextits:0.5.0",
+        imageName: "pipecraft/nextits:1.0.0",
         serviceName: "Step_1",
         manualLink: "https://pipecraft2-manual.readthedocs.io/en/latest/pre-defined_pipelines.html#nextits",
         disabled: "never",
@@ -4669,7 +4462,7 @@ export default new Vuex.Store({
             rules: [(v) => v >= 1 || "ERROR: specify values >= 1"],
           },
           {
-            name: "chimera_database",
+            name: "chimera_db",
             active: false,
             btnName: "select file",
             value: "undefined",
@@ -4783,7 +4576,7 @@ export default new Vuex.Store({
       {
         tooltip: "Settings for STEP_2 (clustering) in NextITS pipeline",
         scriptName: "",
-        imageName: "vmikk/nextits:0.5.0",
+        imageName: "pipecraft/nextits:1.0.0",
         serviceName: "Step_2",
         manualLink: "https://pipecraft2-manual.readthedocs.io/en/latest/pre-defined_pipelines.html#nextits",
         disabled: "never",
@@ -4819,21 +4612,21 @@ export default new Vuex.Store({
           },
           {
             name: "unoise_alpha",
-            value: 2,
+            value: 6,
             disabled: "never",
             tooltip: "Alpha parameter of UNOISE",
             type: "numeric",
             rules: [(v) => v >= 1 || "ERROR: specify values >= 1"],
-            depends_on: "state.NextITS[1].Inputs[4].value == true",
+            depends_on: "state.NextITS[1].Inputs[4].value === 'unoise'",
           },
           {
             name: "unoise_minsize",
-            value: 8,
+            value: 1,
             disabled: "never",
             tooltip: "Minimum sequence abundance ",
             type: "numeric",
             rules: [(v) => v >= 1 || "ERROR: specify values >= 1"],
-            depends_on: "state.NextITS[1].Inputs[4].value == true",
+            depends_on: "state.NextITS[1].Inputs[4].value === 'unoise'",
           },
           {
             name: "max_MEEP",
@@ -4896,6 +4689,22 @@ export default new Vuex.Store({
             rules: [(v) => v >= 0 || "ERROR: specify values >= 1"],
             depends_on: "state.NextITS[1].Inputs[3].value == true",
           },
+          {
+            name: "ampliconlen_min",
+            value: null,
+            disabled: "never",
+            tooltip: "Filtering sequences (trimmed amplicons) by length",
+            type: "numeric",
+            rules: [(v) => v >= 0 || "ERROR: specify values >= 1"],
+          },
+          {
+            name: "ampliconlen_max",
+            value: null,
+            disabled: "never",
+            tooltip: "Filtering sequences (trimmed amplicons) by length",
+            type: "numeric",
+            rules: [(v) => v >= 0 || "ERROR: specify values >= 1"],
+          },
         ],
         Inputs: [
           {
@@ -4933,11 +4742,12 @@ export default new Vuex.Store({
             type: "bool",
           },
           {
-            name: "unoise",
-            value: false,
+            name: "preclustering_method",
+            items: ["none", "swarm_d1", "unoise"],
+            value: "none",
             disabled: "never",
-            tooltip: "Perform denoising with UNOISE algorithm",
-            type: "bool",
+            tooltip: "Sequence clustering method",
+            type: "select",
           },
         ],
       },
@@ -4960,15 +4770,6 @@ export default new Vuex.Store({
         selected: false,
         showExtra: false,
         extraInputs: [
-          {
-            name: "cores",
-            value: 1,
-            disabled: "never",
-            tooltip:
-              "number of cores to use. For paired-end data in fasta format, set to 1 [default]. For fastq formats you may set the value to 0 to use all cores",
-            type: "numeric",
-            rules: [(v) => v >= 1 || "ERROR: specify values >= 1"],
-          },
           {
             name: "no_indels",
             value: true,
@@ -5718,11 +5519,42 @@ SINGLE-END is for PacBio data, but can be also used for single-end read Illumina
     },
   },
   getters: {
-    /*     getDockerInfo: async (state) => {
-      docker.info().then((info) => {
-        state.dockerInfo = info;
+    mostCommonExtenson: (state) => (files) => {
+      // Create extensions count object
+      console.log(files);
+      const extensionCounts = Object.fromEntries(
+        state.SUPPORTED_EXTENSIONS.map(ext => [ext, 0])
+      );
+      
+      // Process each file
+      files.forEach(file => {
+        for (const ext of state.SUPPORTED_EXTENSIONS) {
+          if (file.toLowerCase().endsWith(ext)) {
+            extensionCounts[ext]++;
+            break;
+          }
+        }
       });
-    }, */
+      
+      // Find most common extension
+      const mostCommonExtension = Object.keys(extensionCounts).reduce((a, b) => 
+        extensionCounts[a] > extensionCounts[b] ? a : b
+      );
+      
+      return extensionCounts[mostCommonExtension] > 0 
+        ? mostCommonExtension 
+        : null;
+    },
+    mostCommonInList: () => (extensions) => {
+      if (!extensions.length) return null;
+      
+      const counts = extensions.reduce((acc, ext) => {
+        acc[ext] = (acc[ext] || 0) + 1;
+        return acc;
+      }, {});
+
+      return Object.entries(counts).sort((a, b) => b[1] - a[1])[0][0];
+    },
     dada2modeIndex: (state) => {
       if (state.data.dada2mode == "FORWARD") {
         return 0;
@@ -5779,7 +5611,8 @@ SINGLE-END is for PacBio data, but can be also used for single-end read Illumina
       if (
         x == state.selectedSteps.length &&
         state.selectedSteps.length > 0 &&
-        !fileInputValues.includes("undefined")
+        !fileInputValues.includes("undefined") &&
+        !fileInputValues.some(value => Array.isArray(value) && value.length === 0)
       ) {
         return true;
       } else {
@@ -5815,6 +5648,27 @@ SINGLE-END is for PacBio data, but can be also used for single-end read Illumina
     },
   },
   mutations: {
+    scanFiles(state, files) {
+      // Create extensions count object from the SUPPORTED_EXTENSIONS array
+      const extensionCounts = Object.fromEntries(
+        state.SUPPORTED_EXTENSIONS.map(ext => [ext, 0])
+      );
+      // Process each file to count extensions
+      files.forEach(file => {
+        for (const ext of state.SUPPORTED_EXTENSIONS) {
+          if (file.toLowerCase().endsWith(ext)) {
+            extensionCounts[ext]++;
+            break;
+          }
+        }
+      });
+      const mostCommonExtension = Object.keys(extensionCounts).reduce((a, b) => 
+        extensionCounts[a] > extensionCounts[b] ? a : b
+      );
+      return extensionCounts[mostCommonExtension] > 0 
+        ? mostCommonExtension 
+        : null;
+    },
     setOsType(state, osType) {
       state.OStype = osType;
     },
@@ -6160,6 +6014,32 @@ SINGLE-END is for PacBio data, but can be also used for single-end read Illumina
     },
   },
   actions: {
+    async imageCheck({ commit }, imageName) {
+      console.log(imageName);
+      let gotImg = await imageExists(docker, imageName);
+      if (gotImg === false) {
+        commit("activatePullLoader");
+        console.log(`Pulling image ${imageName}`);
+        let output = await pullImageAsync(docker, imageName);
+        console.log(output);
+        console.log(`Pull complete`);
+        commit("deactivatePullLoader");
+      }
+    },
+    async clearContainerConflicts( _, Hostname) {
+      console.log(Hostname);
+      let container = await docker.getContainer(Hostname);
+      let nameConflicts = await container
+        .remove({ force: true })
+        .then(async () => {
+          return "Removed conflicting duplicate container";
+        })
+        .catch(() => {
+          return "No conflicting container names";
+        });
+      console.log(nameConflicts);
+      return nameConflicts;
+    },
     async generateOptimOTUYamlConfig({state}) {
       try {// Set default values
       const yamlConfig = {
@@ -6251,6 +6131,170 @@ SINGLE-END is for PacBio data, but can be also used for single-end read Illumina
         }
       }
     },
+    async setWorkingDir({ commit, state, dispatch }, mode) {
+      let dirPath;
+      console.log('step1');
+      console.log(mode);
+      try {
+        // 1. Directory selection
+        const { filePaths: [selectedDir] } = await dialog.showOpenDialog({
+          title: "Select sequence files folder",
+          properties: ["openDirectory", "showHiddenFiles"],
+        });
+        if (!selectedDir) return;
+        dirPath = slash(selectedDir);
+        
+        } catch (err) {
+          console.error('Scan error:', err);
+        }
+        console.log(dirPath);
+        let mostCommonExtension = await dispatch("scanDirectory", { dirPath, mode });
+        // Check if any supported files were found
+        console.log(mostCommonExtension);
+        if (!['.fastq', '.fq', '.fastq.gz', '.fq.gz'].includes(mostCommonExtension) && mode === "fastqcANDmultiqc") {
+          console.log('step3')
+          await Swal.fire({
+            title: 'No supported files found',
+            text: `The selected folder does not contain any supported files ('.fastq', '.fq', '.fastq.gz', '.fq.gz')`,
+            icon: 'warning',
+            confirmButtonText: 'OK',
+            theme: 'dark'
+          });
+          return;
+        }
+        else if (['.fastq', '.fq', '.fastq.gz', '.fq.gz'].includes(mostCommonExtension) && mode === "fastqcANDmultiqc") {
+          state.Qcheck.fileExtension = mostCommonExtension;
+          state.Qcheck.folderPath = dirPath;
+          return;
+        }
+        else if (mostCommonExtension == null) {
+          await Swal.fire({
+            title: 'No supported files found',
+            text: `The selected folder or subfolders do not contain any supported files (${state.SUPPORTED_EXTENSIONS.join(', ')})`,
+            icon: 'warning',
+            confirmButtonText: 'OK',
+            theme: 'dark'
+          });
+        }
+        
+        // Add the directory path now that we know it contains supported files
+        commit("addInputDir", slash(dirPath));
+
+        // 3. SweetAlert2 configuration
+        const Queue = Swal.mixin({
+          progressSteps: ['1', '2'],
+          confirmButtonText: 'Confirm',
+          showCancelButton: true,
+          cancelButtonText: 'Cancel',
+          theme: 'dark'
+        });
+        
+        // 4. Organize extensions for the dropdown using array indices
+        const extensions = {
+          Uncompressed: {},
+          Compressed: {}
+        };
+        
+        // Use indices as keys
+        state.SUPPORTED_EXTENSIONS.forEach((ext, index) => {
+          if (ext.endsWith('.gz')) {
+            extensions.Compressed[index] = ext;
+          } else {
+            extensions.Uncompressed[index] = ext;
+          }
+        });
+        
+
+        // 5. Execute steps
+        const step1 = await Queue.fire({
+          title: "Sequence files extension",
+          currentProgressStep: 0,
+          input: "select",
+          inputOptions: extensions,
+          inputValue: mostCommonExtension ? state.SUPPORTED_EXTENSIONS.indexOf(mostCommonExtension) : undefined,
+          theme: 'dark'
+        });
+        if (step1.isDismissed) return;
+        
+        const step2 = await Queue.fire({
+          title: "Sequencing read types",
+          currentProgressStep: 1,
+          input: "select",
+          inputOptions: { paired_end: "paired-end", single_end: "single-end" },
+        });
+        
+        // 6. Process results
+        if (step2.isConfirmed) {
+          // Get the actual extension using the index
+          const fileFormat = state.SUPPORTED_EXTENSIONS[step1.value].replace(/^\./, ''); // Remove leading dot
+          const readType = step2.value;
+          
+          commit("addInputInfo", { readType, fileFormat });
+          commit("setDADAmode", readType === "single_end" ? "SINGLE_END" : "FORWARD");
+          commit("toggle_PE_SE_scripts", readType);
+        }
+        
+        console.log(state.data.readType);
+        console.log(state.data.fileFormat); 
+        console.log(state.data.dada2mode);
+        console.log(state.inputDir);
+
+    },
+    async scanDirectory({ getters }, payload) {
+      const { dirPath, mode } = payload;
+      console.log(mode);
+      // Read the directory contents
+      function readDirectory(dirPath) {
+        const items = fs.readdirSync(dirPath)
+          .map(item => ({
+            name: item,
+            path: path.join(dirPath, item),
+            stats: fs.statSync(path.join(dirPath, item))
+          }));
+          console.log(items.filter(item => item.stats.isFile()).map(item => item.name))
+        return {
+          files: items.filter(item => item.stats.isFile()).map(item => item.name),
+          subdirectories: items.filter(item => item.stats.isDirectory()).map(item => item.name)
+        };
+      }
+      const { files, subdirectories } = readDirectory(dirPath);
+      
+      console.log(files);
+      console.log(subdirectories);
+      
+      let mostCommonExtension = getters.mostCommonExtenson(files);
+      console.log(mostCommonExtension);
+      if (mostCommonExtension == null && mode == "fastqcANDmultiqc") {
+        console.log('step2')
+        return null;
+      }
+      else if (mostCommonExtension == null) {
+        let extensions = [];
+
+        // Edge Case: No subdirectories → exit early
+        if (subdirectories.length === 0) {
+          return null; // or some default value
+        }
+      
+        // Collect extensions from subdirectories
+        subdirectories.forEach(subdirectory => {
+          console.log(path.join(dirPath, subdirectory))
+          const { files } = readDirectory(path.join(dirPath, subdirectory));
+          console.log(files);
+          const ext = getters.mostCommonExtenson(files);
+          if (ext) extensions.push(ext); // Skip empty results
+        });
+      
+        // Edge Case: All subdirectories returned empty
+        if (extensions.length === 0) {
+          return null; // or a default like "unknown"
+        }
+
+        return this.getters.mostCommonInList(extensions);
+      } else {
+        return mostCommonExtension;
+      }
+    }
   },
   modules: {},
 });
