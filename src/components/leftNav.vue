@@ -24,7 +24,7 @@
                         borderLeft: 'thin white solid',
                       }
                 "
-                @click="folderSelect"
+                @click="$store.dispatch('setWorkingDir')"
               >
                 Select workDir
               </v-btn>

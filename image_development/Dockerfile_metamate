@@ -1,5 +1,13 @@
-FROM continuumio/miniconda3
-COPY image_development/metamate_env.yaml /metamate_env.yaml
-RUN conda env create -f /metamate_env.yaml
-RUN conda clean --all --yes
-RUN git clone https://github.com/tjcreedy/metamate.git
+FROM continuumio/miniconda3:25.1.1-2
+
+# Install metamate directly into base environment
+
+RUN conda install -y -c bioconda -c conda-forge \
+    metamate=0.4.3 \
+    seqkit=2.10.0 && \
+    conda clean --all --yes
+
+# Create default specifications file
+RUN mkdir -p /default_specs && \
+    echo "[library; n; 0-1/2]" > /default_specs/specifications0.txt
+

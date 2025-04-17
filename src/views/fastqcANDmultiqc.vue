@@ -13,6 +13,19 @@
         <v-img class="white--text align-end" src="../assets/fastqc_logo.png">
         </v-img>
       </div>
+      <div class="spacer" ></div>
+      <div class="loader-column" v-if="$store.state.pullLoader.active">
+        <div class="image-loader-container">
+          <v-progress-circular
+            :size="100"
+            :width="7"
+            color="orange"
+            indeterminate
+          >
+            <span class="loading-text">Pulling<br>image</span>
+          </v-progress-circular>
+        </div>
+      </div>
     </div>
 
     <v-card-title>FastQC and MultiQC</v-card-title>
@@ -92,15 +105,10 @@
 </template>
 
 <script>
-import { pullImageAsync } from "dockerode-utils";
-import { imageExists } from "dockerode-utils";
 import * as Dockerode from "dockerode";
 import os from "os";
 const shell = require("electron").shell;
-const { dialog } = require("@electron/remote");
-const slash = require("slash");
 const streams = require("memory-streams");
-const Swal = require("sweetalert2");
 var stdout = new streams.WritableStream();
 var stderr = new streams.WritableStream();
 var socketPath =
@@ -126,77 +134,15 @@ export default {
     }, 1000);
   },
   methods: {
-    folderSelect() {
-      this.$store.state.Qcheck.reportReady = false;
-      Swal.mixin({
-        input: "select",
-        confirmButtonText: "Next &rarr;",
-        showCancelButton: true,
-      })
-        .queue([
-          {
-            title: "Sequence files extension",
-            inputOptions: {
-              Uncompressed: {
-                fastq: "*.fastq",
-                fasta: "*.fasta",
-                fq: "*.fq",
-                fa: "*.fa",
-                txt: "*.txt",
-              },
-              Compressed: {
-                fastq_gz: "*.fastq.gz",
-                fasta_gz: "*.fasta.gz",
-                fq_gz: "*.fq.gz",
-                fa_gz: "*.fa.gz",
-                txt_gz: "*.txt.gz",
-              },
-            },
-          },
-        ])
-        .then(async (result) => {
-          if (result.value) {
-            console.log(result.value);
-            this.$store.state.Qcheck.fileExtension = result.value[0].replace(
-              "_",
-              "."
-            );
-            dialog
-              .showOpenDialog({
-                title: "Select the folder containing your sequnece files",
-                properties: ["openDirectory", "showHiddenFiles"],
-              })
-              .then((result) => {
-                if (typeof result.filePaths[0] !== "undefined") {
-                  this.$store.state.Qcheck.folderPath = slash(
-                    result.filePaths[0]
-                  );
-                }
-              })
-              .catch((err) => {
-                console.log(err);
-              });
-          }
-        });
+    async folderSelect() {
+      await this.$store.dispatch('setWorkingDir', 'fastqcANDmultiqc');
     },
     async fastQualityCheck() {
       this.$store.state.Qcheck.reportReady = false;
       this.$store.state.Qcheck.reportLoading = true;
       console.log("starting fastqc");
-      let gotImg = await imageExists(dockerode, "staphb/fastqc:0.11.9");
-      if (gotImg === false) {
-        console.log(`Pulling image staphb/fastqc:0.11.9`);
-        let output = await pullImageAsync(dockerode, "staphb/fastqc:0.11.9");
-        console.log(output);
-        console.log(`Pull complete`);
-      }
-      gotImg = await imageExists(dockerode, "ewels/multiqc:1.10");
-      if (gotImg === false) {
-        console.log(`Pulling image ewels/multiqc:1.10`);
-        let output = await pullImageAsync(dockerode, "ewels/multiqc:1.10");
-        console.log(output);
-        console.log(`Pull complete`);
-      }
+      await this.$store.dispatch('imageCheck', "staphb/fastqc:0.11.9");
+      await this.$store.dispatch('imageCheck', "ewels/multiqc:1.10");
       let result = await dockerode
         .run(
           "staphb/fastqc:0.11.9",
@@ -279,4 +225,39 @@ export default {
 };
 </script>
 
-<style></style>
+<style scoped>
+.image-loader-container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 100%;
+}
+
+.loading-text {
+  font-size: 14px;
+  text-align: center;
+  color: white;
+  line-height: 1.2;
+}
+
+.row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  position: relative;
+  width: 100%;
+}
+
+.column {
+  flex: 0 0 auto;
+  padding: 0 10px;
+}
+
+.spacer {
+  flex-grow: 1;
+}
+
+.loader-column {
+  padding-right: 30px; /* Add some space from the right edge */
+}
+</style>

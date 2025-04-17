@@ -157,6 +157,7 @@ export default {
         confirmButtonColor: "#3085d6",
         cancelButtonColor: "#d33",
         confirmButtonText: "Continue",
+        theme: "dark",
       });
       return result;
     },
@@ -299,7 +300,10 @@ export default {
                   if (this.$store.state.data.debugger == true) {
                     log.write(result.stderr.toString().replace(/[\n\r]/g, ""));
                   }
-                  Swal.fire("Workflow stopped");
+                  Swal.fire({
+                    title: "Workflow stopped",
+                    theme: "dark",
+                  });
                 } else {
                   let err;
                   if (!result.stderr) {
@@ -321,6 +325,7 @@ export default {
                     title: "An error has occured while processing your data",
                     text: err,
                     confirmButtonText: "Quit",
+                    theme: "dark",
                   });
                 }
                 this.$store.commit("resetRunInfo");
@@ -335,7 +340,10 @@ export default {
               if (result.StatusCode == 0) {
                 steps2Run -= 1;
                 if (steps2Run == 0) {
-                  Swal.fire("Workflow finished");
+                  Swal.fire({
+                    title: "Workflow finished",
+                    theme: "dark",
+                  });
                 }
               }
             }
@@ -423,7 +431,10 @@ export default {
                 if (this.$store.state.data.debugger == true) {
                   log.write(result.stderr.toString().replace(/[\n\r]/g, ""));
                 }
-                Swal.fire("Workflow stopped");
+                Swal.fire({
+                  title: "Workflow stopped",
+                  theme: "dark",
+                });
               } else {
                 let err;
                 if (!result.stderr) {
@@ -441,6 +452,7 @@ export default {
                   title: "An error has occured while processing your data",
                   text: err,
                   confirmButtonText: "Quit",
+                  theme: "dark",
                 });
               }
               this.$store.commit("resetRunInfo");
@@ -455,7 +467,10 @@ export default {
             if (result.StatusCode == 0) {
               // steps2Run -= 1;
               if (steps2Run == 0) {
-                Swal.fire("Workflow finished");
+                Swal.fire({
+                  title: "Workflow finished",
+                  theme: "dark",
+                });
               }
             }
           }
@@ -525,6 +540,10 @@ export default {
         if (input.value != "undefined" && input.value != "") {
           if (Array.isArray(input.value)) {
             nextFlowParams[input.name] = input.value.join();
+          } else if (input.name == "ITSx_evalue") {
+            nextFlowParams[input.name] = parseFloat(input.value);
+          } else if (input.name == "chimera_db") {
+            nextFlowParams[input.name] = `/extraFiles15/${path.basename(input.value)}`;
           } else {
             nextFlowParams[input.name] = input.value;
           }
@@ -533,6 +552,7 @@ export default {
         envVariables.push(stringify(varObj).replace(/(\r\n|\n|\r)/gm, ""));
       });
       let dataInfo = {
+        cores: this.$store.state.dockerInfo.NCPU,
         workingDir: this.$store.state.workingDir,
         fileFormat: this.$store.state.data.fileFormat,
         readType: this.$store.state.data.readType,
@@ -805,12 +825,16 @@ export default {
             this.$store.commit("resetRunInfo");
 
             if (data.StatusCode == 0) {
-              Swal.fire("Workflow finished");
+              Swal.fire({
+                title: "Workflow finished",
+                theme: "dark",
+              });
             } else {
               Swal.fire({
                 title: "An error has occured while processing your data",
                 text: "Check the log file for more information",
                 confirmButtonText: "Quit",
+                theme: "dark",
               });
             }
             await container.remove({ v: true, force: true });
@@ -823,12 +847,14 @@ export default {
               Swal.fire({
                 title: "Workflow stopped",
                 confirmButtonText: "Quit",
+                theme: "dark",
               });
             } else {
               Swal.fire({
                 title: "An error has occurred while processing your data",
                 text: err.toString(),
-                confirmButtonText: "Quit",
+                confirmButtonText: "Quit",  
+                theme: "dark",
               });
             }
           } 
@@ -867,11 +893,11 @@ export default {
           console.log(props);
           await this.clearContainerConflicts("Step_1");
           await this.clearContainerConflicts("Step_2");
-          await this.imageCheck("vmikk/nextits:0.5.0");
+          await this.imageCheck("pipecraft/nextits:1.0.0");
           let promise = new Promise((resolve, reject) => {
             dockerode
               .run(
-                "vmikk/nextits:0.5.0",
+                "pipecraft/nextits:1.0.0",
                 ["bash", "-c", `bash /scripts/NextITS_Pipeline.sh`],
                 false,
                 props,
@@ -903,12 +929,16 @@ export default {
           console.log(result);
           this.$store.commit("resetRunInfo");
           if (result.StatusCode == 0) {
-            Swal.fire("Workflow finished");
+            Swal.fire({
+              title: "Workflow finished",
+              theme: "dark",
+            });
           } else {
             Swal.fire({
               title: "An error has occured while processing your data",
-              text: "unknows error, check result/pipeline_info/execution_report for more info",
+              text: "unknown error, check result/pipeline_info/execution_report for more info",
               confirmButtonText: "Quit",
+              theme: "dark",
             });
           }
         }
