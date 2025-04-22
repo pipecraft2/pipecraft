@@ -1,7 +1,7 @@
 <template>
-  <div class="container">
-    <v-card width="85%" style="margin: auto">
-      <v-card-title class="py-10">RESOURCE MANAGER</v-card-title>
+  <div class="container" >
+    <v-card width="85%" style="margin: auto; background-color: rgb(0 0 0 / 40%)">
+      <v-card-title style="color: black" class="py-10">RESOURCE MANAGER</v-card-title>
       <v-divider></v-divider>
       <v-card-subtitle
         v-if="this.$store.state.dockerStatus == 'stopped'"
@@ -32,6 +32,7 @@
         :max="processors"
         :tick-labels="tickLabelsCPU"
         height="100"
+        style="color: black"
       ></v-slider>
       <v-divider></v-divider>
       <v-card-subtitle
@@ -66,6 +67,7 @@
         :max="memory"
         :tick-labels="tickLabelsMEM"
         height="100"
+        style="color: black"
       ></v-slider>
       <div style="display: flex; justify-content: center">
         <v-btn v-if="this.$store.state.OStype != 'Linux'"

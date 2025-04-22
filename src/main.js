@@ -6,6 +6,7 @@ import './assets/swal.scss';
 import vuetify from "./plugins/vuetify";
 import { sync } from "vuex-router-sync";
 import os from 'os'
+
 sync(store, router);
 Vue.config.productionTip = false;
 
