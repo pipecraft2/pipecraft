@@ -26,7 +26,7 @@
     <v-divider style="background-color:white"></v-divider>
     <div style="padding: 6px">Check out the <a href="https://docs.docker.com/engine/reference/commandline/run/" target="_blank">Docker documentation</a> for more info</div> -->
       <v-card>
-        <v-toolbar flat color="grey" dark>
+        <v-toolbar flat color="dark-grey" dark>
           <v-toolbar-title
             >Using Pipecrafts assets with Docker CLI</v-toolbar-title
           >
@@ -36,9 +36,9 @@
           <v-tab> Starting a container </v-tab>
           <v-tab> Examples </v-tab>
 
-          <v-tab-item style="background: grey">
-            <v-container>
-              <v-row justify="space-around">
+          <v-tab-item>
+            <v-container style="min-width:100%">
+              <v-row justify-content="left" style="display:block">
                 <v-card
                   style="
                     min-height: 300px;
@@ -89,8 +89,8 @@
             </v-container>
           </v-tab-item>
           <v-tab-item>
-            <v-container>
-              <v-row justify="space-around">
+            <v-container style="min-width:100%">
+              <v-row justify-content="left" style="display:block">
                 <v-card
                   style="
                     min-height: 300px;
@@ -139,8 +139,8 @@
             </v-container>
           </v-tab-item>
           <v-tab-item>
-            <v-container>
-              <v-row justify="space-around">
+            <v-container style="min-width:100%">
+              <v-row justify-content="left" style="display:block">
                 <v-card
                   style="
                     min-height: 300px;

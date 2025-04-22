@@ -39,3 +39,40 @@ yarn run install_pipe
 # Start PipeCraft in development mode
 yarn electron:serve
 ```
+
+Linux:
+
+
+### Install Build Dependencies
+These packages are required for compiling native modules and building the application:
+
+```bash
+sudo apt update
+sudo apt install python3-dev python3-pip python3-setuptools
+sudo apt install build-essential
+```
+# Download and install nvm:
+```bash
+curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.40.2/install.sh | bash
+```
+# Restart the shell
+```bash
+\. "$HOME/.nvm/nvm.sh"
+```
+# Download and install Node.js:
+```bash
+nvm install 16
+```
+```bash
+npm install --global yarn
+```
+```bash
+git clone https://github.com/pipecraft2/pipecraft
+```
+```bash
+cd pipecraft
+```
+# Install dependencies
+```bash
+yarn install
+```
