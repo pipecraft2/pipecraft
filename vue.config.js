@@ -27,7 +27,7 @@ module.exports = {
             Name: "PipeCraft2",
             Comment: "Software for metabarcoding data analysis",
             Categories: "Science;Biology;Bioinformatics",
-            Terminal: true,
+            Terminal: false,
             Type: "Application",
             StartupNotify: true,
             StartupWMClass: "pipecraft"

@@ -6102,6 +6102,7 @@ SINGLE-END is for PacBio data, but can be also used for single-end read Illumina
         noRefs: true,   // Don't output YAML references
         noCompatMode: true // Use the newest YAML standard
       });
+
       
       // Write to file
       let filePath = isDevelopment == true

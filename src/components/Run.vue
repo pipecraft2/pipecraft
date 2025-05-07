@@ -823,7 +823,6 @@ export default {
             const data = await container.wait();
             console.log('Container exited with status code:', data.StatusCode);
             this.$store.commit("resetRunInfo");
-
             if (data.StatusCode == 0) {
               Swal.fire({
                 title: "Workflow finished",
