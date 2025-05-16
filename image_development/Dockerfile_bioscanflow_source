@@ -1,0 +1,101 @@
+FROM ubuntu:24.04
+
+# Set environment variables
+ENV LANG=C.UTF-8
+ENV LC_ALL=C.UTF-8
+
+# Install system dependencies and Python packages
+RUN apt-get update && apt-get install -y \
+    wget \
+    unzip \
+    libjpeg9 \
+    python3-pip \
+    python3-dev \
+    python3-biopython \
+    python3-numpy \
+    python3-scipy \
+    python3-yaml \
+    python3-zstandard \
+    r-base \
+    r-base-dev \
+    libcurl4-openssl-dev \
+    libssl-dev \
+    libxml2-dev \
+    libfontconfig1-dev \
+    libharfbuzz-dev \
+    libfribidi-dev \
+    libfreetype6-dev \
+    libpng-dev \
+    libtiff5-dev \
+    libjpeg-dev \
+    libcairo2-dev \
+    libgsl-dev \
+    libopenblas-dev \
+    liblapack-dev \
+    libncurses5-dev \
+    libbz2-dev \
+    liblzma-dev \
+    libpcre2-dev \
+    libreadline-dev \
+    zlib1g-dev \
+    git \
+    build-essential \
+    && rm -rf /var/lib/apt/lists/*
+
+# Install Python packages that aren't in apt
+RUN pip3 install --no-cache-dir --break-system-packages \
+    cutadapt==4.9 \
+    pysam==0.22.1 \
+    xmltodict==0.13.0 \
+    xopen==2.0.2 \
+    isal==1.7.2 \
+    zlib-ng==0.5.0
+
+# Install R packages
+RUN R -e "install.packages(c('devtools', 'BiocManager', 'dplyr', 'data.table', 'seqinr'), repos='https://cloud.r-project.org/')" && \
+    R -e "BiocManager::install(c('Biobase', 'BiocGenerics', 'BiocParallel', 'Biostrings', 'dada2', 'ShortRead', 'GenomicRanges', 'IRanges', 'S4Vectors', 'XVector', 'zlibbioc', 'BiocVersion'))" && \
+    R -e "devtools::install_github('tobiasgf/lulu')"
+
+# Install mothur
+RUN wget https://github.com/mothur/mothur/releases/download/v1.48.2/Mothur.Ubuntu_22.zip -O /tmp/mothur.zip && \
+    unzip /tmp/mothur.zip -d /usr/bin/ && rm /tmp/mothur.zip
+
+# Install other bioinformatics tools
+RUN apt-get update && apt-get install -y \
+    bbmap \
+    ncbi-blast+ \
+    mafft \
+    vsearch \
+    samtools \
+    pigz \
+    && rm -rf /var/lib/apt/lists/*
+
+# Install seqkit
+RUN wget https://github.com/shenwei356/seqkit/releases/download/v2.8.2/seqkit_linux_amd64.tar.gz && \
+    tar -xzf seqkit_linux_amd64.tar.gz && \
+    mv seqkit /usr/local/bin/ && \
+    rm seqkit_linux_amd64.tar.gz
+
+RUN apt-get install -y perl    
+# Install HMMER
+RUN wget http://eddylab.org/software/hmmer/hmmer-3.3.2.tar.gz -O /tmp/hmmer-3.3.2.tar.gz && \
+    tar zxvf /tmp/hmmer-3.3.2.tar.gz -C /usr/bin/ && \
+    cd /usr/bin/hmmer-3.3.2 && \
+    ./configure && \
+    make && \
+    make install && \
+    rm /tmp/hmmer-3.3.2.tar.gz
+
+# Install ITSx
+RUN wget https://microbiology.se/sw/ITSx_1.1.3.tar.gz -O /tmp/ITSx_1.1.3.tar.gz && \
+    tar zxvf /tmp/ITSx_1.1.3.tar.gz -C /usr/bin/ && \
+    cp /usr/bin/ITSx_1.1.3/ITSx /usr/bin && \
+    cp -R /usr/bin/ITSx_1.1.3/ITSx_db /usr/bin && \
+    rm /tmp/ITSx_1.1.3.tar.gz
+
+# Set PATH
+ENV PATH="$PATH:/usr/bin/mothur:/usr/local/bin"
+
+
+# Default command
+CMD ["bash"]

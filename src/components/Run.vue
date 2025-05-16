@@ -1,125 +1,123 @@
 <template>
-  <v-tooltip
-    right
-    :disabled="
-      $store.state.dockerStatus == 'running' &&
-      $store.state.inputDir != '' &&
-      (('workflowName' in $route.params &&
-        $store.getters.customWorkflowReady) ||
-        $store.getters.selectedStepsReady) &&
-    !($route.params.workflowName === 'OptimOTU' && 
-      $store.state.OptimOTU[8].Inputs[1].value === 'undefined')
-    "
-  >
+  <v-tooltip right :disabled="isTooltipDisabled">
     <template v-slot:activator="{ on }">
       <div v-on="on">
         <v-btn
-          style="background-color: #212121"
-          :disabled="
-            $store.state.dockerStatus == 'stopped' ||
-            $store.state.inputDir == '' ||
-            (!('workflowName' in $route.params) &&
-              !$store.getters.selectedStepsReady) ||
-            ('workflowName' in $route.params &&
-              !$store.getters.customWorkflowReady) ||
-            ($route.params.workflowName === 'OptimOTU' && 
-              $store.state.OptimOTU[8].Inputs[1].value === 'undefined')
-          "
           block
-          :style="
-            $store.state.dockerStatus == 'stopped' ||
-            $store.state.inputDir == '' ||
-            (!('workflowName' in $route.params) &&
-              !$store.getters.selectedStepsReady) ||
-            ('workflowName' in $route.params &&
-              !$store.getters.customWorkflowReady) ||
-            ($route.params.workflowName === 'OptimOTU' && 
-              $store.state.OptimOTU[8].Inputs[1].value === 'undefined')
-              ? {
-                  borderBottom: 'thin #E57373 solid',
-                  borderTop: 'thin white solid',
-                  borderRight: 'thin white solid',
-                  borderLeft: 'thin white solid',
-                }
-              : {
-                  borderBottom: 'thin #1DE9B6 solid',
-                  borderTop: 'thin white solid',
-                  borderLeft: 'thin white solid',
-                  borderRight: 'thin white solid',
-                }
-          "
-          @click="
-            $route.params.workflowName &&
-            $route.params.workflowName.includes('NextITS')
-              ? runNextITS()
-              : $route.params.workflowName &&
-                $route.params.workflowName.includes('OptimOTU')
-              ? runOptimOTU()
-              : $route.params.workflowName
-              ? runCustomWorkFlow($route.params.workflowName)
-              : runWorkFlow()
-          "
+          :disabled="isButtonDisabled"
+          :class="buttonClasses"
+          @click="handleStartClick"
         >
           Start
         </v-btn>
       </div>
     </template>
-    <div
-    v-if="$route.params.workflowName === 'OptimOTU' && 
-          $store.state.OptimOTU[8].Inputs[1].value === 'undefined'"
-  >
-    Missing outgroup database for protax classification
-  </div>
-    <div v-if="this.$store.state.dockerStatus == 'stopped'">
+
+    <!-- Tooltip Content -->
+    <div v-if="showOptimOTUWarning">
+      Missing outgroup database for protax classification
+    </div>
+    <div v-if="isDockerStopped">
       Failed to find docker desktop!
     </div>
-    <div v-if="this.$store.state.inputDir == ''">No files selected!</div>
-    <div
-      v-if="
-        !$store.getters.selectedStepsReady &&
-        $route.params.workflowName == undefined
-      "
-    >
+    <div v-if="isNoFilesSelected">
+      No files selected!
+    </div>
+    <div v-if="showMissingServicesWarning">
       Missing selected services or mandatory inputs
     </div>
-    <div
-      v-if="
-        'workflowName' in $route.params && !$store.getters.customWorkflowReady
-      "
-    >
+    <div v-if="showMissingInputsWarning">
       Missing mandatory inputs
     </div>
   </v-tooltip>
 </template>
 
 <script>
-const path = require("path");
-const slash = require("slash");
-const Swal = require("sweetalert2");
-const streams = require("memory-streams");
-var _ = require("lodash");
-import * as Dockerode from "dockerode";
-import { pullImageAsync } from "dockerode-utils";
-import { imageExists } from "dockerode-utils";
+import path from 'path';
+import os from 'os';
+import fs from 'fs';
+import slash from 'slash';
+import Swal from 'sweetalert2';
+import { WritableStream } from 'memory-streams';
+import JSONfn from 'json-fn';
 import { ipcRenderer } from "electron";
 import { mapState } from "vuex";
 import { stringify } from "envfile";
-import os from "os";
-const fs = require('fs');
-var JSONfn = require("json-fn");
-var socketPath =
-  os.platform() === "win32" ? "//./pipe/docker_engine" : "/var/run/docker.sock";
-var dockerode = new Dockerode({ socketPath: socketPath });
-var stdout = new streams.WritableStream();
-var stderr = new streams.WritableStream();
+import cloneDeep from 'lodash/cloneDeep';
+var stdout = new WritableStream();
+var stderr = new WritableStream();
 const isDevelopment = process.env.NODE_ENV !== "production";
+
 
 
 export default {
   name: "Run",
-  computed: mapState({
-    selectedSteps: (state) => state.selectedSteps,
-  }),
+  computed: {
+    // Keep the mapState for selectedSteps
+    ...mapState({
+      selectedSteps: (state) => state.selectedSteps,
+    }),
+
+    // Button State
+    isButtonDisabled() {
+      return this.isDockerStopped || 
+             this.isNoFilesSelected || 
+             this.isWorkflowNotReady;
+    },
+
+    isTooltipDisabled() {
+      return !this.isButtonDisabled;
+    },
+
+    // Status Checks
+    isDockerStopped() {
+      return this.$store.state.dockerStatus === 'stopped';
+    },
+
+    isNoFilesSelected() {
+      return this.$store.state.inputDir === '';
+    },
+
+    isWorkflowNotReady() {
+      const { workflowName } = this.$route.params;
+      
+      if (!workflowName) {
+        return !this.$store.getters.selectedStepsReady;
+      }
+
+      if (workflowName === 'OptimOTU') {
+        return this.$store.state.OptimOTU[8].Inputs[1].value === 'undefined';
+      }
+
+      return !this.$store.getters.customWorkflowReady;
+    },
+
+    // Warning States
+    showOptimOTUWarning() {
+      return this.$route.params.workflowName === 'OptimOTU' && 
+             this.$store.state.OptimOTU[8].Inputs[1].value === 'undefined' || 
+             this.$store.state.OptimOTU[8].Inputs[1].value === 'custom';
+    },
+
+    showMissingServicesWarning() {
+      return !this.$store.getters.selectedStepsReady && 
+             !this.$route.params.workflowName;
+    },
+
+    showMissingInputsWarning() {
+      return 'workflowName' in this.$route.params && 
+             !this.$store.getters.customWorkflowReady;
+    },
+
+    // Button Styling
+    buttonClasses() {
+      return {
+        'error-border': this.isButtonDisabled,
+        'success-border': !this.isButtonDisabled,
+        'bg-dark': true
+      };
+    }
+  },
   data() {
     return {
       userId: null,
@@ -161,31 +159,8 @@ export default {
       });
       return result;
     },
-    async clearContainerConflicts(Hostname) {
-      let container = await dockerode.getContainer(Hostname);
-      let nameConflicts = await container
-        .remove({ force: true })
-        .then(async () => {
-          return "Removed conflicting duplicate container";
-        })
-        .catch(() => {
-          return "No conflicting container names";
-        });
-      console.log(nameConflicts);
-    },
     async updateRunInfo(i, len, Hname, name) {
       this.$store.commit("addRunInfo", [true, name, i, len, Hname]);
-    },
-    async imageCheck(imageName) {
-      let gotImg = await imageExists(dockerode, imageName);
-      if (gotImg === false) {
-        this.$store.commit("activatePullLoader");
-        console.log(`Pulling image ${imageName}`);
-        let output = await pullImageAsync(dockerode, imageName);
-        console.log(output);
-        console.log(`Pull complete`);
-        this.$store.commit("deactivatePullLoader");
-      }
     },
     async getDockerProps(step) {
       let Hostname = step.serviceName.replaceAll(" ", "_");
@@ -231,8 +206,8 @@ export default {
               );
               let dockerProps = await this.getDockerProps(step);
               this.updateRunInfo(i, steps2Run, dockerProps.name, name);
-              await this.imageCheck(step.imageName);
-              await this.clearContainerConflicts(dockerProps.name);
+              await this.$store.dispatch('imageCheck', step.imageName);
+              await this.$store.dispatch('clearContainerConflicts', dockerProps.name);
               console.log(dockerProps);
               let scriptName;
               if (typeof step.scriptName === "object") {
@@ -242,7 +217,7 @@ export default {
                 scriptName = step.scriptName;
               }
               console.log(scriptName);
-              let result = await dockerode
+              let result = await this.$docker
                 .run(
                   step.imageName,
                   ["bash", "-c", `bash /scripts/${scriptName}`],
@@ -329,12 +304,12 @@ export default {
                   });
                 }
                 this.$store.commit("resetRunInfo");
-                stdout = new streams.WritableStream();
-                stderr = new streams.WritableStream();
+                stdout = new WritableStream();
+                stderr = new WritableStream();
                 break;
               }
-              stdout = new streams.WritableStream();
-              stderr = new streams.WritableStream();
+              stdout = new WritableStream();
+              stderr = new WritableStream();
               console.log(`Finished step ${i + 1}: ${step.serviceName}`);
               this.$store.commit("resetRunInfo");
               if (result.StatusCode == 0) {
@@ -385,9 +360,9 @@ export default {
             let dockerProps = await this.getDockerProps(selectedStep);
             console.log(dockerProps);
             this.updateRunInfo(i, steps2Run, dockerProps.name, "workflow");
-            await this.imageCheck(selectedStep.imageName);
-            await this.clearContainerConflicts(dockerProps.name);
-            let result = await dockerode
+            await this.$store.dispatch('imageCheck', selectedStep.imageName);
+            await this.$store.dispatch('clearContainerConflicts', dockerProps.name);
+            let result = await this.$docker
               .run(
                 selectedStep.imageName,
                 ["bash", "-c", `bash /scripts/${selectedStep.scriptName}`],
@@ -456,12 +431,12 @@ export default {
                 });
               }
               this.$store.commit("resetRunInfo");
-              stdout = new streams.WritableStream();
-              stderr = new streams.WritableStream();
+              stdout = new WritableStream();
+              stderr = new WritableStream();
               break;
             }
-            stdout = new streams.WritableStream();
-            stderr = new streams.WritableStream();
+            stdout = new WritableStream();
+            stderr = new WritableStream();
             console.log(`Finished step ${i + 1}: ${step.stepName}`);
             this.$store.commit("resetRunInfo");
             if (result.StatusCode == 0) {
@@ -780,10 +755,10 @@ export default {
           this.$store.state.runInfo.active = true;
           this.$store.state.runInfo.containerID = 'optimotu';
           await this.$store.dispatch('generateOptimOTUYamlConfig');
-          await this.imageCheck('pipecraft/optimotu:5');
-          await this.clearContainerConflicts('optimotu');
+          await this.$store.dispatch('imageCheck', 'pipecraft/optimotu:5');
+          await this.$store.dispatch('clearContainerConflicts', 'optimotu');
           try {            
-            const container = await dockerode.createContainer({
+            const container = await this.$docker.createContainer({
               Image: 'pipecraft/optimotu:5',
               name: 'optimotu',
               Cmd: ['/scripts/run_optimotu.sh'],
@@ -883,19 +858,19 @@ export default {
           if (this.$store.state.data.debugger == true) {
             log = fs.createWriteStream("NextITS_log.txt");
           }
-          let stdout = new streams.WritableStream();
-          let step = _.cloneDeep(this.$store.state.NextITS[0]);
+          let stdout = new WritableStream();
+          let step = cloneDeep(this.$store.state.NextITS[0]);
           step.Inputs = step.Inputs.concat(this.$store.state.NextITS[1].Inputs);
           step.extraInputs = step.extraInputs.concat(
             this.$store.state.NextITS[1].extraInputs
           );
           let props = this.createParamsFile(step);
           console.log(props);
-          await this.clearContainerConflicts("Step_1");
-          await this.clearContainerConflicts("Step_2");
-          await this.imageCheck("pipecraft/nextits:1.0.0");
+          await this.$store.dispatch('clearContainerConflicts', "Step_1");
+          await this.$store.dispatch('clearContainerConflicts', "Step_2");
+          await this.$store.dispatch('imageCheck', "pipecraft/nextits:1.0.0");
           let promise = new Promise((resolve, reject) => {
-            dockerode
+            this.$docker
               .run(
                 "pipecraft/nextits:1.0.0",
                 ["bash", "-c", `bash /scripts/NextITS_Pipeline.sh`],
@@ -944,6 +919,23 @@ export default {
         }
       });
     },
+    handleStartClick() {
+      const { workflowName } = this.$route.params;
+      
+      if (!workflowName) {
+        return this.runWorkFlow();
+      }
+
+      if (workflowName.includes('NextITS')) {
+        return this.runNextITS();
+      }
+
+      if (workflowName.includes('OptimOTU')) {
+        return this.runOptimOTU();
+      }
+
+      return this.runCustomWorkFlow(workflowName);
+    }
   },
 };
 </script>
@@ -952,10 +944,30 @@ export default {
 .v-btn {
   justify-content: center;
 }
+
 .swal-wide {
   width: 850px !important;
 }
+
 .swal2-popup {
   width: auto;
+}
+
+.bg-dark {
+  background-color: #212121 !important;
+}
+
+.error-border {
+  border: thin solid #E57373 !important;
+  border-top: thin solid white !important;
+  border-right: thin solid white !important;
+  border-left: thin solid white !important;
+}
+
+.success-border {
+  border-bottom: thin solid #1DE9B6 !important;
+  border-top: thin solid white !important;
+  border-left: thin solid white !important;
+  border-right: thin solid white !important;
 }
 </style>

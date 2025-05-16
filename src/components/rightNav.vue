@@ -291,8 +291,8 @@ export default {
         this.$router.push("/ExpertMode");
       }
     },
-    push2ResourceManager() {
-      console.log(docker.version())
+    async push2ResourceManager() {
+      console.log(await docker.version())
       if (this.$route.path != "/ResourceManager") {
         if (this.$store.state.dockerStatus == "running" && this.$store.state.OStype != "Linux") {
           console.log('Linux')
