@@ -7,31 +7,31 @@ import os from "os";
 import fs from "fs";
 import path from "path";
 import { pullImageAsync, imageExists } from "dockerode-utils";
-const DockerDesktopLinux = !fs.existsSync("/var/run/docker.sock");
-var socketPath =
-  os.platform() === "win32"
-    ? "//./pipe/docker_engine"
-    : DockerDesktopLinux
-    ? `${os.homedir()}/.docker/desktop/docker.sock`
-    : "/var/run/docker.sock";
-
-var Docker = require("dockerode");
-var docker = new Docker({ socketPath: socketPath });
 const isDevelopment = process.env.NODE_ENV !== "production";
 const Swal = require("sweetalert2");
 const { dialog } = require("@electron/remote");
 const slash = require("slash");
-const arch = process.arch;
-const vsearch_dada_image = arch === 'arm64' 
-    ? 'pipecraft/vsearch_dada2_m:3'
-    : 'pipecraft/vsearch_dada2:3';
-
-console.log(arch)
+function getDockerInstance(state) {
+  const Docker = require("dockerode");
+  const socketPath = state.systemSpecs.dockerSocket
+  return new Docker({ socketPath });
+}
 
 Vue.use(Vuex);
 
 export default new Vuex.Store({
   state: {
+    systemSpecs: {
+      os: null,
+      architecture: null,
+      userId: null,
+      groupId: null,
+      homeDir: null,
+      dockerSettings: null,
+      dockerSocket: null,
+      CPU: null,
+      memory: null,
+    },
     SUPPORTED_EXTENSIONS: [
       '.fastq', '.fasta', '.fq', '.fa', '.txt',
       '.fastq.gz', '.fasta.gz', '.fq.gz', '.fa.gz', '.txt.gz'
@@ -71,7 +71,6 @@ export default new Vuex.Store({
       output_fasta: "",
       output_feature_table: "",
     },
-    env_variables: ["FOO=bar", "BAZ=quux"],
     selectedSteps: [],
     steps: [
       {
@@ -241,7 +240,7 @@ export default new Vuex.Store({
           {
             tooltip: "quality filtering with vsearch",
             scriptName: "quality_filtering_paired_end_vsearch.sh",
-            imageName: vsearch_dada_image,
+            imageName: 'pipecraft/vsearch_dada2:3',
             serviceName: "vsearch",
             selected: false,
             showExtra: false,
@@ -579,7 +578,7 @@ export default new Vuex.Store({
           {
             tooltip: "quality filtering with DADA2 'filterAndTrim' function",
             scriptName: "quality_filtering_paired_end_dada2.sh",
-            imageName: vsearch_dada_image,
+            imageName: 'pipecraft/vsearch_dada2:3',
             serviceName: "DADA2",
             selected: false,
             showExtra: false,
@@ -677,7 +676,7 @@ export default new Vuex.Store({
           {
             tooltip: "assemble paired-end reads with vsearch",
             scriptName: "assemble_paired_end_data_vsearch.sh",
-            imageName: vsearch_dada_image,
+            imageName: 'pipecraft/vsearch_dada2:3',
             serviceName: "vsearch",
             disabled: "single_end",
             selected: false,
@@ -766,7 +765,7 @@ export default new Vuex.Store({
             tooltip:
               "denoise and assemble paired-end reads with DADA2 'mergePairs' and 'dada' functions. Note that only FASTA is outputted!",
             scriptName: "assemble_paired_end_data_dada2.sh",
-            imageName: vsearch_dada_image,
+            imageName: 'pipecraft/vsearch_dada2:3',
             serviceName: "DADA2_denoise_and_merge",
             selected: false,
             disabled: "single_end",
@@ -891,7 +890,7 @@ export default new Vuex.Store({
             tooltip:
               "tick the checkbox to filter chimeras with vsearch --uchime_denovo",
             scriptName: "chimera_filtering_vsearch.sh",
-            imageName: vsearch_dada_image,
+            imageName: 'pipecraft/vsearch_dada2:3',
             serviceName: "uchime_denovo",
             selected: false,
             showExtra: false,
@@ -962,7 +961,7 @@ export default new Vuex.Store({
             tooltip:
               "tick the checkbox to filter chimeras with vsearch --uchime3_denovo [for denoised sequences]",
             scriptName: "chimera_filtering_vsearch_uchime3.sh",
-            imageName: vsearch_dada_image,
+            imageName: 'pipecraft/vsearch_dada2:3',
             serviceName: "uchime3_denovo",
             selected: false,
             showExtra: false,
@@ -1146,7 +1145,7 @@ export default new Vuex.Store({
           {
             scriptName: "clustering_vsearch.sh",
             tooltip: "tick the checkbox to cluster reads with vsearch",
-            imageName: vsearch_dada_image,
+            imageName: 'pipecraft/vsearch_dada2:3',
             serviceName: "vsearch",
             selected: false,
             showExtra: false,
@@ -1240,7 +1239,7 @@ export default new Vuex.Store({
             scriptName: "clustering_unoise.sh",
             tooltip:
               "tick the checkbox to cluster reads with vsearch --cluster_unoise (and optionally remove chimeras with --uchime3_denovo)",
-            imageName: vsearch_dada_image,
+            imageName: 'pipecraft/vsearch_dada2:3',
             serviceName: "unoise3",
             selected: false,
             showExtra: false,
@@ -1357,7 +1356,7 @@ export default new Vuex.Store({
           {
             scriptName: "tag_jump_removal.sh",
             tooltip: "filter out putative tag-jumps in the ASVs table (using UNCROSS2)",
-            imageName: vsearch_dada_image,
+            imageName: 'pipecraft/vsearch_dada2:3',
             serviceName: "filter_tag-jumps",
             selected: false,
             showExtra: false,
@@ -1407,7 +1406,7 @@ export default new Vuex.Store({
             scriptName: "clustering_vsearch_ASVs2OTUs.sh",
             tooltip:
               "clustering ASVs to OTUs with vsearch; and making an OTU table",
-            imageName: vsearch_dada_image,
+            imageName: 'pipecraft/vsearch_dada2:3',
             serviceName: "ASV_to_OTU",
             selected: false,
             showExtra: false,
@@ -1521,7 +1520,7 @@ export default new Vuex.Store({
           {
             tooltip: "postclustering with LULU algorithm to collapse consistently co-occurring daughter-OTUs",
             scriptName: "lulu.sh",
-            imageName: vsearch_dada_image,
+            imageName: 'pipecraft/vsearch_dada2:3',
             serviceName: "LULU_post-clustering",
             selected: false,
             showExtra: false,
@@ -1647,7 +1646,7 @@ export default new Vuex.Store({
             tooltip:
               "applies to DADA2 output ASV table (rds). Collaplse identical ASVs or/and filter ASVs by length [SELECT WORKDIR (data format, extension and read types are irrelevant here)]",
             scriptName: "table_filtering_dada2.sh",
-            imageName: vsearch_dada_image,
+            imageName: 'pipecraft/vsearch_dada2:3',
             serviceName: "DADA2 collapse ASVs",
             disabled: "never",
             selected: false,
@@ -2163,7 +2162,7 @@ export default new Vuex.Store({
             tooltip:
               "assign taxonomy with SINTAX classifier (in vsearch)",
             scriptName: "taxonomy_sintax.sh",
-            imageName: vsearch_dada_image,
+            imageName: 'pipecraft/vsearch_dada2:3',
             serviceName: "sintax",
             selected: false,
             showExtra: false,
@@ -2226,7 +2225,7 @@ export default new Vuex.Store({
             tooltip:
               "assign taxonomy with DADA2 'assignTaxonomy' function (RDP naive Bayesian classifier)",
             scriptName: "taxonomy_dada2.sh",
-            imageName: vsearch_dada_image,
+            imageName: 'pipecraft/vsearch_dada2:3',
             serviceName: "DADA2 classifier",
             disabled: "never",
             selected: false,
@@ -2319,7 +2318,7 @@ export default new Vuex.Store({
             tooltip:
               "sequence file [fasta(.gz)/fastq(.gz)] statistics per file (number of seqs, min length, average length, max length)",
             scriptName: "seqkit_stats.sh",
-            imageName: vsearch_dada_image,
+            imageName: 'pipecraft/vsearch_dada2:3',
             serviceName: "seqkit stats",
             selected: false,
             showExtra: false,
@@ -2339,7 +2338,7 @@ export default new Vuex.Store({
             tooltip:
               "compare sequences in a fasta file with themselves using vsearch (global alignment) or BLAST (local alignment)",
             scriptName: "self_comparison.sh",
-            imageName: vsearch_dada_image,
+            imageName: 'pipecraft/vsearch_dada2:3',
             serviceName: "self-comparison",
             selected: false,
             showExtra: false,
@@ -2482,7 +2481,7 @@ export default new Vuex.Store({
       {
         tooltip: "assemble paired-end reads with vsearch",
         scriptName: "assemble_paired_end_data_vsearch.sh",
-        imageName: vsearch_dada_image,
+        imageName: 'pipecraft/vsearch_dada2:3',
         serviceName: "merge reads",
         manualLink:
           "https://pipecraft2-manual.readthedocs.io/en/latest/quicktools.html#merge-vsearch",
@@ -2572,7 +2571,7 @@ export default new Vuex.Store({
       {
         tooltip: "quality filtering with vsearch",
         scriptName: "quality_filtering_paired_end_vsearch.sh",
-        imageName: vsearch_dada_image,
+        imageName: 'pipecraft/vsearch_dada2:3',
         serviceName: "quality filtering",
         manualLink:
           "https://pipecraft2-manual.readthedocs.io/en/latest/quicktools.html#qfilt-vsearch",
@@ -2672,7 +2671,7 @@ export default new Vuex.Store({
         tooltip:
           "chimera filtering with vsearch. Untick the checkbox to skip this step",
         scriptName: "chimera_filtering_vsearch.sh",
-        imageName: vsearch_dada_image,
+        imageName: 'pipecraft/vsearch_dada2:3',
         serviceName: "chimera filtering",
         manualLink:
           "https://pipecraft2-manual.readthedocs.io/en/latest/quicktools.html#chimera-filtering",
@@ -2878,7 +2877,7 @@ export default new Vuex.Store({
       {
         tooltip: "cluster reads to OTUs with vsearch",
         scriptName: "clustering_vsearch.sh",
-        imageName: vsearch_dada_image,
+        imageName: 'pipecraft/vsearch_dada2:3',
         serviceName: "clustering",
         manualLink:
           "https://pipecraft2-manual.readthedocs.io/en/latest/quicktools.html#clustering-vsearch",
@@ -2974,7 +2973,7 @@ export default new Vuex.Store({
       {
         tooltip: "Filter tag-jumps and/or filter OTUs by length",
         scriptName: "curate_table_wf.sh",
-        imageName: vsearch_dada_image,
+        imageName: 'pipecraft/vsearch_dada2:3',
         serviceName: "curate OTU table",
         manualLink:
           "empty",
@@ -3060,7 +3059,7 @@ export default new Vuex.Store({
         tooltip: "Merge sequencing runs if working with multuple runs in the 'multiRunDir' directory. \
         Samples with the same name across runs are not merged together.",
         scriptName: "merge_runs_vsearch_wf.sh",
-        imageName: vsearch_dada_image, 
+        imageName: 'pipecraft/vsearch_dada2:3', 
         serviceName: "Merge sequencing runs",
         manualLink: "https://pipecraft2-manual.readthedocs.io/en/latest/pre-defined_pipelines.html#merge-sequencing-runs",
         disabled: "never",
@@ -3169,7 +3168,7 @@ export default new Vuex.Store({
       {
         tooltip: "assemble paired-end reads with vsearch",
         scriptName: "assemble_paired_end_data_vsearch.sh",
-        imageName: vsearch_dada_image,
+        imageName: 'pipecraft/vsearch_dada2:3',
         serviceName: "merge reads",
         manualLink:
           "https://pipecraft2-manual.readthedocs.io/en/latest/quicktools.html#merge-vsearch",
@@ -3259,7 +3258,7 @@ export default new Vuex.Store({
       {
         tooltip: "quality filtering with vsearch",
         scriptName: "quality_filtering_paired_end_vsearch.sh",
-        imageName: vsearch_dada_image,
+        imageName: 'pipecraft/vsearch_dada2:3',
         serviceName: "quality filtering",
         manualLink:
           "https://pipecraft2-manual.readthedocs.io/en/latest/quicktools.html#qfilt-vsearch",
@@ -3492,7 +3491,7 @@ export default new Vuex.Store({
         scriptName: "clustering_unoise.sh",
         tooltip:
           "cluster reads with vsearch --cluster_unoise (and optionally remove chimeras with --uchime3_denovo)",
-        imageName: vsearch_dada_image,
+        imageName: 'pipecraft/vsearch_dada2:3',
         serviceName: "unoise3",
         disabled: "never",
         selected: "always",
@@ -3603,7 +3602,7 @@ export default new Vuex.Store({
       {
         tooltip: "Filter tag-jumps and/or filter zOTUs by length (if zOTUs are clustered to OTUs in the clustering step, then this step will be applied also to the OTUs)",
         scriptName: "curate_table_wf.sh",
-        imageName: vsearch_dada_image,
+        imageName: 'pipecraft/vsearch_dada2:3',
         serviceName: "curate OTU table",
         manualLink:
           "empty",
@@ -3689,7 +3688,7 @@ export default new Vuex.Store({
         tooltip: "Merge sequencing runs if working with multuple runs in the 'multiRunDir' directory. \
         Samples with the same name across runs are not merged together",
         scriptName: "merge_runs_unoise_wf.sh",
-        imageName: vsearch_dada_image, 
+        imageName: 'pipecraft/vsearch_dada2:3', 
         serviceName: "Merge sequencing runs",
         manualLink: "https://pipecraft2-manual.readthedocs.io/en/latest/pre-defined_pipelines.html#merge-sequencing-runs",
         disabled: "never",
@@ -4842,7 +4841,7 @@ export default new Vuex.Store({
           MIXED: "quality_filtering_paired_end_dada2_mixed.sh",
           SINGLE_END: "quality_filtering_single_end_dada2.sh",
         },
-        imageName: vsearch_dada_image,
+        imageName: 'pipecraft/vsearch_dada2:3',
         serviceName: "quality filtering",
         manualLink:
           "https://pipecraft2-manual.readthedocs.io/en/latest/quicktools.html#quality-filtering",
@@ -4940,7 +4939,7 @@ export default new Vuex.Store({
           MIXED: "assemble_paired_end_data_dada2_mixed_wf.sh",
           SINGLE_END: "denoise_single_end_data_dada2.sh",
         },
-        imageName: vsearch_dada_image,
+        imageName: 'pipecraft/vsearch_dada2:3',
         serviceName: "denoise",
         manualLink:
           "https://pipecraft2-manual.readthedocs.io/en/latest/quicktools.html#dada2-denoise",
@@ -5039,7 +5038,7 @@ export default new Vuex.Store({
           MIXED: "assemble_paired_end_data_dada2_mixed_wf.sh",
           SINGLE_END: "disabled.sh",
         },
-        imageName: vsearch_dada_image,
+        imageName: 'pipecraft/vsearch_dada2:3',
         serviceName: "merge Pairs",
         manualLink:
           "https://pipecraft2-manual.readthedocs.io/en/latest/quicktools.html#assemble-paired-end-reads",
@@ -5090,7 +5089,7 @@ export default new Vuex.Store({
           MIXED: "chimera_filtering_dada2_mixed_wf.sh",
           SINGLE_END: "chimera_filtering_dada2_wf.sh",
         },
-        imageName: vsearch_dada_image,
+        imageName: 'pipecraft/vsearch_dada2:3',
         serviceName: "chimera filtering",
         manualLink:
           "https://pipecraft2-manual.readthedocs.io/en/latest/quicktools.html#chimera-filtering",
@@ -5113,7 +5112,7 @@ export default new Vuex.Store({
       {
         tooltip: "Filter tag-jumps, filter ASV by length, collaplse identical ASVs",
         scriptName: "curate_table_wf.sh",
-        imageName: vsearch_dada_image,
+        imageName: 'pipecraft/vsearch_dada2:3',
         serviceName: "curate ASV table",
         manualLink:
           "https://pipecraft2-manual.readthedocs.io/en/latest/quicktools.html#dada2-table-filtering",
@@ -5219,7 +5218,7 @@ export default new Vuex.Store({
       {
         tooltip: "Merge sequencing runs if working with multuple runs in the 'multiRunDir' directory. Samples with the same name across runs are merged together",
         scriptName: "merge_runs_dada2_wf.sh",
-        imageName: vsearch_dada_image, 
+        imageName: 'pipecraft/vsearch_dada2:3', 
         serviceName: "Merge sequencing runs",
         manualLink: "https://pipecraft2-manual.readthedocs.io/en/latest/pre-defined_pipelines.html#merge-sequencing-runs",
         disabled: "never",
@@ -5258,9 +5257,9 @@ export default new Vuex.Store({
     customWorkflowInfo: {
       DADA2_ASVs: {
         info: `DADA2 ASVs workflow for for demultiplexed Illumina or PacBio data.
-PAIRED-END FORWARD is for Illumina paired-end data; select this when all reads of interest are expected to be in 5-3 orient. 
-PAIRED-END MIXED is also for Illumina paired-end data; select this when reads of interest are expected to be in both 5-3 and 3-5 orient. 
-SINGLE-END is for PacBio data, but can be also used for single-end read Illumina data when usig loessErrFun as errorEstFun`,
+               PAIRED-END FORWARD is for Illumina paired-end data; select this when all reads of interest are expected to be in 5-3 orient. 
+               PAIRED-END MIXED is also for Illumina paired-end data; select this when reads of interest are expected to be in both 5-3 and 3-5 orient. 
+               SINGLE-END is for PacBio data, but can be also used for single-end read Illumina data when usig loessErrFun as errorEstFun`,
         link: "https://benjjneb.github.io/dada2/index.html",
         title: "DADA2 ASVs workflow",
       },
@@ -5648,6 +5647,43 @@ SINGLE-END is for PacBio data, but can be also used for single-end read Illumina
     },
   },
   mutations: {
+    setSystemSpecs(state, specs) {
+      state.systemSpecs = specs;
+
+      // Determine the correct image name based on architecture
+      const correctImage = specs.architecture === 'arm64'
+        ? 'pipecraft/vsearch_dada2_m:3'
+        : 'pipecraft/vsearch_dada2:3';
+
+      // Helper to update only relevant services recursively
+      function updateVsearchDADA2Images(obj) {
+        if (Array.isArray(obj)) {
+          obj.forEach(updateVsearchDADA2Images);
+        } else if (obj && typeof obj === 'object') {
+          if (
+            obj.imageName &&
+            (obj.imageName.startsWith('pipecraft/vsearch_dada2'))
+          ) {
+            obj.imageName = correctImage;
+          }
+          Object.values(obj).forEach(updateVsearchDADA2Images);
+        }
+      }
+
+      // Update all relevant imageName fields
+      const targetKeys = [
+        'steps',
+        'vsearch_OTUs',
+        'UNOISE_ASVs',
+        'NextITS',
+        'DADA2_ASVs',
+        'OptimOTU'
+      ];
+      
+      targetKeys.forEach(key => {
+        if (state[key]) updateVsearchDADA2Images(state[key]);
+      });
+    },
     scanFiles(state, files) {
       // Create extensions count object from the SUPPORTED_EXTENSIONS array
       const extensionCounts = Object.fromEntries(
@@ -6014,7 +6050,91 @@ SINGLE-END is for PacBio data, but can be also used for single-end read Illumina
     },
   },
   actions: {
-    async imageCheck({ commit }, imageName) {
+    async gatherSystemSpecs({ commit }) {
+      try {
+
+        // Get OS type
+        const platform = os.platform();
+        const osType = platform === 'win32' ? 'windows' : 
+                       platform === 'darwin' ? 'mac' : 
+                       platform === 'linux' ? 'linux' : 'unknown';
+  
+        // Get architecture
+        const arch = os.arch();
+  
+        // Get user and group IDs (Unix-like systems)
+        let userId = null;
+        let groupId = null;
+        if (platform !== 'win32') {
+          userId = process.getuid();
+          groupId = process.getgid();
+        }
+  
+        // Get home directory
+        const homeDir = os.homedir();
+
+        // Get cores
+        const cpuCores = os.cpus().length;
+
+        // Get total memory
+        const totalMemory = os.totalmem();
+  
+        let dockerSettings = null;
+        let dockerSocket = null;
+        
+        if (platform === 'win32') {
+          dockerSettings = path.join(os.homedir(), 'AppData', 'Roaming', 'Docker', 'settings-store.json');
+          dockerSocket = '//./pipe/docker_engine';
+        } else if (platform === 'darwin') {
+          dockerSettings = path.join(os.homedir(), 'Library', 'Group Containers', 'group.com.docker', 'settings-store.json');
+          dockerSocket = '/var/run/docker.sock';
+        } else if (platform === 'linux') {
+          if (fs.existsSync(`${os.homedir()}/.docker/desktop/docker.sock`)) {
+            dockerSettings = path.join(os.homedir(), '.docker', 'desktop', 'settings-store.json');
+            dockerSocket = `${os.homedir()}/.docker/desktop/docker.sock`;
+          } else if (fs.existsSync("/var/run/docker.sock")) {
+            dockerSettings = path.join(os.homedir(), '.docker', 'settings-store.json');
+            dockerSocket = '/var/run/docker.sock';
+          }
+        }
+  
+
+        if (dockerSettings && !fs.existsSync(dockerSettings)) {
+          dockerSettings = null;
+        }
+        if (dockerSocket && !fs.existsSync(dockerSocket)) {
+          dockerSocket = null;
+          await Swal.fire({
+            title: 'Docker Connection Error',
+            text: 'Could not connect to Docker. Please make sure Docker is properly installed.',
+            icon: 'error',
+            theme: 'dark',
+            confirmButtonText: 'OK',
+            confirmButtonColor: '#1DE9B6'
+          });
+        }
+  
+        const specs = {
+          os: osType,
+          architecture: arch,
+          userId,
+          groupId,
+          homeDir,
+          dockerSettings,
+          dockerSocket,
+          CPU: cpuCores,
+          memory: totalMemory
+        };
+  
+        commit('setSystemSpecs', specs);
+        return specs;
+      } catch (error) {
+        console.error('Error gathering system specs:', error);
+        throw error;
+      }
+    },
+    async imageCheck({ state, commit }, imageName) {
+      const docker = getDockerInstance(state)
       console.log(imageName);
       let gotImg = await imageExists(docker, imageName);
       if (gotImg === false) {
@@ -6026,9 +6146,10 @@ SINGLE-END is for PacBio data, but can be also used for single-end read Illumina
         commit("deactivatePullLoader");
       }
     },
-    async clearContainerConflicts( _, Hostname) {
+    async clearContainerConflicts({ state }, Hostname) {
       console.log(Hostname);
-      let container = await docker.getContainer(Hostname);
+      const docker = getDockerInstance(state)
+      let container = docker.getContainer(Hostname);
       let nameConflicts = await container
         .remove({ force: true })
         .then(async () => {
@@ -6120,6 +6241,7 @@ SINGLE-END is for PacBio data, but can be also used for single-end read Illumina
       }
     },
     async fetchDockerInfo({ commit, state }) {
+      const docker = getDockerInstance(state)
       if (state.OStype === 'Linux') {
         state.dockerInfo.NCPU = os.cpus().length
         state.dockerInfo.MemTotal = os.totalmem()
