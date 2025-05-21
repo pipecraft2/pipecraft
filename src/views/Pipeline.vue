@@ -67,14 +67,20 @@
         <v-container fluid>
           <v-row justify="center">
             <v-col cols="12" class="text-center">
-              <div class="text-h9 mb-4">Pulling image...</div>
+              <div class="text-h9 mb-4">
+                {{ $store.state.pullStatus || 'Pulling image...' }}
+              </div>
               <v-progress-linear 
-                indeterminate 
+                :value="$store.state.pullProgress"
                 color="#1DE9B6" 
                 height="10"
                 class="mx-auto"
                 style="max-width: 80%;"
-              ></v-progress-linear>
+              >
+                <template v-slot:default="{ value }">
+                  <strong>{{ Math.ceil(value) }}%</strong>
+                </template>
+              </v-progress-linear>
             </v-col>
           </v-row>
         </v-container>
@@ -402,6 +408,14 @@ export default {
         name: this.$route.params.workflowName,
       });
     },
+  },
+  watch: {
+    '$store.state.pullProgress': function(newVal) {
+      console.log('Progress changed to:', newVal);
+    },
+    '$store.state.pullStatus': function(newVal) {
+      console.log('Status changed to:', newVal);
+    }
   },
 };
 </script>

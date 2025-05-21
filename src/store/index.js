@@ -5516,6 +5516,8 @@ export default new Vuex.Store({
         }
       }
     },
+    pullProgress: 0,
+    pullStatus: ''
   },
   getters: {
     mostCommonExtenson: (state) => (files) => {
@@ -6048,6 +6050,12 @@ export default new Vuex.Store({
     toggleDebugger(state) {
       state.data.debugger = !state.data.debugger;
     },
+    updatePullProgress(state, progress) {
+      state.pullProgress = progress;
+    },
+    updatePullStatus(state, status) {
+      state.pullStatus = status;
+    }
   },
   actions: {
     async gatherSystemSpecs({ commit }) {
@@ -6134,16 +6142,57 @@ export default new Vuex.Store({
       }
     },
     async imageCheck({ state, commit }, imageName) {
-      const docker = getDockerInstance(state)
+      const docker = getDockerInstance(state);
       console.log(imageName);
+      
       let gotImg = await imageExists(docker, imageName);
       if (gotImg === false) {
         commit("activatePullLoader");
         console.log(`Pulling image ${imageName}`);
-        let output = await pullImageAsync(docker, imageName);
-        console.log(output);
-        console.log(`Pull complete`);
-        commit("deactivatePullLoader");
+        
+        try {
+          // Track progress for all layers
+          const layerProgress = new Map();
+          
+          await pullImageAsync(docker, imageName, (output) => {
+            const event = output;
+            
+            if (event.status === 'Downloading' && event.progressDetail) {
+              const { current, total } = event.progressDetail;
+              if (current && total) {
+                // Store progress for this layer
+                layerProgress.set(event.id, { current, total });
+                
+                // Calculate overall progress
+                let totalCurrent = 0;
+                let totalTotal = 0;
+                layerProgress.forEach(({ current, total }) => {
+                  totalCurrent += current;
+                  totalTotal += total;
+                });
+                
+                const percent = Math.round((totalCurrent / totalTotal) * 100);
+                commit("updatePullProgress", percent);
+                commit("updatePullStatus", "Downloading...");
+              }
+            } else if (event.status === 'Extracting') {
+              commit("updatePullStatus", "Extracting...");
+            } else if (event.status === 'Verifying Checksum') {
+              commit("updatePullStatus", "Verifying...");
+            } else if (event.status === 'Pull complete') {
+              commit("updatePullStatus", "Complete!");
+            } else if (event.status === 'Pulling fs layer') {
+              commit("updatePullStatus", "Preparing download...");
+            }
+          });
+          
+          console.log(`Pull complete`);
+          commit("deactivatePullLoader");
+        } catch (error) {
+          console.error('Error pulling image:', error);
+          commit("deactivatePullLoader");
+          throw error;
+        }
       }
     },
     async clearContainerConflicts({ state }, Hostname) {
