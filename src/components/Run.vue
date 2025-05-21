@@ -747,7 +747,8 @@ export default {
       };
       return dockerProps;
     },
-    async runOptimOTU() {
+    
+    async runOptimOTU_old() {
       this.confirmRun('OptimOTU').then(async (result) => {
         if (result.isConfirmed) {
           console.log(this.$route.params.workflowName);
@@ -835,6 +836,66 @@ export default {
           } 
         }
       });
+    },
+    async runOptimOTU() {
+      let container = null;
+      let log = null;
+      let startTime = null;
+      
+      try {
+        const result = await this.confirmRun('OptimOTU');
+        if (!result.isConfirmed) return;
+      
+        const setup = await this.setupWorkflow('OptimOTU');
+        startTime = setup.startTime;
+        log = setup.log;
+      
+        this.$store.state.runInfo.active = true;
+        this.$store.state.runInfo.containerID = 'optimotu';
+      
+        await this.$store.dispatch('generateOptimOTUYamlConfig');
+      
+        const { container: dockerContainer, stream } = await this.executeDockerContainer({
+          imageName: 'pipecraft/optimotu:5',
+          containerName: 'optimotu',
+          command: ['/scripts/run_optimotu.sh'],
+          env: [
+            'R_ENABLE_JIT=0',
+            'R_COMPILE_PKGS=0',
+            'R_DISABLE_BYTECODE=1',
+            'R_KEEP_PKG_SOURCE=yes'
+          ],
+          binds: this.getOptimOTUBinds(),
+          memory: this.$store.state.dockerInfo.MemTotal,
+          cpuCount: this.$store.state.dockerInfo.NCPU,
+          userId: this.userId,
+          groupId: this.groupId
+        });
+      
+        container = dockerContainer;
+        
+        // Only get stderr since we don't need stdout
+        const { stderr } = await this.handleStream(stream, log);
+      
+        const data = await container.wait();
+      
+        if (data.StatusCode === 0) {
+          await Swal.fire({
+            title: "Workflow finished",
+            theme: "dark",
+          });
+        } else {
+          await this.handleDockerError({ 
+            message: stderr || 'Unknown error',
+            StatusCode: data.StatusCode 
+          }, log);
+        }
+      
+      } catch (error) {
+        await this.handleDockerError(error, log);
+      } finally {
+        await this.cleanupWorkflow(container, log, startTime);
+      }
     },
     generateAndSaveYaml() {
       try {
@@ -935,6 +996,143 @@ export default {
       }
 
       return this.runCustomWorkFlow(workflowName);
+    },
+    // Common setup for all workflows
+    async setupWorkflow(name) {
+      this.$store.commit("addWorkingDir", "/input");
+      const startTime = Date.now();
+      this.autoSaveConfig();
+      
+      let log = null;
+      if (this.$store.state.data.debugger) {
+        log = fs.createWriteStream(
+          `${this.$store.state.inputDir}/Pipecraft_${name}_${new Date().toJSON().slice(0, 10)}.txt`
+        );
+      }
+      
+      return { startTime, log };
+    },
+
+    // Common Docker execution
+    async executeDockerContainer(config) {
+      const {
+        imageName,
+        containerName,
+        command,
+        env,
+        binds,
+        memory,
+        cpuCount,
+        userId,
+        groupId
+      } = config;
+
+      // Check image and clear conflicts
+      await this.$store.dispatch('imageCheck', imageName);
+      await this.$store.dispatch('clearContainerConflicts', containerName);
+
+      // Create container
+      const container = await this.$docker.createContainer({
+        Image: imageName,
+        name: containerName,
+        Cmd: command,
+        Tty: false,
+        AttachStdout: true,
+        AttachStderr: true,
+        Platform: "linux/amd64",
+        Env: [
+          `HOST_UID=${userId}`,
+          `HOST_GID=${groupId}`,
+          `fileFormat=${this.$store.state.data.fileFormat}`,
+          `readType=${this.$store.state.data.readType}`,
+          ...env
+        ],
+        HostConfig: {
+          Binds: binds,
+          Memory: memory,
+          NanoCpus: cpuCount * 1e9,
+        }
+      });
+
+      // Attach to container
+      const stream = await container.attach({
+        stream: true,
+        stdout: true,
+        stderr: true,
+      });
+
+      // Start container
+      await container.start();
+      
+      return { container, stream };
+    },
+
+    // Common stream handling
+    handleStream(stream, log) {
+      return new Promise((resolve) => {
+        let stdout = '';
+        let stderr = '';
+
+        stream.on('data', (data) => {
+          const output = data.toString();
+          console.log(output); // Always log to console
+
+          if (log) {
+            log.write(output); // Write to file if debugger is enabled
+          }
+
+          // Separate stdout and stderr
+          if (output.startsWith('Error:')) {
+            stderr += output;
+          } else {
+            stdout += output;
+          }
+        });
+
+        stream.on('end', () => {
+          resolve({ stdout, stderr });
+        });
+      });
+    },
+
+    // Common error handling
+    async handleDockerError(error, log) {
+      console.error('Docker error:', error);
+      
+      if (log) {
+        log.write(`Error: ${error.toString()}\n`);
+      }
+
+      if (error.message?.includes('HTTP code 404')) {
+        await Swal.fire({
+          title: "Workflow stopped",
+          theme: "dark",
+        });
+      } else {
+        await Swal.fire({
+          title: "An error has occurred while processing your data",
+          text: error.toString(),
+          confirmButtonText: "Quit",
+          theme: "dark",
+        });
+      }
+    },
+
+    // Common cleanup
+    async cleanupWorkflow(container, log, startTime) {
+      if (container) {
+        await container.remove({ v: true, force: true });
+      }
+      if (log) {
+        log.end();
+      }
+      this.$store.commit("addWorkingDir", "/input");
+      this.$store.commit("resetRunInfo");
+      
+      if (startTime) {
+        const totalTime = this.toMinsAndSecs(Date.now() - startTime);
+        console.log(`Total execution time: ${totalTime}`);
+      }
     }
   },
 };
