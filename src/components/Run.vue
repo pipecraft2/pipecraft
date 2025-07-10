@@ -731,6 +731,13 @@ export default {
       let WorkingDir = "/input";
       let envVariables = this.createCustomVariableObj(step);
       let Binds = this.getBinds_c(step, this.$store.state.inputDir);
+      
+      // Replace the /input bind with /input/Input
+      const inputBindIndex = Binds.findIndex(bind => bind.includes(':/input'));
+      if (inputBindIndex !== -1) {
+        Binds[inputBindIndex] = Binds[inputBindIndex].replace(':/input', ':/input/Input');
+      }
+      
       let dockerProps = {
         Tty: false,
         WorkingDir: WorkingDir,

@@ -106,24 +106,31 @@
 
 <script>
 import * as Dockerode from "dockerode";
-import os from "os";
+import { mapState } from 'vuex';
 const shell = require("electron").shell;
 const streams = require("memory-streams");
 var stdout = new streams.WritableStream();
 var stderr = new streams.WritableStream();
-var socketPath =
-  os.platform() === "win32" ? "//./pipe/docker_engine" : "/var/run/docker.sock";
-var dockerode = new Dockerode({ socketPath: socketPath });
 
 export default {
-  name: "qualityPlots",
+  name: "fastqcANDmultiqc",
+  computed: {
+    ...mapState({
+      systemSpecs: state => state.systemSpecs
+    })
+  },
   data() {
     return this.$store.state.Qcheck;
   },
   created() {
+    // Initialize dockerode with socket from store
+    const socketPath = this.systemSpecs.dockerSocket;
+    console.log(socketPath);
+    this.dockerode = new Dockerode({ socketPath: socketPath });
+    
     var self = this;
     setInterval(async function () {
-      self.dockerActive = await dockerode
+      self.dockerActive = await self.dockerode
         .version()
         .then(() => {
           return true;
@@ -143,7 +150,7 @@ export default {
       console.log("starting fastqc");
       await this.$store.dispatch('imageCheck', "staphb/fastqc:0.11.9");
       await this.$store.dispatch('imageCheck', "ewels/multiqc:1.10");
-      let result = await dockerode
+      let result = await this.dockerode
         .run(
           "staphb/fastqc:0.11.9",
           [
@@ -183,7 +190,7 @@ export default {
       stdout = new streams.WritableStream();
       stderr = new streams.WritableStream();
       console.log("starting multiqc");
-      let result2 = await dockerode
+      let result2 = await this.dockerode
         .run("ewels/multiqc:1.10", [], [stdout, stderr], {
           Tty: false,
           WorkingDir: "/input",

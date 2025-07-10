@@ -56,9 +56,6 @@ export default new Vuex.Store({
     pullLoader: {
       active: false,
     },
-    pullLoader2: {
-      active: false,
-    },
     workingDir: "/input",
     inputDir: "",
     data: {

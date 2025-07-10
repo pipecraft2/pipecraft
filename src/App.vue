@@ -14,12 +14,15 @@
         <router-view />
       </transition>
     </v-main>
+
+    <DockerPullSnackbar />
   </v-app>
 </template>
 
 <script>
 import leftNav from "./components/leftNav";
 import rightNav from "./components/rightNav";
+import DockerPullSnackbar from "./components/DockerPullSnackbar";
 
 export default {
   theme: { dark: true },
@@ -28,6 +31,7 @@ export default {
   components: {
     leftNav,
     rightNav,
+    DockerPullSnackbar
   },
 
   data: () => ({
