@@ -76,7 +76,7 @@ if [ $R_EXIT_STATUS -eq 0 ]; then
 
     # Copy the output folder to the sequences folder
     echo "Copying output files to sequences folder..."
-    cp -r /optimotu_targets/output/* /optimotu_targets/sequences/
+    cp -r /optimotu_targets/output/* /optimotu_targets/sequences/01_raw
     
     # Check if the copy was successful
     if [ $? -eq 0 ]; then
@@ -103,7 +103,7 @@ fi
 end=$(date +%s)
 runtime=$((end-start))
 
-cat << EOF > /optimotu_targets/sequences/README.txt
+cat << EOF > /optimotu_targets/sequences/01_raw/README.txt
 # OptimOTU workflow:
 
 Start time: $start_time
@@ -141,5 +141,5 @@ echo "All operations completed."
 
 if [ ! -z "$HOST_UID" ] && [ ! -z "$HOST_GID" ]; then
   echo "Setting ownership of /optimotu_targets to $HOST_UID:$HOST_GID"
-  chown -R $HOST_UID:$HOST_GID /optimotu_targets/sequences
+  chown -R $HOST_UID:$HOST_GID /optimotu_targets/sequences/01_raw
 fi

@@ -1,6 +1,8 @@
 name: CI
 
 #on: [push, pull_request]
+# TODO: Uncomment this when we have a way to test the workflow
+#on: [push, pull_request]
 
 jobs:
   build:
