@@ -124,15 +124,12 @@ const { dialog } = require("@electron/remote");
 const slash = require("slash");
 const fs = require("fs");
 const DockerDesktopLinux = !fs.existsSync("/var/run/docker.sock");
-console.log(DockerDesktopLinux);
-console.log(os.homedir());
 var socketPath =
   os.platform() === "win32"
     ? "//./pipe/docker_engine"
     : DockerDesktopLinux
     ? `${os.homedir()}/.docker/desktop/docker.sock`
     : "/var/run/docker.sock";
-console.log(socketPath);
 var Docker = require("dockerode");
 var docker = new Docker({ socketPath: socketPath });
 var JSONfn = require("json-fn");

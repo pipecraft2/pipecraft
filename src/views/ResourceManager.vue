@@ -97,25 +97,12 @@ const { exec } = require("child_process");
 const fs = require("fs");
 const path = require("path");
 import os from "os";
+import { mapState } from "vuex";
 const CPU = os.cpus().length;
 const MEM = Number((os.totalmem() / 1024 ** 3).toFixed(0));
-console.log(CPU, MEM);
 const homeDir = require("os").homedir();
-console.log(homeDir);
 // Path to the .wslconfig file
 const wslConfigPath = path.join(homeDir, ".wslconfig");
-const dockerSettingsPath = [
-  `${homeDir}/Library/Group Containers/group.com.docker/settings.json`,
-  "/Library/Group Containers/group.com.docker/settings.json",
-  `${homeDir}/Library/Containers/com.docker.docker/Data/database/com.docker.driver.amd64-linux/settings.json`,
-  `${homeDir}/Library/Containers/com.docker.docker/Data/database/com.docker.driver.amd64-linux/config/daemon.json`,
-  `${homeDir}/Library/Containers/com.docker.docker/Data/settings.json`,
-  `${homeDir}/Library/Containers/com.docker.docker/Data/com.docker.driver.amd64-linux/settings.json`,
-  `${homeDir}/Library/Application Support/Docker Desktop/settings.json`,
-  `${homeDir}/Library/Group Containers/group.com.docker/settings-store.json`,
-  "/Applications/Docker.app/Contents/Resources/settings.json"
-].find(fs.existsSync);
-console.log("Docker settings path found:", dockerSettingsPath);
 
 const createNumberList = (start, end) =>
   Array.from({ length: end - start + 1 }, (_, i) => start + i);
@@ -130,6 +117,9 @@ function modTickLabels(arr) {
 export default {
   name: "ResourceManager",
   computed: {
+    ...mapState({
+      dockerSettingsPath: state => state.systemSpecs.dockerSettings
+    }),
     ncpu: {
       get() {
         return this.$store.state.dockerInfo.NCPU;
@@ -186,18 +176,18 @@ export default {
       });
     },
     updateDockerSettings(memory, processors) {
-      fs.readFile(dockerSettingsPath, "utf-8", (err, data) => {
+      fs.readFile(this.dockerSettingsPath, "utf-8", (err, data) => {
         if (err) {
-          console.error(`error reading file ${dockerSettingsPath}`);
+          console.error(`error reading file ${this.dockerSettingsPath}`);
           return;
         }
         let settingsJSON = JSON.parse(data);
         settingsJSON.Cpus = processors;
         settingsJSON.MemoryMiB = memory;
         const updatedSettings = JSON.stringify(settingsJSON, null, 2);
-        fs.writeFile(dockerSettingsPath, updatedSettings, "utf-8", (err) => {
+        fs.writeFile(this.dockerSettingsPath, updatedSettings, "utf-8", (err) => {
           if (err) {
-            console.error(`Error writing file ${dockerSettingsPath}`);
+            console.error(`Error writing file ${this.dockerSettingsPath}`);
             return;
           }
           console.log(
