@@ -1,0 +1,90 @@
+// assets/styles/swal.scss
+@import '~sweetalert2/src/sweetalert2';
+
+// Custom step progress indicator styling
+.swal2-progress-steps {
+  .swal2-progress-step {
+    background: #545454 !important; /* gray-400 */
+    &.swal2-active-progress-step {
+      background: #1DE9B6 !important; /* blue-500 */
+    }
+  }
+  .swal2-progress-step-line {
+    background:#545454 !important; /* gray-400 */
+  }
+}
+
+// Content styling - centered and narrower
+.swal2-popup {
+  width: auto !important; /* Let content determine width */
+  min-width: 32rem !important; /* ~512px - adjust as needed */
+  max-width: 40rem !important; /* ~640px - adjust as needed */
+  
+  .swal2-html-container {
+    text-align: center !important;
+  }
+  
+  .swal2-input, .swal2-textarea {
+    width: 55% !important; /* Make inputs narrower */
+    margin: 1rem auto !important; /* Center inputs */
+  }
+  
+  // Custom select box styling
+  .swal2-select {
+    border: 2px solid #1DE9B6 !important; /* Visible border */
+    border-radius: 0.375rem !important;
+    padding: 0.5rem !important;
+    padding-right: 2rem !important; /* Extra space for the arrow */
+    width: 55% !important; /* Make select narrower */
+    margin: 1rem auto !important; /* Center select */
+    background-color: #f9fafb !important; /* Light background */
+    color: #1f2937 !important; /* Dark text */
+    
+    /* Custom dropdown arrow styling */
+    appearance: none !important; /* Remove default arrow */
+    -webkit-appearance: none !important;
+    -moz-appearance: none !important;
+    
+    /* Add custom arrow */
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='none' stroke='%236b7280' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E") !important;
+    background-repeat: no-repeat !important;
+    background-position: right 0.5rem center !important;
+    background-size: 1.5em !important;
+
+    /* Remove default focus styles */
+    outline: none !important;
+    outline-offset: 0 !important;
+    
+    &:focus {
+      border-color: #1DE9B6 !important; /* Blue focus border */
+      box-shadow: 0 0 0 3px #1DE9B6 !important; /* Focus glow */
+    }
+    
+    option {
+      padding: 0.5rem !important;
+      background-color: white !important;
+    }
+  } 
+  
+  .swal2-confirm {
+    background-color: #1DE9B6 !important; /* red-600 */
+    color: white !important;
+    padding: 0.5rem 1.5rem !important;
+    border-radius: 0.5rem !important;
+
+  }
+  
+  .swal2-cancel {
+    background-color: white !important; /* red-200 */
+    color: #1f2937 !important; /* gray-800 */
+    padding: 0.5rem 1.5rem !important;
+    border-radius: 0.5rem !important;
+    
+
+  }
+}
+
+// Add title centering
+.swal2-title {
+  text-align: center !important;
+}

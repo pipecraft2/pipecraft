@@ -105,8 +105,15 @@ const wslConfigPath = path.join(homeDir, ".wslconfig");
 const dockerSettingsPath = [
   `${homeDir}/Library/Group Containers/group.com.docker/settings.json`,
   "/Library/Group Containers/group.com.docker/settings.json",
+  `${homeDir}/Library/Containers/com.docker.docker/Data/database/com.docker.driver.amd64-linux/settings.json`,
+  `${homeDir}/Library/Containers/com.docker.docker/Data/database/com.docker.driver.amd64-linux/config/daemon.json`,
+  `${homeDir}/Library/Containers/com.docker.docker/Data/settings.json`,
+  `${homeDir}/Library/Containers/com.docker.docker/Data/com.docker.driver.amd64-linux/settings.json`,
+  `${homeDir}/Library/Application Support/Docker Desktop/settings.json`,
+  `${homeDir}/Library/Group Containers/group.com.docker/settings-store.json`,
+  "/Applications/Docker.app/Contents/Resources/settings.json"
 ].find(fs.existsSync);
-console.log(dockerSettingsPath);
+console.log("Docker settings path found:", dockerSettingsPath);
 
 const createNumberList = (start, end) =>
   Array.from({ length: end - start + 1 }, (_, i) => start + i);
@@ -183,8 +190,8 @@ export default {
           return;
         }
         let settingsJSON = JSON.parse(data);
-        settingsJSON.cpus = processors;
-        settingsJSON.memoryMiB = memory;
+        settingsJSON.Cpus = processors;
+        settingsJSON.MemoryMiB = memory;
         const updatedSettings = JSON.stringify(settingsJSON, null, 2);
         fs.writeFile(dockerSettingsPath, updatedSettings, "utf-8", (err) => {
           if (err) {

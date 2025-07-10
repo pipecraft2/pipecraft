@@ -2,9 +2,9 @@
 
 const isDevelopment = process.env.NODE_ENV !== "production";
 const log = require("electron-log");
-import { app, protocol, BrowserWindow, dialog, ipcMain } from "electron";
+const path = require("path");
+import { app, protocol, BrowserWindow, dialog, ipcMain, session } from "electron";
 import { createProtocol } from "vue-cli-plugin-electron-builder/lib";
-import installExtension from "electron-devtools-installer";
 import * as remoteMain from "@electron/remote/main";
 import { autoUpdater } from "electron-updater";
 remoteMain.initialize();
@@ -143,15 +143,8 @@ app.on("activate", () => {
 // initialization and is ready to create browser windows.
 // Some APIs can only be used after this event occurs.
 app.on("ready", async () => {
-  if (isDevelopment && !process.env.IS_TEST) {
-    // Install Vue Devtools
-    try {
-      await installExtension("iaajmlceplecbljialhhkmedjlpdblhp");
-    } catch (e) {
-      console.error("Vue Devtools failed to install:", e.toString());
-    }
-  }
   createWindow();
+  session.defaultSession.loadExtension(path.join(__dirname, '..', 'devtools5'));
   if (process.env.APPIMAGE && !process.env.WEBPACK_DEV_SERVER_URL) {
     fs.copyFile(
       `${process.resourcesPath}/src/pipecraft-core/icon32x32.png`,

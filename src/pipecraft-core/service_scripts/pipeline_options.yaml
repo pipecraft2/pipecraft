@@ -21,22 +21,22 @@ trimming:
   cut_R2: 0
   action: "trim"
 protax:
-  aligned: yes
-  location: "/optimotu_targets/protaxAnimal"
+  aligned: no
+  location: "/optimotu_targets/protaxFungi"
   ranks:
-    - kingdom: Animalia
-    - phylum: Arthropoda
+    - kingdom: Fungi
+    - phylum
     - class
     - order
     - family
     - genus
     - species
-orient: fwd
+orient: mixed
 control:
   spike:
   positive:
-forward_primer: "CCHGAYATRGCHTTYCCHCG"
-reverse_primer: "TCDGGRTGNCCRAARAAYCA"
+forward_primer: "GCATCGATGAAGAACGCAGC"
+reverse_primer: "TCCTCCGCTTATTGATATGC"
 custom_sample_table: FALSE
 filtering:
   maxEE_R1: 1
@@ -45,14 +45,15 @@ tag_jump:
   f: 0.03
   p: 1
 amplicon_model:
-  model_type: HMM
-  model_file: /optimotu_targets/data/COI.hmm
-  model_align: yes
-  numt_filter: yes
+  model_type: CM
+  model_file: /optimotu_targets/data/ITS3_ITS4.cm
+  model_align: no
+  numt_filter: no
   model_filter:
-    max_model_start: 245
-    min_model_end: 652
-    min_model_score: 200
+    max_model_start: 5
+    min_model_end: 140
+    min_model_score: 50
 outgroup_reference:
-  sequences: /optimotu_targets/data/outgroup/BOLD_Public.27-Sep-2024.part_001.m300.fasta
-cluster_thresholds: /optimotu_targets/metadata/MBRAVE_thresholds.tsv
+  sequences: /optimotu_targets/data/sh_matching_data/sanger_refs_sh.fasta
+  taxonomy: /optimotu_targets/data/sh_matching_data/shs_out.txt
+cluster_thresholds: /optimotu_targets/metadata/GSSP_thresholds.tsv

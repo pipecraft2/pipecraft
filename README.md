@@ -9,7 +9,7 @@ PipeCraft2 is a user-friendly GUI software for metabarcoding data analysis. It p
 
 ### For Users
 
-📥 [Download Latest Release (v1.0.0)](https://github.com/pipecraft2/pipecraft/releases/tag/v1.0.0)
+📥 [Download Latest Release (v1.1.0)](https://github.com/pipecraft2/pipecraft/releases/tag/v1.1.0)
 
 📚 [User Guide](https://pipecraft2-manual.readthedocs.io/en/latest/)
 

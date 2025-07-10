@@ -8,8 +8,15 @@ desktop.ini
 /image_development/*.zip
 
 # local env files
+.env
 .env.local
 .env.*.local
+
+# Sensitive files
+*.p12
+*.pem
+*.key
+*.pfx
 
 # Log files
 npm-debug.log*
