@@ -53,7 +53,12 @@ module.exports = {
         },
         appId: "pipecraft",
         productName: "pipecraft",
-        extraResources: ["src/pipecraft-core"],
+        extraResources: [
+          "src/pipecraft-core/**/*",
+          "!src/pipecraft-core/**/.git/**",
+          "!src/pipecraft-core/**/.gitignore",
+          "!src/pipecraft-core/**/.gitattributes"
+        ],
         files: [
           "**/*",
           "!**/node_modules/*/{CHANGELOG.md,README.md,README,readme.md,readme}",
