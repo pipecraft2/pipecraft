@@ -1,17 +1,24 @@
 #!/bin/bash
 
+# Set proper encoding for output
+export LANG=C.UTF-8
+export LC_ALL=C.UTF-8
+export LC_CTYPE=C.UTF-8
+
 #####################
 # OptimOTU workflow #
 #####################
 
 # # Check if input files match expected format
 fileFormat=${fileFormat}
+rawFilesDir=${rawFilesDir}
 export fileFormat
 
 echo "specified fileFormat: $fileFormat"
+echo "specified rawFilesDir: $rawFilesDir"
 
-
-
+mv /optimotu_targets/sequences/$rawFilesDir /optimotu_targets/sequences/01_raw
+ls
 # # check files in 01_raw and subdirectories
 # # Find all subdirectories in 01_raw
  while IFS= read -r subdir; do
@@ -45,17 +52,25 @@ cp -f /scripts/pipeline_options.yaml /optimotu_targets/sequences/pipeline_option
 source /opt/conda/etc/profile.d/conda.sh
 conda activate OptimOTU_v5
 
-# Try to install a compatible version of qs2
-echo "Installing compatible version of qs2..."
-R --vanilla -e '
-  # Remove existing qs2 if present
-  if("qs2" %in% installed.packages()[,"Package"]) remove.packages("qs2")
-  
-  # Install from source with minimal optimizations
-  Sys.setenv(PKG_CFLAGS="-O0 -march=x86-64")
-  Sys.setenv(PKG_CXXFLAGS="-O0 -march=x86-64")
-  install.packages("qs2", type="source", repos="https://cloud.r-project.org")
-'
+# Try to install a compatible version of qs2 only on ARM64 macOS
+echo "Checking system architecture and OS..."
+echo "Host OS: ${HOST_OS:-unknown}"
+echo "Host Architecture: ${HOST_ARCH:-unknown}"
+
+if [ "${HOST_OS}" = "mac" ] && [ "${HOST_ARCH}" = "arm64" ]; then
+    echo "ARM64 macOS detected. Installing compatible version of qs2..."
+    R --vanilla -e '
+      # Remove existing qs2 if present
+      if("qs2" %in% installed.packages()[,"Package"]) remove.packages("qs2")
+      
+      # Install from source with minimal optimizations
+      Sys.setenv(PKG_CFLAGS="-O0 -march=x86-64")
+      Sys.setenv(PKG_CXXFLAGS="-O0 -march=x86-64")
+      install.packages("qs2", type="source", repos="https://cloud.r-project.org")
+    '
+else
+    echo "Not ARM64 macOS. Skipping qs2 installation."
+fi
 
 
 cd /optimotu_targets
@@ -65,38 +80,41 @@ echo "PATH: $PATH"
 echo "Current directory: $(pwd)"
 echo "Conda environment: $CONDA_DEFAULT_ENV"
 
-# Run the OptimOTU pipeline and capture output
-Rlog=$(R --vanilla -e "targets::tar_config_set(script='/optimotu_targets/_targets.R'); targets::tar_make(callr_function=NULL)" 2>&1)
-R_EXIT_STATUS=$?
-echo "$Rlog" >> /optimotu_targets/sequences/optimotu_targets.log
+# Run the OptimOTU pipeline and capture output with live updates
+echo "Starting OptimOTU pipeline..."
+echo "Starting OptimOTU pipeline..." >> /optimotu_targets/sequences/optimotu_targets.log
+
+# Use tee to show live output while capturing to log
+R --vanilla -e "targets::tar_config_set(script='/optimotu_targets/_targets.R'); targets::tar_make(callr_function=NULL)" 2>&1 | tee -a /optimotu_targets/sequences/optimotu_targets.log
+R_EXIT_STATUS=${PIPESTATUS[0]}
+
 
 # Check the actual R script exit status
 if [ $R_EXIT_STATUS -eq 0 ]; then
     echo "OptimOTU pipeline completed successfully."
-
-    # Copy the output folder to the sequences folder
-    echo "Copying output files to sequences folder..."
-    cp -r /optimotu_targets/output/* /optimotu_targets/sequences/01_raw
-    
-    # Check if the copy was successful
-    if [ $? -eq 0 ]; then
-        echo "Files successfully copied to /optimotu_targets/sequences/"
-        echo "Files successfully copied to /optimotu_targets/sequences/" >> /optimotu_targets/sequences/optimotu_targets.log
-    else
-        echo "Error: Failed to copy files to /optimotu_targets/sequences/"
-        echo "Error: Failed to copy files to /optimotu_targets/sequences/" >> /optimotu_targets/sequences/optimotu_targets.log
-        echo "Copy error details:" >> /optimotu_targets/sequences/optimotu_targets.log
-        cp -r /optimotu_targets/output/* /optimotu_targets/sequences/ 2>> /optimotu_targets/sequences/optimotu_targets.log
-        exit 1
-    fi
 else
     echo "Error: OptimOTU pipeline failed with exit status $R_EXIT_STATUS"
     echo "Error: OptimOTU pipeline failed with exit status $R_EXIT_STATUS" >> /optimotu_targets/sequences/optimotu_targets.log
-    echo "Last 50 lines of R output:"
-    echo "$Rlog" | tail -n 50
-    exit $R_EXIT_STATUS
+    echo "Last 50 lines of R output from log file:"
+    tail -n 50 /optimotu_targets/sequences/optimotu_targets.log
 fi
 
+# Copy the output folder to the sequences folder, regardless of success/failure
+echo "Copying output files to sequences folder..."
+if cp -r /optimotu_targets/output/* /optimotu_targets/sequences 2>/dev/null; then
+    echo "Files successfully copied to /optimotu_targets/sequences/"
+    echo "Files successfully copied to /optimotu_targets/sequences/" >> /optimotu_targets/sequences/optimotu_targets.log
+else
+    echo "Warning: Failed to copy files to /optimotu_targets/sequences/"
+    echo "Warning: Failed to copy files to /optimotu_targets/sequences/" >> /optimotu_targets/sequences/optimotu_targets.log
+    echo "Copy error details:" >> /optimotu_targets/sequences/optimotu_targets.log
+    cp -r /optimotu_targets/output/* /optimotu_targets/sequences/ 2>> /optimotu_targets/sequences/optimotu_targets.log 2>/dev/null || echo "Fallback copy also failed"
+fi
+
+# Exit with R status after copying output
+if [ $R_EXIT_STATUS -ne 0 ]; then
+    exit $R_EXIT_STATUS
+fi
 
 
 ### Make README.txt 
@@ -139,7 +157,10 @@ printf "\nDONE "
 printf "Total time: $runtime sec.\n "
 echo "All operations completed."
 
+
 if [ ! -z "$HOST_UID" ] && [ ! -z "$HOST_GID" ]; then
   echo "Setting ownership of /optimotu_targets to $HOST_UID:$HOST_GID"
-  chown -R $HOST_UID:$HOST_GID /optimotu_targets/sequences/01_raw
+  chown -R $HOST_UID:$HOST_GID /optimotu_targets/sequences
 fi
+
+mv /optimotu_targets/sequences/01_raw /optimotu_targets/sequences/$rawFilesDir 

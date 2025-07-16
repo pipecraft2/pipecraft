@@ -621,10 +621,10 @@ export default {
       const scriptsPath = isDevelopment 
         ? `${slash(process.cwd())}/src/pipecraft-core/service_scripts`
         : `${process.resourcesPath}/src/pipecraft-core/service_scripts`;
-      const DataDir = this.$store.state.inputDir;
+      const DataDir = path.dirname(this.$store.state.inputDir);
       let binds = [
         `${scriptsPath}:/scripts`,
-        `${DataDir}:/optimotu_targets/sequences/01_raw`,
+        `${DataDir}:/optimotu_targets/sequences`,
       ];
 
       // Process all inputs from OptimOTU workflow
@@ -770,7 +770,23 @@ export default {
         this.$store.state.runInfo.active = true;
         this.$store.state.runInfo.containerID = 'optimotu';
       
-        await this.$store.dispatch('generateOptimOTUYamlConfig');
+        try {
+          await this.$store.dispatch('generateOptimOTUYamlConfig');
+        } catch (error) {
+          console.error('Failed to generate YAML config:', error);
+          
+          await Swal.fire({
+            title: "Configuration Error",
+            text: error.code === 'ENOENT' || error.code === 'EACCES' 
+              ? "Could not write configuration file. Check file permissions."
+              : "Failed to generate pipeline configuration.",
+            confirmButtonText: "OK",
+            theme: "dark",
+          });
+          
+          this.$store.commit("resetRunInfo");
+          return;
+        }
       
         const { container: dockerContainer, stream } = await this.executeDockerContainer({
           imageName: 'pipecraft/optimotu:5',
@@ -780,7 +796,16 @@ export default {
             'R_ENABLE_JIT=0',
             'R_COMPILE_PKGS=0',
             'R_DISABLE_BYTECODE=1',
-            'R_KEEP_PKG_SOURCE=yes'
+            'R_KEEP_PKG_SOURCE=yes',
+            'LANG=C.UTF-8',
+            'LC_ALL=C.UTF-8',
+            'LC_CTYPE=C.UTF-8',
+            `HOST_OS=${this.$store.state.systemSpecs.os}`,
+            `HOST_ARCH=${this.$store.state.systemSpecs.architecture}`,
+            `rawFilesDir=${path.basename(this.$store.state.inputDir)}`,
+            'R_CLI_NUM_COLORS=0',
+            'R_CLI_NO_COLORS=true',
+            'NO_COLOR=1'
           ],
           binds: this.getOptimOTUBinds(),
           memory: this.$store.state.dockerInfo.MemTotal,
@@ -795,7 +820,7 @@ export default {
         const { stderr } = await this.handleStream(stream, log);
       
         const data = await container.wait();
-      
+        await this.cleanupWorkflow(container, log, startTime);
         if (data.StatusCode === 0) {
           await Swal.fire({
             title: "Workflow finished",
@@ -810,8 +835,9 @@ export default {
       
       } catch (error) {
         await this.handleDockerError(error, log);
-      } finally {
-        await this.cleanupWorkflow(container, log, startTime);
+        if (container) {
+          await this.cleanupWorkflow(container, log, startTime);
+        }
       }
     },
     generateAndSaveYaml() {
@@ -991,8 +1017,13 @@ export default {
         let stderr = '';
 
         stream.on('data', (data) => {
-          const output = data.toString();
-          console.log(output); // Always log to console
+          // Try to force UTF-8 encoding
+          const output = Buffer.from(data).toString('utf8')
+            .replace(/\uFFFD/g, '') // Remove replacement characters
+            .replace(/\r\n/g, '\n')
+            .replace(/\r/g, '\n');
+          
+          console.log(output);
 
           if (log) {
             log.write(output); // Write to file if debugger is enabled
