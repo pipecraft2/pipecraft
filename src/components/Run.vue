@@ -830,14 +830,11 @@ export default {
           await this.handleDockerError({ 
             message: stderr || 'Unknown error',
             StatusCode: data.StatusCode 
-          }, log);
+          }, log, container, startTime);
         }
       
       } catch (error) {
-        await this.handleDockerError(error, log);
-        if (container) {
-          await this.cleanupWorkflow(container, log, startTime);
-        }
+        await this.handleDockerError(error, log, container, startTime);
       }
     },
     generateAndSaveYaml() {
@@ -1017,13 +1014,9 @@ export default {
         let stderr = '';
 
         stream.on('data', (data) => {
-          // Try to force UTF-8 encoding
-          const output = Buffer.from(data).toString('utf8')
-            .replace(/\uFFFD/g, '') // Remove replacement characters
-            .replace(/\r\n/g, '\n')
-            .replace(/\r/g, '\n');
+          const output = data.toString();
           
-          console.log(output);
+          console.log(output); // Always log to console
 
           if (log) {
             log.write(output); // Write to file if debugger is enabled
@@ -1044,7 +1037,7 @@ export default {
     },
 
     // Common error handling
-    async handleDockerError(error, log) {
+    async handleDockerError(error, log, container = null, startTime = null) {
       console.error('Docker error:', error);
       
       if (log) {
@@ -1063,6 +1056,11 @@ export default {
           confirmButtonText: "Quit",
           theme: "dark",
         });
+      }
+
+      // Always attempt cleanup even on error
+      if (container || startTime) {
+        await this.cleanupWorkflow(container, log, startTime);
       }
     },
 
