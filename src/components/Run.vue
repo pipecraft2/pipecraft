@@ -837,9 +837,9 @@ export default {
         await this.handleDockerError(error, log, container, startTime);
       }
     },
-    generateAndSaveYaml() {
+    async generateAndSaveYaml() {
       try {
-        const yamlString = this.$store.dispatch('generateOptimOTUYamlConfig');
+        const yamlString = await this.$store.dispatch('generateOptimOTUYamlConfig');
         console.log('Generated YAML:', yamlString);
         console.log('YAML configuration generated successfully');
         // Maybe show a success message to the user
