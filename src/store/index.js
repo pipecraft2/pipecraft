@@ -1,19 +1,18 @@
 import Vue from "vue";
 import Vuex from "vuex";
-// import router from "../router/index.js";
-var _ = require("lodash");
 import yaml from 'js-yaml';
 import os from "os";
 import fs from "fs";
 import path from "path";
 import { pullImageAsync, imageExists } from "dockerode-utils";
+var _ = require("lodash");
 const isDevelopment = process.env.NODE_ENV !== "production";
 const Swal = require("sweetalert2");
 const { dialog } = require("@electron/remote");
 const slash = require("slash");
 function getDockerInstance(state) {
   const Docker = require("dockerode");
-  const socketPath = state.systemSpecs.dockerSocket
+  const socketPath = state.systemSpecs.dockerSocket;
   return new Docker({ socketPath });
 }
 
@@ -44,7 +43,6 @@ export default new Vuex.Store({
       folderPath: "",
       reportReady: false,
       reportLoading: false,
-      dockerActive: false,
     },
     runInfo: {
       active: false,
@@ -5517,6 +5515,7 @@ export default new Vuex.Store({
     pullStatus: ''
   },
   getters: {
+    isDockerActive: state => state.dockerStatus === "running",
     mostCommonExtenson: (state) => (files) => {
       // Create extensions count object
       console.log(files);
@@ -6463,7 +6462,22 @@ export default new Vuex.Store({
       } else {
         return mostCommonExtension;
       }
-    }
+    },
+    startDockerStatusMonitoring({ commit, state }) {
+      const docker = getDockerInstance(state);
+      const checkDockerStatus = async () => {
+        try {
+          await docker.version();
+          commit("updateDockerStatus", "running");
+        } catch (error) {
+          commit("updateDockerStatus", "stopped");
+        }
+      };
+      // Check immediately
+      checkDockerStatus();
+      // Set up interval for continuous monitoring
+      setInterval(checkDockerStatus, 1000);
+    },
   },
   modules: {},
 });

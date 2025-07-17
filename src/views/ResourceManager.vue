@@ -4,7 +4,7 @@
       <v-card-title style="color: black" class="py-10">RESOURCE MANAGER</v-card-title>
       <v-divider></v-divider>
       <v-card-subtitle
-        v-if="this.$store.state.dockerStatus == 'stopped'"
+        v-if="!isDockerActive"
         style="color: black; display: flex; align-items: center"
       >
         CPU:
@@ -36,7 +36,7 @@
       ></v-slider>
       <v-divider></v-divider>
       <v-card-subtitle
-        v-if="this.$store.state.dockerStatus == 'stopped'"
+        v-if="!isDockerActive"
         style="color: black; display: flex; align-items: center"
       >
         RAM:
@@ -97,7 +97,7 @@ const { exec } = require("child_process");
 const fs = require("fs");
 const path = require("path");
 import os from "os";
-import { mapState } from "vuex";
+import { mapState, mapGetters } from "vuex";
 const CPU = os.cpus().length;
 const MEM = Number((os.totalmem() / 1024 ** 3).toFixed(0));
 const homeDir = require("os").homedir();
@@ -120,6 +120,7 @@ export default {
     ...mapState({
       dockerSettingsPath: state => state.systemSpecs.dockerSettings
     }),
+    ...mapGetters(['isDockerActive']),
     ncpu: {
       get() {
         return this.$store.state.dockerInfo.NCPU;

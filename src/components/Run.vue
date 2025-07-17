@@ -41,7 +41,7 @@ import Swal from 'sweetalert2';
 import { WritableStream } from 'memory-streams';
 import JSONfn from 'json-fn';
 import { ipcRenderer } from "electron";
-import { mapState } from "vuex";
+import { mapState, mapGetters } from "vuex";
 import { stringify } from "envfile";
 import cloneDeep from 'lodash/cloneDeep';
 var stdout = new WritableStream();
@@ -57,7 +57,7 @@ export default {
     ...mapState({
       selectedSteps: (state) => state.selectedSteps,
     }),
-
+    ...mapGetters(['isDockerActive']),
     // Button State
     isButtonDisabled() {
       return this.isDockerStopped || 
@@ -71,7 +71,7 @@ export default {
 
     // Status Checks
     isDockerStopped() {
-      return this.$store.state.dockerStatus === 'stopped';
+      return !this.isDockerActive;
     },
 
     isNoFilesSelected() {

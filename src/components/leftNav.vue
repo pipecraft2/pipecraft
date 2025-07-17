@@ -121,19 +121,13 @@
 </template>
 
 <script>
-// var path = require("path");
 const Swal = require("sweetalert2");
 const slash = require("slash");
 const { dialog } = require("@electron/remote");
-// const { dialog } = require("electron").remote;
 
 import Run from "./Run";
 import SelectedRoutes from "./SelectedRoutes";
-import * as Dockerode from "dockerode";
-import os from "os";
-var socketPath =
-  os.platform() === "win32" ? "//./pipe/docker_engine" : "/var/run/docker.sock";
-var dockerode = new Dockerode({ socketPath: socketPath });
+
 
 export default {
   name: "leftNav",
@@ -164,7 +158,7 @@ export default {
       this.$store.state.selectedSteps = [];
     },
     async stopWorkflow() {
-      var container = dockerode.getContainer(
+      var container = this.$docker.getContainer(
         this.$store.state.runInfo.containerID
       );
       container.remove({ v: true, force: true });

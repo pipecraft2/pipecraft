@@ -59,11 +59,11 @@
       >
         Select Folder
       </v-btn>
-      <v-tooltip bottom :disabled="dockerActive && folderPath != ''">
+      <v-tooltip bottom :disabled="isDockerActive && folderPath != ''">
         <template v-slot:activator="{ on }">
           <div v-on="on">
             <v-btn
-              :disabled="!dockerActive || reportLoading || folderPath == ''"
+              :disabled="!isDockerActive || reportLoading || folderPath == ''"
               @click="fastQualityCheck()"
               color="orange"
               text
@@ -72,7 +72,7 @@
             </v-btn>
           </div>
         </template>
-        <div v-if="!dockerActive">Failed to find Docker</div>
+        <div v-if="!isDockerActive">Failed to find Docker</div>
         <div v-if="folderPath == ''">No folder selected</div>
       </v-tooltip>
       <v-tooltip right :disabled="reportReady">
@@ -105,8 +105,7 @@
 </template>
 
 <script>
-import * as Dockerode from "dockerode";
-import { mapState } from 'vuex';
+import { mapGetters } from 'vuex';
 const shell = require("electron").shell;
 const streams = require("memory-streams");
 var stdout = new streams.WritableStream();
@@ -115,30 +114,10 @@ var stderr = new streams.WritableStream();
 export default {
   name: "fastqcANDmultiqc",
   computed: {
-    ...mapState({
-      systemSpecs: state => state.systemSpecs
-    })
+    ...mapGetters(['isDockerActive'])
   },
   data() {
     return this.$store.state.Qcheck;
-  },
-  created() {
-    // Initialize dockerode with socket from store
-    const socketPath = this.systemSpecs.dockerSocket;
-    console.log(socketPath);
-    this.dockerode = new Dockerode({ socketPath: socketPath });
-    
-    var self = this;
-    setInterval(async function () {
-      self.dockerActive = await self.dockerode
-        .version()
-        .then(() => {
-          return true;
-        })
-        .catch(() => {
-          return false;
-        });
-    }, 1000);
   },
   methods: {
     async folderSelect() {
@@ -150,7 +129,7 @@ export default {
       console.log("starting fastqc");
       await this.$store.dispatch('imageCheck', "staphb/fastqc:0.11.9");
       await this.$store.dispatch('imageCheck', "ewels/multiqc:1.10");
-      let result = await this.dockerode
+      let result = await this.$docker
         .run(
           "staphb/fastqc:0.11.9",
           [
@@ -190,7 +169,7 @@ export default {
       stdout = new streams.WritableStream();
       stderr = new streams.WritableStream();
       console.log("starting multiqc");
-      let result2 = await this.dockerode
+      let result2 = await this.$docker
         .run("ewels/multiqc:1.10", [], [stdout, stderr], {
           Tty: false,
           WorkingDir: "/input",

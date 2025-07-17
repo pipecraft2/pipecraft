@@ -4,13 +4,10 @@
       <v-tooltip left nudge-left="10">
         <template v-slot:activator="{ on }">
           <v-list-item-content v-on="on">
-            <v-icon :size="50" :color="dockerActive"> mdi-docker </v-icon>
+            <v-icon :size="50" :color="dockerActiveColor"> mdi-docker </v-icon>
           </v-list-item-content>
         </template>
-        <span v-if="dockerActive === '#1DE9B6'">docker desktop is running</span>
-        <span v-else-if="dockerActive === '#FF7043'"
-          >docker desktop stopped</span
-        >
+        <span>{{ dockerStatusText }}</span>
       </v-tooltip>
     </v-list-item>
     <v-divider class="mt-2 mb-2"></v-divider>
@@ -118,29 +115,30 @@
 </template>
 
 <script>
-import os from "os";
 const { shell, ipcRenderer } = require("electron");
 const { dialog } = require("@electron/remote");
 const slash = require("slash");
 const fs = require("fs");
-const DockerDesktopLinux = !fs.existsSync("/var/run/docker.sock");
-var socketPath =
-  os.platform() === "win32"
-    ? "//./pipe/docker_engine"
-    : DockerDesktopLinux
-    ? `${os.homedir()}/.docker/desktop/docker.sock`
-    : "/var/run/docker.sock";
-var Docker = require("dockerode");
-var docker = new Docker({ socketPath: socketPath });
 var JSONfn = require("json-fn");
+import { mapGetters } from "vuex";
 
 export default {
   name: "rightNav",
+  computed: {
+    ...mapGetters(['isDockerActive']),
+    dockerActiveColor() {
+      return this.isDockerActive ? '#1DE9B6' : '#FF7043';
+    },
+    dockerStatusText() {
+      return this.isDockerActive 
+        ? 'docker desktop is running' 
+        : 'docker desktop stopped';
+    }
+  },
   data() {
     return {
       updating: false,
       nrOfSelectedSteps: (state) => state.selectedSteps.length + 1,
-      dockerActive: "pending",
       items: [
         {
           title: "Save",
@@ -193,24 +191,6 @@ export default {
       console.log(err);
       this.updating = false;
     });
-  },
-  created() {
-    var self = this;
-    setInterval(async function () {
-      self.dockerActive = await docker
-        .version()
-        .then(() => {
-          if (self.dockerActive != "#1DE9B6") {
-            self.$store.commit("updateDockerStatus", "running");
-            self.$store.dispatch("fetchDockerInfo");
-          }
-          return "#1DE9B6";
-        })
-        .catch(() => {
-          self.$store.commit("updateDockerStatus", "stopped");
-          return "#FF7043";
-        });
-    }, 1000);
   },
   methods: {
     update() {
@@ -289,15 +269,8 @@ export default {
       }
     },
     async push2ResourceManager() {
-      console.log(await docker.version())
       if (this.$route.path != "/ResourceManager") {
-        if (this.$store.state.dockerStatus == "running" && this.$store.state.OStype != "Linux") {
-          console.log('Linux')
-          this.$store.dispatch("fetchDockerInfo");
-        } else {
-          this.$store.commit("setMemTotal", this.$store.state.dockerInfo.MemTotal);
-          this.$store.commit("setNCPU", this.$store.state.dockerInfo.NCPU);
-        }
+        this.$store.dispatch("fetchDockerInfo");
         this.$router.push("/ResourceManager");
       }
     },
