@@ -22,6 +22,13 @@ minLen = as.numeric(Sys.getenv('minLen'))
 maxLen = as.numeric(Sys.getenv('maxLen'))
 minQ = as.numeric(Sys.getenv('minQ'))
 
+cat(";; Settings:\n")
+cat(";; maxEE = ", maxEE, "\n")
+cat(";; maxN = ", maxN, "\n")
+cat(";; truncQ = ", truncQ, "\n")
+cat(";; truncLen_R1 = ", truncLen_R1, "\n")
+cat(";; minLen = ", minLen, ";;\n")
+
 #check if gz files are provided; if yes then produce also gz compressed files.
 is_gz = strsplit(fileFormat, split="\\.")[[1]][-1]
 if (identical(is_gz, character(0)) != "TRUE") {

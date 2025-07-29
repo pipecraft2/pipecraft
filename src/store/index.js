@@ -5097,7 +5097,40 @@ export default new Vuex.Store({
         disabled: "never",
         selected: "always",
         showExtra: false,
-        extraInputs: [],
+        extraInputs: [
+          {
+            name: "allowOneOff",
+            value: false,
+            disabled: "never",
+            tooltip:
+              "Default is FALSE. If FALSE, sequences will be identified as a chimera if it is one mismatch or indel away from an exact chimera",
+            type: "bool",
+          },
+          {
+            name: "minOneOffParentDistance",
+            value: 4,
+            max: 40,
+            min: 0,
+            step: 1,
+            disabled: "never",
+            tooltip:
+              "Default is 4. Only sequences with at least this many mismatches to seq are considered as possible 'parents' when flagging one-off chimeras. This is disabled when identifying exact chimeras",
+            type: "slide",
+            rules: [],
+          },
+          {
+            name: "maxShift",
+            value: 16,
+            max: 50,
+            min: 0,
+            step: 1,
+            disabled: "never",
+            tooltip:
+              "Default is 16. Maximum shift allowed when aligning sequences to potential 'parents'",
+            type: "slide",
+            rules: [],
+          },
+        ],
         Inputs: [
           {
             name: "method",
@@ -5108,6 +5141,7 @@ export default new Vuex.Store({
               "'consensus' - the samples are independently checked for chimeras, and a consensus decision on each sequence variant is made. If 'pooled', the samples are all pooled together for chimera identification. If 'per-sample', the samples are independently checked for chimeras",
             type: "select",
           },
+
         ],
       },
       {

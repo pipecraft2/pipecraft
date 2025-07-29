@@ -18,9 +18,18 @@ workingDir_fwd = Sys.getenv('workingDir_fwd')
 workingDir_rev = Sys.getenv('workingDir_rev')
 
 #load variables
-method = Sys.getenv('method')
+method = Sys.getenv("method")
+allowOneOff = as.logical(Sys.getenv("allowOneOff"))
+minOneOffParentDistance = as.numeric(Sys.getenv("minOneOffParentDistance"))
+maxShift = as.numeric(Sys.getenv("maxShift"))
 path_results = Sys.getenv("output_dir1")
 path_ASVs = Sys.getenv("output_dir2")
+
+cat(";; Settings:\n")
+cat(";; method = ", method, "\n")
+cat(";; allowOneOff = ", allowOneOff, "\n")
+cat(";; minOneOffParentDistance = ", minOneOffParentDistance, "\n")
+cat(";; maxShift = ", maxShift, ";; \n")
 
 #check for output dirs and delete if needed
 if (dir.exists(path_results)) {
