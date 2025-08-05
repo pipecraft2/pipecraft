@@ -10,10 +10,9 @@ const isDevelopment = process.env.NODE_ENV !== "production";
 const Swal = require("sweetalert2");
 const { dialog } = require("@electron/remote");
 const slash = require("slash");
-function getDockerInstance(state) {
+function getDockerInstance() {
   const Docker = require("dockerode");
-  const socketPath = state.systemSpecs.dockerSocket;
-  return new Docker({ socketPath });
+  return new Docker();
 }
 
 Vue.use(Vuex);
@@ -27,7 +26,6 @@ export default new Vuex.Store({
       groupId: null,
       homeDir: null,
       dockerSettings: null,
-      dockerSocket: null,
       CPU: null,
       memory: null,
     },
@@ -6084,38 +6082,26 @@ export default new Vuex.Store({
         const totalMemory = os.totalmem();
   
         let dockerSettings = null;
-        let dockerSocket = null;
         
         if (platform === 'win32') {
-          dockerSettings = path.join(os.homedir(), 'AppData', 'Roaming', 'Docker', 'settings-store.json');
-          dockerSocket = '//./pipe/docker_engine';
-        } else if (platform === 'darwin') {
-          dockerSettings = path.join(os.homedir(), 'Library', 'Group Containers', 'group.com.docker', 'settings-store.json');
-          dockerSocket = '/var/run/docker.sock';
-        } else if (platform === 'linux') {
-          if (fs.existsSync(`${os.homedir()}/.docker/desktop/docker.sock`)) {
-            dockerSettings = path.join(os.homedir(), '.docker', 'desktop', 'settings-store.json');
-            dockerSocket = `${os.homedir()}/.docker/desktop/docker.sock`;
-          } else if (fs.existsSync("/var/run/docker.sock")) {
-            dockerSettings = path.join(os.homedir(), '.docker', 'settings-store.json');
-            dockerSocket = '/var/run/docker.sock';
+          const winSettingsPath = path.join(os.homedir(), 'AppData', 'Roaming', 'Docker', 'settings-store.json');
+          if (fs.existsSync(winSettingsPath)) {
+            dockerSettings = winSettingsPath;
           }
-        }
-  
-
-        if (dockerSettings && !fs.existsSync(dockerSettings)) {
-          dockerSettings = null;
-        }
-        if (dockerSocket && !fs.existsSync(dockerSocket)) {
-          dockerSocket = null;
-          await Swal.fire({
-            title: 'Docker Connection Error',
-            text: 'Could not connect to Docker. Please make sure Docker is properly installed.',
-            icon: 'error',
-            theme: 'dark',
-            confirmButtonText: 'OK',
-            confirmButtonColor: '#1DE9B6'
-          });
+        } else if (platform === 'darwin') {
+          const macSettingsPath = path.join(os.homedir(), 'Library', 'Group Containers', 'group.com.docker', 'settings-store.json');
+          if (fs.existsSync(macSettingsPath)) {
+            dockerSettings = macSettingsPath;
+          }
+        } else if (platform === 'linux') {
+          // Check Docker Desktop first, then fallback to regular Docker
+          const desktopSettingsPath = path.join(os.homedir(), '.docker', 'desktop', 'settings-store.json');
+          const regularSettingsPath = path.join(os.homedir(), '.docker', 'settings-store.json');
+          if (fs.existsSync(desktopSettingsPath)) {
+            dockerSettings = desktopSettingsPath;
+          } else if (fs.existsSync(regularSettingsPath)) {
+            dockerSettings = regularSettingsPath;
+          }
         }
   
         const specs = {
@@ -6125,7 +6111,6 @@ export default new Vuex.Store({
           groupId,
           homeDir,
           dockerSettings,
-          dockerSocket,
           CPU: cpuCores,
           memory: totalMemory
         };

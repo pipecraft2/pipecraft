@@ -10,8 +10,7 @@ const Docker = require('dockerode');
 
 Object.defineProperty(Vue.prototype, '$docker', {
   get() {
-    const socketPath = store.state.systemSpecs.dockerSocket;
-    return new Docker({ socketPath });
+    return new Docker();
   }
 });
 
