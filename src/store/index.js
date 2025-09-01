@@ -2048,7 +2048,7 @@ export default new Vuex.Store({
             ],
             Inputs: [
               {
-                name: "input_chimeras_dir",
+                name: "input_chimeras",
                 value: "undefined",
                 btnName: "select directory",
                 disabled: "never",
@@ -2057,7 +2057,7 @@ export default new Vuex.Store({
                 type: "file",
               },
               {
-                name: "self_fasta_dir", 
+                name: "self_fasta", 
                 value: "undefined",
                 btnName: "select directory",
                 disabled: "never",

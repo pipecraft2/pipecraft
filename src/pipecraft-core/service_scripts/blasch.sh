@@ -27,24 +27,24 @@ printf "Working directory: $workingDir\n"
 printf "Output directory: $blasch_output_dir\n"
 
 # Check if input chimeras directory is provided and exists
-if [[ "$input_chimeras_dir" == "undefined" ]]; then
-    printf "\nERROR: input_chimeras_dir not specified\n"
+if [[ "$input_chimeras" == "undefined" ]]; then
+    printf "\nERROR: input_chimeras not specified\n"
     end_process
 fi
 
-if [[ ! -d "$input_chimeras_dir" ]]; then
-    printf "\nERROR: input_chimeras_dir does not exist: $input_chimeras_dir\n"
+if [[ ! -d "$input_chimeras" ]]; then
+    printf "\nERROR: input_chimeras does not exist: $input_chimeras\n"
     end_process
 fi
 
-# Check if self_fasta_dir is provided and exists
-if [[ "$self_fasta_dir" == "undefined" ]]; then
-    printf "\nERROR: self_fasta_dir not specified\n"
+# Check if self_fasta is provided and exists
+if [[ "$self_fasta" == "undefined" ]]; then
+    printf "\nERROR: self_fasta not specified\n"
     end_process
 fi
 
-if [[ ! -d "$self_fasta_dir" ]]; then
-    printf "\nERROR: self_fasta_dir does not exist: $self_fasta_dir\n"
+if [[ ! -d "$self_fasta" ]]; then
+    printf "\nERROR: self_fasta does not exist: $self_fasta\n"
     end_process
 fi
 
@@ -55,8 +55,8 @@ if [[ ! -f "/scripts/submodules/Blasch_PipeCraft.py" ]]; then
 fi
 
 # Set up BlasCh command arguments
-blasch_args="--input_chimeras_dir $input_chimeras_dir"
-blasch_args="$blasch_args --self_fasta_dir $self_fasta_dir"
+blasch_args="--input_chimeras_dir $input_chimeras"
+blasch_args="$blasch_args --self_fasta_dir $self_fasta"
 blasch_args="$blasch_args --output_dir $blasch_output_dir"
 blasch_args="$blasch_args --threads $threads"
 
@@ -79,8 +79,8 @@ else
 fi
 
 printf "\nRunning BlasCh with the following parameters:\n"
-printf "Input chimeras directory: $input_chimeras_dir\n"
-printf "Self FASTA directory: $self_fasta_dir\n"
+printf "Input chimeras directory: $input_chimeras\n"
+printf "Self FASTA directory: $self_fasta\n"
 printf "Output directory: $blasch_output_dir\n"
 printf "Threads: $threads\n"
 printf "High coverage threshold: $high_coverage_threshold%%\n"
