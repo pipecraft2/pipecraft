@@ -2002,7 +2002,7 @@ export default new Vuex.Store({
           },
           {
             tooltip:
-              "BlasCh: False positive chimera detection and recovery for metabarcoding and environmental DNA (eDNA). This tool processes sequences to identify, classify, and recover false positive chimeric sequences based on BLAST analysis against reference and self-databases.",
+              "BlasCh: False positive chimera detection and recovery.",
             scriptName: "blasch.sh",
             imageName: "pipecraft/blasch:1.0",
             serviceName: "BlasCh",
