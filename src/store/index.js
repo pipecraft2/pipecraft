@@ -2000,6 +2000,91 @@ export default new Vuex.Store({
               },
             ],
           },
+          {
+            tooltip:
+              "BlasCh: False positive chimera detection and recovery for metabarcoding and environmental DNA (eDNA). This tool processes sequences to identify, classify, and recover false positive chimeric sequences based on BLAST analysis against reference and self-databases.",
+            scriptName: "blasch.sh",
+            imageName: "pipecraft/blasch:1.0",
+            serviceName: "BlasCh",
+            selected: false,
+            showExtra: false,
+            extraInputs: [
+              {
+                name: "high_coverage_threshold",
+                value: 99.0,
+                disabled: "never",
+                tooltip:
+                  "High coverage threshold for non-chimeric classification. Sequences with coverage above this threshold (and high identity) are classified as non-chimeric.",
+                type: "numeric",
+                rules: [(v) => v >= 50 && v <= 100 || "ERROR: specify values between 50-100"],
+              },
+              {
+                name: "high_identity_threshold", 
+                value: 99.0,
+                disabled: "never",
+                tooltip:
+                  "High identity threshold for non-chimeric classification. Sequences with identity above this threshold (and high coverage) are classified as non-chimeric.",
+                type: "numeric",
+                rules: [(v) => v >= 50 && v <= 100 || "ERROR: specify values between 50-100"],
+              },
+              {
+                name: "borderline_coverage_threshold",
+                value: 89.0,
+                disabled: "never", 
+                tooltip:
+                  "Coverage threshold for borderline sequences that can be rescued as non-chimeric. Sequences with coverage above this threshold but below high_coverage_threshold can be rescued.",
+                type: "numeric",
+                rules: [(v) => v >= 50 && v <= 100 || "ERROR: specify values between 50-100"],
+              },
+              {
+                name: "borderline_identity_threshold",
+                value: 80.0,
+                disabled: "never",
+                tooltip:
+                  "Identity threshold for borderline sequences that can be rescued as non-chimeric. Sequences with identity above this threshold but below high_identity_threshold can be rescued.",
+                type: "numeric", 
+                rules: [(v) => v >= 50 && v <= 100 || "ERROR: specify values between 50-100"],
+              },
+            ],
+            Inputs: [
+              {
+                name: "input_chimeras_dir",
+                value: "undefined",
+                btnName: "select directory",
+                disabled: "never",
+                tooltip:
+                  "Directory containing .chimeras.fasta files to be analyzed. These are typically output from chimera detection tools like vsearch or uchime.",
+                type: "file",
+              },
+              {
+                name: "self_fasta_dir", 
+                value: "undefined",
+                btnName: "select directory",
+                disabled: "never",
+                tooltip:
+                  "Directory containing FASTA files for building self-databases. Each FASTA file should represent sequences from individual samples for comparison.",
+                type: "file",
+              },
+              {
+                name: "reference_db",
+                value: "undefined",
+                btnName: "select file",
+                disabled: "never",
+                tooltip:
+                  "Reference database file (FASTA format) or existing BLAST database prefix. This database contains known sequences for comparison. Leave empty if no reference database is available.",
+                type: "boolfile",
+              },
+              {
+                name: "threads",
+                value: 8,
+                disabled: "never",
+                tooltip:
+                  "Number of CPU threads to use for BLAST analysis. Higher values will speed up the analysis but use more computational resources.",
+                type: "numeric",
+                rules: [(v) => v >= 1 && v <= 64 || "ERROR: specify values between 1-64"],
+              },
+            ],
+          },
         ],
       },
       {
@@ -2393,91 +2478,6 @@ export default new Vuex.Store({
                 step: 1,
               },
 
-            ],
-          },
-          {
-            tooltip:
-              "BlasCh: False positive chimera detection and recovery for metabarcoding and environmental DNA (eDNA). This tool processes sequences to identify, classify, and recover false positive chimeric sequences based on BLAST analysis against reference and self-databases.",
-            scriptName: "blasch.sh",
-            imageName: "pipecraft/blasch:1.0",
-            serviceName: "BlasCh",
-            selected: false,
-            showExtra: false,
-            extraInputs: [
-              {
-                name: "high_coverage_threshold",
-                value: 99.0,
-                disabled: "never",
-                tooltip:
-                  "High coverage threshold for non-chimeric classification. Sequences with coverage above this threshold (and high identity) are classified as non-chimeric.",
-                type: "numeric",
-                rules: [(v) => v >= 50 && v <= 100 || "ERROR: specify values between 50-100"],
-              },
-              {
-                name: "high_identity_threshold", 
-                value: 99.0,
-                disabled: "never",
-                tooltip:
-                  "High identity threshold for non-chimeric classification. Sequences with identity above this threshold (and high coverage) are classified as non-chimeric.",
-                type: "numeric",
-                rules: [(v) => v >= 50 && v <= 100 || "ERROR: specify values between 50-100"],
-              },
-              {
-                name: "borderline_coverage_threshold",
-                value: 89.0,
-                disabled: "never", 
-                tooltip:
-                  "Coverage threshold for borderline sequences that can be rescued as non-chimeric. Sequences with coverage above this threshold but below high_coverage_threshold can be rescued.",
-                type: "numeric",
-                rules: [(v) => v >= 50 && v <= 100 || "ERROR: specify values between 50-100"],
-              },
-              {
-                name: "borderline_identity_threshold",
-                value: 80.0,
-                disabled: "never",
-                tooltip:
-                  "Identity threshold for borderline sequences that can be rescued as non-chimeric. Sequences with identity above this threshold but below high_identity_threshold can be rescued.",
-                type: "numeric", 
-                rules: [(v) => v >= 50 && v <= 100 || "ERROR: specify values between 50-100"],
-              },
-            ],
-            Inputs: [
-              {
-                name: "input_chimeras_dir",
-                value: "undefined",
-                btnName: "select directory",
-                disabled: "never",
-                tooltip:
-                  "Directory containing .chimeras.fasta files to be analyzed. These are typically output from chimera detection tools like vsearch or uchime.",
-                type: "file",
-              },
-              {
-                name: "self_fasta_dir", 
-                value: "undefined",
-                btnName: "select directory",
-                disabled: "never",
-                tooltip:
-                  "Directory containing FASTA files for building self-databases. Each FASTA file should represent sequences from individual samples for comparison.",
-                type: "file",
-              },
-              {
-                name: "reference_db",
-                value: "undefined",
-                btnName: "select file",
-                disabled: "never",
-                tooltip:
-                  "Reference database file (FASTA format) or existing BLAST database prefix. This database contains known sequences for comparison. Leave empty if no reference database is available.",
-                type: "boolfile",
-              },
-              {
-                name: "threads",
-                value: 8,
-                disabled: "never",
-                tooltip:
-                  "Number of CPU threads to use for BLAST analysis. Higher values will speed up the analysis but use more computational resources.",
-                type: "numeric",
-                rules: [(v) => v >= 1 && v <= 64 || "ERROR: specify values between 1-64"],
-              },
             ],
           },
         ],
