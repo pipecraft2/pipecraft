@@ -1,7 +1,7 @@
 #!/bin/bash
 
 ##BlasCh for chimera detection and recovery
-##input: directory with *.chimeras.fasta files
+##input: working directory with *.chimeras.fasta files and sample FASTA files
 ##output: rescued sequences and analysis reports
 
 #load variables
@@ -26,27 +26,19 @@ printf "\n\nBlasCh: False positive chimera detection and recovery\n"
 printf "Working directory: $workingDir\n"
 printf "Output directory: $blasch_output_dir\n"
 
-# Check if input chimeras directory is provided and exists
-if [[ "$input_chimeras" == "undefined" ]]; then
-    printf "\nERROR: input_chimeras not specified\n"
+# Use working directory for input chimeras
+input_chimeras=$workingDir
+
+# Check if .chimeras.fasta files exist in working directory
+chimeras_count=$(find "$input_chimeras" -name "*.chimeras.fasta" -type f | wc -l)
+if [[ $chimeras_count -eq 0 ]]; then
+    printf "\nERROR: No .chimeras.fasta files found in working directory: $input_chimeras\n"
+    printf "Please ensure that chimera detection has been run prior to BlasCh analysis.\n"
     end_process
 fi
 
-if [[ ! -d "$input_chimeras" ]]; then
-    printf "\nERROR: input_chimeras does not exist: $input_chimeras\n"
-    end_process
-fi
-
-# Check if self_fasta is provided and exists
-if [[ "$self_fasta" == "undefined" ]]; then
-    printf "\nERROR: self_fasta not specified\n"
-    end_process
-fi
-
-if [[ ! -d "$self_fasta" ]]; then
-    printf "\nERROR: self_fasta does not exist: $self_fasta\n"
-    end_process
-fi
+# Use working directory for self FASTA files (auto-create from .fasta files)
+self_fasta=$workingDir
 
 # Check for Python script availability
 if [[ ! -f "/scripts/submodules/Blasch_PipeCraft.py" ]]; then

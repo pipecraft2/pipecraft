@@ -153,16 +153,45 @@ def validate_fasta_with_biopython(fasta_path):
 
 def create_self_databases(self_fasta_dir, self_db_dir):
     """
-    Creates self-databases from each FASTA in self_fasta_dir.
+    Creates self-databases from FASTA files in self_fasta_dir.
+    Auto-detects FASTA files and creates databases for chimera analysis.
     Exits if creation fails for any file.
     """
     logger.info("=== Step 1: Creating Self-Databases ===")
     os.makedirs(self_db_dir, exist_ok=True)
 
-    fasta_files = [f for f in os.listdir(self_fasta_dir) if f.endswith(".fasta")]
+    # Look for FASTA files with various extensions
+    fasta_extensions = [".fasta", ".fa", ".fas", ".fna"]
+    fasta_files = []
+    
+    for ext in fasta_extensions:
+        fasta_files.extend([f for f in os.listdir(self_fasta_dir) if f.endswith(ext)])
+    
+    # Remove duplicates while preserving order
+    fasta_files = list(dict.fromkeys(fasta_files))
+    
     if not fasta_files:
-        logger.error(f"No FASTA files found in {self_fasta_dir}. Cannot create self-databases.")
-        sys.exit(1)
+        logger.warning(f"No FASTA files found in {self_fasta_dir} with extensions {fasta_extensions}.")
+        logger.info("Attempting to find FASTA files without .chimeras suffix...")
+        
+        # Look for files that might be samples (not .chimeras.fasta files)
+        all_files = os.listdir(self_fasta_dir)
+        sample_files = []
+        
+        for file in all_files:
+            if any(file.endswith(ext) for ext in fasta_extensions):
+                if not file.endswith('.chimeras.fasta') and not file.endswith('.chimeras.fa'):
+                    sample_files.append(file)
+        
+        if sample_files:
+            fasta_files = sample_files
+            logger.info(f"Found {len(fasta_files)} sample FASTA files for database creation.")
+        else:
+            logger.error(f"No suitable FASTA files found for self-database creation in {self_fasta_dir}.")
+            logger.error("Please ensure that sample FASTA files (not .chimeras.fasta files) are present in the working directory.")
+            sys.exit(1)
+
+    logger.info(f"Creating self-databases from {len(fasta_files)} FASTA files...")
 
     for fasta_file in fasta_files:
         full_path = os.path.join(self_fasta_dir, fasta_file)
@@ -172,11 +201,21 @@ def create_self_databases(self_fasta_dir, self_db_dir):
             logger.error(f"Invalid FASTA file: {full_path}")
             sys.exit(1)
 
+        # Extract base name (remove extension and any .chimeras suffix)
         base_name = os.path.splitext(fasta_file)[0]
+        if base_name.endswith('.chimeras'):
+            base_name = base_name[:-9]  # Remove .chimeras suffix
+            
         out_dir = os.path.join(self_db_dir, base_name)
         os.makedirs(out_dir, exist_ok=True)
 
         db_prefix = os.path.join(out_dir, base_name)
+        
+        # Check if database already exists
+        if check_blast_db_exists(db_prefix):
+            logger.info(f"Self BLAST database already exists for {base_name}, skipping creation.")
+            continue
+            
         cmd = [
             "makeblastdb",
             "-in", full_path,
@@ -184,14 +223,20 @@ def create_self_databases(self_fasta_dir, self_db_dir):
             "-out", db_prefix
         ]
 
-        logger.info(f"Creating self BLAST database for {fasta_file} ...")
+        logger.info(f"Creating self BLAST database for {fasta_file} -> {base_name} ...")
         try:
-            subprocess.run(cmd, check=True)
+            subprocess.run(cmd, check=True, capture_output=True, text=True)
         except subprocess.CalledProcessError as e:
             logger.error(f"Error creating database for {fasta_file}: {e}")
+            logger.error(f"makeblastdb stderr: {e.stderr if hasattr(e, 'stderr') else 'No stderr'}")
             sys.exit(1)  # exit on failure
 
-        logger.info(f"Created self DB for {fasta_file}")
+        # Verify database was created successfully
+        if check_blast_db_exists(db_prefix):
+            logger.info(f"Successfully created self DB for {base_name}")
+        else:
+            logger.error(f"Failed to create valid database for {base_name}")
+            sys.exit(1)
 
     logger.info("All self-databases have been created.\n")
 
@@ -241,18 +286,26 @@ def run_blast_analysis(
     xml_dir = os.path.join(output_dir, "xml")
     os.makedirs(xml_dir, exist_ok=True)
 
-    # Collect .chimeras.fasta
-    chimeric_files = [f for f in os.listdir(input_chimeras_dir) if f.endswith(".chimeras.fasta")]
+    # Collect .chimeras files with various extensions
+    fasta_extensions = [".fasta", ".fa", ".fas", ".fna"]
+    chimeric_files = []
+    
+    for ext in fasta_extensions:
+        chimeric_files.extend([f for f in os.listdir(input_chimeras_dir) if f.endswith(f".chimeras{ext}")])
+    
     if not chimeric_files:
-        logger.error(f"No .chimeras.fasta files found in {input_chimeras_dir}. Cannot run BLAST.")
+        logger.error(f"No .chimeras files found in {input_chimeras_dir} with extensions {fasta_extensions}.")
+        logger.error("Please ensure chimera detection has been run prior to BlasCh analysis.")
         sys.exit(1)
+    
+    logger.info(f"Found {len(chimeric_files)} chimeras files for BLAST analysis.")
 
     for chim_file in chimeric_files:
         chimera_file = os.path.join(input_chimeras_dir, chim_file)
 
         # Validate the chimera_file with BioPython
         if not validate_fasta_with_biopython(chimera_file):
-            logger.error(f"Invalid .chimeras.fasta file: {chimera_file}")
+            logger.error(f"Invalid chimeras file: {chimera_file}")
             sys.exit(1)
 
         base_name = os.path.splitext(chim_file)[0]  # e.g., "ERR6454463.chimeras"
@@ -529,17 +582,28 @@ def parse_blast_results(args):
     # e.g. "ERR6454463.chimeras_blast_results.xml"
     base_name = base_xml.replace("_blast_results.xml", "")
 
-    # We look for either "<base_name>.fasta" or "<base_name>.chimeras.fasta" in input_chimeras_dir
-    fasta_path_1 = os.path.join(input_chimeras_dir, f"{base_name}.fasta")
-    fasta_path_2 = os.path.join(input_chimeras_dir, f"{base_name}.chimeras.fasta")
-
-    if os.path.isfile(fasta_path_1):
-        fasta_path = fasta_path_1
-    elif os.path.isfile(fasta_path_2):
-        fasta_path = fasta_path_2
-    else:
+    # We look for chimeras FASTA file with various extensions
+    fasta_extensions = [".fasta", ".fa", ".fas", ".fna"]
+    fasta_path = None
+    
+    # Try to find the chimeras file with different extensions
+    for ext in fasta_extensions:
+        potential_path = os.path.join(input_chimeras_dir, f"{base_name}{ext}")
+        if os.path.isfile(potential_path):
+            fasta_path = potential_path
+            break
+    
+    # If not found, try with .chimeras suffix
+    if not fasta_path:
+        for ext in fasta_extensions:
+            potential_path = os.path.join(input_chimeras_dir, f"{base_name}.chimeras{ext}")
+            if os.path.isfile(potential_path):
+                fasta_path = potential_path
+                break
+    
+    if not fasta_path:
         logger.warning(
-            f"FASTA file for {xml_path} not found at:\n {fasta_path_1}\n or:\n {fasta_path_2}\nSkipping."
+            f"FASTA file for {xml_path} not found with base name '{base_name}' and extensions {fasta_extensions}. Skipping."
         )
         return set(), set(), set(), set()
 

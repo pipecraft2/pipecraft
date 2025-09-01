@@ -2002,9 +2002,9 @@ export default new Vuex.Store({
           },
           {
             tooltip:
-              "BlasCh: False positive chimera detection and recovery.",
+              "BlasCh: False positive chimera detection and recovery. This tool automatically detects .chimeras.fasta files and sample FASTA files in the selected working directory, creates self-databases, and performs chimera analysis.",
             scriptName: "blasch.sh",
-            imageName: "pipecraft/blasch:1.0",
+            imageName: "pipecraft/blast:2.14",
             serviceName: "BlasCh",
             selected: false,
             showExtra: false,
@@ -2047,24 +2047,6 @@ export default new Vuex.Store({
               },
             ],
             Inputs: [
-              {
-                name: "input_chimeras",
-                value: "undefined",
-                btnName: "select directory",
-                disabled: "never",
-                tooltip:
-                  "Directory containing .chimeras.fasta files to be analyzed. These are typically output from chimera detection tools like vsearch or uchime.",
-                type: "file",
-              },
-              {
-                name: "self_fasta", 
-                value: "undefined",
-                btnName: "select directory",
-                disabled: "never",
-                tooltip:
-                  "Directory containing FASTA files for building self-databases. Each FASTA file should represent sequences from individual samples for comparison.",
-                type: "file",
-              },
               {
                 name: "reference_db",
                 value: "undefined",
