@@ -41,8 +41,20 @@ fi
 self_fasta=$workingDir
 
 # Check for Python script availability
-if [[ ! -f "/scripts/submodules/Blasch_PipeCraft.py" ]]; then
-    printf "\nERROR: BlasCh Python script not found at /scripts/submodules/Blasch_PipeCraft.py\n"
+# First try in the local directory structure
+SCRIPT_DIR="$(dirname "$(readlink -f "$0")")"
+BLASCH_SCRIPT="${SCRIPT_DIR}/submodules/Blasch_PipeCraft.py"
+
+if [[ -f "${BLASCH_SCRIPT}" ]]; then
+    printf "Found BlasCh Python script at ${BLASCH_SCRIPT}\n"
+elif [[ -f "/scripts/submodules/Blasch_PipeCraft.py" ]]; then
+    # Fall back to Docker container path
+    BLASCH_SCRIPT="/scripts/submodules/Blasch_PipeCraft.py"
+    printf "Found BlasCh Python script at ${BLASCH_SCRIPT}\n"
+else
+    printf "\nERROR: BlasCh Python script not found at either:\n"
+    printf "  - ${SCRIPT_DIR}/submodules/Blasch_PipeCraft.py\n"
+    printf "  - /scripts/submodules/Blasch_PipeCraft.py\n"
     end_process
 fi
 
@@ -60,11 +72,17 @@ blasch_args="$blasch_args --borderline_identity_threshold $borderline_identity_t
 
 # Add reference database if provided
 if [[ "$reference_db" != "undefined" ]] && [[ -n "$reference_db" ]]; then
-    if [[ -f "$reference_db" ]]; then
-        blasch_args="$blasch_args --reference_db $reference_db"
-        printf "Using reference database: $reference_db\n"
+    # Convert to container path format
+    reference_db_name=$(basename "$reference_db")
+    container_reference_db="/extraFiles/$reference_db_name"
+    
+    # Check if the file exists in the container mount point
+    if [[ -f "$container_reference_db" ]]; then
+        blasch_args="$blasch_args --reference_db $container_reference_db"
+        printf "Using reference database: $container_reference_db\n"
     else
-        printf "WARNING: reference_db file not found: $reference_db. Proceeding without reference database.\n"
+        printf "WARNING: reference_db file not found in container: $container_reference_db. Proceeding without reference database.\n"
+        printf "Original path was: $reference_db\n"
     fi
 else
     printf "No reference database specified. Using only self-databases.\n"
@@ -81,7 +99,9 @@ printf "Borderline coverage threshold: $borderline_coverage_threshold%%\n"
 printf "Borderline identity threshold: $borderline_identity_threshold%%\n"
 
 # Run BlasCh
-checkerror=$(python3 /scripts/submodules/Blasch_PipeCraft.py $blasch_args 2>&1)
+printf "\nExecuting Python script: $BLASCH_SCRIPT\n"
+printf "Full command: python3 $BLASCH_SCRIPT $blasch_args\n"
+checkerror=$(python3 "$BLASCH_SCRIPT" $blasch_args 2>&1)
 check_app_error
 
 printf "\nBlasCh analysis completed successfully!\n"
@@ -90,7 +110,7 @@ printf "\nOutput files:\n"
 printf "- Rescued sequences: *_non_chimeric.fasta and *_borderline.fasta\n"
 printf "- Chimeric sequences: analysis/*_chimeric.fasta\n"
 printf "- Multiple alignment sequences: analysis/*_multiple_alignments.fasta\n"
-printf "- Analysis report: chimera_detection_report.txt\n"
+printf "- Analysis report: chimera_recovery_report.txt\n"
 printf "- Detailed results: analysis/*_sequence_details.csv\n"
 
 #end

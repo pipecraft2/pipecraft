@@ -153,16 +153,42 @@ def validate_fasta_with_biopython(fasta_path):
 
 def create_self_databases(self_fasta_dir, self_db_dir):
     """
-    Creates self-databases from each FASTA in self_fasta_dir.
+    Creates self-databases from FASTA files in self_fasta_dir.
+    Auto-detects FASTA files and creates databases for chimera analysis.
+    Prioritizes original sample files over .chimeras files.
     Exits if creation fails for any file.
     """
     logger.info("=== Step 1: Creating Self-Databases ===")
     os.makedirs(self_db_dir, exist_ok=True)
 
-    fasta_files = [f for f in os.listdir(self_fasta_dir) if f.endswith(".fasta")]
-    if not fasta_files:
-        logger.error(f"No FASTA files found in {self_fasta_dir}. Cannot create self-databases.")
+    # Look for FASTA files with various extensions
+    fasta_extensions = [".fasta", ".fa", ".fas", ".fna"]
+    all_files = os.listdir(self_fasta_dir)
+    
+    # Separate sample files from chimeras files
+    sample_files = []
+    chimeras_files = []
+    
+    for file in all_files:
+        if any(file.endswith(ext) for ext in fasta_extensions):
+            if '.chimeras.' in file:
+                chimeras_files.append(file)
+            else:
+                sample_files.append(file)
+    
+    # Prioritize sample files over chimeras files
+    if sample_files:
+        fasta_files = sample_files
+        logger.info(f"Found {len(fasta_files)} sample FASTA files for database creation.")
+    elif chimeras_files:
+        fasta_files = chimeras_files
+        logger.info(f"No sample files found. Using {len(fasta_files)} .chimeras files for database creation.")
+    else:
+        logger.error(f"No FASTA files found in {self_fasta_dir} with extensions {fasta_extensions}.")
+        logger.error("Please ensure that sample FASTA files or .chimeras files are present in the working directory.")
         sys.exit(1)
+
+    logger.info(f"Creating self-databases from {len(fasta_files)} FASTA files...")
 
     for fasta_file in fasta_files:
         full_path = os.path.join(self_fasta_dir, fasta_file)
@@ -172,11 +198,21 @@ def create_self_databases(self_fasta_dir, self_db_dir):
             logger.error(f"Invalid FASTA file: {full_path}")
             sys.exit(1)
 
+        # Extract base name (remove extension and any .chimeras suffix)
         base_name = os.path.splitext(fasta_file)[0]
+        if base_name.endswith('.chimeras'):
+            base_name = base_name[:-9]  # Remove .chimeras suffix
+            
         out_dir = os.path.join(self_db_dir, base_name)
         os.makedirs(out_dir, exist_ok=True)
 
         db_prefix = os.path.join(out_dir, base_name)
+        
+        # Check if database already exists
+        if check_blast_db_exists(db_prefix):
+            logger.info(f"Self BLAST database already exists for {base_name}, skipping creation.")
+            continue
+            
         cmd = [
             "makeblastdb",
             "-in", full_path,
@@ -184,14 +220,20 @@ def create_self_databases(self_fasta_dir, self_db_dir):
             "-out", db_prefix
         ]
 
-        logger.info(f"Creating self BLAST database for {fasta_file} ...")
+        logger.info(f"Creating self BLAST database for {fasta_file} -> {base_name} ...")
         try:
-            subprocess.run(cmd, check=True)
+            subprocess.run(cmd, check=True, capture_output=True, text=True)
         except subprocess.CalledProcessError as e:
             logger.error(f"Error creating database for {fasta_file}: {e}")
+            logger.error(f"makeblastdb stderr: {e.stderr if hasattr(e, 'stderr') else 'No stderr'}")
             sys.exit(1)  # exit on failure
 
-        logger.info(f"Created self DB for {fasta_file}")
+        # Verify database was created successfully
+        if check_blast_db_exists(db_prefix):
+            logger.info(f"Successfully created self DB for {base_name}")
+        else:
+            logger.error(f"Failed to create valid database for {base_name}")
+            sys.exit(1)
 
     logger.info("All self-databases have been created.\n")
 
@@ -211,11 +253,27 @@ def handle_reference_db(reference_db_arg, output_dir):
     if not reference_db_arg:
         logger.info("No reference DB provided.")
         return ""
-
+    
+    logger.info(f"Reference database argument provided: {reference_db_arg}")
+    
+    # Check if reference_db_arg is actually a file that exists
+    if not os.path.exists(reference_db_arg):
+        logger.error(f"Reference database path does not exist: {reference_db_arg}")
+        logger.error("Please provide a valid file path for the reference database.")
+        sys.exit(1)
+        
     reference_db_dir = os.path.join(output_dir, "reference_db")
     db_name = "reference"
 
     final_db_prefix = create_blast_db_if_needed(reference_db_arg, reference_db_dir, db_name)
+    
+    # Extra validation of the final database
+    if not check_blast_db_exists(final_db_prefix):
+        logger.error(f"Final reference database validation failed: {final_db_prefix}")
+        logger.error("Unable to create or validate reference database. Check file permissions and disk space.")
+        sys.exit(1)
+        
+    logger.info(f"Reference database successfully validated: {final_db_prefix}")
     return final_db_prefix
 
 
@@ -238,21 +296,40 @@ def run_blast_analysis(
     Exit on first BLAST failure.
     """
     logger.info("=== Step 3: Running BLAST Analyses ===")
+    
+    # Debug reference database information
+    if reference_db_prefix:
+        logger.info(f"Reference database will be used: {reference_db_prefix}")
+        # Check if reference database exists and is readable
+        if check_blast_db_exists(reference_db_prefix):
+            logger.info(f"Reference DB validation successful: Found BLAST database files for {reference_db_prefix}")
+        else:
+            logger.warning(f"Reference DB validation FAILED: No BLAST database files found at {reference_db_prefix}")
+    else:
+        logger.info("No reference database provided, will use only self-databases")
     xml_dir = os.path.join(output_dir, "xml")
     os.makedirs(xml_dir, exist_ok=True)
 
-    # Collect .chimeras.fasta
-    chimeric_files = [f for f in os.listdir(input_chimeras_dir) if f.endswith(".chimeras.fasta")]
+    # Collect .chimeras files with various extensions
+    fasta_extensions = [".fasta", ".fa", ".fas", ".fna"]
+    chimeric_files = []
+    
+    for ext in fasta_extensions:
+        chimeric_files.extend([f for f in os.listdir(input_chimeras_dir) if f.endswith(f".chimeras{ext}")])
+    
     if not chimeric_files:
-        logger.error(f"No .chimeras.fasta files found in {input_chimeras_dir}. Cannot run BLAST.")
+        logger.error(f"No .chimeras files found in {input_chimeras_dir} with extensions {fasta_extensions}.")
+        logger.error("Please ensure chimera detection has been run prior to BlasCh analysis.")
         sys.exit(1)
+    
+    logger.info(f"Found {len(chimeric_files)} chimeras files for BLAST analysis.")
 
     for chim_file in chimeric_files:
         chimera_file = os.path.join(input_chimeras_dir, chim_file)
 
         # Validate the chimera_file with BioPython
         if not validate_fasta_with_biopython(chimera_file):
-            logger.error(f"Invalid .chimeras.fasta file: {chimera_file}")
+            logger.error(f"Invalid chimeras file: {chimera_file}")
             sys.exit(1)
 
         base_name = os.path.splitext(chim_file)[0]  # e.g., "ERR6454463.chimeras"
@@ -270,17 +347,11 @@ def run_blast_analysis(
         # Output XML => <base_name>_blast_results.xml
         xml_file = os.path.join(xml_dir, f"{base_name}_blast_results.xml")
 
-        if reference_db_prefix:
-            db_arg = f"{reference_db_prefix} {self_db}"
-            logger.info(f"Running BLAST for {chim_file} against DBs: [{reference_db_prefix}, {self_db}]")
-        else:
-            db_arg = self_db
-            logger.info(f"Running BLAST for {chim_file} against DB: {self_db}")
-
+        # Build the BLAST command
         cmd = [
             "blastn",
             "-query", chimera_file,
-            "-db", db_arg,
+            # Don't include -db yet - we'll add it based on database options
             "-word_size", "7",
             "-task", "blastn",
             "-num_threads", str(threads),
@@ -291,6 +362,23 @@ def run_blast_analysis(
             "-max_hsps", "9",
             "-out", xml_file
         ]
+        
+        # Add database arguments correctly - must be a single -db followed by all databases
+        if reference_db_prefix:
+            # In BLAST+ when passing multiple databases, they must be specified as one space-separated string
+            # This allows BLAST to search in all databases at once
+            db_value = f"{reference_db_prefix} {self_db}"
+            cmd.extend(["-db", db_value])
+            logger.info(f"Running BLAST for {chim_file} against multiple DBs: {db_value}")
+            # Debug: Print the exact command being run
+            logger.info(f"Full BLAST command will be: {' '.join(cmd)}")
+        else:
+            cmd.extend(["-db", self_db])
+            logger.info(f"Running BLAST for {chim_file} against single DB: {self_db}")
+        
+        # Debug: log the exact command being run
+        logger.info(f"Running BLAST command: {' '.join(cmd)}")
+        
         try:
             subprocess.run(cmd, check=True)
         except subprocess.CalledProcessError as e:
@@ -373,6 +461,9 @@ def analyze_blast_hits(blast_record, query_id):
         return hits_info
 
     # Otherwise, gather hits
+    db_hit_count = 0
+    self_hit_count = 0
+    
     for aln in blast_record.alignments:
         if not aln.hsps:
             continue
@@ -381,6 +472,11 @@ def analyze_blast_hits(blast_record, query_id):
             continue
 
         same_sample = is_self_hit(aln.hit_def)
+        if same_sample:
+            self_hit_count += 1
+        else:
+            db_hit_count += 1
+            
         taxonomy = extract_taxonomy(aln.hit_def) if not same_sample else "Self"
 
         best_hsp = max(
@@ -404,6 +500,10 @@ def analyze_blast_hits(blast_record, query_id):
             "force_chimeric": False,
             "multiple_hsps": False
         })
+
+    # Debug logging
+    if db_hit_count > 0 or self_hit_count > 0:
+        logger.info(f"Query {query_id}: Found {db_hit_count} reference DB hits, {self_hit_count} self hits")
 
     return hits_info
 
@@ -430,6 +530,11 @@ def classify_sequence(
 
     db_hits = [h for h in hits_info if not h["is_same_sample"]]
     self_hits = [h for h in hits_info if h["is_same_sample"]]
+
+    # Debug logging for classification
+    logger.debug(f"Classification input: {len(db_hits)} DB hits, {len(self_hits)} self hits")
+    if db_hits:
+        logger.debug(f"Best DB hit: identity={db_hits[0]['identity']:.1f}%, coverage={db_hits[0]['coverage']:.1f}%")
 
     # If no db hits => chimeric
     if not db_hits and self_hits:
@@ -529,17 +634,28 @@ def parse_blast_results(args):
     # e.g. "ERR6454463.chimeras_blast_results.xml"
     base_name = base_xml.replace("_blast_results.xml", "")
 
-    # We look for either "<base_name>.fasta" or "<base_name>.chimeras.fasta" in input_chimeras_dir
-    fasta_path_1 = os.path.join(input_chimeras_dir, f"{base_name}.fasta")
-    fasta_path_2 = os.path.join(input_chimeras_dir, f"{base_name}.chimeras.fasta")
-
-    if os.path.isfile(fasta_path_1):
-        fasta_path = fasta_path_1
-    elif os.path.isfile(fasta_path_2):
-        fasta_path = fasta_path_2
-    else:
+    # We look for chimeras FASTA file with various extensions
+    fasta_extensions = [".fasta", ".fa", ".fas", ".fna"]
+    fasta_path = None
+    
+    # Try to find the chimeras file with different extensions
+    for ext in fasta_extensions:
+        potential_path = os.path.join(input_chimeras_dir, f"{base_name}{ext}")
+        if os.path.isfile(potential_path):
+            fasta_path = potential_path
+            break
+    
+    # If not found, try with .chimeras suffix
+    if not fasta_path:
+        for ext in fasta_extensions:
+            potential_path = os.path.join(input_chimeras_dir, f"{base_name}.chimeras{ext}")
+            if os.path.isfile(potential_path):
+                fasta_path = potential_path
+                break
+    
+    if not fasta_path:
         logger.warning(
-            f"FASTA file for {xml_path} not found at:\n {fasta_path_1}\n or:\n {fasta_path_2}\nSkipping."
+            f"FASTA file for {xml_path} not found with base name '{base_name}' and extensions {fasta_extensions}. Skipping."
         )
         return set(), set(), set(), set()
 
@@ -637,7 +753,7 @@ def generate_report(
     output_dir
 ):
     """Write a final text summary of all classifications."""
-    logger.info("=== Generating Chimera Detection Report ===")
+    logger.info("=== Generating Chimera Recovery Report ===")
 
     counts = {
         "Non-Chimeric Sequences": len(all_non_chimeric),
@@ -646,12 +762,12 @@ def generate_report(
         "Multiple Alignment Sequences": len(all_multiple)
     }
     total = sum(counts.values())
-    rep_path = os.path.join(output_dir, "chimera_detection_report.txt")
+    rep_path = os.path.join(output_dir, "chimera_recovery_report.txt")
 
     try:
         with open(rep_path, "w") as rf:
-            rf.write("Chimera Detection Report\n")
-            rf.write("========================\n\n")
+            rf.write("Chimera Recovery Report\n")
+            rf.write("======================\n\n")
             rf.write("Overall Summary:\n")
             rf.write("----------------\n")
             for cat, val in counts.items():
@@ -805,6 +921,10 @@ def main():
 
     # 2. Reference DB setup
     ref_db_prefix = handle_reference_db(args.reference_db, args.output_dir)
+    if ref_db_prefix:
+        logger.info(f"Reference database ready at: {ref_db_prefix}")
+    else:
+        logger.info("No reference database will be used.")
 
     # 3. Run BLAST
     run_blast_analysis(
