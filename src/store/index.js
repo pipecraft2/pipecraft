@@ -2010,38 +2010,20 @@ export default new Vuex.Store({
             showExtra: false,
             extraInputs: [
               {
-                name: "high_coverage_threshold",
-                value: 99.0,
-                disabled: "never",
-                tooltip:
-                  "High coverage threshold for non-chimeric classification. Sequences with coverage above this threshold (and high identity) are classified as non-chimeric.",
-                type: "numeric",
-                rules: [(v) => v >= 50 && v <= 100 || "ERROR: specify values between 50-100"],
-              },
-              {
-                name: "high_identity_threshold", 
-                value: 99.0,
-                disabled: "never",
-                tooltip:
-                  "High identity threshold for non-chimeric classification. Sequences with identity above this threshold (and high coverage) are classified as non-chimeric.",
-                type: "numeric",
-                rules: [(v) => v >= 50 && v <= 100 || "ERROR: specify values between 50-100"],
-              },
-              {
-                name: "borderline_coverage_threshold",
+                name: "borderline_coverage",
                 value: 89.0,
                 disabled: "never", 
                 tooltip:
-                  "Coverage threshold for borderline sequences that can be rescued as non-chimeric. Sequences with coverage above this threshold but below high_coverage_threshold can be rescued.",
+                  "sequences with coverage % above this threshold but below 'coverage' threshold can be rescued but classified as 'borderline'.",
                 type: "numeric",
                 rules: [(v) => v >= 50 && v <= 100 || "ERROR: specify values between 50-100"],
               },
               {
-                name: "borderline_identity_threshold",
+                name: "borderline_identity",
                 value: 80.0,
                 disabled: "never",
                 tooltip:
-                  "Identity threshold for borderline sequences that can be rescued as non-chimeric. Sequences with identity above this threshold but below high_identity_threshold can be rescued.",
+                  "sequences with identity % above this threshold but below identity threshold can be rescued but classified as 'borderline'.",
                 type: "numeric", 
                 rules: [(v) => v >= 50 && v <= 100 || "ERROR: specify values between 50-100"],
               },
@@ -2053,15 +2035,33 @@ export default new Vuex.Store({
                 btnName: "select file",
                 disabled: "never",
                 tooltip:
-                  "Reference database file (FASTA format) or existing BLAST database prefix. This database contains known sequences for comparison. Leave empty if no reference database is available.",
-                type: "boolfile",
+                  "reference database for BLAST (FASTA or BLAST format). Sequences (putative chimeras) in the WORKDIR will be blasted against this database.",
+                type: "file",
+              },
+              {
+                name: "coverage",
+                value: 95.0,
+                disabled: "never",
+                tooltip:
+                  "sequence coverage threshold for classifying query sequence as non-chimeric. Sequences with coverage % above this threshold (and high identity) are classified as non-chimeric.",
+                type: "numeric",
+                rules: [(v) => v >= 50 && v <= 100 || "ERROR: specify values between 50-100"],
+              },
+              {
+                name: "identity", 
+                value: 97.0,
+                disabled: "never",
+                tooltip:
+                  "sequence identity threshold for classifying query sequence as non-chimeric. Sequences with blast identity % above this threshold (and high coverage) are classified as non-chimeric.",
+                type: "numeric",
+                rules: [(v) => v >= 50 && v <= 100 || "ERROR: specify values between 50-100"],
               },
               {
                 name: "threads",
                 value: 8,
                 disabled: "never",
                 tooltip:
-                  "Number of CPU threads to use for BLAST analysis. Higher values will speed up the analysis but use more computational resources.",
+                  "Number of CPU threads to use for BLAST analysis",
                 type: "numeric",
                 rules: [(v) => v >= 1 && v <= 64 || "ERROR: specify values between 1-64"],
               },

@@ -65,10 +65,10 @@ blasch_args="$blasch_args --output_dir $blasch_output_dir"
 blasch_args="$blasch_args --threads $threads"
 
 # Add threshold parameters
-blasch_args="$blasch_args --high_coverage_threshold $high_coverage_threshold"
-blasch_args="$blasch_args --high_identity_threshold $high_identity_threshold"
-blasch_args="$blasch_args --borderline_coverage_threshold $borderline_coverage_threshold"
-blasch_args="$blasch_args --borderline_identity_threshold $borderline_identity_threshold"
+blasch_args="$blasch_args --high_coverage_threshold $coverage"
+blasch_args="$blasch_args --high_identity_threshold $identity"
+blasch_args="$blasch_args --borderline_coverage_threshold $borderline_coverage"
+blasch_args="$blasch_args --borderline_identity_threshold $borderline_identity"
 
 # Add reference database if provided
 if [[ "$reference_db" != "undefined" ]] && [[ -n "$reference_db" ]]; then
@@ -93,10 +93,10 @@ printf "Input chimeras directory: $input_chimeras\n"
 printf "Self FASTA directory: $self_fasta\n"
 printf "Output directory: $blasch_output_dir\n"
 printf "Threads: $threads\n"
-printf "High coverage threshold: $high_coverage_threshold%%\n"
-printf "High identity threshold: $high_identity_threshold%%\n"
-printf "Borderline coverage threshold: $borderline_coverage_threshold%%\n"
-printf "Borderline identity threshold: $borderline_identity_threshold%%\n"
+printf "High coverage threshold: $coverage%%\n"
+printf "High identity threshold: $identity%%\n"
+printf "Borderline coverage threshold: $borderline_coverage%%\n"
+printf "Borderline identity threshold: $borderline_identity%%\n"
 
 # Run BlasCh
 printf "\nExecuting Python script: $BLASCH_SCRIPT\n"
