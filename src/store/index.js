@@ -2049,7 +2049,7 @@ export default new Vuex.Store({
               },
               {
                 name: "identity", 
-                value: 97.0,
+                value: 95.0,
                 disabled: "never",
                 tooltip:
                   "sequence identity threshold for classifying query sequence as non-chimeric. Sequences with blast identity % above this threshold (and high coverage) are classified as non-chimeric.",
