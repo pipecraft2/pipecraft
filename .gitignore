@@ -2,7 +2,7 @@
 node_modules
 desktop.ini
 /dist
-# /testData
+/testData
 /src/pipecraft-core/service_scripts/NextFlowConfig.json
 /src/pipecraft-core/service_scripts/pipeline_options.yaml
 /image_development/*.zip
