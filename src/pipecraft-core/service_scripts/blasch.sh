@@ -107,11 +107,13 @@ check_app_error
 printf "\nBlasCh analysis completed successfully!\n"
 printf "Results are available in: $blasch_output_dir\n"
 printf "\nOutput files:\n"
-printf "- Rescued sequences: *_non_chimeric.fasta and *_borderline.fasta\n"
-printf "- Chimeric sequences: analysis/*_chimeric.fasta\n"
-printf "- Multiple alignment sequences: analysis/*_multiple_alignments.fasta\n"
+printf "- Non-chimeric sequences: non_chimeric/*_non_chimeric.fasta\n"
+printf "- Borderline sequences: borderline/*_borderline.fasta\n"
+printf "- Chimeric sequences: detailed_results/*_chimeric.fasta\n"
+printf "- Multiple alignment sequences: detailed_results/*_multiple_alignments.fasta\n"
 printf "- Analysis report: chimera_recovery_report.txt\n"
-printf "- Detailed results: analysis/*_sequence_details.csv\n"
+printf "- Detailed results: detailed_results/*_sequence_details.csv\n"
+printf "- Compressed XML files: xml/blast_results.zip\n"
 
 #end
 printf "\nDone\n"

@@ -10,6 +10,7 @@ import time
 import csv
 import multiprocessing
 import psutil
+import zipfile
 from Bio.Blast import NCBIXML
 from Bio import SeqIO
 from collections import defaultdict
@@ -25,8 +26,15 @@ from collections import defaultdict
 #   absolute chimeras, and borderline sequences, based on identity and        #
 #   coverage thresholds.                                                      #
 #                                                                             #
+# Output organization:                                                        #
+#   - non_chimeric/: Non-chimeric sequences                                   #
+#   - borderline/: Borderline sequences                                       #
+#   - detailed_results/: Chimeric sequences, multiple alignments, CSV details #
+#   - xml/blast_results.zip: Compressed XML files                             #
+#   - Automatic cleanup of database directories                               #
+#                                                                             #
 # Author:        ALI HAKIMZADEH                                               #
-# Version:       1.0                                                          #
+# Version:       1.1                                                          #
 # Date:          2025-04-01                                                   #
 ###############################################################################
 
@@ -131,21 +139,74 @@ def validate_fasta_with_biopython(fasta_path):
     otherwise False.
     """
     if not os.path.isfile(fasta_path):
-        logger.error(f"File not found: {fasta_path}")
+        logger.error(f"FASTA file does not exist: {fasta_path}")
         return False
 
     try:
-        count = 0
-        with open(fasta_path, "r") as handle:
-            for _ in SeqIO.parse(handle, "fasta"):
-                count += 1
-        if count == 0:
-            logger.error(f"No sequences found in FASTA: {fasta_path}")
+        records = list(SeqIO.parse(fasta_path, "fasta"))
+        if not records:
+            logger.error(f"No sequences found in FASTA file: {fasta_path}")
             return False
+        logger.info(f"FASTA file validation successful: {len(records)} sequences found in {fasta_path}")
         return True
     except Exception as e:
-        logger.error(f"Error parsing FASTA {fasta_path}: {e}")
+        logger.error(f"Error parsing FASTA file '{fasta_path}': {e}")
         return False
+
+
+def compress_xml_files(xml_dir):
+    """
+    Compress all XML files in xml_dir into a single zip archive to save space.
+    Delete original XML files after compression.
+    """
+    if not os.path.exists(xml_dir):
+        logger.warning(f"XML directory does not exist: {xml_dir}")
+        return
+    
+    xml_files = [f for f in os.listdir(xml_dir) if f.endswith('.xml')]
+    if not xml_files:
+        logger.warning(f"No XML files found in {xml_dir}")
+        return
+    
+    zip_path = os.path.join(xml_dir, "blast_results.zip")
+    logger.info(f"Compressing {len(xml_files)} XML files into {zip_path}")
+    
+    try:
+        with zipfile.ZipFile(zip_path, 'w', zipfile.ZIP_DEFLATED) as zipf:
+            for xml_file in xml_files:
+                xml_path = os.path.join(xml_dir, xml_file)
+                zipf.write(xml_path, xml_file)
+                # Remove original XML file after adding to zip
+                os.remove(xml_path)
+                logger.debug(f"Compressed and removed: {xml_file}")
+        
+        logger.info(f"Successfully compressed XML files. Saved space: {len(xml_files)} files -> 1 zip archive")
+    except Exception as e:
+        logger.error(f"Failed to compress XML files: {e}")
+
+
+def cleanup_databases(output_dir):
+    """
+    Remove database directories (reference_db and databases) to save space.
+    Keep only the final results and detailed analysis.
+    """
+    cleanup_dirs = ["reference_db", "databases"]
+    
+    for dir_name in cleanup_dirs:
+        dir_path = os.path.join(output_dir, dir_name)
+        if os.path.exists(dir_path):
+            try:
+                shutil.rmtree(dir_path)
+                logger.info(f"Cleaned up database directory: {dir_path}")
+            except Exception as e:
+                logger.warning(f"Failed to remove database directory {dir_path}: {e}")
+        else:
+            logger.debug(f"Database directory does not exist: {dir_path}")
+
+
+###############################################################################
+#                      STEP 1: Create Self-Databases                          #
+###############################################################################
 
 ###############################################################################
 #                      STEP 1: Create Self-Databases                          #
@@ -584,7 +645,7 @@ def write_sequences_to_file(seq_ids, seq_dict, out_fasta):
     except Exception as e:
         logger.error(f"Error writing {out_fasta}: {e}")
 
-def write_sequence_details(details, analysis_dir, base_fasta):
+def write_sequence_details(details, detailed_results_dir, base_fasta):
     """
     Append a CSV with classification details for each hit.
     """
@@ -593,7 +654,7 @@ def write_sequence_details(details, analysis_dir, base_fasta):
         return
 
     base_name = os.path.splitext(os.path.basename(base_fasta))[0]
-    csv_file = os.path.join(analysis_dir, f"{base_name}_sequence_details.csv")
+    csv_file = os.path.join(detailed_results_dir, f"{base_name}_sequence_details.csv")
     need_header = not os.path.isfile(csv_file)
 
     try:
@@ -618,12 +679,12 @@ def write_sequence_details(details, analysis_dir, base_fasta):
 def parse_blast_results(args):
     """
     Parse a single BLAST XML file, classify each sequence, and write 
-    categories to FASTA in temp or analysis directories.
+    categories to FASTA in temp or detailed_results directories.
     """
     (xml_path,
      input_chimeras_dir,
      temp_dir,
-     analysis_dir,
+     detailed_results_dir,
      high_identity_threshold,
      high_coverage_threshold,
      borderline_identity_threshold,
@@ -723,7 +784,7 @@ def parse_blast_results(args):
     trimmed_base_name = base_name.replace(".chimeras", "")  # So if base_name=ERR6454462.chimeras => ERR6454462
 
     if multiple:
-        ma_file = os.path.join(analysis_dir, f"{trimmed_base_name}_multiple_alignments.fasta")
+        ma_file = os.path.join(detailed_results_dir, f"{trimmed_base_name}_multiple_alignments.fasta")
         write_sequences_to_file(multiple, seqs, ma_file)
 
     if non_chimeric:
@@ -735,11 +796,11 @@ def parse_blast_results(args):
         write_sequences_to_file(borderline, seqs, bd_file)
 
     if chimeric:
-        ch_file = os.path.join(analysis_dir, f"{trimmed_base_name}_chimeric.fasta")
+        ch_file = os.path.join(detailed_results_dir, f"{trimmed_base_name}_chimeric.fasta")
         write_sequences_to_file(chimeric, seqs, ch_file)
 
     if details:
-        write_sequence_details(details, analysis_dir, fasta_path)
+        write_sequence_details(details, detailed_results_dir, fasta_path)
 
     logger.info(f"Completed processing for {xml_path}")
     return non_chimeric, chimeric, borderline, multiple
@@ -799,10 +860,10 @@ def process_blast_xml_results(
     logger.info("=== Step 4: Chimera Detection & Recovery ===")
 
     temp_dir = os.path.join(output_dir, "temp")
-    analysis_dir = os.path.join(output_dir, "analysis")
+    detailed_results_dir = os.path.join(output_dir, "detailed_results")
     xml_dir = os.path.join(output_dir, "xml")
 
-    for d in [temp_dir, analysis_dir]:
+    for d in [temp_dir, detailed_results_dir]:
         clean_directory(d)
 
     xml_files = [f for f in os.listdir(xml_dir) if f.endswith("_blast_results.xml")]
@@ -826,7 +887,7 @@ def process_blast_xml_results(
             xml_path,
             input_chimeras_dir,
             temp_dir,
-            analysis_dir,
+            detailed_results_dir,
             high_identity_threshold,
             high_coverage_threshold,
             borderline_identity_threshold,
@@ -852,13 +913,23 @@ def process_blast_xml_results(
         all_borderline.update(bd)
         all_multiple.update(ml)
 
-    # Copy rescued (non-chimeric + borderline) from temp -> output_dir
+    # Create organized output directories
+    non_chimeric_dir = os.path.join(output_dir, "non_chimeric")
+    borderline_dir = os.path.join(output_dir, "borderline")
+    os.makedirs(non_chimeric_dir, exist_ok=True)
+    os.makedirs(borderline_dir, exist_ok=True)
+
+    # Copy rescued sequences to organized folders
     for fname in os.listdir(temp_dir):
-        if fname.endswith("_non_chimeric.fasta") or fname.endswith("_borderline.fasta"):
-            src = os.path.join(temp_dir, fname)
-            dst = os.path.join(output_dir, fname)
+        src = os.path.join(temp_dir, fname)
+        if fname.endswith("_non_chimeric.fasta"):
+            dst = os.path.join(non_chimeric_dir, fname)
             shutil.copy(src, dst)
-            logger.info(f"Copied {fname} => {dst}")
+            logger.info(f"Copied non-chimeric file: {fname} => {dst}")
+        elif fname.endswith("_borderline.fasta"):
+            dst = os.path.join(borderline_dir, fname)
+            shutil.copy(src, dst)
+            logger.info(f"Copied borderline file: {fname} => {dst}")
 
     # Generate final report
     generate_report(
@@ -869,6 +940,12 @@ def process_blast_xml_results(
         file_results,
         output_dir
     )
+
+    # Compress XML files to save space
+    compress_xml_files(xml_dir)
+
+    # Clean up database directories
+    cleanup_databases(output_dir)
 
     log_system_usage()
 
