@@ -1,0 +1,2 @@
+forward_primer: "GCATCGATGAAGAACGCAGC" #ITS3
+reverse_primer: "TCCTCCGCTTATTGATATGC" #ITS4
