@@ -11,6 +11,7 @@ import csv
 import multiprocessing
 import psutil
 import zipfile
+import glob
 from Bio.Blast import NCBIXML
 from Bio import SeqIO
 from collections import defaultdict
@@ -313,9 +314,142 @@ def cleanup_databases(output_dir, databases_created=True):
             logger.debug(f"Database directory does not exist: {dir_path}")
 
 
-###############################################################################
-#                      STEP 1: Create Self-Databases                          #
-###############################################################################
+def generate_blasch_readme(
+    output_dir,
+    input_chimeras_dir,
+    self_fasta_dir,
+    reference_db,
+    threads,
+    high_identity_threshold,
+    high_coverage_threshold,
+    borderline_identity_threshold,
+    borderline_coverage_threshold,
+    start_time,
+    total_runtime,
+    databases_created
+):
+    """
+    Generate a comprehensive README.txt file for BlasCh output directory.
+    Similar to other PipeCraft modules, providing user-friendly documentation.
+    """
+    logger.info("Generating BlasCh README file...")
+    
+    readme_path = os.path.join(output_dir, "README.txt")
+    
+    # Count input files
+    fasta_extensions = [".fasta", ".fa", ".fas"]
+    chimeric_files = []
+    for ext in fasta_extensions:
+        chimeric_files.extend(glob.glob(os.path.join(input_chimeras_dir, f"*chimeras{ext}")))
+    
+    # Count output files
+    non_chimeric_dir = os.path.join(output_dir, "non_chimeric")
+    borderline_dir = os.path.join(output_dir, "borderline")
+    detailed_results_dir = os.path.join(output_dir, "detailed_results")
+    
+    non_chimeric_count = len([f for f in os.listdir(non_chimeric_dir) if f.endswith('.fasta')]) if os.path.exists(non_chimeric_dir) else 0
+    borderline_count = len([f for f in os.listdir(borderline_dir) if f.endswith('.fasta')]) if os.path.exists(borderline_dir) else 0
+    chimeric_count = len([f for f in os.listdir(detailed_results_dir) if f.endswith('_chimeric.fasta')]) if os.path.exists(detailed_results_dir) else 0
+    multiple_count = len([f for f in os.listdir(detailed_results_dir) if f.endswith('_multiple_alignments.fasta')]) if os.path.exists(detailed_results_dir) else 0
+    
+    try:
+        with open(readme_path, 'w') as f:
+            f.write("# False positive chimera detection and recovery was performed using BlasCh (see 'Core commands' below for the used settings).\n\n")
+            
+            f.write("BlasCh (BLAST-based Chimera detection) is a tool designed to identify and recover false positive chimeric sequences\n")
+            f.write("from metabarcoding and environmental DNA (eDNA) datasets. The tool uses BLAST alignment analysis to classify\n")
+            f.write("sequences into categories based on identity and coverage thresholds.\n\n")
+            
+            
+            f.write("### INPUT SUMMARY ###\n")
+            f.write(f"Input chimeras directory: {input_chimeras_dir}\n")
+            f.write(f"Self FASTA directory: {self_fasta_dir}\n")
+            if reference_db:
+                f.write(f"Reference database: {reference_db}\n")
+            else:
+                f.write("Reference database: None (using only self-databases)\n")
+            f.write(f"Number of chimeras files processed: {len(chimeric_files)}\n")
+            f.write(f"Threads used: {threads}\n\n")
+            
+            f.write("### CLASSIFICATION THRESHOLDS ###\n")
+            f.write(f"High identity threshold: {high_identity_threshold}%\n")
+            f.write(f"High coverage threshold: {high_coverage_threshold}%\n")
+            f.write(f"Borderline identity threshold: {borderline_identity_threshold}%\n")
+            f.write(f"Borderline coverage threshold: {borderline_coverage_threshold}%\n\n")
+            
+            f.write("### OUTPUT SUMMARY ###\n")
+            f.write(f"Non-chimeric sequences recovered: {non_chimeric_count} files\n")
+            f.write(f"Borderline sequences identified: {borderline_count} files\n")
+            f.write(f"Chimeric sequences confirmed: {chimeric_count} files\n")
+            f.write(f"Multiple alignment sequences: {multiple_count} files\n\n")
+            
+            f.write("Files in output directory:\n")
+            f.write("----------------------------------------\n")
+            f.write("# non_chimeric/               = Recovered non-chimeric sequences (high confidence)\n")
+            f.write("# borderline/                 = Borderline sequences (moderate confidence)\n")
+            f.write("# detailed_results/           = Detailed analysis results including:\n")
+            f.write("#   *_chimeric.fasta          = Confirmed chimeric sequences\n")
+            f.write("#   *_multiple_alignments.fasta = Sequences with multiple BLAST alignments\n")
+            f.write("#   *_sequence_details.csv    = Detailed classification information per sequence\n")
+            f.write("# chimera_recovery_report.txt = Summary statistics of the analysis\n")
+            f.write("# xml/blast_results.zip       = Compressed BLAST XML results (for reanalysis)\n")
+            f.write("# README.txt                  = This documentation file\n\n")
+            
+            f.write("### CLASSIFICATION LOGIC ###\n")
+            f.write("Sequences are classified based on BLAST alignment analysis:\n")
+            f.write("1. Sequences with multiple HSPs in first non-self alignment → Multiple alignments\n")
+            f.write("2. Sequences with only self-hits → Chimeric\n")
+            f.write("3. Sequences with high identity AND high coverage → Non-chimeric\n")
+            f.write("4. Sequences meeting borderline thresholds → Non-chimeric (rescued)\n")
+            f.write("5. All other sequences → Borderline or Chimeric\n\n")
+            
+            f.write("Core commands ->\n")
+            f.write("Database creation:\n")
+            if databases_created:
+                f.write("makeblastdb -in <input_fasta> -dbtype nucl -out <database_prefix>\n")
+            else:
+                f.write("Database creation skipped (using existing XML files)\n")
+            
+            f.write(f"\nBLAST analysis:\n")
+            if databases_created:
+                f.write(f"blastn -query <chimeras_file> -db <self_database> -out <output.xml> -outfmt 5 -num_threads {threads}\n")
+                if reference_db:
+                    f.write(f"blastn -query <chimeras_file> -db {reference_db} -out <output.xml> -outfmt 5 -num_threads {threads}\n")
+            else:
+                f.write("BLAST analysis skipped (using existing XML files)\n")
+            
+            f.write(f"\nClassification parameters:\n")
+            f.write(f"--high_identity_threshold {high_identity_threshold}\n")
+            f.write(f"--high_coverage_threshold {high_coverage_threshold}\n")
+            f.write(f"--borderline_identity_threshold {borderline_identity_threshold}\n")
+            f.write(f"--borderline_coverage_threshold {borderline_coverage_threshold}\n")
+            f.write(f"--threads {threads}\n\n")
+            
+            f.write("### NOTE ###\n")
+            f.write("Sequences classified as 'non-chimeric' or 'borderline' can be considered for inclusion\n")
+            f.write("in downstream analyses. The 'borderline' category represents sequences that may be\n")
+            f.write("true sequences but don't meet the strictest quality criteria.\n\n")
+            
+            f.write("If no outputs were generated, check:\n")
+            f.write("- Input chimeras files are present and properly formatted\n")
+            f.write("- BLAST databases were created successfully\n")
+            f.write("- Classification thresholds are appropriate for your data\n\n")
+            
+            f.write("##############################################\n")
+            f.write("### Third-party applications used for this process [PLEASE CITE]:\n")
+            f.write("#BLAST+ for sequence alignment\n")
+            f.write("    #citation: Camacho, C., Coulouris, G., Avagyan, V., Ma, N., Papadopoulos, J., Bealer, K., & Madden, T. L. (2009). BLAST+: architecture and applications. BMC bioinformatics, 10(1), 421.\n")
+            f.write("    #https://blast.ncbi.nlm.nih.gov/Blast.cgi\n")
+            f.write("#BioPython for sequence parsing\n")
+            f.write("    #citation: Cock, P. J., Antao, T., Chang, J. T., Chapman, B. A., Cox, C. J., Dalke, A., ... & de Hoon, M. J. (2009). Biopython: freely available Python tools for computational molecular biology and bioinformatics. Bioinformatics, 25(11), 1422-1423.\n")
+            f.write("    #https://biopython.org/\n")
+            f.write("##############################################\n")
+        
+        logger.info(f"README file generated: {readme_path}")
+        
+    except Exception as e:
+        logger.error(f"Failed to generate README file: {e}")
+
 
 ###############################################################################
 #                      STEP 1: Create Self-Databases                          #
@@ -1168,6 +1302,10 @@ def main():
 
     args = parser.parse_args()
 
+    # Record start time
+    start_time = time.strftime('%Y-%m-%d %H:%M:%S')
+    start_timestamp = time.time()
+
     logger.info("=== BlasCh: False Positive Chimera Detection & Recovery ===")
     
     # Pre-check: Do we need to run BLAST analysis?
@@ -1210,6 +1348,23 @@ def main():
         high_coverage_threshold=args.high_coverage_threshold,
         borderline_identity_threshold=args.borderline_identity_threshold,
         borderline_coverage_threshold=args.borderline_coverage_threshold,
+        databases_created=blast_needed
+    )
+
+    # 5. Generate README file
+    total_runtime = time.time() - start_timestamp
+    generate_blasch_readme(
+        output_dir=args.output_dir,
+        input_chimeras_dir=args.input_chimeras_dir,
+        self_fasta_dir=args.self_fasta_dir,
+        reference_db=args.reference_db,
+        threads=args.threads,
+        high_identity_threshold=args.high_identity_threshold,
+        high_coverage_threshold=args.high_coverage_threshold,
+        borderline_identity_threshold=args.borderline_identity_threshold,
+        borderline_coverage_threshold=args.borderline_coverage_threshold,
+        start_time=start_time,
+        total_runtime=total_runtime,
         databases_created=blast_needed
     )
 
