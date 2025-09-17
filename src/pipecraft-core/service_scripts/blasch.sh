@@ -1,7 +1,7 @@
 #!/bin/bash
 
 ##BlasCh for chimera detection and recovery
-##input: working directory with *.chimeras.fasta files and sample FASTA files
+##input: working directory with *.chimeras.fasta/.fa/.fas files and sample FASTA files
 ##output: rescued sequences and analysis reports
 
 #load variables
@@ -29,13 +29,16 @@ printf "Output directory: $blasch_output_dir\n"
 # Use working directory for input chimeras
 input_chimeras=$workingDir
 
-# Check if .chimeras.fasta files exist in working directory
-chimeras_count=$(find "$input_chimeras" -name "*.chimeras.fasta" -type f | wc -l)
+# Check if .chimeras files exist in working directory (with various extensions)
+chimeras_count=$(find "$input_chimeras" \( -name "*.chimeras.fasta" -o -name "*.chimeras.fa" -o -name "*.chimeras.fas" \) -type f | wc -l)
 if [[ $chimeras_count -eq 0 ]]; then
-    printf "\nERROR: No .chimeras.fasta files found in working directory: $input_chimeras\n"
+    printf "\nERROR: No .chimeras files found in working directory: $input_chimeras\n"
     printf "Please ensure that chimera detection has been run prior to BlasCh analysis.\n"
+    printf "Supported extensions: .chimeras.fasta, .chimeras.fa, .chimeras.fas\n"
     end_process
 fi
+
+printf "Found $chimeras_count .chimeras files for analysis\n"
 
 # Use working directory for self FASTA files (auto-create from .fasta files)
 self_fasta=$workingDir
@@ -97,6 +100,7 @@ printf "High coverage threshold: $coverage%%\n"
 printf "High identity threshold: $identity%%\n"
 printf "Borderline coverage threshold: $borderline_coverage%%\n"
 printf "Borderline identity threshold: $borderline_identity%%\n"
+printf "\nNote: If XML files from previous BLAST runs exist, they will be reused to save time.\n"
 
 # Run BlasCh
 printf "\nExecuting Python script: $BLASCH_SCRIPT\n"

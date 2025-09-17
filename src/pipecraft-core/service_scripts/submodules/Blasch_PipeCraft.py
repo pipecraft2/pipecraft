@@ -26,6 +26,13 @@ from collections import defaultdict
 #   absolute chimeras, and borderline sequences, based on identity and        #
 #   coverage thresholds.                                                      #
 #                                                                             #
+# Smart rerun capability:                                                     #
+#   - Identifies existing XML files from previous BLAST runs                  #
+#   - Automatically extracts XML from compressed archives when needed         #
+#   - Skips BLAST step if XML files already exist                              #
+#   - Allows testing different thresholds without re-running BLAST            #
+#   - Handles mixed scenarios (some XML files exist, some missing)            #
+#                                                                             #
 # Output organization:                                                        #
 #   - non_chimeric/: Non-chimeric sequences                                   #
 #   - borderline/: Borderline sequences                                       #
@@ -34,7 +41,7 @@ from collections import defaultdict
 #   - Automatic cleanup of database directories                               #
 #                                                                             #
 # Author:        ALI HAKIMZADEH                                               #
-# Version:       1.1                                                          #
+# Version:       1.4                                                          #
 # Date:          2025-04-01                                                   #
 ###############################################################################
 
@@ -157,18 +164,24 @@ def validate_fasta_with_biopython(fasta_path):
 def compress_xml_files(xml_dir):
     """
     Compress all XML files in xml_dir into a single zip archive to save space.
-    Delete original XML files after compression.
+    Delete original XML files after compression. If a zip already exists, overwrite it.
     """
     if not os.path.exists(xml_dir):
         logger.warning(f"XML directory does not exist: {xml_dir}")
         return
     
     xml_files = [f for f in os.listdir(xml_dir) if f.endswith('.xml')]
+    zip_path = os.path.join(xml_dir, "blast_results.zip")
+    
+    # Check if zip already exists from previous run
+    if os.path.exists(zip_path):
+        logger.info(f"Found existing ZIP archive: {zip_path}. Will overwrite with current XML files.")
+        os.remove(zip_path)
+    
     if not xml_files:
-        logger.warning(f"No XML files found in {xml_dir}")
+        logger.warning(f"No XML files found in {xml_dir} to compress")
         return
     
-    zip_path = os.path.join(xml_dir, "blast_results.zip")
     logger.info(f"Compressing {len(xml_files)} XML files into {zip_path}")
     
     try:
@@ -185,11 +198,107 @@ def compress_xml_files(xml_dir):
         logger.error(f"Failed to compress XML files: {e}")
 
 
-def cleanup_databases(output_dir):
+def extract_xml_if_needed(xml_dir):
+    """
+    Check if XML files exist. If not, but a blast_results.zip exists, extract it.
+    This handles cases where XML files were compressed in previous runs.
+    Returns True if XML files are available (either already present or successfully extracted).
+    """
+    xml_files = [f for f in os.listdir(xml_dir) if f.endswith('.xml')]
+    zip_path = os.path.join(xml_dir, "blast_results.zip")
+    
+    if xml_files:
+        logger.info(f"Found {len(xml_files)} XML files in {xml_dir}")
+        return True
+    
+    if os.path.exists(zip_path):
+        logger.info(f"No XML files found, but found compressed archive: {zip_path}")
+        logger.info("Extracting XML files from previous run...")
+        
+        try:
+            with zipfile.ZipFile(zip_path, 'r') as zipf:
+                xml_members = [m for m in zipf.namelist() if m.endswith('.xml')]
+                if xml_members:
+                    zipf.extractall(xml_dir, members=xml_members)
+                    logger.info(f"Extracted {len(xml_members)} XML files from archive")
+                    return True
+                else:
+                    logger.warning("No XML files found in the zip archive")
+                    return False
+        except Exception as e:
+            logger.error(f"Failed to extract XML files from {zip_path}: {e}")
+            return False
+    
+    logger.info("No XML files or compressed archive found - will need to run BLAST")
+    return False
+
+
+def check_blast_needed(input_chimeras_dir, output_dir):
+    """
+    Pre-check to determine if BLAST analysis is needed.
+    Returns True if BLAST needs to run, False if all XML files already exist.
+    This allows us to skip database creation entirely when not needed.
+    """
+    xml_dir = os.path.join(output_dir, "xml")
+    
+    if not os.path.exists(xml_dir):
+        logger.info("XML directory doesn't exist - BLAST analysis needed")
+        return True
+    
+    # Collect .chimeras files
+    fasta_extensions = [".fasta", ".fa", ".fas"]
+    chimeric_files = []
+    
+    for ext in fasta_extensions:
+        chimeric_files.extend([f for f in os.listdir(input_chimeras_dir) if f.endswith(f".chimeras{ext}")])
+    
+    if not chimeric_files:
+        logger.error(f"No .chimeras files found in {input_chimeras_dir}")
+        return True  # Let the main function handle the error
+    
+    # Check if XML files exist (either uncompressed or in ZIP)
+    xml_files_available = [f for f in os.listdir(xml_dir) if f.endswith('.xml')]
+    zip_path = os.path.join(xml_dir, "blast_results.zip")
+    
+    # If no XML files but zip exists, check what's in the zip
+    if not xml_files_available and os.path.exists(zip_path):
+        try:
+            with zipfile.ZipFile(zip_path, 'r') as zipf:
+                xml_files_available = [m for m in zipf.namelist() if m.endswith('.xml')]
+        except Exception as e:
+            logger.warning(f"Could not read ZIP file {zip_path}: {e}")
+            return True
+    
+    # Check if we have all required XML files
+    required_xml_files = set()
+    available_xml_files = set(xml_files_available)
+    
+    for chim_file in chimeric_files:
+        base_name = os.path.splitext(chim_file)[0]  # e.g., "ERR6454463.chimeras"
+        expected_xml = f"{base_name}_blast_results.xml"
+        required_xml_files.add(expected_xml)
+    
+    missing_xml_files = required_xml_files - available_xml_files
+    
+    if not missing_xml_files:
+        logger.info("All required XML files are available from previous runs")
+        logger.info("BLAST analysis will be skipped - no database creation needed")
+        return False
+    else:
+        logger.info(f"Missing {len(missing_xml_files)} XML files - BLAST analysis needed")
+        return True
+
+
+def cleanup_databases(output_dir, databases_created=True):
     """
     Remove database directories (reference_db and databases) to save space.
     Keep only the final results and detailed analysis.
+    Only clean up if databases were actually created in this run.
     """
+    if not databases_created:
+        logger.info("No databases were created in this run - skipping cleanup")
+        return
+        
     cleanup_dirs = ["reference_db", "databases"]
     
     for dir_name in cleanup_dirs:
@@ -339,7 +448,7 @@ def handle_reference_db(reference_db_arg, output_dir):
 
 
 ###############################################################################
-#                     STEP 3: Run BLAST on .chimeras.fasta                    #
+#                     STEP 3: Run BLAST on .chimeras files                     #
 ###############################################################################
 
 def run_blast_analysis(
@@ -350,24 +459,20 @@ def run_blast_analysis(
     threads
 ):
     """
-    For each .chimeras.fasta in input_chimeras_dir, run BLAST against:
+    For each .chimeras file in input_chimeras_dir, run BLAST against:
       - reference_db_prefix (if not empty)
-      - corresponding self-database
+      - corresponding self-database (if provided)
     Store XML in output_dir/xml/<base_name>_blast_results.xml
     Exit on first BLAST failure.
+    If self_db_dir is None, skip BLAST entirely (XML files already exist).
     """
     logger.info("=== Step 3: Running BLAST Analyses ===")
     
-    # Debug reference database information
-    if reference_db_prefix:
-        logger.info(f"Reference database will be used: {reference_db_prefix}")
-        # Check if reference database exists and is readable
-        if check_blast_db_exists(reference_db_prefix):
-            logger.info(f"Reference DB validation successful: Found BLAST database files for {reference_db_prefix}")
-        else:
-            logger.warning(f"Reference DB validation FAILED: No BLAST database files found at {reference_db_prefix}")
-    else:
-        logger.info("No reference database provided, will use only self-databases")
+    # If no self_db_dir provided, it means all XML files already exist
+    if self_db_dir is None:
+        logger.info("All XML files already available - skipping BLAST analysis entirely")
+        return
+    
     xml_dir = os.path.join(output_dir, "xml")
     os.makedirs(xml_dir, exist_ok=True)
 
@@ -384,6 +489,67 @@ def run_blast_analysis(
         sys.exit(1)
     
     logger.info(f"Found {len(chimeric_files)} chimeras files for BLAST analysis.")
+
+    # First, check if we have XML files from compressed archive
+    xml_files_available = [f for f in os.listdir(xml_dir) if f.endswith('.xml')]
+    zip_path = os.path.join(xml_dir, "blast_results.zip")
+    
+    # If no XML files but zip exists, extract it first
+    if not xml_files_available and os.path.exists(zip_path):
+        logger.info(f"No XML files found, but compressed archive exists: {zip_path}")
+        logger.info("Extracting XML files from previous run to check availability...")
+        
+        try:
+            with zipfile.ZipFile(zip_path, 'r') as zipf:
+                xml_members = [m for m in zipf.namelist() if m.endswith('.xml')]
+                if xml_members:
+                    zipf.extractall(xml_dir, members=xml_members)
+                    logger.info(f"Extracted {len(xml_members)} XML files from archive")
+                    xml_files_available = [f for f in os.listdir(xml_dir) if f.endswith('.xml')]
+                else:
+                    logger.warning("No XML files found in the zip archive")
+        except Exception as e:
+            logger.error(f"Failed to extract XML files from {zip_path}: {e}")
+
+    # Now check which XML files we have vs. need
+    existing_xml_files = set()
+    missing_xml_files = []
+    
+    for chim_file in chimeric_files:
+        base_name = os.path.splitext(chim_file)[0]  # e.g., "ERR6454463.chimeras"
+        expected_xml = f"{base_name}_blast_results.xml"
+        expected_xml_path = os.path.join(xml_dir, expected_xml)
+        
+        if expected_xml in xml_files_available and os.path.exists(expected_xml_path):
+            existing_xml_files.add(expected_xml)
+            logger.info(f"Found existing XML file: {expected_xml}")
+        else:
+            missing_xml_files.append(chim_file)
+    
+    # Report what we found
+    if existing_xml_files:
+        logger.info(f"Found {len(existing_xml_files)} existing XML files from previous BLAST runs.")
+        logger.info("These will be reused to save time. Only missing XML files will be generated.")
+        
+        if not missing_xml_files:
+            logger.info("All required XML files already exist. Skipping BLAST step entirely.")
+            logger.info("Proceeding directly to chimera detection and recovery.")
+            return
+    
+    if missing_xml_files:
+        logger.info(f"Need to generate {len(missing_xml_files)} XML files via BLAST.")
+        chimeric_files = missing_xml_files  # Only process files that don't have XML yet
+    
+    # Debug reference database information
+    if reference_db_prefix:
+        logger.info(f"Reference database will be used: {reference_db_prefix}")
+        # Check if reference database exists and is readable
+        if check_blast_db_exists(reference_db_prefix):
+            logger.info(f"Reference DB validation successful: Found BLAST database files for {reference_db_prefix}")
+        else:
+            logger.warning(f"Reference DB validation FAILED: No BLAST database files found at {reference_db_prefix}")
+    else:
+        logger.info("No reference database provided, will use only self-databases")
 
     for chim_file in chimeric_files:
         chimera_file = os.path.join(input_chimeras_dir, chim_file)
@@ -851,11 +1017,13 @@ def process_blast_xml_results(
     high_identity_threshold,
     high_coverage_threshold,
     borderline_identity_threshold,
-    borderline_coverage_threshold
+    borderline_coverage_threshold,
+    databases_created=True
 ):
     """
     Collect all _blast_results.xml in output_dir/xml, parse them,
     and produce final FASTA + text summary.
+    databases_created: Whether databases were created in this run (affects cleanup).
     """
     logger.info("=== Step 4: Chimera Detection & Recovery ===")
 
@@ -866,10 +1034,18 @@ def process_blast_xml_results(
     for d in [temp_dir, detailed_results_dir]:
         clean_directory(d)
 
+    # Ensure XML files are available (extract from zip if needed)
+    if not extract_xml_if_needed(xml_dir):
+        logger.error("No XML files available for processing.")
+        logger.error("Make sure BLAST analysis has been completed first.")
+        sys.exit(1)
+
     xml_files = [f for f in os.listdir(xml_dir) if f.endswith("_blast_results.xml")]
     if not xml_files:
         logger.error(f"No *_blast_results.xml files in {xml_dir}. Nothing to parse.")
         sys.exit(1)
+    
+    logger.info(f"Processing {len(xml_files)} XML files for chimera classification.")
 
     file_results = defaultdict(lambda: defaultdict(int))
     all_non_chimeric = set()
@@ -944,8 +1120,8 @@ def process_blast_xml_results(
     # Compress XML files to save space
     compress_xml_files(xml_dir)
 
-    # Clean up database directories
-    cleanup_databases(output_dir)
+    # Clean up database directories (only if they were created)
+    cleanup_databases(output_dir, databases_created)
 
     log_system_usage()
 
@@ -972,7 +1148,7 @@ def main():
     )
 
     parser.add_argument("--input_chimeras_dir", default="./",
-                        help="Directory containing .chimeras.fasta files.")
+                        help="Directory containing .chimeras files (supports .fasta/.fa/.fas extensions).")
     parser.add_argument("--self_fasta_dir", default="./",
                         help="Directory with FASTA files for building self-databases.")
     parser.add_argument("--reference_db",
@@ -992,18 +1168,32 @@ def main():
 
     args = parser.parse_args()
 
-    # 1. Create Self-Databases
-    db_path = os.path.join(args.output_dir, "databases")
-    create_self_databases(args.self_fasta_dir, db_path)
+    logger.info("=== BlasCh: False Positive Chimera Detection & Recovery ===")
+    
+    # Pre-check: Do we need to run BLAST analysis?
+    blast_needed = check_blast_needed(args.input_chimeras_dir, args.output_dir)
+    
+    db_path = None
+    ref_db_prefix = ""
+    
+    if blast_needed:
+        logger.info("=== Database Setup Required ===")
+        
+        # 1. Create Self-Databases
+        db_path = os.path.join(args.output_dir, "databases")
+        create_self_databases(args.self_fasta_dir, db_path)
 
-    # 2. Reference DB setup
-    ref_db_prefix = handle_reference_db(args.reference_db, args.output_dir)
-    if ref_db_prefix:
-        logger.info(f"Reference database ready at: {ref_db_prefix}")
+        # 2. Reference DB setup
+        ref_db_prefix = handle_reference_db(args.reference_db, args.output_dir)
+        if ref_db_prefix:
+            logger.info(f"Reference database ready at: {ref_db_prefix}")
+        else:
+            logger.info("No reference database will be used.")
     else:
-        logger.info("No reference database will be used.")
+        logger.info("=== Using Existing XML Files ===")
+        logger.info("Skipping database creation - will use previous BLAST results")
 
-    # 3. Run BLAST
+    # 3. Run BLAST (will be skipped if not needed)
     run_blast_analysis(
         input_chimeras_dir=args.input_chimeras_dir,
         self_db_dir=db_path,
@@ -1019,7 +1209,8 @@ def main():
         high_identity_threshold=args.high_identity_threshold,
         high_coverage_threshold=args.high_coverage_threshold,
         borderline_identity_threshold=args.borderline_identity_threshold,
-        borderline_coverage_threshold=args.borderline_coverage_threshold
+        borderline_coverage_threshold=args.borderline_coverage_threshold,
+        databases_created=blast_needed
     )
 
     logger.info("Pipeline complete. Check your --output_dir for results.\n")
