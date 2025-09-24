@@ -666,7 +666,7 @@ export default {
         // Mount runsDir as sequences root (outputs will be written here)
         `${runsDir}:/optimotu_targets/sequences`,
         // Mount runsDir again as 01_raw (read-only view for inputs)
-        `${runsDir}:/optimotu_targets/sequences/01_raw:ro`,
+        //`${runsDir}:/optimotu_targets/sequences/01_raw:ro`,
       ];
 
       // Process all inputs from OptimOTU workflow
@@ -796,7 +796,7 @@ export default {
       };
       return dockerProps;
     },
-    async runOptimOTU() {
+    async runOptimOTU_dev() {
       let container = null;
       let log = null;
       let startTime = null;
@@ -804,7 +804,6 @@ export default {
       try {
         const result = await this.confirmRun('OptimOTU');
         if (!result.isConfirmed) return;
-      
         const setup = await this.setupWorkflow('OptimOTU');
         startTime = setup.startTime;
         log = setup.log;
@@ -894,6 +893,93 @@ export default {
       } catch (error) {
         await this.handleDockerError(error, log, container, startTime);
       }
+    },
+
+    async runOptimOTU() {
+      this.confirmRun('OptimOTU').then(async (result) => {
+        if (result.isConfirmed) {
+          console.log(this.$route.params.workflowName);
+          this.autoSaveConfig();
+          this.$store.state.runInfo.active = true;
+          this.$store.state.runInfo.containerID = 'optimotu';
+          await this.$store.dispatch('generateOptimOTUYamlConfig');
+          await this.$store.dispatch('imageCheck', 'pipecraft/optimotu:5');
+          await this.$store.dispatch('clearContainerConflicts', 'optimotu');
+          try {            
+            const container = await this.$docker.createContainer({
+              Image: 'pipecraft/optimotu:5',
+              name: 'optimotu',
+              Cmd: ['/scripts/run_optimotu.sh'],
+              Tty: false,
+              AttachStdout: true,
+              AttachStderr: true,
+              Platform: "linux/amd64",
+              Env: [
+                `HOST_UID=${this.userId}`,
+                `HOST_GID=${this.groupId}`,
+                `HOST_OS=${this.$store.state.systemSpecs.os}`,
+                `HOST_ARCH=${this.$store.state.systemSpecs.architecture}`,
+                `fileFormat=${this.$store.state.data.fileFormat}`,
+                `readType=${this.$store.state.data.readType}`,
+                `readType=${this.$store.state.data.readType}`,
+                'R_ENABLE_JIT=0',                    // Disable JIT compilation
+                'R_COMPILE_PKGS=0',                  // Disable package compilation
+                'R_DISABLE_BYTECODE=1',              // Disable bytecode compilation
+                'R_KEEP_PKG_SOURCE=yes'              // Keep package sources
+              ],
+              HostConfig: {
+                Binds: this.getOptimOTUBinds(),
+                Memory: this.$store.state.dockerInfo.MemTotal,
+                NanoCpus: this.$store.state.dockerInfo.NCPU * 1e9,
+              }
+            });
+    
+            const stream = await container.attach({
+              stream: true,
+              stdout: true,
+              stderr: true,
+            });
+    
+            stream.on('data', (data) => {
+              console.log(data.toString());
+            });
+            
+            await container.start();
+    
+            const data = await container.wait();
+            console.log('Container exited with status code:', data.StatusCode);
+            this.$store.commit("resetRunInfo");
+
+            if (data.StatusCode == 0) {
+              Swal.fire("Workflow finished");
+            } else {
+              Swal.fire({
+                title: "An error has occured while processing your data",
+                text: "Check the log file for more information",
+                confirmButtonText: "Quit",
+              });
+            }
+            await container.remove({ v: true, force: true });
+          } catch (err) {
+            console.error('Error running container:', err);
+            this.$store.commit("resetRunInfo");
+            
+            // Check if the error is due to the user stopping the container
+            if (err.message && err.message.includes('HTTP code 404')) {
+              Swal.fire({
+                title: "Workflow stopped",
+                confirmButtonText: "Quit",
+              });
+            } else {
+              Swal.fire({
+                title: "An error has occurred while processing your data",
+                text: err.toString(),
+                confirmButtonText: "Quit",
+              });
+            }
+          } 
+        }
+      });
     },
     async generateAndSaveYaml() {
       try {

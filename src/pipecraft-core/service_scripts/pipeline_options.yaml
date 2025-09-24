@@ -35,7 +35,7 @@ orient: fwd
 control:
   spike:
   positive:
-forward_primer: "GCATCGATGAAGAACGCAGC"
+forward_primer: "GTGARTCATCGAATCTTTG"
 reverse_primer: "TCCTCCGCTTATTGATATGC"
 custom_sample_table: FALSE
 filtering:
