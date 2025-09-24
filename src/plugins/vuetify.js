@@ -6,6 +6,7 @@ Vue.use(Vuetify);
 export default new Vuetify({
   theme: {
     dark: true,
+    icons: { iconfont: 'mdi' },
     themes: {
       dark: {
         primary: '#1DE9B6', // Your desired primary color

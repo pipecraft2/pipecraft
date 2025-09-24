@@ -6,6 +6,7 @@ import './assets/swal.scss';
 import vuetify from "./plugins/vuetify";
 import { sync } from "vuex-router-sync";
 import os from 'os'
+import '@mdi/font/css/materialdesignicons.css';
 const Docker = require('dockerode');
 
 Object.defineProperty(Vue.prototype, '$docker', {
