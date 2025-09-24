@@ -22,32 +22,21 @@
             v-model="input.active"
           >
             <template v-slot:label>
-              <div style="color: black">
+              
+            </template></v-checkbox
+          >
+          <div style="color: black">
                 <a
                   :href="$store.getters.linkify(input.tooltip)"
                   target="_blank"
                   >{{ input.name.replace(/_/g, " ") }}</a
                 >
               </div>
-            </template></v-checkbox
-          >
         </v-card-title>
         <v-card-title
           v-else
           v-on="on"
           style="justify-content: center; padding: 10px 0px"
-          ><v-checkbox
-            @change="toggleActive(input.active)"
-            hide-details
-            class="ma-0 pa-0"
-            style="padding: 0"
-            v-model="input.active"
-          >
-            <template v-slot:label>
-              <div style="color: black">
-                {{ input.name.replace(/_/g, " ") }}
-              </div>
-            </template></v-checkbox
           >
         </v-card-title>
       </template>
