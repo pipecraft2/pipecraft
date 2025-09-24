@@ -913,7 +913,6 @@ export default {
               Tty: false,
               AttachStdout: true,
               AttachStderr: true,
-              Platform: "linux/amd64",
               Env: [
                 `HOST_UID=${this.userId}`,
                 `HOST_GID=${this.groupId}`,
@@ -922,10 +921,6 @@ export default {
                 `fileFormat=${this.$store.state.data.fileFormat}`,
                 `readType=${this.$store.state.data.readType}`,
                 `readType=${this.$store.state.data.readType}`,
-                'R_ENABLE_JIT=0',                    // Disable JIT compilation
-                'R_COMPILE_PKGS=0',                  // Disable package compilation
-                'R_DISABLE_BYTECODE=1',              // Disable bytecode compilation
-                'R_KEEP_PKG_SOURCE=yes'              // Keep package sources
               ],
               HostConfig: {
                 Binds: this.getOptimOTUBinds(),

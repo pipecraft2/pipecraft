@@ -14,8 +14,8 @@ trimming:
   min_overlap: 10
   max_n: 0
   max_err: 1
-  truncQ_R1: 3
-  truncQ_R2: 3
+  truncQ_R1: 2
+  truncQ_R2: 2
   min_length: 100
   cut_R1: 0
   cut_R2: 0
@@ -35,7 +35,7 @@ orient: fwd
 control:
   spike:
   positive:
-forward_primer: "GCATCGATGAAGAACGCAGC"
+forward_primer: "GTGARTCATCGAATCTTTG"
 reverse_primer: "TCCTCCGCTTATTGATATGC"
 custom_sample_table: FALSE
 filtering:
@@ -48,7 +48,6 @@ amplicon_model:
   model_type: CM
   model_file: /optimotu_targets/data/ITS3_ITS4.cm
   model_align: no
-  numt_filter: no
   model_filter:
     max_model_start: 5
     min_model_end: 140
