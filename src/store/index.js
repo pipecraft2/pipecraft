@@ -2921,7 +2921,7 @@ export default new Vuex.Store({
             value: "ITS2",
             disabled: "never",
             tooltip:
-              "specify region for clustering (because multiple output folders are generated during this process)",
+              "specify region for clustering at NEXT STEP (because multiple output folders are generated during this process)",
             type: "select",
           },
           {
@@ -2929,7 +2929,8 @@ export default new Vuex.Store({
             value: true,
             disabled: "never",
             tooltip:
-              "if setting 'partial' is not 0, then at the NEXT STEP cluster 'full and partial' (e.g.) ITS2 reads (dir /ITS2/full_and_partial). If OFF, then cluster only full ITS2 reads",
+              `if setting 'partial' is not 0, then at the NEXT STEP cluster 'full and partial' 
+              (e.g.) ITS2 reads (dir /ITS2/full_and_partial). If OFF, then cluster only full ITS2 reads`,
             type: "bool",
           },
         ],
@@ -4200,7 +4201,7 @@ export default new Vuex.Store({
         Inputs: [
           {
             name: "maxEE_R1",
-            value: 1,
+            value: 2,
             disabled: "never",
             tooltip:
               "discard sequences with more than the specified number of expected errors in R1 reads",
@@ -4209,7 +4210,7 @@ export default new Vuex.Store({
           },
           {
             name: "maxEE_R2",
-            value: 1,
+            value: 2,
             disabled: "never",
             tooltip:
               "discard sequences with more than the specified number of expected errors in R2 reads",
