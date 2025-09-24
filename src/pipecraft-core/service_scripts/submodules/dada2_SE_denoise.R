@@ -25,9 +25,14 @@ omegac= as.numeric(Sys.getenv('OMEGA_C'))
 detect_singletons = Sys.getenv('DETECT_SINGLETONS')
 band_size = as.numeric(Sys.getenv('BAND_SIZE'))
 
-
+cat(";; Settings:\n")
 cat(";; errorEstimationFunction = ", errorEstFun, "\n")
 cat(";; BAND_SIZE = ", band_size, "\n")
+cat(";; OMEGA_A = ", omegaa, "\n")
+cat(";; OMEGA_P = ", omegap, "\n")
+cat(";; OMEGA_C = ", omegac, "\n")
+cat(";; DETECT_SINGLETONS = ", detect_singletons, "\n")
+cat(";; \n")
 
 #"FALSE" or "TRUE" to FALSE or TRUE for dada2
 if (pool == "false" || pool == "FALSE"){

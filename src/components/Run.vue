@@ -480,14 +480,32 @@ export default {
       this.selectedSteps[stepIndex].services[serviceIndex].Inputs.forEach(
         (input) => {
           let varObj = {};
-          varObj[input.name] = input.value;
+          // For boolfile inputs, only include if they are active
+          if (input.type === "boolfile") {
+            if (input.active === true) {
+              varObj[input.name] = input.value;
+            } else {
+              varObj[input.name] = "undefined";
+            }
+          } else {
+            varObj[input.name] = input.value;
+          }
           envVariables.push(stringify(varObj).replace(/(\r\n|\n|\r)/gm, ""));
         }
       );
       this.selectedSteps[stepIndex].services[serviceIndex].extraInputs.forEach(
         (input) => {
           let varObj = {};
-          varObj[input.name] = input.value;
+          // For boolfile inputs, only include if they are active
+          if (input.type === "boolfile") {
+            if (input.active === true) {
+              varObj[input.name] = input.value;
+            } else {
+              varObj[input.name] = "undefined";
+            }
+          } else {
+            varObj[input.name] = input.value;
+          }
           envVariables.push(stringify(varObj).replace(/(\r\n|\n|\r)/gm, ""));
         }
       );
@@ -513,18 +531,38 @@ export default {
       let inputs = element.Inputs.concat(element.extraInputs);
       inputs.forEach((input) => {
         let varObj = {};
-        if (input.value != "undefined" && input.value != "") {
-          if (Array.isArray(input.value)) {
-            nextFlowParams[input.name] = input.value.join();
-          } else if (input.name == "ITSx_evalue") {
-            nextFlowParams[input.name] = parseFloat(input.value);
-          } else if (input.name == "chimera_db") {
-            nextFlowParams[input.name] = `/extraFiles15/${path.basename(input.value)}`;
+        // For boolfile inputs, only include if they are active
+        if (input.type === "boolfile") {
+          if (input.active === true && input.value != "undefined" && input.value != "") {
+            if (Array.isArray(input.value)) {
+              nextFlowParams[input.name] = input.value.join();
+            } else if (input.name == "ITSx_evalue") {
+              nextFlowParams[input.name] = parseFloat(input.value);
+            } else if (input.name == "chimera_db") {
+              nextFlowParams[input.name] = `/extraFiles15/${path.basename(input.value)}`;
+            } else {
+              nextFlowParams[input.name] = input.value;
+            }
+            varObj[input.name] = input.value;
           } else {
-            nextFlowParams[input.name] = input.value;
+            // For inactive boolfile inputs, set to "undefined"
+            varObj[input.name] = "undefined";
           }
+        } else {
+          // For non-boolfile inputs, process normally
+          if (input.value != "undefined" && input.value != "") {
+            if (Array.isArray(input.value)) {
+              nextFlowParams[input.name] = input.value.join();
+            } else if (input.name == "ITSx_evalue") {
+              nextFlowParams[input.name] = parseFloat(input.value);
+            } else if (input.name == "chimera_db") {
+              nextFlowParams[input.name] = `/extraFiles15/${path.basename(input.value)}`;
+            } else {
+              nextFlowParams[input.name] = input.value;
+            }
+          }
+          varObj[input.name] = input.value;
         }
-        varObj[input.name] = input.value;
         envVariables.push(stringify(varObj).replace(/(\r\n|\n|\r)/gm, ""));
       });
       let dataInfo = {

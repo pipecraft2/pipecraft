@@ -1992,6 +1992,73 @@ export default new Vuex.Store({
               },
             ],
           },
+          {
+            tooltip:
+              "BlasCh: False positive chimera detection and recovery. This tool automatically detects .chimeras.fasta files and sample FASTA files in the selected working directory, creates self-databases, and performs chimera analysis.",
+            scriptName: "blasch.sh",
+            imageName: "pipecraft/blast:2.16",
+            serviceName: "BlasCh",
+            selected: false,
+            showExtra: false,
+            extraInputs: [
+              {
+                name: "borderline_coverage",
+                value: 89.0,
+                disabled: "never", 
+                tooltip:
+                  "sequences with coverage % above this threshold but below 'coverage' threshold can be rescued but classified as 'borderline'.",
+                type: "numeric",
+                rules: [(v) => v >= 50 && v <= 100 || "ERROR: specify values between 50-100"],
+              },
+              {
+                name: "borderline_identity",
+                value: 80.0,
+                disabled: "never",
+                tooltip:
+                  "sequences with identity % above this threshold but below identity threshold can be rescued but classified as 'borderline'.",
+                type: "numeric", 
+                rules: [(v) => v >= 50 && v <= 100 || "ERROR: specify values between 50-100"],
+              },
+            ],
+            Inputs: [
+              {
+                name: "reference_db",
+                value: "undefined",
+                btnName: "select file",
+                disabled: "never",
+                tooltip:
+                  "reference database for BLAST (FASTA or BLAST format). Sequences (putative chimeras) in the WORKDIR will be blasted against this database.",
+                type: "file",
+              },
+              {
+                name: "coverage",
+                value: 95.0,
+                disabled: "never",
+                tooltip:
+                  "sequence coverage threshold for classifying query sequence as non-chimeric. Sequences with coverage % above this threshold (and high identity) are classified as non-chimeric.",
+                type: "numeric",
+                rules: [(v) => v >= 50 && v <= 100 || "ERROR: specify values between 50-100"],
+              },
+              {
+                name: "identity", 
+                value: 95.0,
+                disabled: "never",
+                tooltip:
+                  "sequence identity threshold for classifying query sequence as non-chimeric. Sequences with blast identity % above this threshold (and high coverage) are classified as non-chimeric.",
+                type: "numeric",
+                rules: [(v) => v >= 50 && v <= 100 || "ERROR: specify values between 50-100"],
+              },
+              {
+                name: "threads",
+                value: 8,
+                disabled: "never",
+                tooltip:
+                  "Number of CPU threads to use for BLAST analysis",
+                type: "numeric",
+                rules: [(v) => v >= 1 && v <= 64 || "ERROR: specify values between 1-64"],
+              },
+            ],
+          },
         ],
       },
       {
@@ -5089,7 +5156,40 @@ export default new Vuex.Store({
         disabled: "never",
         selected: "always",
         showExtra: false,
-        extraInputs: [],
+        extraInputs: [
+          {
+            name: "allowOneOff",
+            value: false,
+            disabled: "never",
+            tooltip:
+              "Default is FALSE. If FALSE, sequences will be identified as a chimera if it is one mismatch or indel away from an exact chimera",
+            type: "bool",
+          },
+          {
+            name: "minOneOffParentDistance",
+            value: 4,
+            max: 40,
+            min: 0,
+            step: 1,
+            disabled: "never",
+            tooltip:
+              "Default is 4. Only sequences with at least this many mismatches to seq are considered as possible 'parents' when flagging one-off chimeras. This is disabled when identifying exact chimeras",
+            type: "slide",
+            rules: [],
+          },
+          {
+            name: "maxShift",
+            value: 16,
+            max: 50,
+            min: 0,
+            step: 1,
+            disabled: "never",
+            tooltip:
+              "Default is 16. Maximum shift allowed when aligning sequences to potential 'parents'",
+            type: "slide",
+            rules: [],
+          },
+        ],
         Inputs: [
           {
             name: "method",
@@ -5100,6 +5200,7 @@ export default new Vuex.Store({
               "'consensus' - the samples are independently checked for chimeras, and a consensus decision on each sequence variant is made. If 'pooled', the samples are all pooled together for chimera identification. If 'per-sample', the samples are independently checked for chimeras",
             type: "select",
           },
+
         ],
       },
       {

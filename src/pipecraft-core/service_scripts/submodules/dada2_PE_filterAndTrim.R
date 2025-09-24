@@ -23,6 +23,14 @@ minLen = as.numeric(Sys.getenv('minLen'))
 maxLen = as.numeric(Sys.getenv('maxLen'))
 minQ = as.numeric(Sys.getenv('minQ'))
 
+cat(";; Settings:\n")
+cat(";; maxEE = ", maxEE, "\n")
+cat(";; maxN = ", maxN, "\n")
+cat(";; truncQ = ", truncQ, "\n")
+cat(";; truncLen_R1 = ", truncLen_R1, "\n")
+cat(";; truncLen_R2 = ", truncLen_R2, "\n")
+cat(";; minLen = ", minLen, ";;\n")
+
 #check if gz files are provided; if yes then produce also gz compressed files.
 is_gz = strsplit(fileFormat, split="\\.")[[1]][-1]
 if (identical(is_gz, character(0)) != "TRUE") {
@@ -53,18 +61,45 @@ names(filtRs) = sample_names
 
 #quality filter
 cat(";; Quality filtering with filterAndTrim function")
-qfilt = filterAndTrim(fnFs, filtFs, fnRs, filtRs, 
-                    maxN = maxN, 
-                    maxEE = c(maxEE, maxEE), 
-                    truncQ = truncQ,  
-                    truncLen = c(truncLen_R1, truncLen_R2),
-                    maxLen = maxLen, 
-                    minLen = minLen, 
-                    minQ = minQ, 
-                    rm.phix = TRUE, 
-                    matchIDs = FALSE,
-                    compress = compress, 
-                    multithread = TRUE)
+# Set memory management options
+options(mc.cores = 1)  # Force single-threaded to avoid memory issues
+gc()  # Garbage collection before processing
+
+# Process in batches to avoid memory issues
+batch_size <- 10  # Process 10 samples at a time
+total_samples <- length(fnFs)
+all_results <- list()
+
+for (i in seq(1, total_samples, by = batch_size)) {
+    end_idx <- min(i + batch_size - 1, total_samples)
+    batch_indices <- i:end_idx
+    
+    cat(";; Processing batch", ceiling(i/batch_size), "of", ceiling(total_samples/batch_size), 
+        "(samples", i, "to", end_idx, ")\n")
+    
+    # Process current batch
+    batch_result <- filterAndTrim(fnFs[batch_indices], filtFs[batch_indices], 
+                                 fnRs[batch_indices], filtRs[batch_indices], 
+                                maxN = maxN, 
+                                maxEE = c(maxEE, maxEE), 
+                                truncQ = truncQ,  
+                                truncLen = c(truncLen_R1, truncLen_R2),
+                                maxLen = maxLen, 
+                                minLen = minLen, 
+                                minQ = minQ, 
+                                rm.phix = TRUE, 
+                                matchIDs = FALSE,
+                                compress = compress, 
+                                multithread = FALSE)
+    
+    all_results[[length(all_results) + 1]] <- batch_result
+    
+    # Clean up memory after each batch
+    gc()
+}
+
+# Combine all batch results
+qfilt <- do.call(rbind, all_results)
 saveRDS(qfilt, file.path(path_results, "quality_filtered.rds"))
 
 #seq count summary
