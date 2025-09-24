@@ -124,6 +124,7 @@ async function createWindow() {
     width: 1200,
     height: 700,
     minWidth: 1200,
+    minHeight: 700,
     icon: `${process.resourcesPath}/src/pipecraft-core/icon32x32.png`,
     webPreferences: {
       // Use pluginOptions.nodeIntegration, leave this alone

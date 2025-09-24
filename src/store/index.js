@@ -3986,7 +3986,7 @@ export default new Vuex.Store({
     // # OptimOTU
     OptimOTU: [
       {
-        tooltip: "Specify target taxa (Fungi or Metazoa) and sequence orientation",
+        tooltip: "Specify target taxa and sequence orientation",
         scriptName:"xxx.sh",
         imageName: "pipecraft/optimotu:5",
         serviceName: "target taxa and sequence orientation",
@@ -4323,7 +4323,7 @@ export default new Vuex.Store({
         Inputs: [
           {
             name: "model_type",
-            items: ["CM", "HMM", "none"],
+            items: ["CM", "none"],
             value: "CM",
             disabled: "never",  
             tooltip: `CM = Codon model for Fungi; 
@@ -4335,7 +4335,7 @@ export default new Vuex.Store({
           },
           {
             name: "model_file",
-            items: ["ITS3_ITS4.cm", "f/gITS7_ITS4.cm", "COI.hmm", "custom"],
+            items: ["ITS3_ITS4.cm", "f/gITS7_ITS4.cm", "custom"],
             value: "ITS3_ITS4.cm",
             disabled: "never",  
             tooltip: `included models: ITS3_ITS4.cm = model for ITS2 amplicons with ITS3 and ITS4 primers.
@@ -4384,14 +4384,14 @@ export default new Vuex.Store({
               },
             ],
           },
-          {
+        /*   {
             name: "numt_filter",
             value: false,
             disabled: "never",
             tooltip:
               "Only for Metazoa: filter NUMTs; requires model_type == HMM and model_align == TRUE",
             type: "bool",
-          },
+          }, */
         ],
       },
       {
@@ -4417,7 +4417,7 @@ export default new Vuex.Store({
         Inputs: [
           {
             name: "location",
-            items: ["protaxFungi", "protaxAnimal", "custom"],
+            items: ["protaxFungi", "custom"],
             value: "protaxFungi",
             disabled: "never",
             tooltip:
@@ -4454,7 +4454,7 @@ export default new Vuex.Store({
         Inputs: [
           {
             name: "cluster_thresholds",
-            items: ["Fungi_GSSP", "Metazoa_MBRAVE", "custom"],
+            items: ["Fungi_GSSP", "custom"],
             value: "Fungi_GSSP",
             disabled: "never",
             tooltip:"select file with clustering thresholds. Default is pre-calculated thresholds for Fungi (included in the PipeCraft2 container)",
@@ -5378,7 +5378,7 @@ export default new Vuex.Store({
         title: "NextITS",
       },
       OptimOTU: {
-        info: `OptimOTU pipeline for demultiplexed paired-end Illumina ITS amplicons for Fungi, and COI for Metazoa (Arthropods)`,
+        info: `OptimOTU pipeline for demultiplexed paired-end Illumina ITS amplicons for Fungi`,
         link: "https://github.com/brendanf/optimotu.pipeline",
         title: "OptimOTU",
       },
