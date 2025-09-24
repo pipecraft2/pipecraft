@@ -17,15 +17,25 @@ export fileFormat
 echo "specified fileFormat: $fileFormat"
 echo "specified rawFilesDir: $rawFilesDir"
 
-mv /optimotu_targets/sequences/$rawFilesDir /optimotu_targets/sequences/01_raw
-ls
+# Verify 01_raw exists (from bind). Do not create or modify it here.
+RAW_BASE="/optimotu_targets/sequences"
+LINK_DIR="${RAW_BASE}/01_raw"
+
+if [ ! -d "${LINK_DIR}" ]; then
+  echo "[ERROR]: Required directory not found: ${LINK_DIR}. Ensure the selected runs directory is bind-mounted to /optimotu_targets/sequences/01_raw" >&2
+  echo "[ERROR]: Missing required directory: ${LINK_DIR}" > "${RAW_BASE}/optimotu_targets.log"
+  exit 1
+fi
+
+ls -la "${RAW_BASE}"
 # # check files in 01_raw and subdirectories
 # # Find all subdirectories in 01_raw
  while IFS= read -r subdir; do
      echo "Checking files in $subdir..."
     
      # Count files with the specified extension in the subdirectory
-     file_count=$(find "$subdir" -maxdepth 1 -type f -name "*.${fileFormat}" | wc -l)
+     # Follow symlinks when counting
+     file_count=$(find -L "$subdir" -maxdepth 1 -type f -name "*.${fileFormat}" | wc -l)
     
      if [ "$file_count" -eq 0 ]; then
          printf "[ERROR]: No %s files found in %s\n" "${fileFormat}" "${subdir}" >&2
@@ -34,7 +44,7 @@ ls
      else
          echo "Found $file_count .${fileFormat} files in $subdir"
      fi
- done < <(find /optimotu_targets/sequences/01_raw -mindepth 1 -maxdepth 1 -type d)
+done < <(find -L /optimotu_targets/sequences/01_raw -mindepth 1 -maxdepth 1 -type d ! -name 01_raw)
 
 echo "All directories contain valid .${fileFormat} files. Proceeding with pipeline."
 
@@ -162,5 +172,3 @@ if [ ! -z "$HOST_UID" ] && [ ! -z "$HOST_GID" ]; then
   echo "Setting ownership of /optimotu_targets to $HOST_UID:$HOST_GID"
   chown -R $HOST_UID:$HOST_GID /optimotu_targets/sequences
 fi
-
-mv /optimotu_targets/sequences/01_raw /optimotu_targets/sequences/$rawFilesDir 

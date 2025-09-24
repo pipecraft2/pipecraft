@@ -13,23 +13,6 @@
                 style="max-width: 34px; padding-right: 10px"
               ></v-checkbox
               >{{ service.serviceName.toUpperCase().replaceAll('_', ' ') }}
-              <div
-                v-if="
-                  $store.state.runInfo.active == true &&
-                  $store.state.runInfo.type == 'workflow' &&
-                  $route.params.order == $store.state.runInfo.step &&
-                  service.selected === true &&
-                  $store.state.pullLoader.active == true
-                "
-                style="margin-left: 25px"
-              >
-                <v-progress-circular
-                  indeterminate
-                  color="#1DE9B6"
-                  :size="20"
-                ></v-progress-circular>
-                <span style="padding-left: 25px">Pulling image ...</span>
-              </div>
             </v-expansion-panel-header>
           </template>
           <span>{{ service.tooltip }}</span>

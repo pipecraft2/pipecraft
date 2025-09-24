@@ -6396,56 +6396,91 @@ export default new Vuex.Store({
     async scanDirectory({ getters }, payload) {
       const { dirPath, mode } = payload;
       console.log(mode);
-      // Read the directory contents
-      function readDirectory(dirPath) {
-        const items = fs.readdirSync(dirPath)
-          .map(item => ({
-            name: item,
-            path: path.join(dirPath, item),
-            stats: fs.statSync(path.join(dirPath, item))
-          }));
-          console.log(items.filter(item => item.stats.isFile()).map(item => item.name))
-        return {
-          files: items.filter(item => item.stats.isFile()).map(item => item.name),
-          subdirectories: items.filter(item => item.stats.isDirectory()).map(item => item.name)
-        };
-      }
-      const { files, subdirectories } = readDirectory(dirPath);
-      
-      console.log(files);
-      console.log(subdirectories);
-      
-      let mostCommonExtension = getters.mostCommonExtenson(files);
-      console.log(mostCommonExtension);
-      if (mostCommonExtension == null && mode == "fastqcANDmultiqc") {
-        console.log('step2')
-        return null;
-      }
-      else if (mostCommonExtension == null) {
-        let extensions = [];
 
-        // Edge Case: No subdirectories → exit early
-        if (subdirectories.length === 0) {
-          return null; // or some default value
-        }
-      
-        // Collect extensions from subdirectories
-        subdirectories.forEach(subdirectory => {
-          console.log(path.join(dirPath, subdirectory))
-          const { files } = readDirectory(path.join(dirPath, subdirectory));
+      // Read the directory contents asynchronously (non-blocking)
+      async function readDirectoryAsync(targetDirPath) {
+        try {
+          const entryNames = await fs.promises.readdir(targetDirPath);
+          const entries = await Promise.all(
+            entryNames.map(async (entryName) => {
+              const fullPath = path.join(targetDirPath, entryName);
+              try {
+                const stats = await fs.promises.stat(fullPath);
+                return { name: entryName, path: fullPath, stats };
+              } catch (err) {
+                console.error("stat failed for", fullPath, err);
+                return null; // Skip entries that fail to stat
+              }
+            })
+          );
+
+          const validEntries = entries.filter(Boolean);
+          const files = validEntries
+            .filter((entry) => entry.stats.isFile())
+            .map((entry) => entry.name);
+          const subdirectories = validEntries
+            .filter((entry) => entry.stats.isDirectory())
+            .map((entry) => entry.name);
+
           console.log(files);
-          const ext = getters.mostCommonExtenson(files);
-          if (ext) extensions.push(ext); // Skip empty results
-        });
-      
-        // Edge Case: All subdirectories returned empty
-        if (extensions.length === 0) {
-          return null; // or a default like "unknown"
+          return { files, subdirectories };
+        } catch (error) {
+          console.error("readDirectory failed:", error);
+          return { files: [], subdirectories: [] };
+        }
+      }
+
+      try {
+        const { files, subdirectories } = await readDirectoryAsync(dirPath);
+
+        console.log(files);
+        console.log(subdirectories);
+
+        let mostCommonExtension = getters.mostCommonExtenson(files);
+        console.log(mostCommonExtension);
+
+        // Count how many files at root match the most common extension
+        const rootMatchCount = mostCommonExtension
+          ? files.filter((f) => f.toLowerCase().endsWith(mostCommonExtension)).length
+          : 0;
+
+        // For fastqcANDmultiqc, do NOT scan subdirectories; always trust root if any supported file exists
+        if (mode === "fastqcANDmultiqc") {
+          return mostCommonExtension; // may be null if no supported files are found at root
         }
 
-        return this.getters.mostCommonInList(extensions);
-      } else {
-        return mostCommonExtension;
+        if (mostCommonExtension == null || rootMatchCount < 2) {
+          // Edge Case: No subdirectories → exit early
+          if (subdirectories.length === 0) {
+            return null;
+          }
+
+          // Collect extensions from subdirectories in parallel
+          const subdirExtensions = await Promise.all(
+            subdirectories.map(async (subdirectory) => {
+              const subPath = path.join(dirPath, subdirectory);
+              console.log(subPath);
+              const { files: subFiles } = await readDirectoryAsync(subPath);
+              console.log(subFiles);
+              const ext = getters.mostCommonExtenson(subFiles);
+              return ext || null;
+            })
+          );
+
+          const extensions = subdirExtensions.filter(Boolean);
+
+          // Edge Case: All subdirectories returned empty
+          if (extensions.length === 0) {
+            return null; // or a default like "unknown"
+          }
+
+          return getters.mostCommonInList(extensions);
+        } else {
+          return mostCommonExtension;
+        }
+      } catch (error) {
+        console.error("scanDirectory failed:", error);
+        return null;
       }
     },
     startDockerStatusMonitoring({ commit, state }) {

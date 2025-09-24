@@ -39,6 +39,7 @@ import fs from 'fs';
 import slash from 'slash';
 import Swal from 'sweetalert2';
 import { WritableStream } from 'memory-streams';
+import { PassThrough } from 'stream';
 import JSONfn from 'json-fn';
 import { ipcRenderer } from "electron";
 import { mapState, mapGetters } from "vuex";
@@ -621,10 +622,13 @@ export default {
       const scriptsPath = isDevelopment 
         ? `${slash(process.cwd())}/src/pipecraft-core/service_scripts`
         : `${process.resourcesPath}/src/pipecraft-core/service_scripts`;
-      const DataDir = path.dirname(this.$store.state.inputDir);
+      const runsDir = this.$store.state.inputDir; // user-selected folder containing Run*/
       let binds = [
         `${scriptsPath}:/scripts`,
-        `${DataDir}:/optimotu_targets/sequences`,
+        // Mount runsDir as sequences root (outputs will be written here)
+        `${runsDir}:/optimotu_targets/sequences`,
+        // Mount runsDir again as 01_raw (read-only view for inputs)
+        `${runsDir}:/optimotu_targets/sequences/01_raw:ro`,
       ];
 
       // Process all inputs from OptimOTU workflow
@@ -788,7 +792,7 @@ export default {
           return;
         }
       
-        const { container: dockerContainer, stream } = await this.executeDockerContainer({
+        const { container: dockerContainer, stdoutStream, stderrStream } = await this.executeDockerContainer({
           imageName: 'pipecraft/optimotu:5',
           containerName: 'optimotu',
           command: ['/scripts/run_optimotu.sh'],
@@ -815,11 +819,27 @@ export default {
         });
       
         container = dockerContainer;
-        
-        // Only get stderr since we don't need stdout
-        const { stderr } = await this.handleStream(stream, log);
-      
+
+        // Start log capture but don't block on it yet
+        const logPromise = this.handleDemuxedStreams(stdoutStream, stderrStream, log);
+
+        // Wait for the container process to finish (authoritative)
         const data = await container.wait();
+
+        // Ensure streams are closed so logPromise can resolve
+        try { stdoutStream.end(); } catch (err) { console.debug('stdoutStream.end failed (likely closed):', err && err.message ? err.message : err); }
+        try { stderrStream.end(); } catch (err) { console.debug('stderrStream.end failed (likely closed):', err && err.message ? err.message : err); }
+
+        // Drain any remaining logs with a timeout safeguard
+        let stdout = '';
+        let stderr = '';
+        try {
+          const res = await this.waitWithTimeout(logPromise, 2000);
+          stdout = res.stdout || '';
+          stderr = res.stderr || '';
+        } catch (err) {
+          console.debug('log drain timeout or error:', err && err.message ? err.message : err);
+        }
         await this.cleanupWorkflow(container, log, startTime);
         if (data.StatusCode === 0) {
           await Swal.fire({
@@ -828,7 +848,7 @@ export default {
           });
         } else {
           await this.handleDockerError({ 
-            message: stderr || 'Unknown error',
+            message: stderr || stdout || 'Unknown error',
             StatusCode: data.StatusCode 
           }, log, container, startTime);
         }
@@ -994,67 +1014,140 @@ export default {
         }
       });
 
-      // Attach to container
-      const stream = await container.attach({
+      // Attach to container (multiplexed stream)
+      const attachStream = await container.attach({
         stream: true,
         stdout: true,
         stderr: true,
       });
 
+      // Demux stdout/stderr into separate streams
+      const stdoutStream = new PassThrough();
+      const stderrStream = new PassThrough();
+      // dockerode exposes modem for demuxing multiplexed streams
+      // In TTY=false mode, attach() returns multiplexed stream
+      container.modem.demuxStream(attachStream, stdoutStream, stderrStream);
+
+      // Propagate end/close so readers resolve
+      const endStreams = () => {
+        try { stdoutStream.end(); } catch (err) { console.debug('stdoutStream.end on attach close failed:', err && err.message ? err.message : err); }
+        try { stderrStream.end(); } catch (err) { console.debug('stderrStream.end on attach close failed:', err && err.message ? err.message : err); }
+      };
+      attachStream.on('end', endStreams);
+      attachStream.on('close', endStreams);
+
       // Start container
       await container.start();
       
-      return { container, stream };
+      return { container, stdoutStream, stderrStream };
     },
 
-    // Common stream handling
-    handleStream(stream, log) {
+    // Properly handle demuxed stdout/stderr streams
+    handleDemuxedStreams(stdoutStream, stderrStream, log) {
       return new Promise((resolve) => {
         let stdout = '';
         let stderr = '';
 
-        stream.on('data', (data) => {
-          const output = data.toString();
-          
-          console.log(output); // Always log to console
+        const onStdout = (data) => {
+          const text = data.toString();
+          console.log(text);
+          stdout += text;
+          if (log) log.write(text);
+        };
+        const onStderr = (data) => {
+          const text = data.toString();
+          console.log(text);
+          stderr += text;
+          if (log) log.write(text);
+        };
 
-          if (log) {
-            log.write(output); // Write to file if debugger is enabled
+        stdoutStream.on('data', onStdout);
+        stderrStream.on('data', onStderr);
+
+        let endedStdout = false;
+        let endedStderr = false;
+        const tryResolve = () => {
+          if (endedStdout && endedStderr) {
+            resolve({ stdout, stderr });
           }
+        };
 
-          // Separate stdout and stderr
-          if (output.startsWith('Error:')) {
-            stderr += output;
-          } else {
-            stdout += output;
-          }
-        });
+        stdoutStream.on('end', () => { endedStdout = true; tryResolve(); });
+        stderrStream.on('end', () => { endedStderr = true; tryResolve(); });
+      });
+    },
 
-        stream.on('end', () => {
-          resolve({ stdout, stderr });
-        });
+    // Utility: await a promise with timeout
+    waitWithTimeout(promise, ms) {
+      return new Promise((resolve, reject) => {
+        const t = setTimeout(() => reject(new Error('timeout')), ms);
+        promise.then((v) => { clearTimeout(t); resolve(v); })
+               .catch((e) => { clearTimeout(t); reject(e); });
       });
     },
 
     // Common error handling
     async handleDockerError(error, log, container = null, startTime = null) {
-      console.error('Docker error:', error);
-      
+      const statusCode = error?.StatusCode ?? null;
+      const message = error?.message || '';
+
+      // Prefer info logs for expected stop scenarios
+      const isGracefulStop =
+        statusCode === 137 ||
+        message.includes('HTTP code 404') ||
+        message.includes('HTTP code 409');
+
+      const toReadable = (err) => {
+        if (!err) return 'Unknown error';
+        if (typeof err === 'string') return err;
+        if (err.message && typeof err.message === 'string') return err.message;
+        try { return JSON.stringify(err); } catch (_) { return String(err); }
+      };
+
+      const readable = toReadable(error);
+
+      // Log
+      if (isGracefulStop) {
+        console.info('Docker stop detected:', readable);
+      } else {
+        console.error('Docker error:', readable);
+      }
       if (log) {
-        log.write(`Error: ${error.toString()}\n`);
+        log.write(`Error: ${readable}\n`);
       }
 
-      if (error.message?.includes('HTTP code 404')) {
+      // UX
+      if (isGracefulStop) {
         await Swal.fire({
           title: "Workflow stopped",
           theme: "dark",
         });
       } else {
+        // Try to append tail of pipeline log for more context
+        let extra = '';
+        try {
+          const dataDir = path.dirname(this.$store.state.inputDir);
+          const logPath = path.join(dataDir, 'optimotu_targets.log');
+          const content = await fs.promises.readFile(logPath, 'utf8');
+          const lines = content.split(/\r?\n/);
+          const tail = lines.slice(-50).join('\n');
+          extra = tail.trim();
+        } catch (_) {
+          // ignore if log not available
+        }
+
+        const summary = extra && (!readable || readable === 'Unknown error')
+          ? extra
+          : (extra ? `${readable}\n\n--- Last log lines ---\n${extra}` : readable);
+
+        const esc = (s) => s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+
         await Swal.fire({
           title: "An error has occurred while processing your data",
-          text: error.toString(),
-          confirmButtonText: "Quit",
+          html: `<pre style="text-align:left;white-space:pre-wrap;max-height:50vh;overflow:auto">${esc(summary)}</pre>`,
+          confirmButtonText: "OK",
           theme: "dark",
+          width: 900
         });
       }
 
@@ -1064,10 +1157,29 @@ export default {
       }
     },
 
-    // Common cleanup
+    // Common cleanup (idempotent)
     async cleanupWorkflow(container, log, startTime) {
       if (container) {
-        await container.remove({ v: true, force: true });
+        // Try to stop first (ignore if already stopped/removed)
+        try {
+          await container.stop({ t: 5 });
+        } catch (err) {
+          // Ignore common non-fatal stop errors
+          const msg = err?.message || '';
+          if (!(msg.includes('HTTP code 304') || msg.includes('HTTP code 404') || msg.includes('is already in progress'))) {
+            console.warn('Non-fatal stop error:', err);
+          }
+        }
+
+        // Then remove (ignore if already removed or removing)
+        try {
+          await container.remove({ v: true, force: true });
+        } catch (err) {
+          const msg = err?.message || '';
+          if (!(msg.includes('HTTP code 404') || msg.includes('HTTP code 409'))) {
+            console.warn('Non-fatal remove error:', err);
+          }
+        }
       }
       if (log) {
         log.end();

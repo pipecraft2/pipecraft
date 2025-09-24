@@ -2,7 +2,7 @@
   <div class="docker-pull-container">
     <v-snackbar
       v-model="showSnackbar"
-      :color="snackbarColor"
+      color="#363636"
       top
       right
       :timeout="-1"
@@ -46,9 +46,6 @@ export default {
         }
       }
     },
-    snackbarColor() {
-      return this.pullStatus === 'Complete!' ? 'primary' : '#363636';
-    }
   }
 };
 </script>

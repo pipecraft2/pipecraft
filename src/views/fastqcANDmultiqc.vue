@@ -13,19 +13,6 @@
         <v-img class="white--text align-end" src="../assets/fastqc_logo.png">
         </v-img>
       </div>
-      <div class="spacer" ></div>
-      <div class="loader-column" v-if="$store.state.pullLoader.active">
-        <div class="image-loader-container">
-          <v-progress-circular
-            :size="100"
-            :width="7"
-            color="orange"
-            indeterminate
-          >
-            <span class="loading-text">Pulling<br>image</span>
-          </v-progress-circular>
-        </div>
-      </div>
     </div>
 
     <v-card-title>FastQC and MultiQC</v-card-title>
@@ -54,7 +41,7 @@
       <v-btn
         :disabled="reportLoading"
         @click="folderSelect()"
-        color="orange"
+        color="primary"
         text
       >
         Select Folder
@@ -65,7 +52,7 @@
             <v-btn
               :disabled="!isDockerActive || reportLoading || folderPath == ''"
               @click="fastQualityCheck()"
-              color="orange"
+              color="primary"
               text
             >
               Create Report
@@ -80,7 +67,7 @@
           <div v-on="on">
             <v-btn
               @click="openReport()"
-              color="orange"
+              color="primary"
               text
               :disabled="!reportReady"
               :loading="reportLoading"
@@ -97,7 +84,7 @@
     </v-card-actions>
     <v-progress-linear
       :active="reportLoading"
-      color="orange"
+      color="primary"
       indeterminate
       reverse
     ></v-progress-linear>
