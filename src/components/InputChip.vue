@@ -49,7 +49,7 @@
         </v-card>
       </div>
     </template>
-    <span>{{ input.tooltip }}</span>
+    <span class="tooltip-text">{{ input.tooltip }}</span>
   </v-tooltip>
 </template>
 
@@ -122,6 +122,9 @@ export default {
 </script>
 
 <style>
+.tooltip-text {
+  white-space: pre-line;
+}
 .v-text-field input {
   text-align: center;
 }

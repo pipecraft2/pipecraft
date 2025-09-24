@@ -14,8 +14,8 @@ trimming:
   min_overlap: 10
   max_n: 0
   max_err: 1
-  truncQ_R1: 2
-  truncQ_R2: 2
+  truncQ_R1: 3
+  truncQ_R2: 3
   min_length: 100
   cut_R1: 0
   cut_R2: 0
@@ -35,12 +35,12 @@ orient: fwd
 control:
   spike:
   positive:
-forward_primer: "GTGARTCATCGAATCTTTG"
+forward_primer: "GCATCGATGAAGAACGCAGC"
 reverse_primer: "TCCTCCGCTTATTGATATGC"
 custom_sample_table: FALSE
 filtering:
-  maxEE_R1: 1
-  maxEE_R2: 1
+  maxEE_R1: 2
+  maxEE_R2: 2
 tag_jump:
   f: 0.03
   p: 1

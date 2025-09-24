@@ -51,7 +51,7 @@
           >
         </v-card-title>
       </template>
-      <span>{{ input.tooltip }}</span>
+      <span class="tooltip-text">{{ input.tooltip }}</span>
     </v-tooltip>
     <v-card-actions style="justify-content: center">
       <v-row style="justify-content: center"
@@ -134,6 +134,9 @@ export default {
 </script>
 
 <style lang="scss" scoped>
+.tooltip-text {
+  white-space: pre-line;
+}
 .v-text-field {
   ::v-deep input {
     text-align: center !important;
