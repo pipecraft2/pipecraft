@@ -6359,8 +6359,8 @@ export default new Vuex.Store({
       
       // Write to file
       let filePath = isDevelopment == true
-        ? `${slash(process.cwd())}/src/pipecraft-core/service_scripts/pipeline_options.yaml`
-        : `${process.resourcesPath}/src/pipecraft-core/service_scripts/pipeline_options.yaml`;
+        ? `${slash(process.cwd())}/src/pipecraft-core/service_scripts/pipeline_options1.yaml`
+        : `${process.resourcesPath}/src/pipecraft-core/service_scripts/pipeline_options1.yaml`;
       yamlString = yamlString.replace(/: '"([^"]*)"'/g, ': "$1"');
       yamlString = yamlString.replace(/: 'FALSE'/g, ': FALSE');
       yamlString = yamlString.replace(/: null$/gm, ':');

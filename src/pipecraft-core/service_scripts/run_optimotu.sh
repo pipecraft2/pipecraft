@@ -10,16 +10,20 @@ export fileFormat
 
 echo "specified fileFormat: $fileFormat"
 
-
+### testing the usearch rename
+sed -i "s/usearch10.0.240_i86linux32/usearch/" /optimotu_targets/scripts/102_protax_refseqs.R
+echo "usearch renamed.... \n"
+grep "usearch" /optimotu_targets/scripts/102_protax_refseqs.R
+echo "" 
 
 # # check files in 01_raw and subdirectories
 # # Find all subdirectories in 01_raw
  while IFS= read -r subdir; do
      echo "Checking files in $subdir..."
-
+    
      # Count files with the specified extension in the subdirectory
      file_count=$(find "$subdir" -maxdepth 1 -type f -name "*.${fileFormat}" | wc -l)
-
+    
      if [ "$file_count" -eq 0 ]; then
          printf "[ERROR]: No %s files found in %s\n" "${fileFormat}" "${subdir}" >&2
          printf "[ERROR]: No %s files found in %s\n" "${fileFormat}" "${subdir}" > /optimotu_targets/sequences/optimotu_targets.log
@@ -38,35 +42,16 @@ echo $fileFormat
 echo $readType
 
 # Copy the configuration file
-cp -f /scripts/pipeline_options.yaml /optimotu_targets/pipeline_options.yaml # to targets
-cp -f /scripts/pipeline_options.yaml /optimotu_targets/sequences/pipeline_options.yaml # to user
+cp -f /scripts/pipeline_options1.yaml /optimotu_targets/pipeline_options1.yaml # to targets
+cp -f /scripts/pipeline_options1.yaml /optimotu_targets/sequences/pipeline_options1.yaml # to user
 
 # Activate the conda environment
 source /opt/conda/etc/profile.d/conda.sh
 conda activate OptimOTU_v5
-
-# Try to install a compatible version of qs2 only on ARM64 macOS
-echo "Checking system architecture and OS..."
-echo "Host OS: ${HOST_OS:-unknown}"
-echo "Host Architecture: ${HOST_ARCH:-unknown}"
-
-if [ "${HOST_OS}" = "mac" ] && [ "${HOST_ARCH}" = "arm64" ]; then
-  echo "ARM64 macOS detected. Installing compatible version of qs2..."
-  R --vanilla <<'R_EOF'
-# Remove existing qs2 if present
-if ("qs2" %in% installed.packages()[, "Package"]) remove.packages("qs2")
-
-# Install from source with minimal optimizations
-Sys.setenv(PKG_CFLAGS="-O0 -march=x86-64")
-Sys.setenv(PKG_CXXFLAGS="-O0 -march=x86-64")
-install.packages("qs2", type="source", repos="https://cloud.r-project.org")
-R_EOF
-else
-  echo "Not ARM64 macOS. Skipping qs2 installation."
-fi
-
-
 cd /optimotu_targets
+
+#cat "/optimotu_targets/pipeline_options.yaml"
+
 
 # Print current environment for debugging
 echo "PATH: $PATH"
@@ -85,7 +70,7 @@ if [ $R_EXIT_STATUS -eq 0 ]; then
     # Copy the output folder to the sequences folder
     echo "Copying output files to sequences folder..."
     cp -r /optimotu_targets/output/* /optimotu_targets/sequences/
-
+    
     # Check if the copy was successful
     if [ $? -eq 0 ]; then
         echo "Files successfully copied to /optimotu_targets/sequences/"
@@ -118,7 +103,12 @@ Start time: $start_time
 End time: $(date)
 Runtime: $runtime seconds
 
+echo "All operations completed."
 
+if [ ! -z "$HOST_UID" ] && [ ! -z "$HOST_GID" ]; then
+  echo "Setting ownership of /optimotu_targets to $HOST_UID:$HOST_GID"
+  chown -R $HOST_UID:$HOST_GID /optimotu_targets/sequences
+fi
 
 The outputs of the pipeline are a set of tables in TSV format (tab-delimited files) and 
 RDS format (for easy loading in R), as well as sequences in gzipped FASTA format.
@@ -147,9 +137,3 @@ EOF
 #Done
 printf "\nDONE "
 printf "Total time: $runtime sec.\n "
-
-echo "All operations completed."
-
-if [ ! -z "$HOST_UID" ] && [ ! -z "$HOST_GID" ]; then
-  echo "Setting ownership of /optimotu_targets to $HOST_UID:$HOST_GID"
-  chown -R $HOST_UID:$HOST_GID /optimotu_targets/sequences

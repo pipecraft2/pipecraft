@@ -832,7 +832,7 @@ export default {
         const { container: dockerContainer, stdoutStream, stderrStream } = await this.executeDockerContainer({
           imageName: 'pipecraft/optimotu:5',
           containerName: 'optimotu',
-          command: ['/scripts/run_optimotu.sh'],
+          command: ['/scripts/run_optimotu_dev.sh'],
           env: [
             'R_ENABLE_JIT=0',
             'R_COMPILE_PKGS=0',
@@ -910,7 +910,9 @@ export default {
               Image: 'pipecraft/optimotu:5',
               name: 'optimotu',
               Cmd: ['/scripts/run_optimotu.sh'],
-              Tty: false,
+              Tty: true,
+              OpenStdin: false,
+              StdinOnce: false,
               AttachStdout: true,
               AttachStderr: true,
               Env: [
@@ -919,7 +921,6 @@ export default {
                 `HOST_OS=${this.$store.state.systemSpecs.os}`,
                 `HOST_ARCH=${this.$store.state.systemSpecs.architecture}`,
                 `fileFormat=${this.$store.state.data.fileFormat}`,
-                `readType=${this.$store.state.data.readType}`,
                 `readType=${this.$store.state.data.readType}`,
               ],
               HostConfig: {

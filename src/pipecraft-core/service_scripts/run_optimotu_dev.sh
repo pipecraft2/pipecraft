@@ -21,6 +21,8 @@ echo "specified rawFilesDir: $rawFilesDir"
 RAW_BASE="/optimotu_targets/sequences"
 LINK_DIR="${RAW_BASE}/01_raw"
 
+
+
 if [ ! -d "${LINK_DIR}" ]; then
   echo "[ERROR]: Required directory not found: ${LINK_DIR}. Ensure the selected runs directory is bind-mounted to /optimotu_targets/sequences/01_raw" >&2
   echo "[ERROR]: Missing required directory: ${LINK_DIR}" > "${RAW_BASE}/optimotu_targets.log"
@@ -57,6 +59,9 @@ echo $readType
 # Copy the configuration file
 cp -f /scripts/pipeline_options.yaml /optimotu_targets/pipeline_options.yaml # to targets
 cp -f /scripts/pipeline_options.yaml /optimotu_targets/sequences/pipeline_options.yaml # to user
+
+
+cat "/optimotu_targets/pipeline_options.yaml"
 
 # Activate the conda environment
 source /opt/conda/etc/profile.d/conda.sh
