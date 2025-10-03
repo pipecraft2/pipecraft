@@ -42,8 +42,8 @@ echo $fileFormat
 echo $readType
 
 # Copy the configuration file
-cp -f /scripts/pipeline_options1.yaml /optimotu_targets/pipeline_options1.yaml # to targets
-cp -f /scripts/pipeline_options1.yaml /optimotu_targets/sequences/pipeline_options1.yaml # to user
+cp -f /scripts/pipeline_options.yaml /optimotu_targets/pipeline_options.yaml # to targets
+cp -f /scripts/pipeline_options.yaml /optimotu_targets/sequences/pipeline_options.yaml # to user
 
 # Activate the conda environment
 source /opt/conda/etc/profile.d/conda.sh
