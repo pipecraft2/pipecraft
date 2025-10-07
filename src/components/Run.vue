@@ -907,7 +907,7 @@ export default {
           await this.$store.dispatch('clearContainerConflicts', 'optimotu');
           try {            
             const container = await this.$docker.createContainer({
-              Image: 'pipecraft/optimotu:5',
+              Image: 'pipecraft/optimotu:5.1',
               name: 'optimotu',
               Cmd: ['/scripts/run_optimotu.sh'],
               Tty: true,

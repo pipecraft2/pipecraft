@@ -11,10 +11,10 @@ export fileFormat
 echo "specified fileFormat: $fileFormat"
 
 ### testing the usearch rename
-sed -i "s/usearch10.0.240_i86linux32/usearch/" /optimotu_targets/scripts/102_protax_refseqs.R
-echo "usearch renamed.... \n"
-grep "usearch" /optimotu_targets/scripts/102_protax_refseqs.R
-echo "" 
+# sed -i "s/usearch10.0.240_i86linux32/usearch/" /optimotu_targets/scripts/102_protax_refseqs.R
+# echo "usearch renamed.... \n"
+# grep "usearch" /optimotu_targets/scripts/102_protax_refseqs.R
+# echo "" 
 
 # # check files in 01_raw and subdirectories
 # # Find all subdirectories in 01_raw

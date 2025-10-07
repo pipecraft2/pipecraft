@@ -3989,7 +3989,7 @@ export default new Vuex.Store({
       {
         tooltip: "Specify target taxa and sequence orientation",
         scriptName:"xxx.sh",
-        imageName: "pipecraft/optimotu:5",
+        imageName: "pipecraft/optimotu:5.1",
         serviceName: "target taxa and sequence orientation",
         manualLink: "https://pipecraft2-manual.readthedocs.io/en/latest/pre-defined_pipelines.html#target-taxa-and-sequence-orientation",
         disabled: "never",
@@ -6359,8 +6359,8 @@ export default new Vuex.Store({
       
       // Write to file
       let filePath = isDevelopment == true
-        ? `${slash(process.cwd())}/src/pipecraft-core/service_scripts/pipeline_options1.yaml`
-        : `${process.resourcesPath}/src/pipecraft-core/service_scripts/pipeline_options1.yaml`;
+        ? `${slash(process.cwd())}/src/pipecraft-core/service_scripts/pipeline_options.yaml`
+        : `${process.resourcesPath}/src/pipecraft-core/service_scripts/pipeline_options.yaml`;
       yamlString = yamlString.replace(/: '"([^"]*)"'/g, ': "$1"');
       yamlString = yamlString.replace(/: 'FALSE'/g, ': FALSE');
       yamlString = yamlString.replace(/: null$/gm, ':');
