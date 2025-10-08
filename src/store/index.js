@@ -3999,7 +3999,7 @@ export default new Vuex.Store({
         Inputs: [
           {
             name: "target_taxa",
-            items: ["fungi"],
+            items: ["fungi", "metazoa"],
             value: "fungi",
             disabled: "never",
             tooltip: `fungi = target taxa are fungi; 
@@ -4324,7 +4324,7 @@ export default new Vuex.Store({
         Inputs: [
           {
             name: "model_type",
-            items: ["CM", "none"],
+            items: ["CM", "HMM", "none"],
             value: "CM",
             disabled: "never",  
             tooltip: `CM = Codon model for Fungi; 
@@ -4336,7 +4336,7 @@ export default new Vuex.Store({
           },
           {
             name: "model_file",
-            items: ["ITS3_ITS4.cm", "f/gITS7_ITS4.cm", "custom"],
+            items: ["ITS3_ITS4.cm", "f/gITS7_ITS4.cm", "COI.hmm", "custom"],
             value: "ITS3_ITS4.cm",
             disabled: "never",  
             tooltip: `included models: ITS3_ITS4.cm = model for ITS2 amplicons with ITS3 and ITS4 primers.
@@ -4385,14 +4385,14 @@ export default new Vuex.Store({
               },
             ],
           },
-        /*   {
+          {
             name: "numt_filter",
             value: false,
             disabled: "never",
             tooltip:
               "Only for Metazoa: filter NUMTs; requires model_type == HMM and model_align == TRUE",
             type: "bool",
-          }, */
+          },
         ],
       },
       {
@@ -4418,7 +4418,7 @@ export default new Vuex.Store({
         Inputs: [
           {
             name: "location",
-            items: ["protaxFungi", "custom"],
+            items: ["protaxFungi", "protaxAnimal", "custom"],
             value: "protaxFungi",
             disabled: "never",
             tooltip:
@@ -4455,7 +4455,7 @@ export default new Vuex.Store({
         Inputs: [
           {
             name: "cluster_thresholds",
-            items: ["Fungi_GSSP", "custom"],
+            items: ["Fungi_GSSP", "Metazoa_MBRAVE", "custom"],
             value: "Fungi_GSSP",
             disabled: "never",
             tooltip:"select file with clustering thresholds. Default is pre-calculated thresholds for Fungi (included in the PipeCraft2 container)",

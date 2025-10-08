@@ -174,6 +174,13 @@ echo "All operations completed."
 
 
 if [ ! -z "$HOST_UID" ] && [ ! -z "$HOST_GID" ]; then
-  echo "Setting ownership of /optimotu_targets to $HOST_UID:$HOST_GID"
-  chown -R $HOST_UID:$HOST_GID /optimotu_targets/sequences
+  echo "Setting ownership of writable outputs under /optimotu_targets/sequences"
+  for entry in /optimotu_targets/sequences/*; do
+    base="$(basename "$entry")"
+    # Skip the nested mount to avoid the loop
+    if [ "$base" = "01_raw" ]; then
+      continue
+    fi
+    chown -R "$HOST_UID:$HOST_GID" "$entry" 2>/dev/null || true
+  done
 fi

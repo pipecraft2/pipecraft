@@ -666,7 +666,7 @@ export default {
         // Mount runsDir as sequences root (outputs will be written here)
         `${runsDir}:/optimotu_targets/sequences`,
         // Mount runsDir again as 01_raw (read-only view for inputs)
-        //`${runsDir}:/optimotu_targets/sequences/01_raw:ro`,
+        `${runsDir}:/optimotu_targets/sequences/01_raw:rw`,
       ];
 
       // Process all inputs from OptimOTU workflow
@@ -800,6 +800,7 @@ export default {
       let container = null;
       let log = null;
       let startTime = null;
+      await this.$store.dispatch('imageCheck', 'pipecraft/optimotu:5.1');
       
       try {
         const result = await this.confirmRun('OptimOTU');
@@ -830,7 +831,7 @@ export default {
         }
       
         const { container: dockerContainer, stdoutStream, stderrStream } = await this.executeDockerContainer({
-          imageName: 'pipecraft/optimotu:5',
+          imageName: 'pipecraft/optimotu:5.1',
           containerName: 'optimotu',
           command: ['/scripts/run_optimotu_dev.sh'],
           env: [
@@ -1072,7 +1073,7 @@ export default {
       }
 
       if (workflowName.includes('OptimOTU')) {
-        return this.runOptimOTU();
+        return this.runOptimOTU_dev();
       }
 
       return this.runCustomWorkFlow(workflowName);
