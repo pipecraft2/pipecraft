@@ -800,7 +800,6 @@ export default {
       let container = null;
       let log = null;
       let startTime = null;
-      await this.$store.dispatch('imageCheck', 'pipecraft/optimotu:5.1');
       
       try {
         const result = await this.confirmRun('OptimOTU');
