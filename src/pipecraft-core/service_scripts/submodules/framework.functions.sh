@@ -539,23 +539,28 @@ fi
 ### Compile a track reads summary file (seq_count_summary.txt)
 output_dir_for_sed=$(echo $output_dir | sed -e "s/\//\\\\\//g")
 sed -e "s/$output_dir_for_sed\///" < tempdir2/seq_count_after.txt > tempdir2/seq_count_after.temp
-printf "File\tReads_in\tReads_out\n" > $output_dir/seq_count_summary.txt
-while read LINE; do
-    file1=$(echo $LINE | awk '{print $1}')
-    count1=$(echo $LINE | awk '{print $2}')
-    while read LINE2; do
-        file2=$(echo $LINE2 | awk '{print $1}')
-        count2=$(echo $LINE2 | awk '{print $2}')
-        if [[ "$file1" == "$file2" ]]; then
-            printf "$file1\t$count1\t$count2\n" >> $output_dir/seq_count_summary.txt
-        fi
-    done < tempdir2/seq_count_after.temp
-    #Report file where no sequences were reoriented (i.e. the output was 0)
-    grep -Fq $file1 tempdir2/seq_count_after.temp
-    if [[ $? != 0 ]]; then
-        printf "$file1\t$count1\t0\n" >> $output_dir/seq_count_summary.txt
-    fi
-done < tempdir2/seq_count_before.txt
+
+# Compile seq_count_summary.txt
+awk '
+BEGIN { print "File\tReads_in\tReads_out" }
+NR==FNR { 
+    before[$1] = $2; 
+    next 
+}
+{
+    file = $1;
+    count_after = $2;
+    if (file in before) {
+        print file "\t" before[file] "\t" count_after;
+        delete before[file];
+    }
+}
+END {
+    # Print files with 0 output
+    for (file in before) {
+        print file "\t" before[file] "\t0";
+    }
+}' tempdir2/seq_count_before.txt tempdir2/seq_count_after.temp > $output_dir/seq_count_summary.txt
 
 #Delete decompressed files if original set of files were compressed
 if [[ $check_compress == "gz" ]] || [[ $check_compress == "zip" ]]; then
