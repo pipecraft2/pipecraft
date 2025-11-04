@@ -4,7 +4,7 @@
 #   (core function by Vladimir Mikryukov)
 
 # Input is given as positional arguments:
-#   1. OTU table (wide format, OTUs by rows, samples by columns; with header)
+#   1. OTU table (long format; columns - SampleID, OTU, Abundance; with header)
 #   2. f-parameter of UNCROSS
 #   3. p-parameter (e.g., 1.0)
 #   4. fasta file (optional); if provided, sequences will be added back to the output table
@@ -41,28 +41,21 @@ output_name = paste0(base_name, "_TagJumpFilt.txt")
 
 ## Load OTU table
 cat(";; Loading input table:", input_file, "\n")
-OTUTABW = fread(
+OTUTAB = fread(
   file = input_file,
   sep = "\t", header = TRUE)
 
 ## Check table; if 2nd col is sequence, then remove
-if (colnames(OTUTABW)[2] == "Sequence") {
-  cat(";; 2nd column was 'Sequence', removing for now (adding sequences back later) \n")
-  OTUTABW = OTUTABW[, -2]
+if ("Sequence" %in% colnames(OTUTAB)) {
+  cat(";; column 'Sequence' is present in the table, removing for now (adding sequences back later) \n")
+  OTUTAB[ , Sequence := NULL ]
 }
 
-colnames(OTUTABW)[1] = "OTU"
-
-cat(";; Number of ASVs/OTUs: ", nrow(OTUTABW), "\n")
-cat(";; Number of samples: ", ncol(OTUTABW) - 1, "\n")
-
-## Convert to long format
-cat(";; Converting OTU table to long format\n")
-OTUTAB = melt(data = OTUTABW, id.vars = "OTU",
-  variable.name = "SampleID", value.name = "Abundance")
+cat(";; Number of ASVs/OTUs: ", uniqueN(OTUTAB$OTU), "\n")
+cat(";; Number of samples: ", uniqueN(OTUTAB$SampleID), "\n")
 
 ## Remove zero-OTUs
-OTUTAB = OTUTAB[ Abundance > 0 ]
+OTUTAB <- OTUTAB[ Abundance > 0 ]
 cat(";; Number of non-zero records: ", nrow(OTUTAB), "\n")
 
 ## Estimate total abundance of sequence per plate
@@ -91,15 +84,11 @@ OTUTAB = cbind(
   uncross_score(
     x = OTUTAB$Abundance,
     N = OTUTAB$Total,
-    n = length(unique(OTUTAB$SampleID)),
+    n = uniqueN(OTUTAB$SampleID),
     f = as.numeric(args[2]),
     p = as.numeric(args[3])
     )
   )
-
-## Truncate singletons with total OTU abundance > 99 reads
-# OTUTAB[ Abundance == 1 & Total > 99  , TagJump := TRUE ]
-# OTUTAB[ Abundance == 2 & Total > 999 , TagJump := TRUE ]
 
 cat(";; Number of tag-jumps: ", sum(OTUTAB$TagJump, na.rm = TRUE), "\n")
 
@@ -132,19 +121,11 @@ cat(";; Removing tag-jumps\n")
 
 OTUTAB = OTUTAB[ TagJump == FALSE ]
 
-## Convert to wide format
-RES = dcast(data = OTUTAB,
-  formula = OTU ~ SampleID,
-  value.var = "Abundance", fill = 0)
+## Remove working columns
+OTUTAB[ , c("Total", "Score", "TagJump") := NULL ]
 
-## Sort rows (by total abundance)
-clz = colnames(RES)[-1]
-otu_sums = rowSums(RES[, ..clz], na.rm = TRUE)
-RES = RES[ order(otu_sums, decreasing = TRUE) ]
-
-## Add sequences back to the table
-suppressMessages(library(Biostrings))
-suppressMessages(library(dplyr))
+## Sort rows (by sample and abundance)
+setorder(OTUTAB, SampleID, -Abundance, OTU)
 
 ## Add sequences back to the table (if FASTA file provided)
 if (has_fasta) {
