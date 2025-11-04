@@ -138,7 +138,7 @@ if (has_fasta) {
     sequences = as.character(fasta_sequences)
     names(sequences) = names(fasta_sequences)
     # add the sequences as 2nd column
-    RES = RES %>%
+    OTUTAB = OTUTAB %>%
     mutate(Sequence = sequences[OTU]) %>%
     select(OTU, Sequence, everything())
 }
@@ -147,6 +147,6 @@ if (has_fasta) {
 cat(";; Exporting tag-jump filtered table", 
     if(length(args) >= 4) "(2nd col is sequence)" else "", "\n")
 cat(paste0(output_dir, "/", output_name))
-fwrite(x = RES, file = paste0(output_dir, "/", output_name), sep = "\t", compress = "none")
+fwrite(x = OTUTAB, file = paste0(output_dir, "/", output_name), sep = "\t", compress = "none")
 
 cat(";; Done\n")
