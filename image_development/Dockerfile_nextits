@@ -20,6 +20,7 @@ ENV LC_ALL=C.UTF-8
 ENV SHELL=/bin/bash
 ENV CONDA_PREFIX="/opt/software/conda"
 ENV PATH=${PATH}:"/opt/software/conda/bin/"
+ENV JAVA_HOME=${CONDA_PREFIX}
 LABEL org.opencontainers.image.authors="vladimir.mikryukov@ut.ee"
 LABEL org.opencontainers.image.version="0.8.2"
 
@@ -32,6 +33,10 @@ RUN apt-get update -qq \
     build-essential \
   && apt-get clean \
   && rm -rf /var/lib/apt/lists/*
+
+RUN apt-get update && apt-get install -y --no-install-recommends openjdk-21-jre-headless && rm -rf /var/lib/apt/lists/*
+ENV JAVA_HOME=/usr/lib/jvm/java-21-openjdk
+ENV PATH="${JAVA_HOME}/bin:${PATH}"
 
 ## Install additional R packages
 RUN install2.r --error --skipinstalled --ncpus -1 \
