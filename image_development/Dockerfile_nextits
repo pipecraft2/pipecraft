@@ -10,7 +10,7 @@ FROM rust:1.84.1 AS rust
 RUN cargo install runiq sd
 
 # Stage 2 (Nextflow - minimal stage)
-FROM nextflow/nextflow:24.10.5 AS nextflow
+FROM nextflow/nextflow:25.04.8 AS nextflow
 
 ## Build stage 2 - Main
 FROM rocker/r-ver:4.4.2 AS main
@@ -46,30 +46,30 @@ RUN install2.r --error --skipinstalled --ncpus -1 \
     dplyr \
     ggplot2 \
     doFuture \
-    openxlsx
+    openxlsx \
+    geodist \
+    ggdendro
 
 RUN    R -e 'BiocManager::install("Biostrings", ask = FALSE)' \
     && R -e 'BiocManager::install("ShortRead", ask = FALSE)' \
+    && R -e 'remotes::install_version("vegan", version="2.7-2", repos="https://cloud.r-project.org", upgrade="never", dependencies=TRUE)' \
     && R -e 'BiocManager::install("DECIPHER", ask = FALSE)' \
     && R -e 'BiocManager::install("dada2", ask = FALSE)' \
     && R -e 'BiocManager::install("phyloseq", ask = FALSE)' \
-    && R -e 'remotes::install_github("vmikk/metagMisc")' \
     && R -e 'remotes::install_cran("qs", type = "source", configure.args = "--with-simd=AVX2")' \
+    && R -e 'remotes::install_github("mikemc/speedyseq")' \
+    && R -e 'remotes::install_github("vmikk/metagMisc", dependencies = TRUE)' \
     && rm -rf /tmp/downloaded_packages/
 
-## Install conda
+## Install micromamba and bootstrap base env
 RUN mkdir -p /opt/software \
   && cd /opt/software \
-  && curl -O https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86_64.sh \
-  && bash Miniconda3-latest-Linux-x86_64.sh -u -b -p ${CONDA_PREFIX} \
-  && rm Miniconda3-latest-Linux-x86_64.sh \
-  && ${CONDA_PREFIX}/bin/conda config --add channels defaults \
-  && ${CONDA_PREFIX}/bin/conda config --add channels conda-forge \
-  && ${CONDA_PREFIX}/bin/conda config --add channels bioconda \
-  && ${CONDA_PREFIX}/bin/conda install --quiet --yes mamba "python=3.12"
+  && curl -L https://micro.mamba.pm/api/micromamba/linux-64/latest \
+     | tar -xvj -C /usr/local/bin --strip-components=1 bin/micromamba \
+  && micromamba -r ${CONDA_PREFIX} create -y -n base -c conda-forge -c bioconda python=3.12
 
-## Create conda environment and install software
-RUN ${CONDA_PREFIX}/bin/mamba install -y \
+## Install software into the base environment
+RUN micromamba -r ${CONDA_PREFIX} install -y -n base \
     -c conda-forge -c bioconda \
     "lima>=2.12.0" \
     "pbtk>=3.4.0" \
@@ -91,7 +91,7 @@ RUN ${CONDA_PREFIX}/bin/mamba install -y \
     "ripgrep>=14.1.1" \
     "fd-find>=10.2.0" \
     "mmseqs2" \
-  && ${CONDA_PREFIX}/bin/mamba clean --all --yes
+  && micromamba -r ${CONDA_PREFIX} clean -a -y
 
 ## Add new tools (seqhasher, phredsort, ucs)
 RUN cd /opt/software \
@@ -122,7 +122,7 @@ RUN wget https://github.com/shenwei356/rush/releases/download/v0.5.4/rush_linux_
 ## brename
 RUN wget https://github.com/shenwei356/brename/releases/download/v2.14.0/brename_linux_amd64.tar.gz \
   && tar -xzf brename_linux_amd64.tar.gz \
-  && mv brename ${conda_prefix}/bin/ \
+  && mv brename ${CONDA_PREFIX}/bin/ \
   && rm brename_linux_amd64.tar.gz
 
 ## MUMU

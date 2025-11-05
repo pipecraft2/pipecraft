@@ -177,7 +177,7 @@ export default {
         HostConfig: {
           Binds: Binds,
           Memory: this.$store.state.dockerInfo.MemTotal,
-          NanoCpus: this.$store.state.dockerInfo.NCPU * 1e9,
+          NanoCpus: Math.round(Number(this.$store.state.dockerInfo.NCPU) * 1e9)
         },
         Env: envVariables,
       };
@@ -770,27 +770,21 @@ export default {
     },
     createParamsFile(step) {
       let Hostname = step.serviceName.replaceAll(" ", "_");
-      let WorkingDir = "/input";
+      let WorkingDir = "/";
       let envVariables = this.createCustomVariableObj(step);
       let Binds = this.getBinds_c(step, this.$store.state.inputDir);
-      
-      // Replace the /input bind with /input/Input
-      const inputBindIndex = Binds.findIndex(bind => bind.includes(':/input'));
-      if (inputBindIndex !== -1) {
-        Binds[inputBindIndex] = Binds[inputBindIndex].replace(':/input', ':/input/Input');
-      }
-      
+      Binds = Binds.map(b => b.replace(/:\/input$/, ':/Input'));
+      console.log(Math.round(Number(this.$store.state.dockerInfo.NCPU) * 1e9));
       let dockerProps = {
         Tty: false,
         WorkingDir: WorkingDir,
-        User: `${this.userId}:${this.groupId}`,
         name: Hostname,
         platform: "linux/amd64",
         Volumes: {},
         HostConfig: {
           Binds: Binds,
           Memory: this.$store.state.dockerInfo.MemTotal,
-          NanoCpus: this.$store.state.dockerInfo.NCPU * 1e9,
+          NanoCpus: Math.round(Number(this.$store.state.dockerInfo.NCPU) * 1e9)
         },
         Env: envVariables,
       };
@@ -800,6 +794,7 @@ export default {
       let container = null;
       let log = null;
       let startTime = null;
+      console.log(Math.round(Number(this.$store.state.dockerInfo.NCPU)))
       
       try {
         const result = await this.confirmRun('OptimOTU');
@@ -828,7 +823,7 @@ export default {
           this.$store.commit("resetRunInfo");
           return;
         }
-      
+        
         const { container: dockerContainer, stdoutStream, stderrStream } = await this.executeDockerContainer({
           imageName: 'pipecraft/optimotu:5.1',
           containerName: 'optimotu',
@@ -850,7 +845,7 @@ export default {
           ],
           binds: this.getOptimOTUBinds(),
           memory: this.$store.state.dockerInfo.MemTotal,
-          cpuCount: this.$store.state.dockerInfo.NCPU,
+          cpuCount: Math.round(this.$store.state.dockerInfo.NCPU),
           userId: this.userId,
           groupId: this.groupId
         });
@@ -926,7 +921,7 @@ export default {
               HostConfig: {
                 Binds: this.getOptimOTUBinds(),
                 Memory: this.$store.state.dockerInfo.MemTotal,
-                NanoCpus: this.$store.state.dockerInfo.NCPU * 1e9,
+                NanoCpus: Math.round(Number(this.$store.state.dockerInfo.NCPU) * 1e9)
               }
             });
     
@@ -1009,11 +1004,11 @@ export default {
           console.log(props);
           await this.$store.dispatch('clearContainerConflicts', "Step_1");
           await this.$store.dispatch('clearContainerConflicts', "Step_2");
-          await this.$store.dispatch('imageCheck', "pipecraft/nextits:1.0.0");
+          await this.$store.dispatch('imageCheck', "pipecraft/nextits:test");
           let promise = new Promise((resolve, reject) => {
             this.$docker
               .run(
-                "pipecraft/nextits:1.0.0",
+                "pipecraft/nextits:test",
                 ["bash", "-c", `bash /scripts/NextITS_Pipeline.sh`],
                 false,
                 props,

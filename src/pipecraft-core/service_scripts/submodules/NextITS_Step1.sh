@@ -12,16 +12,16 @@
 
 
 ## Step-1 - with pre-demultiplexed data
-nextflow run \
+stdbuf -oL -eL nextflow run \
   vmikk/NextITS -r main \
   -resume \
   --step "Step1" \
   --storagemode "copy" \
   -params-file /scripts/NextFlowConfig.json \
-  --input      "$BASEDIR"/Input/"$1" \
-  --outdir     "$BASEDIR"/Step1_Results/"$1" \
-  -work-dir    "$BASEDIR"/Step1_WorkDirs/"$1" \
-  --tracedir   "$BASEDIR"/Step1_WorkDirs/"$1"/pipeline_info \
+  --input      "$BASEDIR"Input/"$1" \
+  --outdir     "$BASEDIR"Input/Step1_Results/"$1" \
+  -work-dir    "$BASEDIR"Input/Step1_WorkDirs/"$1" \
+  --tracedir   "$BASEDIR"Input/Step1_WorkDirs/"$1"/pipeline_info \
   --demultiplexed true \
   -ansi-log    false \
-  >> Nextflow__"$1".log
+  2>&1 | tee -a "$BASEDIR"/Input/Nextflow__"$1".log

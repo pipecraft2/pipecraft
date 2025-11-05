@@ -5734,6 +5734,18 @@ export default new Vuex.Store({
                 }
               }
             });
+            step.extraInputs.forEach((input) => {
+              if (
+                (input.type == "file" &&
+                  (input.depends_on == undefined || eval(input.depends_on))) ||
+                input.type == "chip" ||
+                (input.type == "boolfile" && input.active == true)
+              ) {
+                if (input.value == "undefined" || input.value.length < 1) {
+                  Ready.push(false);
+                }
+              }
+            });
           }
         });
       }
@@ -6585,7 +6597,7 @@ export default new Vuex.Store({
         return null;
       }
     },
-    startDockerStatusMonitoring({ commit, state }) {
+    async startDockerStatusMonitoring({ commit, state }) {
       const docker = getDockerInstance(state);
       const checkDockerStatus = async () => {
         try {
@@ -6598,7 +6610,7 @@ export default new Vuex.Store({
       // Check immediately
       checkDockerStatus();
       // Set up interval for continuous monitoring
-      setInterval(checkDockerStatus, 1000);
+      setInterval(checkDockerStatus, 10000);
     },
   },
   modules: {},

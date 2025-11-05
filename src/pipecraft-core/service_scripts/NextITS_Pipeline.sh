@@ -1,7 +1,7 @@
 #!/bin/bash
 
 
-export NXF_HOME="/input/.nextflow"
+export NXF_HOME="/Input/.nextflow"
 mkdir -p $NXF_HOME
 BASEDIR=$(pwd)
 
@@ -9,7 +9,7 @@ fix_permissions() {
   # Try different possible locations for the NextITS scripts
   for dir in \
     "$NXF_HOME/assets/vmikk/NextITS/bin" \
-    "/input/.nextflow/assets/vmikk/NextITS/bin" \
+    "/Input/.nextflow/assets/vmikk/NextITS/bin" \
     "$HOME/.nextflow/assets/vmikk/NextITS/bin" \
     "./work/*/vmikk/NextITS/bin"
   do
@@ -31,7 +31,7 @@ fix_permissions
 ls -la
 
 ## Run Step-1 for all sequencing runs
-find /input/Input/ -type d -not -path /input/Input/ | sort \
+find /Input/ -type d -not -path /Input/ | sort \
   | parallel -j1 --joblog Step1.log \
   "/scripts/submodules/NextITS_Step1.sh {/}"
 
@@ -39,15 +39,16 @@ find /input/Input/ -type d -not -path /input/Input/ | sort \
 
 
 ## Step-2 - standard VSEARCH clustering
-nextflow run \
+
+stdbuf -oL -eL nextflow run \
   vmikk/NextITS -r main \
   -resume \
   --storagemode "copy" \
   -params-file /scripts/NextFlowConfig.json \
   --step "Step2" \
-  --data_path  /input/Step1_Results \
-  --outdir     /input/Step2_Results \
-  -work-dir    /input/Step2_WorkDir \
-  --tracedir   /input/Step2_WorkDir/pipeline_info \
+  --data_path  /Input/Step1_Results \
+  --outdir     /Input/Step2_Results \
+  -work-dir    /Input/Step2_WorkDir \
+  --tracedir   /Input/Step2_WorkDir/pipeline_info \
   -ansi-log    false \
-  >> Nextflow__Step2.log
+  2>&1 | tee -a /Input/Nextflow__Step2.log
