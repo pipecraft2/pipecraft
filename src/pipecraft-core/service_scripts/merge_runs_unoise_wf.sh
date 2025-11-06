@@ -8,7 +8,7 @@
  # 1. clustering all samples from all runs.
  # 2. Split tables per run
  # 3. curate tables (tj + lenFilt) if 'curate otu table' is enabled
- # 4. merge zOTU tables (and also OTU tables if present)
+ # 4. merge zOTU tables
 ################################################
 ###Third-party applications:
 # vsearch v2.29.4
@@ -71,7 +71,7 @@ if [[ -f "/input/multiRunDir/.curate_table_params" ]]; then
         printf "filter_tag_jumps: $filter_tag_jumps\n"
     fi
 else
-    echo "CURATE OTU TABLE = FALSE"
+    echo "CURATE zOTU TABLE = FALSE"
     curate_otu_table="false"
 fi
 
@@ -296,67 +296,42 @@ if [[ $denoise_level == "individual" ]]; then
     
 fi # end of individual denoising
 
-### OTU tables
-### Cat dereplicated individual samples for making an OTU table
-cat $output_dir/dereplicated_sequences/*.fasta > $output_dir/Dereplicated_samples.fasta
+### zOTU tables
+### Merge dereplicated FASTA files (for making zOTU table) in chunks
+batch_size=1000
+batch_num=0
+# Find all .fasta files and merge them in groups
+find "$output_dir/dereplicated_sequences" -type f -name "*.fasta" | \
+xargs -n $batch_size | while read batch; do
+    batch_num=$((batch_num + 1))
+    echo "Merging batch $batch_num..."
+    echo "$batch" | xargs cat > "$output_dir/tempdir/Dereplicated_batch_${batch_num}.fasta"
+done
+# Merge all batch files into the final combined file
+cat "$output_dir"/tempdir/Dereplicated_batch_*.fasta > "$output_dir"/tempdir/Dereplicated_samples.fasta
+# clean up temporary batch files
+rm "$output_dir"/tempdir/Dereplicated_batch_*.fasta
 
 ## Prepare table with sequence abundance per sample
-seqkit seq --name $output_dir/Dereplicated_samples.fasta \
-    | awk -F ";" '{print $3 "\t" $1 "\t" $2}' \
-    | sed 's/size=//; s/sample=//' \
-    > $output_dir/tempdir/ASV_table_long.txt
+checkerror=$(seqkit seq --name $output_dir/tempdir/Dereplicated_samples.fasta \
+| awk -F ";" '{print $3 "\t" $1 "\t" $2}' \
+| sed 's/size=//; s/sample=//' \
+> $output_dir/tempdir/ASV_table_long.txt 2>&1)
+check_app_error
 
 ## zOTU table creation
 printf "Making zOTU table ... \n"
-Rlog=$(Rscript /scripts/submodules/ASV_OTU_merging_script.R \
+Rlog=$(Rscript /scripts/submodules/make_OTU_long_table.R \
     --derepuc      $output_dir/tempdir/Glob_derep.uc \
     --uc           $output_dir/zOTUs.uc \
     --asv          $output_dir/tempdir/ASV_table_long.txt \
     --rmsingletons FALSE \
-    --fasta        $output_dir/zOTUs.fasta \
-    --output       $output_dir/zOTU_table.txt 2>&1)
+    --output       $output_dir/zOTU_table_long.txt 2>&1)
 echo $Rlog > $output_dir/tempdir/zOTU_table_creation.log 
 wait
 
-## Perform OTU clustering (if required, id < 1)
-if [[ $id_float != 1 ]]; then
-    printf "\n Clustering zOTUs ... \n"
-
-    ### Clustering
-    checkerror=$(vsearch --cluster_size \
-    $output_dir/zOTUs.fasta \
-    $id \
-    $simtype \
-    $strands \
-    $mask \
-    $maxaccepts \
-    $maxrejects \
-    $cores \
-    --centroids $output_dir/OTUs.fasta \
-    --uc $output_dir/OTUs.uc \
-    --fasta_width 0 \
-    --sizein --sizeout 2>&1)
-    check_app_error
-
-    ## OTU table creation
-    printf "Making OTU table ... \n"
-    Rlog=$(Rscript /scripts/submodules/ASV_OTU_merging_script.R \
-    --derepuc      $output_dir/tempdir/Glob_derep.uc \
-    --uc           $output_dir/OTUs.uc \
-    --asv          $output_dir/tempdir/ASV_table_long.txt \
-    --rmsingletons FALSE \
-    --fasta        $output_dir/OTUs.fasta \
-    --output       $output_dir/OTU_table.txt 2>&1)
-    echo $Rlog > $output_dir/tempdir/OTU_table_creation.log 
-    wait
-fi # end of OTU clustering
-
-### remove ";sample=.*;" and ";size=" from OTU.fasta files.
-    # removing ";size=" because OTU table does not have "size" annotations; so the files would fit to LULU
-if [[ -f $output_dir/OTUs.fasta ]]; then
-    sed -i 's/;sample=.*;/;/' $output_dir/OTUs.fasta
-    sed -i 's/;size=.*//' $output_dir/OTUs.fasta
-fi
+### remove ";sample=.*;" and ";size=" from zOTU.fasta files.
+    # removing ";size=" because zOTU table does not have "size" annotations; so the files would fit to LULU
 if [[ -f $output_dir/zOTUs.fasta ]]; then
     sed -i 's/;sample=.*;/;/' $output_dir/zOTUs.fasta
     sed -i 's/;size=.*//' $output_dir/zOTUs.fasta
@@ -365,9 +340,8 @@ fi
 ###########################
 # 2. Split tables per run #
 ###########################
-# outputs per run OTU/zOTU table and fasta file in split_tables directory
-# Global OTU/zOTU table must have 'Sequence' as 2nd column
-printf "Splitting zOTU/OTU tables per run...\n"
+# outputs per run zOTU table and fasta file in split_tables directory
+printf "Splitting zOTU table per run...\n"
 
 # Get run names from multiRunDir
 cd /input/multiRunDir
@@ -377,83 +351,71 @@ RUNS=$(find . -maxdepth 1 -mindepth 1 -type d | grep -v "tempdir" | grep -v "ski
 if [[ -d "$output_dir/split_tables" ]]; then
     rm -rf $output_dir/split_tables
 fi
-mkdir -p $output_dir/split_tables
+ mkdir -p $output_dir/split_tables
 
-# Unset arrays if they exist
+# Unset arrays if they exist for zOTU table
 unset output_feature_tables
 unset output_fastas
-unset output_zfeature_tables
-unset output_zfastas
 
-# Create output arrays
-declare -a output_zfeature_tables
-declare -a output_zfastas
+# Create output arrays for zOTU table
 declare -a output_feature_tables
 declare -a output_fastas
 
-# Function to split table by run
-split_table_by_run() {
-    local input_table=$1
-    local input_fasta=$2
-    local table_prefix=$3
-    local fasta_prefix=$4
-    local run=$5
-
-    # Get sample names for this run from the run_sample_lists directory
-    sample_list=$(printf "OTU\nSequence\n"; cat "$output_dir/run_sample_lists/${run}_samples.txt")
-    # Get column numbers and join them with commas (including OTU column)
-    cols=$(head -n1 $input_table | tr '\t' '\n' | nl -v0 | grep -f <(echo "$sample_list") | cut -f1 | awk '{print $1 + 1}' | paste -sd',')
-    # Extract the columns using cut with the column numbers
-    cut -f"$cols" $input_table > $output_dir/split_tables/${table_prefix}_${run}.temp
-    
-    # Filter zero-abundance rows (from col 3-...) and export both table and FASTA
-    table_file=$output_dir/split_tables/${table_prefix}_${run}.temp
-    awk -v outdir="$output_dir/split_tables" -v run="$run" -v table_prefix="$table_prefix" -v fasta_prefix="$fasta_prefix" '
-        NR==1{print $0 > outdir"/"table_prefix"_"run".txt"}
-        NR>1{
-            sum=0
-            for(i=3;i<=NF;i++) sum+=$i
-            if(sum>0) {
-                print $0 > outdir"/"table_prefix"_"run".txt"
-                print ">"$1"\n"$2 > outdir"/"fasta_prefix"_"run".fasta"
-            }
-    }' "$table_file"
-    rm $table_file
-}
-
-# For each run, extract samples belonging to that run from the OTU/zOTU tables
+# For each run, extract samples belonging to that run from the long format zOTU table
 for run in $RUNS; do
-    printf "Processing tables for $run...\n"
+    printf "Getting zOTU table for $run...\n"
     
-    # Process zOTU table if it exists
-    if [[ -f "$output_dir/zOTU_table.txt" ]]; then
-        printf "Getting zOTU table for $run...\n"
-        split_table_by_run "$output_dir/zOTU_table.txt" "$output_dir/zOTUs.fasta" "zOTU_table" "zOTUs" "$run"
-        
-        # Add current run's outputs to arrays
-        output_zfeature_tables+=("$output_dir/split_tables/zOTU_table_${run}.txt")
-        output_zfastas+=("$output_dir/split_tables/zOTUs_${run}.fasta")
+    # Filter long format table for samples in this run and remove zero-abundance rows
+    awk -v run="$run" -v outdir="$output_dir/split_tables" -v sample_file="$output_dir/run_sample_lists/${run}_samples.txt" '
+        BEGIN {
+            # Read sample list for this run for zOTU table
+            while ((getline < sample_file) > 0) {
+                samples[$0] = 1
+            }
+            close(sample_file)
+        }
+        NR==1 {
+            # Print header for zOTU table
+            print $0 > outdir"/zOTU_table_long_"run".txt"
+            next
+        }
+        {
+            # Filter by SampleID (first column) and non-zero abundance (third column) for zOTU table
+            if ($1 in samples && $3 > 0) {
+                print $0 > outdir"/zOTU_table_long_"run".txt"
+                otus[$2] = 1  # Store unique zOTU names
+            }
+        }
+        END {
+            # Write unique zOTU list for FASTA extraction
+            for (otu in otus) {
+                print otu > outdir"/zOTU_list_"run".txt"
+            }
+        }
+    ' "$output_dir/zOTU_table_long.txt"
+    
+    # Extract zOTU sequences from main FASTA file using seqkit
+    if [[ -f "$output_dir/split_tables/zOTU_list_${run}.txt" ]]; then
+        seqkit grep -f "$output_dir/split_tables/zOTU_list_${run}.txt" -w 0 \
+            "$output_dir/zOTUs.fasta" -o "$output_dir/split_tables/zOTUs_${run}.fasta"
+        rm "$output_dir/split_tables/zOTU_list_${run}.txt"
+    else
+        # No zOTUs for this run, create empty FASTA
+        touch "$output_dir/split_tables/zOTUs_${run}.fasta"
     fi
-    # Process OTU table if it exists
-    if [[ -f "$output_dir/OTU_table.txt" ]]; then
-        printf "Getting OTU table for $run...\n"
-        split_table_by_run "$output_dir/OTU_table.txt" "$output_dir/OTUs.fasta" "OTU_table" "OTUs" "$run"
-        
-        # Add current run's outputs to arrays
-        output_feature_tables+=("$output_dir/split_tables/OTU_table_${run}.txt")
-        output_fastas+=("$output_dir/split_tables/OTUs_${run}.fasta")
-    fi
+
+    # Initialize output variables
+    output_feature_table=$output_dir/split_tables/zOTU_table_long_${run}.txt
+    output_fasta=$output_dir/split_tables/zOTUs_${run}.fasta
+
+    # Add current run's outputs to arrays (for cases when no curation is performed)
+    output_feature_tables+=("$output_feature_table")
+    output_fastas+=("$output_fasta")
 done
 
 # Print the output arrays (inputs for the next steps)
-if [[ ${#output_zfeature_tables[@]} -gt 0 ]]; then
-    echo "Split zOTU tables per run: output_zfeature_tables = ${output_zfeature_tables[*]}"
-    echo "zOTU Fasta files per run: output_zfastas = ${output_zfastas[*]}"
-fi
-if [[ ${#output_feature_tables[@]} -gt 0 ]]; then
-    echo "Split OTU tables per run: output_feature_tables = ${output_feature_tables[*]}"
-    echo "OTU Fasta files per run: output_fastas = ${output_fastas[*]}"
-fi
+echo "Split tables per run: output_feature_tables = ${output_feature_tables[*]}"
+echo "Fasta files per run: output_fastas = ${output_fastas[*]}"
 
 ####################################################################
 # 3. curate tables (tj + lenFilt) if 'curate otu table' is enabled #
@@ -478,332 +440,329 @@ fi
 ################
 ### UNCROSS2 ###
 ################
-# Process both OTU and zOTU tables if they exist
-for table_type in "zOTU" "OTU"; do
-    # Skip this type if no corresponding tables exist
-    if [[ $table_type == "OTU" && ${#output_feature_tables[@]} -eq 0 ]] || \
-       [[ $table_type == "zOTU" && ${#output_zfeature_tables[@]} -eq 0 ]]; then
-        continue
-    fi
+for table_file in /input/multiRunDir/merged_runs/split_tables/zOTU_table_long_*.txt; do
 
-    # Set the appropriate array based on table type
-    if [[ $table_type == "OTU" ]]; then
-        table_files=("${output_feature_tables[@]}")
-        fasta_files=("${output_fastas[@]}")
-    else
-        table_files=("${output_zfeature_tables[@]}")
-        fasta_files=("${output_zfastas[@]}")
-    fi
-
-    for ((i=0; i<${#table_files[@]}; i++)); do
-        table_file="${table_files[i]}"
-        fasta_file="${fasta_files[i]}"
-        
-        # get run name from table file name
-        run=$(basename "$table_file" | sed "s/${table_type}_table_\(.*\)\.txt/\1/")
-        echo "Processing $table_type table for run = $run"
-
-        ### Process samples with UNCROSS2 (tag-jumps filtering) in R
-        if [[ $filter_tag_jumps == "true" ]]; then
-            table_file_basename=$(basename $table_file)    
-
-            printf "# Running tag-jumps filtering (UNCROSS2) for $table_file_basename\n "
-            # Filter primary feature table
-            Rlog=$(Rscript /scripts/submodules/tag_jump_removal.R $table_file $f_value $p_value $fasta_file $curated_dir 2>&1)
-            # Check if R script executed successfully
-            if [ $? -ne 0 ]; then
-                log_error "tag-jumps filtering R script failed with the following error:
-                $Rlog
-                Please check the parameters and input file.
-                >Quitting"
-                end_process
-            fi
-            echo "$Rlog" > "$curated_dir/tag-jumps_filt.log"
-
-            # format R-log file
-            sed -i "s/;; /\n/g" $curated_dir/tag-jumps_filt.log 
-        
-            # Check if output files were created
-            if [ -z "$(find "$curated_dir" -name "*_TagJumpFilt.txt")" ]; then
-                log_error "tag-jumps filtering process did not generate the expected output file.
-                Please check the log file at $curated_dir/tag-jumps_filt.log
-                >Quitting"
-                end_process
-            fi
-            printf "tag-jumps filtering completed \n\n"
-
-            # cp fasta file to curated_dir (merged_runs/split_tables/curated)
-            cp "$fasta_file" "$curated_dir"
-
-            # Update output variables if only tag-jumps filtering is performed
-            if [[ -z $min_length_num || $min_length_num == "0" ]] && [[ -z $max_length_num || $max_length_num == "0" ]]; then
-                printf "Only tag-jumps filtering is performed\n"
-                if [[ $table_type == "OTU" ]]; then
-                    # Update OTU arrays
-                    output_feature_tables[$i]=$curated_dir/${table_file_basename%%.txt}_TagJumpFilt.txt
-                    output_fastas[$i]=$curated_dir/${table_type}s_${run}.fasta
-                else
-                    # Update zOTU arrays
-                    output_zfeature_tables[$i]=$curated_dir/${table_file_basename%%.txt}_TagJumpFilt.txt
-                    output_zfastas[$i]=$curated_dir/${table_type}s_${run}.fasta
-                fi
-
-                # Print updated arrays for debugging
-                if [[ $table_type == "OTU" ]]; then
-                    echo "Updated OTU arrays:"
-                    echo "output_feature_tables[$i]=${output_feature_tables[$i]}"
-                    echo "output_fastas[$i]=${output_fastas[$i]}"
-                else
-                    echo "Updated zOTU arrays:"
-                    echo "output_zfeature_tables[$i]=${output_zfeature_tables[$i]}"
-                    echo "output_zfastas[$i]=${output_zfastas[$i]}"
-                fi
-
-            else 
-                printf "Length filtering is also performed\n"
-                # Set inputs for length filtering
-                input_table=$curated_dir/${table_file_basename%%.txt}_TagJumpFilt.txt
-                input_fasta=$curated_dir/${table_type}s_${run}.fasta
-            fi
-
-        ### skip tag-jumps filtering ###
-        elif [[ $filter_tag_jumps == "false" ]]; then
-            printf "# Skipping tag-jumps filtering\n"
-            input_table=$table_file
-            input_fasta=$fasta_file
-        fi
-   
-        ########################
-        ### length filtering ###
-        ########################
-        if  [[ $min_length_num != "0" && -n $min_length_num ]] || \
-            [[ $max_length_num != "0" && -n $max_length_num ]]; then
-            printf "Filtering by length, min_length = $min_length_num, max_length = $max_length_num. \n"
-            # get basenames for correct naming of output files
-            input_table_basename=$(basename $input_table)
-            fasta_basename=$(basename $input_fasta)
-            # count input ASVs
-            ASVs_count=$(grep -c "^>" $input_fasta)
-            echo "Feature count = $ASVs_count"
-            # filter by length
-            checkerror=$(seqkit seq -w 0 -g \
-                        $min_length_seqkit \
-                        $max_length_seqkit \
-                        $input_fasta \
-                        > $curated_dir/${fasta_basename%%.fasta}_lenFilt.fasta 2>&1)
-            check_app_error
-
-            # count length filtered ASVs and proceed with the rest of the steps
-            ASVs_lenFilt=$(grep -c "^>" $curated_dir/${fasta_basename%%.fasta}_lenFilt.fasta)
-            echo "length filtered Feature (ASV/OTU) count = $ASVs_lenFilt"
-            if [[ $ASVs_lenFilt == 0 ]]; then
-                ASVs_lenFilt_result=$"All Features (ASVs/OTUs) were filtered out based on the length filter
-                (min_length $min_length_num bp and max_length $max_length_num bp).
-                No new files generated.
-                Input table was $input_table_basename and input fasta was $fasta_basename with $ASVs_count sequences"
-                echo -e "$ASVs_lenFilt_result"
-                rm $curated_dir/${fasta_basename%%.fasta}_lenFilt.fasta
-                # Set output variables to input files since no filtering occurred
-                if [[ $table_type == "OTU" ]]; then
-                    output_feature_table=$input_table
-                    output_fasta=$input_fasta
-                else
-                    output_zfeature_table=$input_table
-                    output_zfasta=$input_fasta
-                fi
-                
-            elif [[ $ASVs_lenFilt == $ASVs_count ]]; then
-                ASVs_lenFilt_result=$"None of the Features (ASVs/OTUs) were filtered out based on the length filter
-                (min_length $min_length_num bp and max_length $max_length_num bp).
-                No new files generated.
-                Input table was $input_table_basename and input fasta was $fasta_basename with $ASVs_count sequences"
-                echo -e "$ASVs_lenFilt_result"
-                export ASVs_lenFilt_result
-                rm $curated_dir/${fasta_basename%%.fasta}_lenFilt.fasta
-                # Set output variables to input files since no filtering occurred
-                if [[ $table_type == "OTU" ]]; then
-                    output_feature_table=$input_table
-                    output_fasta=$input_fasta
-                else
-                    output_zfeature_table=$input_table
-                    output_zfasta=$input_fasta
-                fi
-            else          
-                # filter the table
-                checkerror=$(seqkit seq \
-                            -n $curated_dir/${fasta_basename%%.fasta}_lenFilt.fasta \
-                            > $curated_dir/${fasta_basename%%.fasta}_IDs.txt 2>&1)
-                check_app_error
-                checkerror=$(grep -f $curated_dir/${fasta_basename%%.fasta}_IDs.txt $input_table \
-                                    > $curated_dir/${input_table_basename%%.txt}_lenFilt.temp 2>&1)
-                check_app_error
-                # remove intermediate files
-                rm $curated_dir/${fasta_basename%%.fasta}_IDs.txt
-                # add 1st row of the $input_table to the $output_dir/${input_table_basename%%.txt}_lenFilt.temp
-                header=$(head -n 1 $input_table)
-                sed -i "1i\\$header" "$curated_dir/${input_table_basename%%.txt}_lenFilt.temp"
-
-                # Remove samples (columns) with 0 abundance; does not remove 0 rows, but there cannot be 0 rows
-                checkerror=$(awk '
-                BEGIN {
-                    FS = OFS = "\t"
-                }
-                NR == 1 {
-                    # Store the header and identify the "Sequence" column
-                    for (i = 1; i <= NF; i++) {
-                        headers[i] = $i
-                        if ($i == "Sequence") {
-                            sequence_col = i
-                        }
-                    }
-                    next
-                }
-                {
-                    # Sum each column, excluding the first column and the "Sequence" column
-                    for (i = 2; i <= NF; i++) {
-                        if (i != sequence_col) {
-                            sum[i] += $i
-                        }
-                    }
-                    # Store the row data
-                    for (i = 1; i <= NF; i++) {
-                        data[NR, i] = $i
-                    }
-                }
-                END {
-                    # Print the header with non-zero columns
-                    for (i = 1; i <= NF; i++) {
-                        if (i == 1 || i == sequence_col || sum[i] != 0) {
-                            printf "%s%s", headers[i], (i == NF ? "\n" : OFS)
-                        }
-                    }
-                    # Print the rows excluding columns with zero sum
-                    for (j = 2; j <= NR; j++) {
-                        for (i = 1; i <= NF; i++) {
-                            if (i == 1 || i == sequence_col || sum[i] != 0) {
-                                printf "%s%s", data[j, i], (i == NF ? "\n" : OFS)
-                            }
-                        }
-                    }
-                }
-                ' "$curated_dir/${input_table_basename%%.txt}_lenFilt.temp" \
-                > "$curated_dir/${input_table_basename%%.txt}_lenFilt.txt" 2>&1)
-                check_app_error
-                # remove intermediate files
-                if [[ -f $curated_dir/${input_table_basename%%.txt}_lenFilt.temp ]]; then
-                    rm $curated_dir/${input_table_basename%%.txt}_lenFilt.temp
-                fi
-                # for the report
-                count_features "$curated_dir/${input_table_basename%%.txt}_lenFilt.txt"
-                ASVs_lenFilt_result=$"Features (ASVs/OTUs) after length filtering = $ASVs_lenFilt.
-
-- ${input_table_basename%%.txt}_lenFilt.txt = Feature table after length filtering.
-- ${fasta_basename%%.fasta}_lenFilt.fasta = Representative sequences file after length filtering
-
-Number of Features                       = $feature_count
-Number of sequences in the Feature table = $nSeqs
-Number of samples in the Feature table   = $nSample"
-                echo -e "$ASVs_lenFilt_result"
-                # Set output variables to filtered files
-                if [[ $table_type == "OTU" ]]; then
-                    output_feature_table="$curated_dir/${input_table_basename%%.txt}_lenFilt.txt"
-                    output_fasta="$curated_dir/${fasta_basename%%.fasta}_lenFilt.fasta"
-                else
-                    output_zfeature_table="$curated_dir/${input_table_basename%%.txt}_lenFilt.txt"
-                    output_zfasta="$curated_dir/${fasta_basename%%.fasta}_lenFilt.fasta"
-                fi
-            fi
-        fi
-
-        # Update the appropriate arrays with the final output files for this run
-        if [[ $table_type == "OTU" ]]; then
-            output_feature_tables[$i]=$output_feature_table
-            output_fastas[$i]=$output_fasta
-        else
-            output_zfeature_tables[$i]=$output_zfeature_table
-            output_zfastas[$i]=$output_zfasta
-        fi
-
-    done
+    # get run name from table file name
+    run=$(basename "$table_file" | sed 's/zOTU_table_long_\(.*\)\.txt/\1/')
+    echo "run = $run"
     
-    # Print final arrays for this table type
-    if [[ $table_type == "OTU" ]]; then
-        echo "OTU tables to be merged = ${output_feature_tables[*]}"
-        echo "Corresponding OTU fasta files = ${output_fastas[*]}"
+    # table_file corresponding fasta file
+    fasta_file=$output_dir/split_tables/zOTUs_${run}.fasta
+
+    ### Process samples with UNCROSS2 (tag-jumps filtering) in R
+    if [[ $filter_tag_jumps == "true" ]]; then
+        table_file_basename=$(basename $table_file)    
+
+        printf "# Running tag-jumps filtering (UNCROSS2) for $table_file_basename\n "
+        # Filter primary feature table
+        Rlog=$(Rscript /scripts/submodules/tag_jump_removal_long.R $table_file $f_value $p_value $curated_dir 2>&1)
+        # Check if R script executed successfully
+        if [ $? -ne 0 ]; then
+            log_error "tag-jumps filtering R script failed with the following error:
+            $Rlog
+            Please check the parameters and input file.
+            >Quitting"
+            end_process
+        fi
+        echo "$Rlog" > "$curated_dir/tag-jumps_filt.log"
+
+        # format R-log file
+        sed -i "s/;; /\n/g" $curated_dir/tag-jumps_filt.log 
+    
+        # Check if output files were created
+        if [ -z "$(find "$curated_dir" -name "*_TagJumpFilt.txt")" ]; then
+            log_error "tag-jumps filtering process did not generate the expected output file.
+            Please check the log file at $curated_dir/tag-jumps_filt.log
+            >Quitting"
+            end_process
+        fi
+        printf "tag-jumps filtering completed \n\n"
+
+        # cp fasta file to curated_dir (merged_runs/split_tables/curated)
+        table_dir=$(dirname "$table_file")
+        cp "$table_dir/zOTUs_${run}.fasta" "$curated_dir"
+
+        # Update output variables if only tag-jumps filtering is performed
+        if [[ -z $min_length_num || $min_length_num == "0" ]] && [[ -z $max_length_num || $max_length_num == "0" ]]; then
+            printf "Only tag-jumps filtering is performed\n"
+            output_feature_table=$curated_dir/${table_file_basename%%.txt}_TagJumpFilt.txt
+            output_fasta=$curated_dir/zOTUs_${run}.fasta
+            export output_feature_table
+            export output_fasta
+
+            printf "Table for merging = $output_feature_table\n"
+            printf "Fasta file for merging = $output_fasta\n"
+        else 
+            printf "Length filtering is also performed\n"
+            # Set inputs for length filtering
+            input_table=$curated_dir/${table_file_basename%%.txt}_TagJumpFilt.txt
+            input_fasta=$curated_dir/zOTUs_${run}.fasta
+            export input_table
+            export input_fasta
+
+            printf "Table for next step = $input_table\n"
+            printf "Fasta file for next step = $input_fasta\n"
+        fi
+
+    ### skip tag-jumps filtering ###
+    elif [[ $filter_tag_jumps == "false" ]]; then
+        printf "# Skipping tag-jumps filtering\n"
+        input_table=$table_file
+        export input_table
+        fasta_file=$output_dir/split_tables/zOTUs_${run}.fasta
+        export fasta_file
+    fi
+   
+    ########################
+    ### length filtering ###
+    ########################
+    if  [[ $min_length_num != "0" && -n $min_length_num ]] || \
+        [[ $max_length_num != "0" && -n $max_length_num ]]; then
+        printf "Filtering by length, min_length = $min_length_num, max_length = $max_length_num. \n"
+        # get basenames for correct naming of output files
+        input_table_basename=$(basename $input_table)
+        fasta_basename=$(basename $input_fasta)
+        # count input zOTUs
+        ASVs_count=$(grep -c "^>" $input_fasta)
+        echo "Feature (zOTUs) count = $ASVs_count"
+        # filter by length
+        checkerror=$(seqkit seq -w 0 -g \
+                    $min_length_seqkit \
+                    $max_length_seqkit \
+                    $input_fasta \
+                    > $curated_dir/${fasta_basename%%.fasta}_lenFilt.fasta 2>&1)
+        check_app_error
+
+        # count length filtered zOTUs and proceed with the rest of the steps
+        ASVs_lenFilt=$(grep -c "^>" $curated_dir/${fasta_basename%%.fasta}_lenFilt.fasta)
+        echo "length filtered Feature (zOTUs) count = $ASVs_lenFilt"
+        if [[ $ASVs_lenFilt == 0 ]]; then
+            ASVs_lenFilt_result=$"All Features (zOTUs) were filtered out based on the length filter
+            (min_length $min_length_num bp and max_length $max_length_num bp).
+            No new files generated.
+            Input table was $input_table_basename and input fasta was $fasta_basename with $ASVs_count sequences"
+            echo -e "$ASVs_lenFilt_result"
+            rm $curated_dir/${fasta_basename%%.fasta}_lenFilt.fasta
+            # Set output variables to input files since no filtering occurred
+            output_feature_table=$input_table
+            output_fasta=$input_fasta
+            
+        elif [[ $ASVs_lenFilt == $ASVs_count ]]; then
+            ASVs_lenFilt_result=$"None of the Features (zOTUs) were filtered out based on the length filter
+            (min_length $min_length_num bp and max_length $max_length_num bp).
+            No new files generated.
+            Input table was $input_table_basename and input fasta was $fasta_basename with $ASVs_count sequences"
+            echo -e "$ASVs_lenFilt_result"
+            export ASVs_lenFilt_result
+            rm $curated_dir/${fasta_basename%%.fasta}_lenFilt.fasta
+            # Set output variables to input files since no filtering occurred
+            output_feature_table=$input_table
+            output_fasta=$input_fasta
+        else          
+            # filter the table
+            checkerror=$(seqkit seq \
+                        -n $curated_dir/${fasta_basename%%.fasta}_lenFilt.fasta \
+                        > $curated_dir/${fasta_basename%%.fasta}_IDs.txt 2>&1)
+            check_app_error
+            checkerror=$(grep -f $curated_dir/${fasta_basename%%.fasta}_IDs.txt $input_table \
+                                > $curated_dir/${input_table_basename%%.txt}_lenFilt.temp 2>&1)
+            check_app_error
+            # remove intermediate files
+            rm $curated_dir/${fasta_basename%%.fasta}_IDs.txt
+            # add 1st row of the $input_table to the $output_dir/${input_table_basename%%.txt}_lenFilt.temp
+            header=$(head -n 1 $input_table)
+            sed -i "1i\\$header" "$curated_dir/${input_table_basename%%.txt}_lenFilt.temp"
+
+            # For long format: just remove any zero-abundance rows (shouldn't exist, but check)
+            checkerror=$(awk '
+            BEGIN {
+                FS = OFS = "\t"
+            }
+            NR == 1 {
+                # Print header
+                print $0
+                next
+            }
+            {
+                # For long format: SampleID, OTU, Abundance (3rd column is abundance)
+                # Only keep rows with non-zero abundance
+                if ($3 > 0) {
+                    print $0
+                }
+            }
+            ' "$curated_dir/${input_table_basename%%.txt}_lenFilt.temp" \
+            > "$curated_dir/${input_table_basename%%.txt}_lenFilt.txt" 2>&1)
+            check_app_error
+            # remove intermediate files
+            if [[ -f $curated_dir/${input_table_basename%%.txt}_lenFilt.temp ]]; then
+                rm $curated_dir/${input_table_basename%%.txt}_lenFilt.temp
+            fi
+            # for the report
+            count_features "$curated_dir/${input_table_basename%%.txt}_lenFilt.txt"
+            ASVs_lenFilt_result=$"Features (zOTUs) after length filtering = $ASVs_lenFilt.
+
+    - ${input_table_basename%%.txt}_lenFilt.txt = Feature table after length filtering.
+    - ${fasta_basename%%.fasta}_lenFilt.fasta = Representative sequences file after length filtering
+    
+    Number of Features                       = $feature_count
+    Number of sequences in the Feature table = $nSeqs
+    Number of samples in the Feature table   = $nSample"
+            echo -e "$ASVs_lenFilt_result"
+            # Set output variables to filtered files
+            output_feature_table="$curated_dir/${input_table_basename%%.txt}_lenFilt.txt"
+            output_fasta="$curated_dir/${fasta_basename%%.fasta}_lenFilt.fasta"
+        fi
+    fi
+
+
+
+    # if not tag-jump finterin and no length filtering, use input files as output
+    if [[ ( $filter_tag_jumps == "false" || -z $filter_tag_jumps ) && \
+          ( -z $min_length_num || $min_length_num == "0" ) && \
+          ( -z $max_length_num || $max_length_num == "0" ) ]]; then
+        :   
     else
-        echo "zOTU tables to be merged = ${output_zfeature_tables[*]}"
-        echo "Corresponding zOTU fasta files = ${output_zfastas[*]}"
+        # Update the arrays with the final output files for this run
+        output_feature_tables=("${output_feature_tables[@]/$table_file/$output_feature_table}")
+        output_fastas=("${output_fastas[@]/$fasta_file/$output_fasta}")
+    fi
+
+done
+echo "zOTU tables to be merged = ${output_feature_tables[*]}"
+echo "Corresponding fasta files = ${output_fastas[*]}"
+
+#######################
+# 4. merge zOTU tables #
+#######################
+printf "Merging zOTU tables...\n"
+
+# Merge long format tables (simple concatenation and aggregation)
+printf "Merging long format zOTU tables...\n"
+echo "Tables to merge: ${output_feature_tables[*]}"
+
+# Concatenate all tables (first one with header, rest without header)
+first_table=true
+for table in "${output_feature_tables[@]}"; do
+    if $first_table; then
+        cat "$table" > "$output_dir/zOTU_table_long_merged.temp"
+        first_table=false
+    else
+        tail -n +2 "$table" >> "$output_dir/zOTU_table_long_merged.temp"
     fi
 done
 
-################################
-# 4. merge zOTU and OTU tables #
-################################
-# Merge zOTU tables if they exist
-if [[ ${#output_zfeature_tables[@]} -gt 0 ]]; then
-    printf "Merging zOTU tables...\n"
-    output_feature_table=$(IFS=,; echo "${output_zfeature_tables[*]}")
-    output_fasta=$(IFS=,; echo "${output_zfastas[*]}")
-    export output_feature_table
-    export output_fasta
+# Aggregate duplicates by summing abundances (in case same sample+OTU appears in multiple runs)
+printf "SampleID\tzOTU\tAbundance\n" > "$output_dir/zOTU_table_long.txt"
+awk '
+BEGIN {
+    FS = OFS = "\t"
+}
+NR > 1 {
+    key = $1 "\t" $2  # SampleID + zOTU
+    abundance[key] += $3
+}
+END {
+    for (key in abundance) {
+        if (abundance[key] > 0) {
+            print key, abundance[key]
+        }
+    }
+}' "$output_dir/zOTU_table_long_merged.temp" >> "$output_dir/zOTU_table_long.txt"
 
-    # Merge tables in R 
-    Rlog=$(Rscript /scripts/submodules/mergeOtuTables.R $output_feature_table $output_dir zOTU_table.txt 2>&1)
-    # Check if R script executed successfully
-    if [ $? -ne 0 ]; then
-        log_error "mergeOtuTables R script failed with the following error:
-        $Rlog
-        Please check the parameters and input file.
-        >Quitting"
-        end_process
-    fi
-    echo "$Rlog" > "$output_dir/mergedOtuTables.log"
+rm "$output_dir/zOTU_table_long_merged.temp"
+printf "Merged long format zOTU table created: zOTU_table_long.txt\n"
 
-    # Merge FASTA files
-    printf "Merging zOTU FASTA files...\n"
-    cat "${output_zfastas[@]}" > "$output_dir/merged_zOTUs.fasta"
-    # Remove duplicate sequences from merged FASTA file
-    printf "Removing duplicate sequences from merged zOTU FASTA file...\n"
-    checkerror=$(seqkit rmdup -w 0 -s "$output_dir/merged_zOTUs.fasta" -o "$output_dir/merged_zOTUs_dedup.fasta" 2>&1)
-    check_app_error
-    mv "$output_dir/merged_zOTUs_dedup.fasta" "$output_dir/zOTUs.fasta" && rm "$output_dir/merged_zOTUs.fasta"
-fi
+# Merge FASTA files
+printf "Merging FASTA files...\n"
+cat "${output_fastas[@]}" > "$output_dir/merged_zOTUs.fasta"
+# Remove duplicate sequences from merged FASTA file
+printf "Removing duplicate sequences from merged FASTA file...\n"
+checkerror=$(seqkit rmdup -w 0 -s "$output_dir/merged_zOTUs.fasta" -o "$output_dir/merged_zOTUs_dedup.fasta" 2>&1)
+check_app_error
+mv "$output_dir/merged_zOTUs_dedup.fasta" "$output_dir/zOTUs.fasta" && rm "$output_dir/merged_zOTUs.fasta"
 
-# Merge OTU tables if they exist
-if [[ ${#output_feature_tables[@]} -gt 0 ]]; then
-    printf "Merging OTU tables...\n"
-    output_feature_table=$(IFS=,; echo "${output_feature_tables[*]}")
-    output_fasta=$(IFS=,; echo "${output_fastas[*]}")
-    export output_feature_table
-    export output_fasta
+# Update output variables to point to final merged files
+output_feature_table="$output_dir/zOTU_table_long.txt"
+output_fasta="$output_dir/zOTUs.fasta"
+export output_feature_table
+export output_fasta
 
-    # Merge tables in R 
-    Rlog=$(Rscript /scripts/submodules/mergeOtuTables.R $output_feature_table $output_dir OTU_table.txt 2>&1)
-    # Check if R script executed successfully
-    if [ $? -ne 0 ]; then
-        log_error "mergeOtuTables R script failed with the following error:
-        $Rlog
-        Please check the parameters and input file.
-        >Quitting"
-        end_process
-    fi
-    echo "$Rlog" > "$output_dir/mergeOtuTables.log"
+### Convert zOTU table to wide format (optional for large datasets)
+# Count unique samples to determine if wide format conversion is feasible
+sample_count=$(awk 'NR>1 {samples[$1]=1} END {print length(samples)}' "$output_dir/zOTU_table_long.txt")
+printf "Number of samples in dataset: $sample_count\n"
 
-    # Merge FASTA files
-    printf "Merging OTU FASTA files...\n"
-    cat "${output_fastas[@]}" > "$output_dir/merged_OTUs.fasta"
-    # Remove duplicate sequences from merged FASTA file
-    printf "Removing duplicate sequences from merged OTU FASTA file...\n"
-    checkerror=$(seqkit rmdup -w 0 -s "$output_dir/merged_OTUs.fasta" -o "$output_dir/merged_OTUs_dedup.fasta" 2>&1)
-    check_app_error
-    mv "$output_dir/merged_OTUs_dedup.fasta" "$output_dir/OTUs.fasta" && rm "$output_dir/merged_OTUs.fasta"
-fi
+# Wide format is problematic with many samples (memory, line length, processing time)
+MAX_SAMPLES_FOR_WIDE=5000
+
+if [[ $sample_count -le $MAX_SAMPLES_FOR_WIDE ]]; then
+    printf "Converting zOTU table to wide format...\n"
+    awk '
+    BEGIN {
+        FS = OFS = "\t"
+    }
+    NR == 1 {
+        # Skip header
+        next
+    }
+    {
+        sample = $1
+        otu = $2
+        abundance = $3
+        
+        # Store abundance
+        data[otu, sample] = abundance
+        
+        # Track unique zOTUs and samples
+        if (!(otu in otus)) {
+            otus[otu] = ++otu_count
+        }
+        if (!(sample in samples)) {
+            samples[sample] = ++sample_count
+            sample_order[sample_count] = sample
+        }
+    }
+    END {
+        # Print header: zOTU followed by sample names in order they appeared
+        printf "zOTU"
+        for (i = 1; i <= sample_count; i++) {
+            printf "\t%s", sample_order[i]
+        }
+        printf "\n"
+        
+        # Print data rows
+        for (otu in otus) {
+            printf "%s", otu
+            for (i = 1; i <= sample_count; i++) {
+                sample = sample_order[i]
+                # Print abundance or 0 if not present
+                if ((otu, sample) in data) {
+                    printf "\t%s", data[otu, sample]
+                } else {
+                    printf "\t0"
+                }
+            }
+            printf "\n"
+        }
+    }' "$output_dir/zOTU_table_long.txt" > "$output_dir/zOTU_table.txt"
+    
+    printf "Wide format zOTU table created: zOTU_table.txt\n"
+else
+    printf "WARNING: Dataset has $sample_count samples (threshold: $MAX_SAMPLES_FOR_WIDE).\n"
+    printf "Skipping wide format conversion:\n"
+fi 
 
 ### CLEAN UP ###
-# Remove all files and folders except OTUs.fasta, OTU_table.txt, zOTUs.fasta and zOTU_table.txt
+# Remove all files and folders except output files
 printf "Cleaning up temporary files...\n"
 if [[ $debugger != "true" ]]; then
-    find "$output_dir" -mindepth 1 -not \( -name "OTUs.fasta" -o -name "OTU_table.txt" -o -name "zOTUs.fasta" -o -name "zOTU_table.txt" \) -exec rm -rf {} +
+    if [[ -f "$output_dir/zOTU_table.txt" ]]; then
+        # Keep both wide and long format
+        find "$output_dir" -mindepth 1 -not \( -name "zOTUs.fasta" -o -name "zOTU_table_long.txt" -o -name "zOTU_table.txt" \) -exec rm -rf {} +
+    else
+        # Keep only long format (wide format not created)
+        find "$output_dir" -mindepth 1 -not \( -name "zOTUs.fasta" -o -name "zOTU_table_long.txt" \) -exec rm -rf {} +
+    fi
 
     if [[ -f "/input/multiRunDir/.curate_table_params" ]]; then
         rm /input/multiRunDir/.curate_table_params
@@ -819,20 +778,8 @@ fi
 ##########################################
 ### Make README.txt file (merged_runs) ###
 ##########################################
-# Count features for both tables if they exist
-if [[ -f "$output_dir/zOTU_table.txt" ]]; then
-    count_features "$output_dir/zOTU_table.txt"
-    zfeature_count=$feature_count
-    znSeqs=$nSeqs
-    znSample=$nSample
-fi
-
-if [[ -f "$output_dir/OTU_table.txt" ]]; then
-    count_features "$output_dir/OTU_table.txt"
-    ofeature_count=$feature_count
-    onSeqs=$nSeqs
-    onSample=$nSample
-fi
+# Count features
+count_features "$output_dir/zOTU_table_long.txt"
 
 end=$(date +%s)
 runtime=$((end-start))
@@ -843,26 +790,28 @@ Start time: $start_time
 End time: $(date)
 Runtime: $runtime seconds
 
-# 1. clustering all samples from all sequencing runs: 
-        similarity_threshold = $id
+# 1. Apply UNOISE3 (--cluster_unoise) for all samples from all sequencing runs: 
         strands = $strands
-        denoise_level = $denoise_level
-        unoise_alpha = $unoise_alpha
         minsize = $minsize
+        remove chimeras = $chimerarm
+        unoise_alpha = $unoise_alpha
+        denoise_level = $denoise_level
+        abskew = $abskew
         similarity_type = $simtype
         maxaccepts = $maxaccepts
+        maxrejects = $maxrejects
         mask = $mask
-# 2. Split OTU/zOTU tables per run\n" > $output_dir/README.txt
+# 2. Split zOTU tables per run\n" > $output_dir/README.txt
 
 if [[ $curate_otu_table == "true" ]]; then
-    printf "# 3. curate OTU/zOTU tables per run:
+    printf "# 3. curate zOTU tables per run:
     f_value = $f_value
     p_value = $p_value
     $min_length
     $max_length
-# 4. merge (curated) OTU/zOTU tables\n" >> $output_dir/README.txt
+# 4. merge (curated) zOTU tables\n" >> $output_dir/README.txt
 else
-    printf "# 3. merge OTU/zOTU tables\n" >> $output_dir/README.txt
+    printf "# 3. merge zOTU tables\n" >> $output_dir/README.txt
 fi
 
 printf "\nOutput files:\n------------" >> $output_dir/README.txt
@@ -871,18 +820,9 @@ if [[ -f "$output_dir/zOTU_table.txt" ]]; then
     printf "\n# zOTU_table.txt = merged zOTU abundance table
 # zOTUs.fasta    = merged zOTU sequences
 
-Number of zOTUs                       = $zfeature_count
-Number of sequences in zOTU table     = $znSeqs
-Number of samples in zOTU table       = $znSample" >> $output_dir/README.txt
-fi
-
-if [[ -f "$output_dir/OTU_table.txt" ]]; then
-    printf "\n\n# OTU_table.txt = merged OTU abundance table
-# OTUs.fasta    = merged OTU sequences
-
-Number of OTUs                       = $ofeature_count
-Number of sequences in OTU table     = $onSeqs
-Number of samples in OTU table       = $onSample" >> $output_dir/README.txt
+Number of zOTUs                       = $feature_count
+Number of sequences in zOTU table     = $nSeqs
+Number of samples in zOTU table       = $nSample" >> $output_dir/README.txt
 fi
 
 printf "\n
