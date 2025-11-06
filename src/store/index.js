@@ -5354,7 +5354,7 @@ export default new Vuex.Store({
         info: `DADA2 ASVs workflow for for demultiplexed Illumina or PacBio data.
                PAIRED-END FORWARD is for Illumina paired-end data; select this when all reads of interest are expected to be in 5-3 orient. 
                PAIRED-END MIXED is also for Illumina paired-end data; select this when reads of interest are expected to be in both 5-3 and 3-5 orient. 
-               SINGLE-END is for PacBio data, but can be also used for single-end read Illumina data when usig loessErrFun as errorEstFun`,
+               SINGLE-END is for PacBio data, but can be also used for single-end read Illumina data when using loessErrFun as errorEstFun (in DENOISE step)`,
         link: "https://benjjneb.github.io/dada2/index.html",
         title: "DADA2 ASVs workflow",
       },

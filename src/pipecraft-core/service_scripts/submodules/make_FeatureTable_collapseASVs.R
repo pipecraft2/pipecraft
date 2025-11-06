@@ -89,8 +89,9 @@ cat(";; Checking if there are some missing data.\n")
 if(any(is.na(ASV$OTU))){
   nreads   <- sum(ASV[ is.na(OTU) ]$Abundance)
   nrecords <- sum(is.na(ASV$OTU))
-  cat("WARNING: ", nreads, " reads (in ", 
+  cat("NOTE: ", nreads, " reads (in ", 
     nrecords, "records) were not assigned to OTUs\n")
+  cat("This occurs because these sequences were filtered out during the length filtering step.\n")
   ASV <- ASV[ !is.na(OTU) ]
 }
 

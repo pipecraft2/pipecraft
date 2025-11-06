@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # Filter tag-jumps, filter ASV by length, collaplse identical ASVs in DADA2 workflow
-# Filter tag-jumps, filter OTUs by length in OTUs workflows
+# Filter tag-jumps, filter OTUs by length in OTUs/zOTUs workflows
 # Input = ASV/OTU table file, txt format, may have "Sequence" column
 # 1. tag-jumps filtering, if ON 
 # 2. min-max length filtering, if ON
@@ -9,7 +9,7 @@
 # 4. only length filtering, if collapseNoMismatch = false
 
 # edit 21.01.2025: multiRunDir handling, 
-    # replacing dada2 'collapseNoMismatch' function with usearch_global
+    # replacing dada2 'collapseNoMismatch' function with usearch_global for faster processing
     # adding min-max length filtering
 ################################################
 ###Third-party applications:

@@ -3,6 +3,10 @@
 # Merge sequencing runs processed with DADA2 if working with multuple runs in multiRunDir. 
  # Samples with the same name across runs are merged together.
 
+ # 1. Get ASV tables from each run. If 'CURATE ASV TABLE' was enabled, then getting the curated tables.
+ # 2. Merge ASV tables with dada2 mergeSequenceTables function in R
+ # 3. Collapse identical ASVs (usearch_global --id 1)
+
 ################################################
 ###Third-party applications:
 # dada2, R
@@ -53,9 +57,6 @@ printf "# R (version $R_version)\n"
 printf "# DADA2 (version $dada2_version)\n"
 printf "# vsearch (version $vsearch_version)\n"
 
-# load variables
-collapseNoMismatch=${collapseNoMismatch} # collapse identical ASVs (usearch_global --id 1)
-
 ### Merge ASV tables with dada2 mergeSequenceTables function in R
 printf "# Running DADA2 mergeSequenceTables ...\n"
 Rlog=$(Rscript /scripts/submodules/dada2_mergeRuns.R 2>&1)
@@ -80,6 +81,8 @@ fi
 ###############################################
 ### collapse identical Features (ASVs/OTUs) ###
 ###############################################
+collapseNoMismatch=${collapseNoMismatch} # collapse identical ASVs (usearch_global --id 1)
+
 if [[ $collapseNoMismatch == "true" ]]; then
     printf "Starting collapseNoMismatch ... \n"
     # count input ASVs
@@ -160,9 +163,8 @@ if [[ $collapseNoMismatch == "true" ]]; then
     cut -f1 $output_dir/${feature_table_base_name%%.txt}_collapsed.txt | tail -n +2 > $output_dir/seq_IDs.txt 
 
     # extract sequences from ASVs_derep.fasta that match the OTU_ids.txt
-    checkerror=$(seqkit grep -f $output_dir/seq_IDs.txt $fasta_file \
-                    -w 0 > $output_dir/${fasta_base_name%%.fasta}_collapsed.fasta 2>&1)
-    check_app_error
+    seqkit grep -f $output_dir/seq_IDs.txt $fasta_file \
+                    -w 0 > $output_dir/${fasta_base_name%%.fasta}_collapsed.fasta
     rm $output_dir/seq_IDs.txt
     # count collapsed (and length filtered) ASVs
     if [[ -f $output_dir/${fasta_base_name%%.fasta}_collapsed.fasta ]]; then
