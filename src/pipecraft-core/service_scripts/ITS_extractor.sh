@@ -363,7 +363,7 @@ for seqrun in $DIRS; do
         subdir=$"full_ITS"
         clean_and_make_stats_multidir
         if [[ -d $output_dir/full_ITS/full_and_partial ]]; then
-            outfile_addition=$"full_ITS.full_and_partial"
+            outfile_addition=$"full_and_partial"
             subdir=$"full_ITS/full_and_partial"
             subdir=$(echo $subdir | sed -e "s/\//\\\\\//g")
             clean_and_make_stats_multidir
