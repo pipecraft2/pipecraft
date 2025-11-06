@@ -174,8 +174,21 @@ checkerror=$(vsearch $seqsort \
     --sizein --sizeout 2>&1)
 check_app_error
 
-### Cat dereplicated individual samples for making an OTU table
-cat $output_dir/dereplicated_sequences/*.fasta > $output_dir/tempdir/Dereplicated_samples.fasta
+
+### Merge dereplicated FASTA files (for making OTU table) in chunks
+batch_size=1000
+batch_num=0
+# Find all .fasta files and merge them in groups
+find "$output_dir/dereplicated_sequences" -type f -name "*.fasta" | \
+xargs -n $batch_size | while read batch; do
+    batch_num=$((batch_num + 1))
+    echo "Merging batch $batch_num..."
+    echo "$batch" | xargs cat > "$output_dir/tempdir/Dereplicated_batch_${batch_num}.fasta"
+done
+# Merge all batch files into the final combined file
+cat "$output_dir"/tempdir/Dereplicated_batch_*.fasta > "$output_dir"/tempdir/Dereplicated_samples.fasta
+# clean up temporary batch files
+rm "$output_dir"/tempdir/Dereplicated_batch_*.fasta
 
 ## Prepare table with sequence abundance per sample
 checkerror=$(seqkit seq --name $output_dir/tempdir/Dereplicated_samples.fasta \
@@ -186,13 +199,12 @@ check_app_error
 
 ### OTU table creation
 printf "Making OTU table ... \n"
-Rlog=$(Rscript /scripts/submodules/ASV_OTU_merging_script.R \
+Rlog=$(Rscript /scripts/submodules/make_OTU_long_table.R \
 --derepuc      "$output_dir"/tempdir/Glob_derep.uc \
 --uc           "$output_dir"/OTUs.uc \
 --asv          "$output_dir"/tempdir/ASV_table_long.txt \
 --rmsingletons $remove_singletons \
---fasta        "$output_dir"/OTUs.temp.fasta \
---output       "$output_dir"/OTU_table.txt 2>&1)
+--output       "$output_dir"/OTU_table_long.txt 2>&1)
 echo $Rlog > "$output_dir"/tempdir/OTU_table_creation.log 
 wait
 
@@ -219,8 +231,7 @@ fi
 ###########################
 # 2. Split tables per run #
 ###########################
-# ouputs per run OTU table and fasta file in split_tables directory
-# Global OTU table must have 'Sequence' as 2nd column
+# outputs per run OTU table and fasta file in split_tables directory
 printf "Splitting OTU table per run...\n"
 
 # Get run names from multiRunDir
@@ -241,32 +252,51 @@ unset output_fastas
 declare -a output_feature_tables
 declare -a output_fastas
 
-# For each run, extract samples belonging to that run from the OTU table
+# For each run, extract samples belonging to that run from the long format OTU table
 for run in $RUNS; do
     printf "Getting OTU table for $run...\n"
-    # Get sample names for this run from the run_sample_lists directory
-    sample_list=$(printf "OTU\nSequence\n"; cat "$output_dir/run_sample_lists/${run}_samples.txt")
-     # Get column numbers and join them with commas (including OTU column)
-    cols=$(head -n1 $output_dir/OTU_table.txt | tr '\t' '\n' | nl -v0 | grep -f <(echo "$sample_list") | cut -f1 | awk '{print $1 + 1}' | paste -sd',')
-    # Extract the columns using cut with the column numbers
-    cut -f"$cols" $output_dir/OTU_table.txt > $output_dir/split_tables/OTU_table_${run}.temp
     
-    # Filter zero-abundance rows (from col 3-...) and export both table and FASTA (2nd col in OTU table must be 'Sequence')
-    table_file=$output_dir/split_tables/OTU_table_${run}.temp
-    awk -v outdir="$output_dir/split_tables" -v run="$run" '
-        NR==1{print $0 > outdir"/OTU_table_"run".txt"}
-        NR>1{
-            sum=0
-            for(i=3;i<=NF;i++) sum+=$i
-            if(sum>0) {
-                print $0 > outdir"/OTU_table_"run".txt"
-                print ">"$1"\n"$2 > outdir"/OTUs_"run".fasta"
+    # Filter long format table for samples in this run and remove zero-abundance rows
+    awk -v run="$run" -v outdir="$output_dir/split_tables" -v sample_file="$output_dir/run_sample_lists/${run}_samples.txt" '
+        BEGIN {
+            # Read sample list for this run
+            while ((getline < sample_file) > 0) {
+                samples[$0] = 1
             }
-    }' "$table_file"
-    rm $table_file
+            close(sample_file)
+        }
+        NR==1 {
+            # Print header
+            print $0 > outdir"/OTU_table_long_"run".txt"
+            next
+        }
+        {
+            # Filter by SampleID (first column) and non-zero abundance (third column)
+            if ($1 in samples && $3 > 0) {
+                print $0 > outdir"/OTU_table_long_"run".txt"
+                otus[$2] = 1  # Store unique OTU names
+            }
+        }
+        END {
+            # Write unique OTU list for FASTA extraction
+            for (otu in otus) {
+                print otu > outdir"/OTU_list_"run".txt"
+            }
+        }
+    ' "$output_dir/OTU_table_long.txt"
+    
+    # Extract OTU sequences from main FASTA file using seqkit
+    if [[ -f "$output_dir/split_tables/OTU_list_${run}.txt" ]]; then
+        seqkit grep -f "$output_dir/split_tables/OTU_list_${run}.txt" -w 0 \
+            "$output_dir/OTUs.fasta" -o "$output_dir/split_tables/OTUs_${run}.fasta"
+        rm "$output_dir/split_tables/OTU_list_${run}.txt"
+    else
+        # No OTUs for this run, create empty FASTA
+        touch "$output_dir/split_tables/OTUs_${run}.fasta"
+    fi
 
     # Initialize output variables
-    output_feature_table=$output_dir/split_tables/OTU_table_${run}.txt
+    output_feature_table=$output_dir/split_tables/OTU_table_long_${run}.txt
     output_fasta=$output_dir/split_tables/OTUs_${run}.fasta
 
     # Add current run's outputs to arrays (for cases when no curation is performed)
@@ -301,14 +331,14 @@ fi
 ################
 ### UNCROSS2 ###
 ################
-for table_file in /input/multiRunDir/merged_runs/split_tables/OTU_table_*.txt; do
+for table_file in /input/multiRunDir/merged_runs/split_tables/OTU_table_long_*.txt; do
 
+    # get run name from table file name
+    run=$(basename "$table_file" | sed 's/OTU_table_long_\(.*\)\.txt/\1/')
+    echo "run = $run"
+    
     # table_file corresponding fasta file
     fasta_file=$output_dir/split_tables/OTUs_${run}.fasta
-    
-    # get run name from table file name
-    run=$(basename "$table_file" | sed 's/OTU_table_\(.*\)\.txt/\1/')
-    echo "run = $run"
 
     ### Process samples with UNCROSS2 (tag-jumps filtering) in R
     if [[ $filter_tag_jumps == "true" ]]; then
@@ -316,7 +346,7 @@ for table_file in /input/multiRunDir/merged_runs/split_tables/OTU_table_*.txt; d
 
         printf "# Running tag-jumps filtering (UNCROSS2) for $table_file_basename\n "
         # Filter primary feature table
-        Rlog=$(Rscript /scripts/submodules/tag_jump_removal.R $table_file $f_value $p_value $output_dir/split_tables/OTUs_${run}.fasta $curated_dir 2>&1)
+        Rlog=$(Rscript /scripts/submodules/tag_jump_removal_long.R $table_file $f_value $p_value $curated_dir 2>&1)
         # Check if R script executed successfully
         if [ $? -ne 0 ]; then
             log_error "tag-jumps filtering R script failed with the following error:
@@ -434,47 +464,21 @@ for table_file in /input/multiRunDir/merged_runs/split_tables/OTU_table_*.txt; d
             header=$(head -n 1 $input_table)
             sed -i "1i\\$header" "$curated_dir/${input_table_basename%%.txt}_lenFilt.temp"
 
-            # Remove samples (columns) with 0 abundance; does not remove 0 rows, but there cannot be 0 rows
+            # For long format: just remove any zero-abundance rows (shouldn't exist, but check)
             checkerror=$(awk '
             BEGIN {
                 FS = OFS = "\t"
             }
             NR == 1 {
-                # Store the header and identify the "Sequence" column
-                for (i = 1; i <= NF; i++) {
-                    headers[i] = $i
-                    if ($i == "Sequence") {
-                        sequence_col = i
-                    }
-                }
+                # Print header
+                print $0
                 next
             }
             {
-                # Sum each column, excluding the first column and the "Sequence" column
-                for (i = 2; i <= NF; i++) {
-                    if (i != sequence_col) {
-                        sum[i] += $i
-                    }
-                }
-                # Store the row data
-                for (i = 1; i <= NF; i++) {
-                    data[NR, i] = $i
-                }
-            }
-            END {
-                # Print the header with non-zero columns
-                for (i = 1; i <= NF; i++) {
-                    if (i == 1 || i == sequence_col || sum[i] != 0) {
-                        printf "%s%s", headers[i], (i == NF ? "\n" : OFS)
-                    }
-                }
-                # Print the rows excluding columns with zero sum
-                for (j = 2; j <= NR; j++) {
-                    for (i = 1; i <= NF; i++) {
-                        if (i == 1 || i == sequence_col || sum[i] != 0) {
-                            printf "%s%s", data[j, i], (i == NF ? "\n" : OFS)
-                        }
-                    }
+                # For long format: SampleID, OTU, Abundance (3rd column is abundance)
+                # Only keep rows with non-zero abundance
+                if ($3 > 0) {
+                    print $0
                 }
             }
             ' "$curated_dir/${input_table_basename%%.txt}_lenFilt.temp" \
@@ -518,29 +522,46 @@ done
 echo "OTU tables to be merged = ${output_feature_tables[*]}"
 echo "Corresponding fasta files = ${output_fastas[*]}"
 
-
-
-
 #######################
 # 4. merge OTU tables #
 #######################
 printf "Merging OTU tables...\n"
-output_feature_table=$(IFS=,; echo "${output_feature_tables[*]}")
-output_fasta=$(IFS=,; echo "${output_fastas[*]}")
-export output_feature_table
-export output_fasta
 
-# Merge tables in R 
-Rlog=$(Rscript /scripts/submodules/mergeOtuTables.R $output_feature_table $output_dir OTU_table.txt 2>&1)
-# Check if R script executed successfully
-if [ $? -ne 0 ]; then
-    log_error "mergeOtuTables R script failed with the following error:
-    $Rlog
-    Please check the parameters and input file.
-    >Quitting"
-    end_process
-fi
-echo "$Rlog" > "$output_dir/mergeOtuTables.log"
+# Merge long format tables (simple concatenation and aggregation)
+printf "Merging long format OTU tables...\n"
+echo "Tables to merge: ${output_feature_tables[*]}"
+
+# Concatenate all tables (first one with header, rest without header)
+first_table=true
+for table in "${output_feature_tables[@]}"; do
+    if $first_table; then
+        cat "$table" > "$output_dir/OTU_table_long_merged.temp"
+        first_table=false
+    else
+        tail -n +2 "$table" >> "$output_dir/OTU_table_long_merged.temp"
+    fi
+done
+
+# Aggregate duplicates by summing abundances (in case same sample+OTU appears in multiple runs)
+printf "SampleID\tOTU\tAbundance\n" > "$output_dir/OTU_table_long.txt"
+awk '
+BEGIN {
+    FS = OFS = "\t"
+}
+NR > 1 {
+    key = $1 "\t" $2  # SampleID + OTU
+    abundance[key] += $3
+}
+END {
+    for (key in abundance) {
+        if (abundance[key] > 0) {
+            print key, abundance[key]
+        }
+    }
+}' "$output_dir/OTU_table_long_merged.temp" >> "$output_dir/OTU_table_long.txt"
+
+rm "$output_dir/OTU_table_long_merged.temp"
+printf "Merged long format OTU table created: OTU_table_long.txt\n"
 
 # Merge FASTA files
 printf "Merging FASTA files...\n"
@@ -551,11 +572,88 @@ checkerror=$(seqkit rmdup -w 0 -s "$output_dir/merged_OTUs.fasta" -o "$output_di
 check_app_error
 mv "$output_dir/merged_OTUs_dedup.fasta" "$output_dir/OTUs.fasta" && rm "$output_dir/merged_OTUs.fasta"
 
+# Update output variables to point to final merged files
+output_feature_table="$output_dir/OTU_table_long.txt"
+output_fasta="$output_dir/OTUs.fasta"
+export output_feature_table
+export output_fasta
+
+### Convert OTU table to wide format (optional for large datasets)
+# Count unique samples to determine if wide format conversion is feasible
+sample_count=$(awk 'NR>1 {samples[$1]=1} END {print length(samples)}' "$output_dir/OTU_table_long.txt")
+printf "Number of samples in dataset: $sample_count\n"
+
+# Wide format is problematic with many samples (memory, line length, processing time)
+MAX_SAMPLES_FOR_WIDE=5000
+
+if [[ $sample_count -le $MAX_SAMPLES_FOR_WIDE ]]; then
+    printf "Converting OTU table to wide format...\n"
+    awk '
+    BEGIN {
+        FS = OFS = "\t"
+    }
+    NR == 1 {
+        # Skip header
+        next
+    }
+    {
+        sample = $1
+        otu = $2
+        abundance = $3
+        
+        # Store abundance
+        data[otu, sample] = abundance
+        
+        # Track unique OTUs and samples
+        if (!(otu in otus)) {
+            otus[otu] = ++otu_count
+        }
+        if (!(sample in samples)) {
+            samples[sample] = ++sample_count
+            sample_order[sample_count] = sample
+        }
+    }
+    END {
+        # Print header: OTU followed by sample names in order they appeared
+        printf "OTU"
+        for (i = 1; i <= sample_count; i++) {
+            printf "\t%s", sample_order[i]
+        }
+        printf "\n"
+        
+        # Print data rows
+        for (otu in otus) {
+            printf "%s", otu
+            for (i = 1; i <= sample_count; i++) {
+                sample = sample_order[i]
+                # Print abundance or 0 if not present
+                if ((otu, sample) in data) {
+                    printf "\t%s", data[otu, sample]
+                } else {
+                    printf "\t0"
+                }
+            }
+            printf "\n"
+        }
+    }' "$output_dir/OTU_table_long.txt" > "$output_dir/OTU_table.txt"
+    
+    printf "Wide format OTU table created: OTU_table.txt\n"
+else
+    printf "WARNING: Dataset has $sample_count samples (threshold: $MAX_SAMPLES_FOR_WIDE).\n"
+    printf "Skipping wide format conversion:\n"
+fi 
+
 ### CLEAN UP ###
-# Remove all files and folders except OTUs.fasta and OTU_table.txt
+# Remove all files and folders except output files
 printf "Cleaning up temporary files...\n"
 if [[ $debugger != "true" ]]; then
-    find "$output_dir" -mindepth 1 -not \( -name "OTUs.fasta" -o -name "OTU_table.txt" \) -exec rm -rf {} +
+    if [[ -f "$output_dir/OTU_table.txt" ]]; then
+        # Keep both wide and long format
+        find "$output_dir" -mindepth 1 -not \( -name "OTUs.fasta" -o -name "OTU_table_long.txt" -o -name "OTU_table.txt" \) -exec rm -rf {} +
+    else
+        # Keep only long format (wide format not created)
+        find "$output_dir" -mindepth 1 -not \( -name "OTUs.fasta" -o -name "OTU_table_long.txt" \) -exec rm -rf {} +
+    fi
 
     if [[ -f "/input/multiRunDir/.curate_table_params" ]]; then
         rm /input/multiRunDir/.curate_table_params
@@ -571,7 +669,7 @@ fi
 ##########################################
 ### Make README.txt file (merged_runs) ###
 ##########################################
-count_features "$output_dir/OTU_table.txt"
+count_features "$output_dir/OTU_table_long.txt"
 
 end=$(date +%s)
 runtime=$((end-start))
@@ -606,8 +704,16 @@ Runtime: $runtime seconds
 printf "
 Output files:
 ------------
-# OTU_table.txt = merged OTU abundance table
-# OTUs.fasta    = merged OTU sequences
+# OTU_table_long.txt = merged OTU abundance table (long format: SampleID, OTU, Abundance)
+" >> $output_dir/README.txt
+
+if [[ -f "$output_dir/OTU_table.txt" ]]; then
+    printf "# OTU_table.txt      = merged OTU abundance table (wide format: OTU, Sample1, Sample2, ...)\n" >> $output_dir/README.txt
+else
+    printf "# OTU_table.txt      = NOT CREATED (dataset has $sample_count samples, exceeds $MAX_SAMPLES_FOR_WIDE threshold)\n" >> $output_dir/README.txt
+fi
+
+printf "# OTUs.fasta         = merged OTU sequences
 
 Number of OTUs                       = $feature_count
 Number of sequences in the OTU table = $nSeqs
