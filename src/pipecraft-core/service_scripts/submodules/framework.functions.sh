@@ -589,72 +589,55 @@ if [[ $debugger != "true" ]]; then
 fi
 }
 
-##########################################################
+########################################################################################
 ### Cleaning up and compiling final stats file, when outputting multiple directories ###
-##########################################################
+########################################################################################
 function clean_and_make_stats_multidir () {
 ### Count reads before and after the process
 mkdir -p tempdir2
 
-if [[ $extension == "fastq" ]] || [[ $extension == "fq" ]]; then
-    touch tempdir2/seq_count_before.txt
-    for file in *.$extension; do
-        size=$(echo $(cat $file | wc -l) / 4 | bc)
-        printf "$file\t$size\n" >> tempdir2/seq_count_before.txt
-    done
-    touch tempdir2/seq_count_after.txt
-    outfile_check=$(ls $output_dir/$subdir/*.$extension 2>/dev/null | wc -l)
-    if (( $outfile_check != 0 )); then 
-        for file in $output_dir/$subdir/*.$outfile_addition.$extension; do
-            size=$(echo $(cat $file | wc -l) / 4 | bc)
-            printf "$file\t$size\n" >> tempdir2/seq_count_after.txt
-        done
-    fi
+#Delete empty output files
+find $output_dir -empty -type f -delete
+### Count reads before and after the process
+touch tempdir2/seq_count_before.txt
+seqkit stats --threads 6 -T *.$extension | awk -F'\t' 'BEGIN{OFS="\t";} NR!=1 {print $1,$4}' >> tempdir2/seq_count_before.txt
+touch tempdir2/seq_count_after.txt
+outfile_check=$(ls $output_dir/$subdir/*.$extension 2>/dev/null | wc -l)
+if (( $outfile_check != 0 )); then
+    seqkit stats --threads 6 -T $output_dir/$subdir/*.$extension | awk -F'\t' 'BEGIN{OFS="\t";} NR!=1 {print $1,$4}' >> tempdir2/seq_count_after.txt
+else
+    printf '%s\n' "ERROR]: no output files generated ($output_dir/$subdir). Check settings!" >&2
+    end_process
 fi
-if [[ $extension == "fasta" ]] || [[ $extension == "fa" ]] || [[ $extension == "fas" ]]; then
-    touch tempdir2/seq_count_before.txt
-    for file in *.$extension; do
-        size=$(grep -c "^>" $file)
-        printf "$file\t$size\n" >> tempdir2/seq_count_before.txt
-    done
-    touch tempdir2/seq_count_after.txt
-    outfile_check=$(ls $output_dir/$subdir/*.$extension 2>/dev/null | wc -l)
-    if (( $outfile_check != 0 )); then 
-        for file in $output_dir/$subdir/*.$outfile_addition.$extension; do
-            size=$(grep -c "^>" $file)
-            printf "$file\t$size\n" >> tempdir2/seq_count_after.txt
-        done
-    fi
-fi
+
 ### Compile a track reads summary file (seq_count_summary.txt)
 output_dir_for_sed=$(echo $output_dir | sed -e "s/\//\\\\\//g")
 sed -e "s/\.$outfile_addition//" < tempdir2/seq_count_after.txt | \
 sed -e "s/^$output_dir_for_sed\///" | sed -e "s/^$subdir\///" > tempdir2/seq_count_after.temp
 subdir=$(echo $subdir | sed -e "s/\\\\//g")
-printf "File\tReads_in\tReads_out\n" > $output_dir/$subdir/seq_count_summary.txt
-while read LINE; do
-    file1=$(echo $LINE | awk '{print $1}')
-    count1=$(echo $LINE | awk '{print $2}')
-    while read LINE2; do
-        file2=$(echo $LINE2 | awk '{print $1}')
-        count2=$(echo $LINE2 | awk '{print $2}')
-        if [[ "$file1" == "$file2" ]]; then
-            printf "$file1\t$count1\t$count2\n" >> $output_dir/$subdir/seq_count_summary.txt
-        fi
-    done < tempdir2/seq_count_after.temp
-    #Report file where no sequences were reoriented (i.e. the output was 0)
-    grep -Fq $file1 tempdir2/seq_count_after.temp
-    if [[ $? != 0 ]]; then
-        printf "$file1\t$count1\t0\n" >> $output_dir/$subdir/seq_count_summary.txt
-    fi
-done < tempdir2/seq_count_before.txt
-rm tempdir2/seq_count_after.txt tempdir2/seq_count_before.txt
 
-#Note for counting seqs in FASTQ files
-if [[ $extension == "fastq" ]] || [[ $extension == "fq" ]]; then
-    printf "\nPlease note that sequence count assumes that there are 4 lines per sequence in a FASTQ file (as this is mostly the case).
-You may double-check the sequence count of one file using implemented 'QualityCheck' module in PipeCraft.\n" >> $output_dir/$subdir/seq_count_summary.txt
-fi
+awk '
+BEGIN { print "File\tReads_in\tReads_out" }
+NR==FNR { 
+    before[$1] = $2; 
+    next 
+}
+{
+    file = $1;
+    count_after = $2;
+    if (file in before) {
+        print file "\t" before[file] "\t" count_after;
+        delete before[file];
+    }
+}
+END {
+    # Print files with 0 output
+    for (file in before) {
+        print file "\t" before[file] "\t0";
+    }
+}' tempdir2/seq_count_before.txt tempdir2/seq_count_after.temp > $output_dir/$subdir/seq_count_summary.txt
+
+rm tempdir2/seq_count_after.txt tempdir2/seq_count_before.txt tempdir2/seq_count_after.temp
 
 #Delete decompressed files if original set of files were compressed
 if [[ $check_compress == "gz" ]] || [[ $check_compress == "zip" ]]; then
@@ -877,39 +860,63 @@ fi
 function count_features() {
     local table=$1
     
-    # count ASVs/OTUs (rows minus header)
-    feature_count=$(awk 'NR>1' "$table" | wc -l)
+    # Detect format by checking header
+    header=$(head -n 1 "$table")
     
-    # count sequences and samples
-    while IFS='=' read -r key value; do
-        case $key in
-            "samples") nSample=$value ;;
-            "sequences") nSeqs=$value ;;
-        esac
-    done < <(awk -F'\t' '
-    NR==1 {
-        seq_col = -1
-        for(i=1; i<=NF; i++) {
-            if($i == "Sequence") {
-                seq_col = i
-                break
-            }
+    # Long format: SampleID, OTU, Abundance (3 columns)
+    if [[ "$header" == "SampleID"*"OTU"*"Abundance" ]]; then
+        # Long format processing
+        while IFS='=' read -r key value; do
+            case $key in
+                "features") feature_count=$value ;;
+                "samples") nSample=$value ;;
+                "sequences") nSeqs=$value ;;
+            esac
+        done < <(awk -F'\t' '
+        NR>1 {
+            otus[$2] = 1
+            samples[$1] = 1
+            total_seqs += $3
         }
-        nSample = NF - 1 - (seq_col > 0 ? 1 : 0)
-        print "samples=" nSample
-    }
-    NR>1 {
-        sum = 0
-        for(i=2; i<=NF; i++) {
-            if(i != seq_col) {
-                sum += $i
+        END {
+            print "features=" length(otus)
+            print "samples=" length(samples)
+            print "sequences=" total_seqs
+        }' "$table")
+    else
+        # Wide format processing
+        feature_count=$(awk 'NR>1' "$table" | wc -l)
+        
+        while IFS='=' read -r key value; do
+            case $key in
+                "samples") nSample=$value ;;
+                "sequences") nSeqs=$value ;;
+            esac
+        done < <(awk -F'\t' '
+        NR==1 {
+            seq_col = -1
+            for(i=1; i<=NF; i++) {
+                if($i == "Sequence") {
+                    seq_col = i
+                    break
+                }
             }
+            nSample = NF - 1 - (seq_col > 0 ? 1 : 0)
+            print "samples=" nSample
         }
-        total_seqs += sum
-    }
-    END {
-        print "sequences=" total_seqs
-    }' "$table")
+        NR>1 {
+            sum = 0
+            for(i=2; i<=NF; i++) {
+                if(i != seq_col) {
+                    sum += $i
+                }
+            }
+            total_seqs += sum
+        }
+        END {
+            print "sequences=" total_seqs
+        }' "$table")
+    fi
     
     export feature_count
     export nSeqs
