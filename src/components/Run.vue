@@ -55,6 +55,9 @@
               : $route.params.workflowName &&
                 $route.params.workflowName.includes('OptimOTU')
               ? runOptimOTU()
+              : $route.params.workflowName &&
+                $route.params.workflowName.includes('FunBarONT')
+              ? runFunBarONT()
               : $route.params.workflowName
               ? runCustomWorkFlow($route.params.workflowName)
               : runWorkFlow()
@@ -943,6 +946,118 @@ export default {
           }
         }
       });
+    },
+    async runFunBarONT() {
+      this.confirmRun('FunBarONT').then(async (result) => {
+        if (result.isConfirmed) {
+          console.log(this.$route.params.workflowName);
+          this.autoSaveConfig();
+          this.$store.state.runInfo.active = true;
+          this.$store.state.runInfo.containerID = 'funbaront';
+          
+          // Generate config file
+          await this.$store.dispatch('generateFunBarONTConfig');
+          
+          // Check/pull image
+          await this.imageCheck('pipecraft/funbaront:latest');
+          await this.clearContainerConflicts('funbaront');
+          
+          try {            
+            const container = await dockerode.createContainer({
+              Image: 'pipecraft/funbaront:latest',
+              name: 'funbaront',
+              Cmd: ['/bin/bash', '-c', 'bash /scripts/FunBarONT_Pipeline.sh'],
+              Tty: false,
+              AttachStdout: true,
+              AttachStderr: true,
+              Platform: "linux/amd64",
+              Env: [
+                `HOST_UID=${this.userId}`,
+                `HOST_GID=${this.groupId}`
+              ],
+              HostConfig: {
+                Binds: this.getFunBarONTBinds(),
+                Memory: this.$store.state.dockerInfo.MemTotal,
+                NanoCpus: this.$store.state.dockerInfo.NCPU * 1e9,
+              }
+            });
+    
+            const stream = await container.attach({
+              stream: true,
+              stdout: true,
+              stderr: true,
+            });
+    
+            stream.on('data', (data) => {
+              console.log(data.toString());
+            });
+            
+            await container.start();
+    
+            const data = await container.wait();
+            console.log('Container exited with status code:', data.StatusCode);
+            this.$store.commit("resetRunInfo");
+
+            if (data.StatusCode == 0) {
+              Swal.fire({
+                title: "FunBarONT pipeline finished successfully",
+                text: "Results are in your sequences directory",
+                theme: "dark",
+              });
+            } else {
+              Swal.fire({
+                title: "An error occurred while processing your data",
+                text: "Check the log file for more information",
+                confirmButtonText: "Quit",
+                theme: "dark",
+              });
+            }
+            await container.remove({ v: true, force: true });
+          } catch (err) {
+            console.error('Error running container:', err);
+            this.$store.commit("resetRunInfo");
+            
+            // Check if the error is due to the user stopping the container
+            if (err.message && err.message.includes('HTTP code 404')) {
+              Swal.fire({
+                title: "Workflow stopped",
+                confirmButtonText: "Quit",
+                theme: "dark",
+              });
+            } else {
+              Swal.fire({
+                title: "An error has occurred while processing your data",
+                text: err.toString(),
+                confirmButtonText: "Quit",  
+                theme: "dark",
+              });
+            }
+          } 
+        }
+      });
+    },
+    getFunBarONTBinds() {
+      const dirConfig = this.$store.state.FunBarONT[0];
+      const workDir = this.$store.state.inputDir || "";
+      const databaseFile = dirConfig.Inputs.find(i => i.name === 'database_file')?.value || "";
+      
+      // Get config file path
+      const configPath = isDevelopment == true
+        ? `${slash(process.cwd())}/src/pipecraft-core/service_scripts/FunBarONTConfig.json`
+        : `${process.resourcesPath}/src/pipecraft-core/service_scripts/FunBarONTConfig.json`;
+      
+      // Get script directory
+      const scriptDir = isDevelopment == true
+        ? `${slash(process.cwd())}/src/pipecraft-core/service_scripts`
+        : `${process.resourcesPath}/src/pipecraft-core/service_scripts`;
+      
+      return [
+        `${workDir}:/Input:rw`,
+        `${workDir}:/sequences:rw`,
+        `${databaseFile}:/database/database.fasta:ro`,
+        `${configPath}:/scripts/FunBarONTConfig.json:ro`,
+        `${scriptDir}:/scripts:ro`
+      ];
     },
   },
 };

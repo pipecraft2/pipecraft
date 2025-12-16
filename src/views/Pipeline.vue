@@ -95,6 +95,22 @@
           </v-row>
         </v-container>
       </v-card-actions>
+      <v-card-actions v-if="$route.params.workflowName == 'FunBarONT' && $store.state.runInfo.active == true && $store.state.pullLoader.active == true">
+        <v-container fluid>
+          <v-row justify="center">
+            <v-col cols="12" class="text-center">
+              <div class="text-h9 mb-4">Pulling image...</div>
+              <v-progress-linear 
+                indeterminate 
+                color="#1DE9B6" 
+                height="10"
+                class="mx-auto"
+                style="max-width: 80%;"
+              ></v-progress-linear>
+            </v-col>
+          </v-row>
+        </v-container>
+      </v-card-actions>
     </v-card>
     <v-expansion-panels
       dark

@@ -7,6 +7,10 @@ import os from "os";
 import fs from "fs";
 import path from "path";
 import { pullImageAsync, imageExists } from "dockerode-utils";
+const Swal = require("sweetalert2");
+const slash = require("slash");
+const { dialog } = require("@electron/remote");
+const isDevelopment = process.env.NODE_ENV !== "production";
 const DockerDesktopLinux = !fs.existsSync("/var/run/docker.sock");
 var socketPath =
   os.platform() === "win32"
@@ -15,18 +19,12 @@ var socketPath =
     ? `${os.homedir()}/.docker/desktop/docker.sock`
     : "/var/run/docker.sock";
 
-var Docker = require("dockerode");
-var docker = new Docker({ socketPath: socketPath });
-const isDevelopment = process.env.NODE_ENV !== "production";
-const Swal = require("sweetalert2");
-const { dialog } = require("@electron/remote");
-const slash = require("slash");
-const arch = process.arch;
-const vsearch_dada_image = arch === 'arm64' 
-    ? 'pipecraft/vsearch_dada2_m:3'
-    : 'pipecraft/vsearch_dada2:3';
-
-console.log(arch)
+var Dockerode = require("dockerode");
+var docker = new Dockerode({ socketPath: socketPath });
+const arch = os.arch();
+const vsearch_dada_image = arch === 'arm64'
+  ? 'pipecraft/vsearch_dada2_m:3'
+  : 'pipecraft/vsearch_dada2:3';
 
 Vue.use(Vuex);
 
@@ -4753,6 +4751,241 @@ export default new Vuex.Store({
       },
     ],
 
+    // # FunBarONT pipeline
+    FunBarONT: [
+      // Pipeline Options
+      {
+        tooltip: "General pipeline configuration options",
+        scriptName: "FunBarONT_Pipeline.sh",
+        imageName: "pipecraft/funbaront:latest",
+        serviceName: "pipeline options",
+        manualLink: "https://github.com/mdziurzynski/ont_fungal_barcoding_pipeline",
+        disabled: "never",
+        selected: "always",
+        showExtra: true,
+        extraInputs: [],
+        Inputs: [
+          {
+            name: "use_itsx",
+            value: true,
+            disabled: "never",
+            tooltip: "Set to false if you want to omit extraction of full ITS region using ITSx",
+            type: "bool"
+          },
+          {
+            name: "output_all_polished_seqs",
+            value: false,
+            disabled: "never",
+            tooltip: "Output all polished sequences even those without UNITE hits (useful if working with non-ITS sequences)",
+            type: "bool"
+          },
+          {
+            name: "rel_abu_threshold",
+            value: 10,
+            disabled: "never",
+            tooltip: "Output only clusters with barcode-wise relative abundance above this value (0-100)",
+            type: "numeric",
+            rules: [(v) => v >= 0 && v <= 100 || "ERROR: specify values between 0 and 100"]
+          },
+          {
+            name: "cpu_threads",
+            value: 8,
+            disabled: "never",
+            tooltip: "Number of CPU threads to use for processing",
+            type: "numeric",
+            rules: [(v) => v >= 1 || "ERROR: specify values >= 1"]
+          },
+          {
+            name: "medaka_model",
+            value: "r1041_e82_400bps_hac_variant_v4.3.0",
+            disabled: "never",
+            tooltip: "Medaka inference model for consensus polishing. Select based on your flowcell, kit, and basecaller model.",
+            type: "combobox",
+            items: [
+              "r103_fast_g507", "r103_fast_snp_g507", "r103_fast_variant_g507", "r103_hac_g507", "r103_hac_snp_g507", "r103_hac_variant_g507",
+              "r103_sup_g507", "r103_sup_snp_g507", "r103_sup_variant_g507",
+              "r1041_e82_260bps_fast_g632", "r1041_e82_260bps_fast_variant_g632", "r1041_e82_260bps_hac_g632", "r1041_e82_260bps_hac_v4.0.0", "r1041_e82_260bps_hac_v4.1.0",
+              "r1041_e82_260bps_hac_variant_g632", "r1041_e82_260bps_hac_variant_v4.1.0", "r1041_e82_260bps_joint_apk_ulk_v5.0.0",
+              "r1041_e82_260bps_sup_g632", "r1041_e82_260bps_sup_v4.0.0", "r1041_e82_260bps_sup_v4.1.0", "r1041_e82_260bps_sup_variant_g632", "r1041_e82_260bps_sup_variant_v4.1.0",
+              "r1041_e82_400bps_bacterial_methylation",
+              "r1041_e82_400bps_fast_g615", "r1041_e82_400bps_fast_g632", "r1041_e82_400bps_fast_variant_g615", "r1041_e82_400bps_fast_variant_g632",
+              "r1041_e82_400bps_hac_g615", "r1041_e82_400bps_hac_g632", "r1041_e82_400bps_hac_v4.0.0", "r1041_e82_400bps_hac_v4.1.0", "r1041_e82_400bps_hac_v4.2.0", "r1041_e82_400bps_hac_v4.3.0",
+              "r1041_e82_400bps_hac_v5.0.0", "r1041_e82_400bps_hac_v5.0.0_rl_lstm384_dwells", "r1041_e82_400bps_hac_v5.0.0_rl_lstm384_no_dwells",
+              "r1041_e82_400bps_hac_v5.2.0", "r1041_e82_400bps_hac_v5.2.0_rl_lstm384_dwells", "r1041_e82_400bps_hac_v5.2.0_rl_lstm384_no_dwells",
+              "r1041_e82_400bps_hac_variant_g615", "r1041_e82_400bps_hac_variant_g632", "r1041_e82_400bps_hac_variant_v4.1.0", "r1041_e82_400bps_hac_variant_v4.2.0", "r1041_e82_400bps_hac_variant_v4.3.0", "r1041_e82_400bps_hac_variant_v5.0.0",
+              "r1041_e82_400bps_sup_g615", "r1041_e82_400bps_sup_v4.0.0", "r1041_e82_400bps_sup_v4.1.0", "r1041_e82_400bps_sup_v4.2.0", "r1041_e82_400bps_sup_v4.3.0",
+              "r1041_e82_400bps_sup_v5.0.0", "r1041_e82_400bps_sup_v5.0.0_rl_lstm384_dwells", "r1041_e82_400bps_sup_v5.0.0_rl_lstm384_no_dwells",
+              "r1041_e82_400bps_sup_v5.2.0", "r1041_e82_400bps_sup_v5.2.0_rl_lstm384_dwells", "r1041_e82_400bps_sup_v5.2.0_rl_lstm384_no_dwells",
+              "r1041_e82_400bps_sup_variant_g615", "r1041_e82_400bps_sup_variant_v4.1.0", "r1041_e82_400bps_sup_variant_v4.2.0", "r1041_e82_400bps_sup_variant_v4.3.0", "r1041_e82_400bps_sup_variant_v5.0.0",
+              "r104_e81_fast_g5015", "r104_e81_fast_variant_g5015", "r104_e81_hac_g5015", "r104_e81_hac_variant_g5015", "r104_e81_sup_g5015", "r104_e81_sup_g610", "r104_e81_sup_variant_g610",
+              "r941_e81_fast_g514", "r941_e81_fast_variant_g514", "r941_e81_hac_g514", "r941_e81_hac_variant_g514", "r941_e81_sup_g514", "r941_e81_sup_variant_g514",
+              "r941_min_fast_g507", "r941_min_fast_snp_g507", "r941_min_fast_variant_g507", "r941_min_hac_g507", "r941_min_hac_snp_g507", "r941_min_hac_variant_g507",
+              "r941_min_sup_g507", "r941_min_sup_snp_g507", "r941_min_sup_variant_g507",
+              "r941_prom_fast_g507", "r941_prom_fast_snp_g507", "r941_prom_fast_variant_g507", "r941_prom_hac_g507", "r941_prom_hac_snp_g507", "r941_prom_hac_variant_g507",
+              "r941_prom_sup_g507", "r941_prom_sup_snp_g507", "r941_prom_sup_variant_g507",
+              "r941_sup_plant_g610", "r941_sup_plant_variant_g610"
+            ]
+          },
+          {
+            name: "chopper_quality",
+            value: 10,
+            disabled: "never",
+            tooltip: "Minimum read quality score for chopper filtering",
+            type: "numeric",
+            rules: [(v) => v >= 0 || "ERROR: specify values >= 0"]
+          },
+          {
+            name: "chopper_min_read_length",
+            value: 150,
+            disabled: "never",
+            tooltip: "Reads shorter than this value won't be used for cluster generation",
+            type: "numeric",
+            rules: [(v) => v >= 50 || "ERROR: specify values >= 50"]
+          },
+          {
+            name: "chopper_max_read_length",
+            value: 1000,
+            disabled: "never",
+            tooltip: "Reads longer than this value won't be used for cluster generation",
+            type: "numeric",
+            rules: [(v) => v >= 100 || "ERROR: specify values >= 100"]
+          },
+          {
+            name: "racon_quality_threshold",
+            value: 20,
+            disabled: "never",
+            tooltip: "Racon quality threshold parameter (-q)",
+            type: "numeric",
+            rules: [(v) => v >= 0 || "ERROR: specify values >= 0"]
+          },
+          {
+            name: "racon_window_length",
+            value: 100,
+            disabled: "never",
+            tooltip: "Racon window length parameter (-w)",
+            type: "numeric",
+            rules: [(v) => v >= 1 || "ERROR: specify values >= 1"]
+          }
+        ],
+      },
+      // VSEARCH clustering
+      {
+        tooltip: "VSEARCH clustering parameters",
+        scriptName: "FunBarONT_Pipeline.sh",
+        imageName: "pipecraft/funbaront:latest",
+        serviceName: "VSEARCH clustering",
+        manualLink: "https://github.com/torognes/vsearch",
+        disabled: "never",
+        selected: "always",
+        showExtra: true,
+        extraInputs: [],
+        Inputs: [
+          {
+            name: "vsearch_cluster_id",
+            value: 0.95,
+            disabled: "never",
+            tooltip: "VSEARCH clustering identity threshold (0-1). Sequences with similarity above this threshold will be clustered together.",
+            max: 1,
+            min: 0,
+            step: 0.01,
+            type: "slide"
+          },
+          {
+            name: "vsearch_cluster_strand",
+            items: ["both", "plus"],
+            value: "both",
+            disabled: "never",
+            tooltip: "Check both strands (both) or the plus strand only (plus) during clustering",
+            type: "select"
+          }
+        ],
+      },
+      // Taxonomy Assignment
+      {
+        tooltip: "Taxonomy assignment using BLAST against reference database. BLAST database will be automatically created from the provided reference file.",
+        scriptName: "FunBarONT_Pipeline.sh",
+        imageName: "pipecraft/funbaront:latest",
+        serviceName: "taxonomy assignment",
+        manualLink: "https://blast.ncbi.nlm.nih.gov/Blast.cgi",
+        disabled: "never",
+        selected: "always",
+        showExtra: true,
+        extraInputs: [],
+        Inputs: [
+          {
+            name: "database_file",
+            value: "",
+            btnName: "select database file",
+            disabled: "never",
+            tooltip: "Path to the reference database FASTA file (e.g., UNITE for fungi). BLAST database will be created automatically from this file.",
+            type: "file"
+          },
+          {
+            name: "run_id",
+            value: "funbaront_run",
+            disabled: "never",
+            tooltip: "Unique identifier for this analysis run. Used for naming output directories and files.",
+            type: "text"
+          },
+          {
+            name: "blast_strands",
+            items: ["plus", "both"],
+            value: "both",
+            disabled: "never",
+            tooltip: "Query strand to search against database. Both = search reverse complement as well",
+            type: "select"
+          },
+          {
+            name: "blast_e_value",
+            value: 10,
+            disabled: "never",
+            tooltip: "E-value cutoff; lower is more stringent",
+            type: "numeric",
+            rules: [(v) => v >= 0 || "ERROR: specify values >= 0"]
+          },
+          {
+            name: "blast_word_size",
+            value: 11,
+            disabled: "never",
+            tooltip: "Initial word size for BLAST seed matching",
+            type: "numeric",
+            rules: [(v) => v >= 1 || "ERROR: specify values >= 1"]
+          },
+          {
+            name: "blast_reward",
+            value: 2,
+            disabled: "never",
+            tooltip: "Reward for a match",
+            type: "numeric",
+            rules: [(v) => v >= 0 || "ERROR: specify values >= 0"]
+          },
+          {
+            name: "blast_penalty",
+            value: -3,
+            disabled: "never",
+            tooltip: "Penalty for a mismatch",
+            type: "numeric",
+            rules: [(v) => v <= 0 || "ERROR: specify values <= 0"]
+          },
+          {
+            name: "blast_gap_open",
+            value: 5,
+            disabled: "never",
+            tooltip: "Cost to open a gap",
+            type: "numeric",
+            rules: [(v) => v >= 0 || "ERROR: specify values >= 0"]
+          },
+          {
+            name: "blast_gap_extend",
+            value: 2,
+            disabled: "never",
+            tooltip: "Cost to extend a gap",
+            type: "numeric"
+          }
+        ],
+      },
+    ],
+
     // # DADA2 ASVs pipeline
     DADA2_ASVs: [
       {
@@ -5322,6 +5555,11 @@ SINGLE-END is for PacBio data, but can be also used for single-end read Illumina
         info: `OptimOTU pipeline for demultiplexed paired-end Illumina ITS amplicons for Fungi, and COI for Metazoa (Arthropods)`,
         link: "https://github.com/brendanf/optimotu.pipeline",
         title: "OptimOTU",
+      },
+      FunBarONT: {
+        info: "FunBarONT pipeline for Oxford Nanopore Technologies fungal barcoding. Processes ONT basecaller output into high-quality ITS sequences with quality assessment, clustering, consensus calling, ITS extraction, and taxonomy assignment.",
+        link: "https://github.com/mdziurzynski/ont_fungal_barcoding_pipeline",
+        title: "FunBarONT",
       },
     },
     optimotuToYamlMap:{
@@ -6149,6 +6387,88 @@ SINGLE-END is for PacBio data, but can be also used for single-end read Illumina
         return yamlString;
       } catch (error) {
         console.error('Error generating YAML configuration:', error);
+        throw error;
+      }
+    },
+    async generateFunBarONTConfig({state}) {
+      try {
+        // Get inputs from different sections
+        const pipelineConfig = state.FunBarONT[0];  // pipeline options section
+        const vsearchConfig = state.FunBarONT[1];  // VSEARCH section
+        const taxonomyConfig = state.FunBarONT[2];  // Taxonomy assignment section
+        
+        // Get main inputs from taxonomy assignment section
+        const databaseFile = taxonomyConfig.Inputs.find(i => i.name === 'database_file')?.value || "";
+        const runId = taxonomyConfig.Inputs.find(i => i.name === 'run_id')?.value || "funbaront_run";
+        
+        // Get pipeline options
+        const useItsx = pipelineConfig.Inputs.find(i => i.name === 'use_itsx')?.value ?? true;
+        const outputAllPolished = pipelineConfig.Inputs.find(i => i.name === 'output_all_polished_seqs')?.value ?? false;
+        const relAbuThreshold = pipelineConfig.Inputs.find(i => i.name === 'rel_abu_threshold')?.value ?? 10;
+        const cpuThreads = pipelineConfig.Inputs.find(i => i.name === 'cpu_threads')?.value ?? 8;
+        const medakaModel = pipelineConfig.Inputs.find(i => i.name === 'medaka_model')?.value || "r1041_e82_400bps_hac_variant_v4.3.0";
+        const chopperQuality = pipelineConfig.Inputs.find(i => i.name === 'chopper_quality')?.value ?? 10;
+        const chopperMinLength = pipelineConfig.Inputs.find(i => i.name === 'chopper_min_read_length')?.value ?? 150;
+        const chopperMaxLength = pipelineConfig.Inputs.find(i => i.name === 'chopper_max_read_length')?.value ?? 1000;
+        const raconQuality = pipelineConfig.Inputs.find(i => i.name === 'racon_quality_threshold')?.value ?? 20;
+        const raconWindow = pipelineConfig.Inputs.find(i => i.name === 'racon_window_length')?.value ?? 100;
+        
+        // Get VSEARCH options
+        const vsearchClusterId = vsearchConfig.Inputs.find(i => i.name === 'vsearch_cluster_id')?.value ?? 0.95;
+        const vsearchClusterStrand = vsearchConfig.Inputs.find(i => i.name === 'vsearch_cluster_strand')?.value ?? "both";
+        
+        // Get BLAST/Taxonomy options
+        const blastStrands = taxonomyConfig.Inputs.find(i => i.name === 'blast_strands')?.value ?? "both";
+        const blastE = taxonomyConfig.Inputs.find(i => i.name === 'blast_e_value')?.value ?? 10;
+        const blastWord = taxonomyConfig.Inputs.find(i => i.name === 'blast_word_size')?.value ?? 11;
+        const blastReward = taxonomyConfig.Inputs.find(i => i.name === 'blast_reward')?.value ?? 2;
+        const blastPenalty = taxonomyConfig.Inputs.find(i => i.name === 'blast_penalty')?.value ?? -3;
+        const blastGapOpen = taxonomyConfig.Inputs.find(i => i.name === 'blast_gap_open')?.value ?? 5;
+        const blastGapExtend = taxonomyConfig.Inputs.find(i => i.name === 'blast_gap_extend')?.value ?? 2;
+        
+        // Create config object
+        const configObj = {
+          database_file: databaseFile,
+          blastdb_path: "/blastdb",
+          run_id: runId,
+          // Pipeline options
+          use_itsx: useItsx ? 1 : 0,
+          output_all_polished_seqs: outputAllPolished ? 1 : 0,
+          rel_abu_threshold: relAbuThreshold,
+          cpu_threads: cpuThreads,
+          // Medaka options
+          medaka_model: medakaModel,
+          // Chopper options
+          chopper_quality: chopperQuality,
+          chopper_min_read_length: chopperMinLength,
+          chopper_max_read_length: chopperMaxLength,
+          // Racon options
+          racon_quality_threshold: raconQuality,
+          racon_window_length: raconWindow,
+          // VSEARCH clustering options
+          vsearch_cluster_id: vsearchClusterId,
+          vsearch_cluster_strand: vsearchClusterStrand,
+          // BLAST options
+          blast_task: "blastn",
+          blast_strands: blastStrands,
+          blast_e_value: blastE,
+          blast_word_size: blastWord,
+          blast_reward: blastReward,
+          blast_penalty: blastPenalty,
+          blast_gap_open: blastGapOpen,
+          blast_gap_extend: blastGapExtend
+        };
+        
+        // Write config file
+        const configPath = isDevelopment == true
+          ? `${slash(process.cwd())}/src/pipecraft-core/service_scripts/FunBarONTConfig.json`
+          : `${process.resourcesPath}/src/pipecraft-core/service_scripts/FunBarONTConfig.json`;
+        
+        await fs.promises.writeFile(configPath, JSON.stringify(configObj, null, 2), 'utf8');
+        
+        return configPath;
+      } catch (error) {
+        console.error('Error generating FunBarONT configuration:', error);
         throw error;
       }
     },
