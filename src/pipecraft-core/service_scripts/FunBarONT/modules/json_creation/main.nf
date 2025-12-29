@@ -23,9 +23,20 @@ process barcode_results_aggregation {
     def main():
         # check if we have any hits after UNITE
         if "$output_all_polished_seqs" == "0" and os.stat("$blastn_file").st_size == 0:
+            # Determine specific failure reason
+            itsx_has_sequences = os.path.exists("$itsx_fasta") and os.stat("$itsx_fasta").st_size > 0
+            medaka_has_sequences = os.path.exists("$medaka_file/consensus.fasta") and os.stat("$medaka_file/consensus.fasta").st_size > 0
+            
+            if not medaka_has_sequences:
+                message = "Analysis aborted! No consensus sequences generated (polishing failed or no clusters formed)."
+            elif not itsx_has_sequences:
+                message = "Analysis aborted! No ITS sequences extracted by ITSx (sequences may not contain valid ITS regions)."
+            else:
+                message = "Analysis aborted! No hits against the reference database (check database compatibility or sequence quality)."
+            
             data = {
                 "barcode_id": "$barcode_name", 
-                "message": "Analysis aborted! No hits vs the reference database (UNITE by default) and most probably no sequences extracted by ITSx!"
+                "message": message
             }
             with open("${barcode_name}.results.json", "w") as json_file:
                 json.dump(data, json_file, indent=4)

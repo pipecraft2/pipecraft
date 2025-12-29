@@ -22,7 +22,7 @@ for json_path in args.json_files:
         # manage nonprocessed barcodes
         if "cluster_data" not in json_data:
             empty_data = [{
-                "Barcode": json_data["barcode_id"],
+                "Sample": json_data["barcode_id"],
                 "Number of clusters": json_data["message"]
             }]
             empty_df = pd.DataFrame(empty_data)
@@ -48,12 +48,12 @@ for json_path in args.json_files:
             })
             
         clusters_df = pd.DataFrame(clusters_data)
-        clusters_df["Barcode"] = json_data["barcode_id"]
+        clusters_df["Sample"] = json_data["barcode_id"]
         clusters_df["Number of clusters"] = json_data["number_of_clusters"]
         clusters_df["Total reads after filtering"] = json_data["total_reads_after_filtering"]
         # Reorder columns
-        cols = ["Barcode", "Number of clusters", "Total reads after filtering"] + \
-               [col for col in clusters_df.columns if col not in ["Barcode", "Number of clusters", "Total reads after filtering"]]
+        cols = ["Sample", "Number of clusters", "Total reads after filtering"] + \
+               [col for col in clusters_df.columns if col not in ["Sample", "Number of clusters", "Total reads after filtering"]]
         clusters_df = clusters_df[cols]
         json_dfs.append(clusters_df)
 
@@ -65,7 +65,19 @@ else:
     # apply rel abu threshold
     df = df[df["Cluster relative abundance"] >= args.rel_abu_threshold]
     
-    df = df.sort_values(by=["Barcode", "Cluster relative abundance"], ascending=[True, False])
+    # Count passed clusters per sample
+    passed_clusters = df.groupby("Sample").size().reset_index(name="Number of passed clusters")
+    df = df.merge(passed_clusters, on="Sample", how="left")
+    
+    # Reorder to place "Number of passed clusters" after "Number of clusters"
+    cols = df.columns.tolist()
+    if "Number of passed clusters" in cols and "Number of clusters" in cols:
+        cols.remove("Number of passed clusters")
+        idx = cols.index("Number of clusters") + 1
+        cols.insert(idx, "Number of passed clusters")
+        df = df[cols]
+    
+    df = df.sort_values(by=["Sample", "Cluster relative abundance"], ascending=[True, False])
 
 if empty_json_dfs:
     # put nonprocessed barcodes on top
