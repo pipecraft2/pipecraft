@@ -206,9 +206,14 @@
               :lg="input.type === 'combobox' ? 6 : 3"
               :md="input.type === 'combobox' ? 8 : 4"
               :sm="input.type === 'combobox' ? 12 : 6"
-              style="height: fit-content; width: fit-content"
             >
               <v-container :disabled="true" v-if="input.type === 'numeric'"
+                ><InputNumeric
+                  :serviceIndex="index"
+                  :inputIndex="i"
+                  :list="'Inputs'"
+              /></v-container>
+              <v-container v-if="input.type === 'text'"
                 ><InputNumeric
                   :serviceIndex="index"
                   :inputIndex="i"
@@ -296,7 +301,6 @@
               :lg="input.type === 'combobox' ? 6 : 3"
               :md="input.type === 'combobox' ? 8 : 4"
               :sm="input.type === 'combobox' ? 12 : 6"
-              style="height: fit-content; width: fit-content"
             >
               <v-container v-if="input.type === 'numeric'"
                 ><InputNumeric

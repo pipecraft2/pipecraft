@@ -39,7 +39,7 @@
           <v-text-field
             style="padding-top: 10%"
             v-model="input.value"
-            type="number"
+            :type="input.type === 'text' ? 'text' : 'number'"
             class="centered-input"
             background-color="transparent"
             solo
