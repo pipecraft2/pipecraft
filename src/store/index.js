@@ -4800,7 +4800,7 @@ export default new Vuex.Store({
             value: "r1041_e82_400bps_hac_variant_v4.3.0",
             disabled: "never",
             tooltip: "Medaka inference model for consensus polishing. Select based on your flowcell, kit, and basecaller model.",
-            type: "combobox",
+            type: "select",
             items: [
               "r103_fast_g507", "r103_fast_snp_g507", "r103_fast_variant_g507", "r103_hac_g507", "r103_hac_snp_g507", "r103_hac_variant_g507",
               "r103_sup_g507", "r103_sup_snp_g507", "r103_sup_variant_g507",
@@ -6399,6 +6399,12 @@ SINGLE-END is for PacBio data, but can be also used for single-end read Illumina
         
         // Get main inputs from taxonomy assignment section
         const databaseFile = taxonomyConfig.Inputs.find(i => i.name === 'database_file')?.value || "";
+        
+        // Validate that a database file was selected (even though we use container path in config)
+        if (!databaseFile) {
+          throw new Error("No database file selected. Please select a database file in the Taxonomy Assignment section.");
+        }
+        
         const runId = taxonomyConfig.Inputs.find(i => i.name === 'run_id')?.value || "funbaront_run";
         
         // Get pipeline options
@@ -6428,7 +6434,7 @@ SINGLE-END is for PacBio data, but can be also used for single-end read Illumina
         
         // Create config object
         const configObj = {
-          database_file: databaseFile,
+          database_file: "/database/database.fasta",  // Use container path, not host path
           blastdb_path: "/blastdb",
           run_id: runId,
           // Pipeline options

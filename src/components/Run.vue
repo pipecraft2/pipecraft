@@ -962,11 +962,21 @@ export default {
           await this.imageCheck('pipecraft/funbaront:latest');
           await this.clearContainerConflicts('funbaront');
           
-          try {            
+          try {
+            const fs = require('fs');
+            const logPath = path.join(this.$store.state.inputDir, 'funbaront_pipeline.log');
+            let logStream;
+            
+            try {
+              logStream = fs.createWriteStream(logPath, { flags: 'w' });
+            } catch (err) {
+              console.error('Could not create log file:', err);
+            }
+            
             const container = await dockerode.createContainer({
               Image: 'pipecraft/funbaront:latest',
               name: 'funbaront',
-              Cmd: ['/bin/bash', '-c', 'bash /scripts/FunBarONT_Pipeline.sh'],
+              Cmd: ['/bin/bash', '-c', 'bash /scripts/submodules/FunBarONT_Pipeline.sh'],
               Tty: false,
               AttachStdout: true,
               AttachStderr: true,
@@ -989,13 +999,22 @@ export default {
             });
     
             stream.on('data', (data) => {
-              console.log(data.toString());
+              const output = data.toString();
+              console.log(output);
+              if (logStream) {
+                logStream.write(output);
+              }
             });
             
             await container.start();
     
             const data = await container.wait();
             console.log('Container exited with status code:', data.StatusCode);
+            
+            if (logStream) {
+              logStream.end();
+            }
+            
             this.$store.commit("resetRunInfo");
 
             if (data.StatusCode == 0) {
@@ -1007,7 +1026,7 @@ export default {
             } else {
               Swal.fire({
                 title: "An error occurred while processing your data",
-                text: "Check the log file for more information",
+                text: `Pipeline failed with exit code ${data.StatusCode}. Check log file: ${logPath}`,
                 confirmButtonText: "Quit",
                 theme: "dark",
               });
@@ -1037,9 +1056,14 @@ export default {
       });
     },
     getFunBarONTBinds() {
-      const dirConfig = this.$store.state.FunBarONT[0];
+      const pipelineConfig = this.$store.state.FunBarONT[0];
+      const taxonomyConfig = this.$store.state.FunBarONT[2];
       const workDir = this.$store.state.inputDir || "";
-      const databaseFile = dirConfig.Inputs.find(i => i.name === 'database_file')?.value || "";
+      const databaseFile = taxonomyConfig?.Inputs?.find(i => i.name === 'database_file')?.value || "";
+
+      if (!databaseFile) {
+        throw new Error("No database file selected for FunBarONT (database_file).");
+      }
       
       // Get config file path
       const configPath = isDevelopment == true
@@ -1054,7 +1078,7 @@ export default {
       return [
         `${workDir}:/Input:rw`,
         `${workDir}:/sequences:rw`,
-        `${databaseFile}:/database/database.fasta:ro`,
+        `${slash(databaseFile)}:/database/database.fasta:ro`,
         `${configPath}:/scripts/FunBarONTConfig.json:ro`,
         `${scriptDir}:/scripts:ro`
       ];

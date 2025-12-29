@@ -103,12 +103,11 @@ else
     # Copy database file to BLAST directory
     cp "$DATABASE_FILE" "$BLASTDB_PATH/unite/unite.fasta"
     
-    # Create BLAST database
+    # Create BLAST database (without -parse_seqids to allow long headers in UNITE)
     makeblastdb \
         -in "$BLASTDB_PATH/unite/unite.fasta" \
         -dbtype nucl \
         -out "$BLASTDB_PATH/unite/unite" \
-        -parse_seqids \
         -blastdb_version 5
     
     MAKEBLASTDB_EXIT=$?
@@ -127,6 +126,10 @@ RESULTS_DIR="/sequences/${RUN_ID}_results"
 mkdir -p "$WORK_DIR"
 mkdir -p "$RESULTS_DIR"
 
+# Set Nextflow home to writable location
+export NXF_HOME="/sequences/.nextflow"
+mkdir -p "$NXF_HOME"
+
 echo ""
 echo "Working directory: $WORK_DIR"
 echo "Results directory: $RESULTS_DIR"
@@ -135,16 +138,17 @@ echo ""
 # Start time tracking
 start_time=$(date +%s)
 
-# Change to FunBarONT script directory
-cd /scripts/FunBarONT || exit 1
-
 echo "=========================================="
 echo "Running Nextflow Pipeline"
 echo "=========================================="
 echo ""
 
+# Run Nextflow pipeline from /sequences directory (writable) instead of /scripts
+# This avoids permission issues with .nextflow directory creation
+cd /sequences || exit 1
+
 # Run Nextflow pipeline
-nextflow run main.nf \
+nextflow run /scripts/FunBarONT/main.nf \
   --FASTQ_DIRECTORY "/Input" \
   --BLASTDB_PATH "$BLASTDB_PATH" \
   --RUN_ID "$RUN_ID" \
