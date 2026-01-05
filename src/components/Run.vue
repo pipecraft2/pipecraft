@@ -1056,7 +1056,6 @@ export default {
       });
     },
     getFunBarONTBinds() {
-      const pipelineConfig = this.$store.state.FunBarONT[0];
       const taxonomyConfig = this.$store.state.FunBarONT[2];
       const workDir = this.$store.state.inputDir || "";
       const databaseFile = taxonomyConfig?.Inputs?.find(i => i.name === 'database_file')?.value || "";
