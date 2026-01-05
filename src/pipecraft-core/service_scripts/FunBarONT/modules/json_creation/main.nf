@@ -1,11 +1,14 @@
 process barcode_results_aggregation {
 
     input:
+    val(run_id)
     tuple val(barcode_dir_absolute), val(barcode_name), path(barcode_dir), path(BLASTDB_PATH), path(processing_dir), path(fastq_file), path(filtlong_file), path(centroids_file), path(minimap_file), path(medaka_file), path(itsx_fasta), path(blastn_file)
     val(output_all_polished_seqs)
 
     output:
     path("${barcode_name}.results.json") , emit: final_json
+
+    publishDir "${run_id}_results/07_json_results/", mode: 'copy'
 
     """
     #!/usr/bin/env python3

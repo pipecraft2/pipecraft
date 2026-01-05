@@ -56,7 +56,7 @@ workflow ont_barcode_workflow {
 
     quality_assessment_with_nanoplot(run_id, result.mt_10_seqs.map{ it[0..-2] }, cpu_threads)
 
-    chopper_filtering(result.mt_10_seqs.map{ it[0..-2] }, chopper_min, chopper_max, cpu_threads)
+    chopper_filtering(run_id, result.mt_10_seqs.map{ it[0..-2] }, chopper_min, chopper_max, cpu_threads)
 
     check_if_lt_10_seqs_after_chopper(chopper_filtering.out.data_tuple)
 
@@ -69,11 +69,11 @@ workflow ont_barcode_workflow {
     emit_empty_result_after_chopper(result_after_chopper.lt_10_seqs_after_chopper)
     final_data = final_data.mix(emit_empty_result_after_chopper.out.final_empty_json)
 
-    clustering(result_after_chopper.mt_10_seqs_after_chopper.map { it[0..-2] })
+    clustering(run_id, result_after_chopper.mt_10_seqs_after_chopper.map { it[0..-2] })
 
     map_fastq(clustering.out.data_tuple, cpu_threads)
 
-    polish_with_racon(map_fastq.out.data_tuple, cpu_threads)
+    polish_with_racon(run_id, map_fastq.out.data_tuple, cpu_threads)
 
     // check if we have more than 1 sequence to work with - racon does not output unpolished sequences
     check_if_at_least_one_seq_afer_racon(polish_with_racon.out.data_tuple)
@@ -86,13 +86,13 @@ workflow ont_barcode_workflow {
     emit_empty_result_after_racon(result_after_racon.lt_1_seqs_after_racon)
     final_data = final_data.mix(emit_empty_result_after_racon.out.final_empty_json)
 
-    polish_with_medaka(result_after_racon.mt_1_seqs_after_racon.map { it[0..-2] }, medaka_model, cpu_threads)
+    polish_with_medaka(run_id, result_after_racon.mt_1_seqs_after_racon.map { it[0..-2] }, medaka_model, cpu_threads)
 
-    its_extraction(polish_with_medaka.out.data_tuple, use_itsx, cpu_threads)
+    its_extraction(run_id, polish_with_medaka.out.data_tuple, use_itsx, cpu_threads)
 
-    blastn_vs_unite(its_extraction.out.data_tuple, cpu_threads)
+    blastn_vs_unite(run_id, its_extraction.out.data_tuple, cpu_threads)
 
-    barcode_results_aggregation(blastn_vs_unite.out.data_tuple, output_all_polished_seqs)
+    barcode_results_aggregation(run_id, blastn_vs_unite.out.data_tuple, output_all_polished_seqs)
     barcode_results_aggregation.out.final_json.set { final_json }
 
     final_data = final_data.mix(final_json)

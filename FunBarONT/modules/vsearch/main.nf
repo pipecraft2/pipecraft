@@ -1,10 +1,14 @@
 // Cluster sequences with VSEARCH
 process clustering {
     input:
+    val(run_id)
     tuple val(barcode_dir_absolute), val(barcode_name), path(barcode_dir), path(BLASTDB_PATH), path(processing_dir), path(fastq_file), path(chopper_file)
 
     output:
     tuple val(barcode_dir_absolute), val(barcode_name), path(barcode_dir), path(BLASTDB_PATH), path(processing_dir), path(fastq_file), path(chopper_file), path("$processing_dir/combined.${barcode_name}.chopper.centeroids.fasta.gz"), emit: data_tuple
+    path("${barcode_name}.centroids.fasta.gz"), emit: centroids_fasta
+
+    publishDir "${run_id}_results/03_clusters/", pattern: "${barcode_name}.centroids.fasta.gz", mode: 'copy'
 
     script:
     """
@@ -17,7 +21,8 @@ process clustering {
             --strand both \
             --sizeout 2>> $processing_dir/processing.log
     gzip -f $processing_dir/combined.${barcode_name}.chopper.centeroids.fasta
-    
+    # Copy for publishing
+    cp $processing_dir/combined.${barcode_name}.chopper.centeroids.fasta.gz ${barcode_name}.centroids.fasta.gz
     echo "\$(date '+%Y-%m-%d %H:%M:%S') ✅ Clustering complete" | tee -a $processing_dir/processing.log
     """
 }

@@ -2,14 +2,17 @@
 process chopper_filtering {
 
     input:
+    val(run_id)
     tuple val(barcode_dir_absolute), val(barcode_name), path(barcode_dir), path(BLASTDB_PATH), path(processing_dir), path(fastq_file)
     val(chopper_min)
     val(chopper_max)
     val(cpu_threads)
 
-
     output:
     tuple val(barcode_dir_absolute), val(barcode_name), path(barcode_dir), path(BLASTDB_PATH), path(processing_dir), path(fastq_file), path("${processing_dir}/combined.${barcode_name}.chopper.fasta.gz"), emit: data_tuple
+    path("${barcode_name}.chopper.fasta.gz"), emit: filtered_fasta
+
+    publishDir "${run_id}_results/02_filtered_sequences/", pattern: "${barcode_name}.chopper.fasta.gz", mode: 'copy'
 
     script:
     """
@@ -19,6 +22,8 @@ process chopper_filtering {
     	--threads $cpu_threads \
     	--input $fastq_file \
     	--quality 10 | seqkit fq2fa -o $processing_dir/combined.${barcode_name}.chopper.fasta.gz 2>> $processing_dir/processing.log
+    # Copy for publishing
+    cp $processing_dir/combined.${barcode_name}.chopper.fasta.gz ${barcode_name}.chopper.fasta.gz
     echo "\$(date '+%Y-%m-%d %H:%M:%S') ✅ Filtered with Chopper" | tee -a $processing_dir/processing.log
     """
 }

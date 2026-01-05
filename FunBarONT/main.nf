@@ -102,8 +102,8 @@ workflow {
         ch_barcodes
     ).collect()
 
-    script_path = file('results_aggregation_script.py')
-    create_final_table(script_path, barcode_results, params.RUN_ID, params.USE_ITSX, params.REL_ABU_THRESHOLD)
+    // Script is now embedded inline in the create_final_table process
+    create_final_table(barcode_results, params.RUN_ID, params.USE_ITSX, params.REL_ABU_THRESHOLD)
 
 }
 

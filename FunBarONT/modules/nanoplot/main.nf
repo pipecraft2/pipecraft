@@ -9,7 +9,7 @@ process quality_assessment_with_nanoplot {
     output:
     path "${barcode_name}_NanoPlot_results"
 
-    publishDir "${run_id}_results/", mode: 'move'
+    publishDir "${run_id}_results/01_quality_reports/", mode: 'copy'
 
     script:
     """

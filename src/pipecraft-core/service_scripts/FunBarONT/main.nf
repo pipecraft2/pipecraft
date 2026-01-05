@@ -102,9 +102,8 @@ workflow {
         ch_barcodes
     ).collect()
 
-    // Use absolute path to the script since we're running from /sequences
-    script_path = file("$projectDir/results_aggregation_script.py")
-    create_final_table(script_path, barcode_results, params.RUN_ID, params.USE_ITSX, params.REL_ABU_THRESHOLD)
+    // Script is now embedded inline in the create_final_table process
+    create_final_table(barcode_results, params.RUN_ID, params.USE_ITSX, params.REL_ABU_THRESHOLD)
 
 }
 
