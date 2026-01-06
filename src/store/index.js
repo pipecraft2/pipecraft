@@ -4854,7 +4854,7 @@ export default new Vuex.Store({
             name: "racon_quality_threshold",
             value: 20,
             disabled: "never",
-            tooltip: "Racon quality threshold parameter (-q)",
+            tooltip: "Minimum average base quality for windows used by Racon. Higher values use only higher quality bases; 0 disables filtering (default: 10).",
             type: "numeric",
             rules: [(v) => v >= 0 || "ERROR: specify values >= 0"]
           },
@@ -4862,7 +4862,7 @@ export default new Vuex.Store({
             name: "racon_window_length",
             value: 100,
             disabled: "never",
-            tooltip: "Racon window length parameter (-w)",
+            tooltip: "Window length used by Racon for polishing. Larger windows smooth over more bases; smaller windows make finer, local corrections (default: 500).",
             type: "numeric",
             rules: [(v) => v >= 1 || "ERROR: specify values >= 1"]
           }
