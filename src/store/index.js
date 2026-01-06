@@ -4915,9 +4915,9 @@ export default new Vuex.Store({
           {
             name: "database_file",
             value: "",
-            btnName: "select database file",
+            btnName: "select file",
             disabled: "never",
-            tooltip: "Path to the reference database FASTA file (e.g., UNITE for fungi). BLAST database will be created automatically from this file.",
+            tooltip: "database file (may be fasta formated - automatically will convert to BLAST database format)",
             type: "file"
           },
           {
@@ -4928,58 +4928,58 @@ export default new Vuex.Store({
             type: "text"
           },
           {
-            name: "blast_strands",
+            name: "strands",
             items: ["plus", "both"],
             value: "both",
             disabled: "never",
-            tooltip: "Query strand to search against database. Both = search reverse complement as well",
+            tooltip: "query strand to search against database. Both = search also reverse complement",
             type: "select"
           },
           {
-            name: "blast_e_value",
+            name: "e_value",
             value: 10,
             disabled: "never",
-            tooltip: "E-value cutoff; lower is more stringent",
+            tooltip: "a parameter that describes the number of hits one can expect to see by chance when searching a database of a particular size. The lower the e-value the more 'significant' the match is",
             type: "numeric",
             rules: [(v) => v >= 0 || "ERROR: specify values >= 0"]
           },
           {
-            name: "blast_word_size",
+            name: "word_size",
             value: 11,
             disabled: "never",
-            tooltip: "Initial word size for BLAST seed matching",
+            tooltip: "the size of the initial word that must be matched between the database and the query sequence",
             type: "numeric",
             rules: [(v) => v >= 1 || "ERROR: specify values >= 1"]
           },
           {
-            name: "blast_reward",
+            name: "reward",
             value: 2,
             disabled: "never",
-            tooltip: "Reward for a match",
+            tooltip: "reward for a match",
             type: "numeric",
             rules: [(v) => v >= 0 || "ERROR: specify values >= 0"]
           },
           {
-            name: "blast_penalty",
+            name: "penalty",
             value: -3,
             disabled: "never",
-            tooltip: "Penalty for a mismatch",
+            tooltip: "penalty for a mismatch",
             type: "numeric",
             rules: [(v) => v <= 0 || "ERROR: specify values <= 0"]
           },
           {
-            name: "blast_gap_open",
+            name: "gap_open",
             value: 5,
             disabled: "never",
-            tooltip: "Cost to open a gap",
+            tooltip: "cost to open a gap",
             type: "numeric",
             rules: [(v) => v >= 0 || "ERROR: specify values >= 0"]
           },
           {
-            name: "blast_gap_extend",
+            name: "gap_extend",
             value: 2,
             disabled: "never",
-            tooltip: "Cost to extend a gap",
+            tooltip: "cost to extend a gap",
             type: "numeric"
           }
         ],
@@ -6424,13 +6424,13 @@ SINGLE-END is for PacBio data, but can be also used for single-end read Illumina
         const vsearchClusterStrand = vsearchConfig.Inputs.find(i => i.name === 'vsearch_cluster_strand')?.value ?? "both";
         
         // Get BLAST/Taxonomy options
-        const blastStrands = taxonomyConfig.Inputs.find(i => i.name === 'blast_strands')?.value ?? "both";
-        const blastE = taxonomyConfig.Inputs.find(i => i.name === 'blast_e_value')?.value ?? 10;
-        const blastWord = taxonomyConfig.Inputs.find(i => i.name === 'blast_word_size')?.value ?? 11;
-        const blastReward = taxonomyConfig.Inputs.find(i => i.name === 'blast_reward')?.value ?? 2;
-        const blastPenalty = taxonomyConfig.Inputs.find(i => i.name === 'blast_penalty')?.value ?? -3;
-        const blastGapOpen = taxonomyConfig.Inputs.find(i => i.name === 'blast_gap_open')?.value ?? 5;
-        const blastGapExtend = taxonomyConfig.Inputs.find(i => i.name === 'blast_gap_extend')?.value ?? 2;
+        const blastStrands = taxonomyConfig.Inputs.find(i => i.name === 'strands')?.value ?? "both";
+        const blastE = taxonomyConfig.Inputs.find(i => i.name === 'e_value')?.value ?? 10;
+        const blastWord = taxonomyConfig.Inputs.find(i => i.name === 'word_size')?.value ?? 11;
+        const blastReward = taxonomyConfig.Inputs.find(i => i.name === 'reward')?.value ?? 2;
+        const blastPenalty = taxonomyConfig.Inputs.find(i => i.name === 'penalty')?.value ?? -3;
+        const blastGapOpen = taxonomyConfig.Inputs.find(i => i.name === 'gap_open')?.value ?? 5;
+        const blastGapExtend = taxonomyConfig.Inputs.find(i => i.name === 'gap_extend')?.value ?? 2;
         
         // Create config object
         const configObj = {
