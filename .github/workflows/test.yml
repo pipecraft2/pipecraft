@@ -1,6 +1,7 @@
 name: CI
 
-#on: [push, pull_request]
+# Only run manually - no automatic triggers
+on: workflow_dispatch
 
 jobs:
   build:
