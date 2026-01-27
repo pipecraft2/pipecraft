@@ -194,118 +194,122 @@ echo "=========================================="
 README_FILE="$RESULTS_DIR/README.txt"
 
 cat > "$README_FILE" << EOF
-# FunBarONT Pipeline Results
+==========================================
+FunBarONT Pipeline Results
+==========================================
 
-## Run Information
+Run Information
+---------------
+Run ID:    $RUN_ID
+Date:      $(date)
+Runtime:   ${runtime_min}m ${runtime_sec}s
+Pipeline:  FunBarONT - Oxford Nanopore Technologies Fungal Barcoding
 
-- **Run ID**: $RUN_ID
-- **Date**: $(date)
-- **Runtime**: ${runtime_min}m ${runtime_sec}s
-- **Pipeline**: FunBarONT - Oxford Nanopore Technologies Fungal Barcoding
+Input Data
+----------
+Input Directory:    /Input
+Input FASTQ files:  $FASTQ_COUNT
+Database File:      $DATABASE_FILE
+BLAST Database:     $BLASTDB_PATH
 
-## Input Data
+Pipeline Parameters
+-------------------
+Medaka Model:       $MEDAKA_MODEL
+ITSx Extraction:    $([ "$USE_ITSX" = "1" ] && echo "Enabled" || echo "Disabled")
+Output All Polished: $([ "$OUTPUT_ALL_POLISHED" = "1" ] && echo "Enabled" || echo "Disabled")
+Rel Abu Threshold:  $REL_ABU_THRESHOLD%
+CPU Threads:        $CPU_THREADS
+Chopper Quality:    $CHOPPER_QUALITY
+Chopper Min Length: $CHOPPER_MIN_LENGTH bp
+Chopper Max Length: $CHOPPER_MAX_LENGTH bp
+VSEARCH Cluster ID: $VSEARCH_CLUSTER_ID
 
-- **Input Directory**: /Input
-- **Input FASTQ files**: $FASTQ_COUNT
-- **Database File**: $DATABASE_FILE
-- **BLAST Database**: $BLASTDB_PATH
+Pipeline Steps
+--------------
 
-## Pipeline Parameters
+1. Quality Control (NanoPlot)
+   Tool:    NanoPlot
+   Purpose: Assess quality metrics of ONT sequencing data
+   Output:  Quality plots and statistics for each barcode
 
-- **Medaka Model**: $MEDAKA_MODEL
-- **ITSx Extraction**: $([ "$USE_ITSX" = "1" ] && echo "Enabled" || echo "Disabled")
-- **Output All Polished**: $([ "$OUTPUT_ALL_POLISHED" = "1" ] && echo "Enabled" || echo "Disabled")
-- **Rel Abu Threshold**: $REL_ABU_THRESHOLD%
-- **CPU Threads**: $CPU_THREADS
-- **Chopper Quality**: $CHOPPER_QUALITY
-- **Chopper Min Length**: $CHOPPER_MIN_LENGTH bp
-- **Chopper Max Length**: $CHOPPER_MAX_LENGTH bp
-- **VSEARCH Cluster ID**: $VSEARCH_CLUSTER_ID
+2. Quality Filtering (chopper)
+   Tool:    chopper
+   Purpose: Filter reads based on quality scores
+   Parameters:
+     - Min quality = $CHOPPER_QUALITY
+     - Min length = $CHOPPER_MIN_LENGTH bp
+     - Max length = $CHOPPER_MAX_LENGTH bp
+   Output:  Filtered FASTQ files
 
-## Pipeline Steps
+3. Read Mapping (minimap2)
+   Tool:    minimap2
+   Purpose: Map reads to reference sequences for clustering
+   Output:  BAM alignment files
 
-### 1. Quality Control (NanoPlot)
-- **Tool**: NanoPlot
-- **Purpose**: Assess quality metrics of ONT sequencing data
-- **Output**: Quality plots and statistics for each barcode
+4. Consensus Calling (racon + medaka)
+   Tool:    racon (1st pass), medaka (polishing)
+   Purpose: Generate high-accuracy consensus sequences
+   Medaka Model: $MEDAKA_MODEL
+   Output:  Polished consensus FASTA
 
-### 2. Quality Filtering (chopper)
-- **Tool**: chopper
-- **Purpose**: Filter reads based on quality scores
-- **Parameters**: 
-  - Min quality = $CHOPPER_QUALITY
-  - Min length = $CHOPPER_MIN_LENGTH bp
-  - Max length = $CHOPPER_MAX_LENGTH bp
-- **Output**: Filtered FASTQ files
-
-### 3. Read Mapping (minimap2)
-- **Tool**: minimap2
-- **Purpose**: Map reads to reference sequences for clustering
-- **Output**: BAM alignment files
-
-### 4. Consensus Calling (racon + medaka)
-- **Tool**: racon (1st pass), medaka (polishing)
-- **Purpose**: Generate high-accuracy consensus sequences
-- **Medaka Model**: $MEDAKA_MODEL
-- **Output**: Polished consensus FASTA
-
-### 5. Clustering (vsearch)
-- **Tool**: vsearch
-- **Purpose**: Cluster similar sequences
-- **Parameters**: Cluster identity = $VSEARCH_CLUSTER_ID
-- **Output**: Representative sequences (OTUs)
-
-EOF
-
-if [ "$USE_ITSX" = "1" ]; then
-cat >> "$README_FILE" << EOF
-### 6. ITS Extraction (ITSx)
-- **Tool**: ITSx
-- **Purpose**: Extract ITS1, 5.8S, and ITS2 regions from fungal sequences
-- **Output**: ITS region FASTA files
-
-EOF
-fi
-
-cat >> "$README_FILE" << EOF
-### $( [ "$USE_ITSX" = "1" ] && echo "7" || echo "6" ). Taxonomy Assignment (BLAST)
-- **Tool**: BLAST+ (blastn)
-- **Database**: $BLASTDB_PATH
-- **Purpose**: Assign taxonomy to consensus sequences
-- **Output**: BLAST results with top hits
-
-## Output Files
-
-### Main Results
-- \`\${RUN_ID}.results.xlsx\` - Excel table with all results (sequence info, taxonomy, quality metrics)
-
-### Quality Control
-- \`01_quality_reports/\` - NanoPlot quality assessment plots and statistics per barcode
-
-### Filtered and Processed Sequences
-- \`02_filtered_sequences/\` - Quality-filtered sequences (*.chopper.fasta.gz)
-- \`03_clusters/\` - VSEARCH clustered centroid sequences (*.centroids.fasta.gz)
-- \`04_polished_sequences/\` - Medaka/Racon polished consensus sequences
+5. Clustering (vsearch)
+   Tool:    vsearch
+   Purpose: Cluster similar sequences
+   Parameters: Cluster identity = $VSEARCH_CLUSTER_ID
+   Output:  Representative sequences (OTUs)
 
 EOF
 
 if [ "$USE_ITSX" = "1" ]; then
 cat >> "$README_FILE" << EOF
-### ITS Extraction
-- \`05_its_extracted/\` - ITS region sequences (*.its.fasta)
+6. ITS Extraction (ITSx)
+   Tool:    ITSx
+   Purpose: Extract ITS1, 5.8S, and ITS2 regions from fungal sequences
+   Output:  ITS region FASTA files
 
 EOF
 fi
 
 cat >> "$README_FILE" << EOF
-### BLAST Results
-- \`06_blast_results/\` - BLAST output files (*.blast.tsv)
+$( [ "$USE_ITSX" = "1" ] && echo "7" || echo "6" ). Taxonomy Assignment (BLAST)
+   Tool:    BLAST+ (blastn)
+   Database: $BLASTDB_PATH
+   Purpose: Assign taxonomy to consensus sequences
+   Output:  BLAST results with top hits
 
-### JSON Results
-- \`07_json_results/\` - Per-barcode JSON results with all processing information
+Output Files
+------------
 
-## Sequence Statistics
+Main Results:
+  ${RUN_ID}.results.xlsx - Excel table with all results (sequence info, taxonomy, quality metrics)
 
+Quality Control:
+  01_quality_reports/ - NanoPlot quality assessment plots and statistics per barcode
+
+Filtered and Processed Sequences:
+  02_filtered_sequences/  - Quality-filtered sequences (*.chopper.fasta.gz)
+  03_clusters/            - VSEARCH clustered centroid sequences (*.centroids.fasta.gz)
+  04_polished_sequences/  - Medaka/Racon polished consensus sequences
+
+EOF
+
+if [ "$USE_ITSX" = "1" ]; then
+cat >> "$README_FILE" << EOF
+ITS Extraction:
+  05_its_extracted/ - ITS region sequences (*.its.fasta)
+
+EOF
+fi
+
+cat >> "$README_FILE" << EOF
+BLAST Results:
+  06_blast_results/ - BLAST output files (*.blast.tsv)
+
+JSON Results:
+  07_json_results/ - Per-barcode JSON results with all processing information
+
+Sequence Statistics
+-------------------
 EOF
 
 # Try to count sequences in polished output files
@@ -313,7 +317,7 @@ POLISHED_DIR="$RESULTS_DIR/04_polished_sequences"
 if [ -d "$POLISHED_DIR" ]; then
     CONSENSUS_COUNT=$(find "$POLISHED_DIR" -name "*.fasta" -exec grep -c "^>" {} + 2>/dev/null | awk -F: '{sum+=$2} END {print sum}')
     if [ -n "$CONSENSUS_COUNT" ] && [ "$CONSENSUS_COUNT" -gt 0 ]; then
-        echo "- Total polished consensus sequences: $CONSENSUS_COUNT" >> "$README_FILE"
+        echo "Total polished consensus sequences: $CONSENSUS_COUNT" >> "$README_FILE"
     fi
 fi
 
@@ -322,68 +326,70 @@ BLAST_DIR="$RESULTS_DIR/06_blast_results"
 if [ -d "$BLAST_DIR" ]; then
     BLAST_COUNT=$(find "$BLAST_DIR" -name "*.blast.tsv" | wc -l)
     if [ "$BLAST_COUNT" -gt 0 ]; then
-        echo "- Total BLAST result files: $BLAST_COUNT" >> "$README_FILE"
+        echo "Total BLAST result files: $BLAST_COUNT" >> "$README_FILE"
     fi
 fi
 
 cat >> "$README_FILE" << EOF
 
-## Tools and Citations
+==========================================
+Tools and Citations
+==========================================
 
-### Core Pipeline Tools
+Core Pipeline Tools:
 
-**FunBarONT**
-- Citation: [Provide FunBarONT citation]
-- GitHub: https://github.com/mdziurzynski/ont_fungal_barcoding_pipeline
+FunBarONT
+  Citation: [Provide FunBarONT citation]
+  GitHub: https://github.com/mdziurzynski/ont_fungal_barcoding_pipeline
 
-**Nextflow**
-- Di Tommaso P, et al. (2017) Nextflow enables reproducible computational workflows. Nat Biotechnol 35:316-319
-- Website: https://www.nextflow.io/
+Nextflow
+  Di Tommaso P, et al. (2017) Nextflow enables reproducible computational workflows. Nat Biotechnol 35:316-319
+  Website: https://www.nextflow.io/
 
-**NanoPlot**
-- De Coster W, et al. (2018) NanoPack: visualizing and processing long-read sequencing data. Bioinformatics 34:2666-2669
-- GitHub: https://github.com/wdecoster/NanoPlot
+NanoPlot
+  De Coster W, et al. (2018) NanoPack: visualizing and processing long-read sequencing data. Bioinformatics 34:2666-2669
+  GitHub: https://github.com/wdecoster/NanoPlot
 
-**chopper**
-- De Coster W, Rademakers R (2023) NanoPack2: population-scale evaluation of long-read sequencing data. Bioinformatics 39:btad311
-- GitHub: https://github.com/wdecoster/chopper
+chopper
+  De Coster W, Rademakers R (2023) NanoPack2: population-scale evaluation of long-read sequencing data. Bioinformatics 39:btad311
+  GitHub: https://github.com/wdecoster/chopper
 
-**minimap2**
-- Li H (2018) Minimap2: pairwise alignment for nucleotide sequences. Bioinformatics 34:3094-3100
-- GitHub: https://github.com/lh3/minimap2
+minimap2
+  Li H (2018) Minimap2: pairwise alignment for nucleotide sequences. Bioinformatics 34:3094-3100
+  GitHub: https://github.com/lh3/minimap2
 
-**racon**
-- Vaser R, et al. (2017) Fast and accurate de novo genome assembly from long uncorrected reads. Genome Res 27:737-746
-- GitHub: https://github.com/isovic/racon
+racon
+  Vaser R, et al. (2017) Fast and accurate de novo genome assembly from long uncorrected reads. Genome Res 27:737-746
+  GitHub: https://github.com/isovic/racon
 
-**medaka**
-- Oxford Nanopore Technologies
-- GitHub: https://github.com/nanoporetech/medaka
+medaka
+  Oxford Nanopore Technologies
+  GitHub: https://github.com/nanoporetech/medaka
 
-**vsearch**
-- Rognes T, et al. (2016) VSEARCH: a versatile open source tool for metagenomics. PeerJ 4:e2584
-- GitHub: https://github.com/torognes/vsearch
+vsearch
+  Rognes T, et al. (2016) VSEARCH: a versatile open source tool for metagenomics. PeerJ 4:e2584
+  GitHub: https://github.com/torognes/vsearch
 
-**ITSx**
-- Bengtsson-Palme J, et al. (2013) Improved software detection and extraction of ITS1 and ITS2 from ribosomal ITS sequences of fungi and other eukaryotes for analysis of environmental sequencing data. Methods Ecol Evol 4:914-919
+ITSx
+  Bengtsson-Palme J, et al. (2013) Improved software detection and extraction of ITS1 and ITS2 from ribosomal ITS sequences of fungi and other eukaryotes for analysis of environmental sequencing data. Methods Ecol Evol 4:914-919
 
-**BLAST+**
-- Camacho C, et al. (2009) BLAST+: architecture and applications. BMC Bioinformatics 10:421
-- Website: https://blast.ncbi.nlm.nih.gov/
+BLAST+
+  Camacho C, et al. (2009) BLAST+: architecture and applications. BMC Bioinformatics 10:421
+  Website: https://blast.ncbi.nlm.nih.gov/
 
-### Analysis Platform
+Analysis Platform:
 
-**PipeCraft**
-- Anslan S, et al. (2017) PipeCraft: flexible open-source toolkit for bioinformatics analysis of custom high-throughput amplicon sequencing data. Mol Ecol Resour 17:e234-e240
-- GitHub: https://github.com/pipecraft2/pipecraft
+PipeCraft
+  Anslan S, et al. (2017) PipeCraft: flexible open-source toolkit for bioinformatics analysis of custom high-throughput amplicon sequencing data. Mol Ecol Resour 17:e234-e240
+  GitHub: https://github.com/pipecraft2/pipecraft
 
----
-
-**Pipeline completed successfully**
+==========================================
+Pipeline completed successfully
+==========================================
 
 For questions or issues, please refer to:
-- FunBarONT documentation: https://github.com/mdziurzynski/ont_fungal_barcoding_pipeline
-- PipeCraft documentation: https://pipecraft2-manual.readthedocs.io/
+  FunBarONT documentation: https://github.com/mdziurzynski/ont_fungal_barcoding_pipeline
+  PipeCraft documentation: https://pipecraft2-manual.readthedocs.io/
 
 EOF
 
