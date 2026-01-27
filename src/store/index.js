@@ -4766,7 +4766,7 @@ export default new Vuex.Store({
         extraInputs: [],
         Inputs: [
           {
-            name: "use_itsx",
+            name: "use_ITSx",
             value: true,
             disabled: "never",
             tooltip: "Set to false if you want to omit extraction of full ITS region using ITSx",
