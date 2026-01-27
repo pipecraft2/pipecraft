@@ -4881,17 +4881,17 @@ export default new Vuex.Store({
         extraInputs: [],
         Inputs: [
           {
-            name: "vsearch_cluster_id",
+            name: "similarity_threshold",
             value: 0.95,
             disabled: "never",
-            tooltip: "VSEARCH clustering identity threshold (0-1). Sequences with similarity above this threshold will be clustered together.",
+            tooltip: "Similarity threshold (0-1). Sequences with similarity above this threshold will be clustered together.",
             max: 1,
             min: 0,
             step: 0.01,
             type: "slide"
           },
           {
-            name: "vsearch_cluster_strand",
+            name: "strands",
             items: ["both", "plus"],
             value: "both",
             disabled: "never",
