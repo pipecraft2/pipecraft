@@ -191,7 +191,7 @@ echo "=========================================="
 echo "Generating Pipeline Summary"
 echo "=========================================="
 
-README_FILE="$RESULTS_DIR/README.md"
+README_FILE="$RESULTS_DIR/README.txt"
 
 cat > "$README_FILE" << EOF
 # FunBarONT Pipeline Results
@@ -277,42 +277,53 @@ cat >> "$README_FILE" << EOF
 ## Output Files
 
 ### Main Results
-- \`results_table.xlsx\` - Excel table with all results (sequence info, taxonomy, quality metrics)
-- \`consensus_sequences.fasta\` - All consensus sequences
-- \`taxonomy_assignments.txt\` - Detailed taxonomy assignments
+- \`\${RUN_ID}.results.xlsx\` - Excel table with all results (sequence info, taxonomy, quality metrics)
 
 ### Quality Control
-- \`nanoplot/\` - Quality assessment plots and statistics per barcode
+- \`01_quality_reports/\` - NanoPlot quality assessment plots and statistics per barcode
 
-### Intermediate Files
-- \`filtered_reads/\` - Quality-filtered FASTQ files
-- \`alignments/\` - Minimap2 alignment files
-- \`consensus/\` - Consensus sequences per barcode
-- \`clusters/\` - Clustering results
+### Filtered and Processed Sequences
+- \`02_filtered_sequences/\` - Quality-filtered sequences (*.chopper.fasta.gz)
+- \`03_clusters/\` - VSEARCH clustered centroid sequences (*.centroids.fasta.gz)
+- \`04_polished_sequences/\` - Medaka/Racon polished consensus sequences
 
 EOF
 
 if [ "$USE_ITSX" = "1" ]; then
 cat >> "$README_FILE" << EOF
 ### ITS Extraction
-- \`itsx/\` - ITS region sequences (ITS1, 5.8S, ITS2)
+- \`05_its_extracted/\` - ITS region sequences (*.its.fasta)
 
 EOF
 fi
 
 cat >> "$README_FILE" << EOF
 ### BLAST Results
-- \`blast/\` - BLAST output files
-- \`taxonomy/\` - Parsed taxonomy assignments
+- \`06_blast_results/\` - BLAST output files (*.blast.tsv)
+
+### JSON Results
+- \`07_json_results/\` - Per-barcode JSON results with all processing information
 
 ## Sequence Statistics
 
 EOF
 
-# Try to count sequences in output files
-if [ -f "$RESULTS_DIR/consensus_sequences.fasta" ]; then
-    CONSENSUS_COUNT=$(grep -c "^>" "$RESULTS_DIR/consensus_sequences.fasta" || echo "0")
-    echo "- **Total consensus sequences**: $CONSENSUS_COUNT" >> "$README_FILE"
+# Try to count sequences in polished output files
+POLISHED_DIR="$RESULTS_DIR/04_polished_sequences"
+if [ -d "$POLISHED_DIR" ]; then
+    CONSENSUS_COUNT=$(find "$POLISHED_DIR" -name "*.fasta" -exec grep -c "^>" {} + 2>/dev/null | awk -F: '{sum+=$2} END {print sum}')
+    if [ -n "$CONSENSUS_COUNT" ] && [ "$CONSENSUS_COUNT" -gt 0 ]; then
+        echo "- Total polished consensus sequences: $CONSENSUS_COUNT" >> "$README_FILE"
+    fi
+fi
+
+# Count BLAST result files
+BLAST_DIR="$RESULTS_DIR/06_blast_results"
+if [ -d "$BLAST_DIR" ]; then
+    BLAST_COUNT=$(find "$BLAST_DIR" -name "*.blast.tsv" | wc -l)
+    if [ "$BLAST_COUNT" -gt 0 ]; then
+        echo "- Total BLAST result files: $BLAST_COUNT" >> "$README_FILE"
+    fi
 fi
 
 cat >> "$README_FILE" << EOF

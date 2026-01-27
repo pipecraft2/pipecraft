@@ -6,7 +6,7 @@
   "output_all_polished_seqs": 0,
   "rel_abu_threshold": 10,
   "cpu_threads": 8,
-  "medaka_model": "r1041_e82_400bps_hac_variant_v4.3.0",
+  "medaka_model": "r1041_e82_260bps_sup_variant_g632",
   "chopper_quality": 10,
   "chopper_min_read_length": 150,
   "chopper_max_read_length": 1000,

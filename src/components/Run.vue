@@ -1019,9 +1019,8 @@ export default {
 
             if (data.StatusCode == 0) {
               Swal.fire({
-                title: "FunBarONT pipeline finished successfully",
-                text: "Results are in your sequences directory",
-                theme: "dark",
+              title: "Workflow finished",
+              theme: "white",
               });
             } else {
               Swal.fire({
