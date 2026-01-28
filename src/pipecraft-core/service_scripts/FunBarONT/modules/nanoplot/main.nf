@@ -13,7 +13,7 @@ process quality_assessment_with_nanoplot {
 
     script:
     """
-    echo "\$(date '+%Y-%m-%d %H:%M:%S') 🔬 Running NanoPlot: ${processing_dir}" | tee -a $processing_dir/processing.log
+    echo "\$(date '+%Y-%m-%d %H:%M:%S') Running NanoPlot: ${processing_dir}" | tee -a $processing_dir/processing.log
     NanoPlot \
     	--threads $cpu_threads \
     	--outdir ${barcode_name}_NanoPlot_results \
@@ -21,6 +21,6 @@ process quality_assessment_with_nanoplot {
     	--N50 \
     	--title $barcode_name \
     	--fastq $fastq_file 2>> $processing_dir/processing.log
-    echo "\$(date '+%Y-%m-%d %H:%M:%S') ✅ Created: $processing_dir/${barcode_name}_NanoPlot_results" | tee -a $processing_dir/processing.log
+    echo "\$(date '+%Y-%m-%d %H:%M:%S') Created: $processing_dir/${barcode_name}_NanoPlot_results" | tee -a $processing_dir/processing.log
     """
 }

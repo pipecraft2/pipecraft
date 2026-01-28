@@ -16,7 +16,7 @@ process polish_with_medaka {
 
     script:
     """
-    echo "\$(date '+%Y-%m-%d %H:%M:%S') 🛠️ Running Medaka polishing" | tee -a $processing_dir/processing.log
+    echo "\$(date '+%Y-%m-%d %H:%M:%S') Running Medaka polishing" | tee -a $processing_dir/processing.log
     medaka_consensus \
         -i $processing_dir/$fastq_file \
         -d $processing_dir/$racon_file \
@@ -25,6 +25,6 @@ process polish_with_medaka {
         -m "r1041_e82_260bps_sup_g632" 2>> $processing_dir/processing.log
     # Copy for publishing
     cp $processing_dir/${barcode_name}_medaka_output/consensus.fasta ${barcode_name}.medaka.consensus.fasta
-    echo "\$(date '+%Y-%m-%d %H:%M:%S') ✅ Polishing complete with Medaka" | tee -a $processing_dir/processing.log
+    echo "\$(date '+%Y-%m-%d %H:%M:%S') Polishing complete with Medaka" | tee -a $processing_dir/processing.log
     """
 }

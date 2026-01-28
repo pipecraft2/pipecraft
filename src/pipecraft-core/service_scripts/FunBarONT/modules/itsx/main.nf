@@ -15,7 +15,7 @@ process its_extraction {
 
     script:
     """
-    echo "\$(date '+%Y-%m-%d %H:%M:%S') 🧬 Running ITSx extraction" | tee -a $processing_dir/processing.log
+    echo "\$(date '+%Y-%m-%d %H:%M:%S') Running ITSx extraction" | tee -a $processing_dir/processing.log
     if [ $use_itsx = 1 ]; then
         mkdir -p ${barcode_name}_itsx_output
         ITSx -i $medaka_file/consensus.fasta -o ${barcode_name}_itsx_output/itsx_output --cpu $cpu_threads
@@ -26,6 +26,6 @@ process its_extraction {
     fi
     # Copy for publishing
     cp ${barcode_name}.after_itsx.fasta ${barcode_name}.its.fasta
-    echo "\$(date '+%Y-%m-%d %H:%M:%S') ✅ ITSx extraction complete" | tee -a $processing_dir/processing.log
+    echo "\$(date '+%Y-%m-%d %H:%M:%S') ITSx extraction complete" | tee -a $processing_dir/processing.log
     """
 }

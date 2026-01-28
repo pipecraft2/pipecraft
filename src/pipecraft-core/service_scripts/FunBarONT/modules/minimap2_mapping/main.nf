@@ -10,8 +10,8 @@ process map_fastq {
 
     script:
     """
-    echo "\$(date '+%Y-%m-%d %H:%M:%S') 🎯 Running Minimap2" | tee -a $processing_dir/processing.log
+    echo "\$(date '+%Y-%m-%d %H:%M:%S') Running Minimap2" | tee -a $processing_dir/processing.log
     minimap2 -t $cpu_threads $processing_dir/$centroids_file $processing_dir/$fastq_file > $processing_dir/combined.${barcode_name}_minimap.paf 2>> $processing_dir/processing.log
-    echo "\$(date '+%Y-%m-%d %H:%M:%S') ✅ Minimap2 mapping done" | tee -a $processing_dir/processing.log
+    echo "\$(date '+%Y-%m-%d %H:%M:%S') Minimap2 mapping done" | tee -a $processing_dir/processing.log
     """
 }

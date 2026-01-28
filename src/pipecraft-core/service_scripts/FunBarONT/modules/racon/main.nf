@@ -14,10 +14,10 @@ process polish_with_racon {
 
     script:
     """
-    echo "\$(date '+%Y-%m-%d %H:%M:%S') 🛠️ Running Racon polishing" | tee -a $processing_dir/processing.log
+    echo "\$(date '+%Y-%m-%d %H:%M:%S') Running Racon polishing" | tee -a $processing_dir/processing.log
     racon $processing_dir/$fastq_file -q 20 -w 100 -t $cpu_threads $processing_dir/$minimap_file $centroids_file > $processing_dir/combined.${barcode_name}.racon.fasta 2>> $processing_dir/processing.log
     # Copy for publishing
     cp $processing_dir/combined.${barcode_name}.racon.fasta ${barcode_name}.racon.fasta
-    echo "\$(date '+%Y-%m-%d %H:%M:%S') ✅ Polishing complete with Racon" | tee -a $processing_dir/processing.log
+    echo "\$(date '+%Y-%m-%d %H:%M:%S') Polishing complete with Racon" | tee -a $processing_dir/processing.log
     """
 }

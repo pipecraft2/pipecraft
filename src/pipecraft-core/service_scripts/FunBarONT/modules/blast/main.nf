@@ -14,7 +14,7 @@ process blastn_vs_unite {
 
     script:
     """
-    echo "\$(date '+%Y-%m-%d %H:%M:%S') 💥 Running BLASTn vs UNITE database" | tee -a $processing_dir/processing.log
+    echo "\$(date '+%Y-%m-%d %H:%M:%S') Running BLASTn vs UNITE database" | tee -a $processing_dir/processing.log
     blastn \
         -query $sequences_for_blasting \
         -db ${BLASTDB_PATH}/unite/unite \
@@ -26,6 +26,6 @@ process blastn_vs_unite {
         -max_hsps 1 2>> $processing_dir/processing.log
     # Copy for publishing
     cp $processing_dir/${barcode_name}_blastn_results.tsv ${barcode_name}.blast.tsv
-    echo "\$(date '+%Y-%m-%d %H:%M:%S') ✅ BLASTing complete" | tee -a $processing_dir/processing.log
+    echo "\$(date '+%Y-%m-%d %H:%M:%S') BLASTing complete" | tee -a $processing_dir/processing.log
     """
 }

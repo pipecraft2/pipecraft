@@ -12,7 +12,7 @@ process clustering {
 
     script:
     """
-    echo "\$(date '+%Y-%m-%d %H:%M:%S') 🔬 Running VSEARCH clustering" | tee -a $processing_dir/processing.log
+    echo "\$(date '+%Y-%m-%d %H:%M:%S') Running VSEARCH clustering" | tee -a $processing_dir/processing.log
     mkdir -p $processing_dir/combined.clusters
     vsearch --cluster_fast $processing_dir/$chopper_file \
             --id 0.95 \
@@ -23,6 +23,6 @@ process clustering {
     gzip -f $processing_dir/combined.${barcode_name}.chopper.centeroids.fasta
     # Copy for publishing
     cp $processing_dir/combined.${barcode_name}.chopper.centeroids.fasta.gz ${barcode_name}.centroids.fasta.gz
-    echo "\$(date '+%Y-%m-%d %H:%M:%S') ✅ Clustering complete" | tee -a $processing_dir/processing.log
+    echo "\$(date '+%Y-%m-%d %H:%M:%S') Clustering complete" | tee -a $processing_dir/processing.log
     """
 }

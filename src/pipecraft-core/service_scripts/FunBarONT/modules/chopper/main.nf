@@ -24,6 +24,6 @@ process chopper_filtering {
     	--quality 10 | seqkit fq2fa -o $processing_dir/combined.${barcode_name}.chopper.fasta.gz 2>> $processing_dir/processing.log
     # Copy for publishing
     cp $processing_dir/combined.${barcode_name}.chopper.fasta.gz ${barcode_name}.chopper.fasta.gz
-    echo "\$(date '+%Y-%m-%d %H:%M:%S') ✅ Filtered with Chopper" | tee -a $processing_dir/processing.log
+    echo "\$(date '+%Y-%m-%d %H:%M:%S') Filtered with Chopper" | tee -a $processing_dir/processing.log
     """
 }
