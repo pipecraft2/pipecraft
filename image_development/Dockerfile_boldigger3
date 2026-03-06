@@ -1,0 +1,4 @@
+FROM python:3.12-slim
+RUN pip install --no-cache-dir boldigger3==2.2.0 lxml_html_clean \
+    && mkdir -p /usr/local/lib/python3.12/site-packages/boldigger3/database \
+    && chmod -R 777 /usr/local/lib/python3.12/site-packages/boldigger3/database
