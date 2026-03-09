@@ -41,6 +41,9 @@ source /scripts/submodules/framework.functions.sh
 #output dir
 output_dir=$"/input/demultiplex_out"
 
+# Increase the number of open files limit
+ulimit -S -n 6000
+
 #############################
 ### Start of the workflow ###
 #############################
