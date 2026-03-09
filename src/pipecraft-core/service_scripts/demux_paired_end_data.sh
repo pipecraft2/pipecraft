@@ -49,6 +49,9 @@ output_dir=$"/input/demultiplex_out"
 #python module for assigning sample names as based on indexes file
 run_python_module=$"python3 /scripts/submodules/assign_sample_names.demuxModule.py $indexes_file"
 
+# Increase the number of open files limit
+ulimit -S -n 6000
+
 #############################
 ### Start of the workflow ###
 #############################
