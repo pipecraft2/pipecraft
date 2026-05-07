@@ -1,4 +1,7 @@
 const { execFileSync } = require("child_process");
+const fs = require("fs");
+const os = require("os");
+const path = require("path");
 
 function parseDockerHostToOptions(dockerHost) {
   if (!dockerHost) {
@@ -33,6 +36,30 @@ function parseDockerHostToOptions(dockerHost) {
   throw new Error(`Unsupported Docker endpoint from context: ${dockerHost}`);
 }
 
+function resolveExistingSocketPath(preferredSocketPath) {
+  const candidates = [];
+
+  if (preferredSocketPath) {
+    candidates.push(preferredSocketPath);
+  }
+
+  // Common locations across Linux + Docker Desktop for macOS.
+  candidates.push("/var/run/docker.sock");
+  candidates.push(path.join(os.homedir(), ".docker", "run", "docker.sock"));
+  candidates.push(path.join(os.homedir(), ".docker", "desktop", "docker.sock"));
+
+  const unique = [...new Set(candidates)].filter(Boolean);
+  const existing = unique.find((p) => {
+    try {
+      return fs.existsSync(p);
+    } catch {
+      return false;
+    }
+  });
+
+  return existing || preferredSocketPath;
+}
+
 function readContextValue(args) {
   return execFileSync("docker", args, {
     encoding: "utf8",
@@ -56,9 +83,19 @@ function getDockerodeOptionsFromContextSync() {
       '{{ (index .Endpoints "docker").Host }}',
     ]);
 
-    return parseDockerHostToOptions(dockerHost);
+    const opts = parseDockerHostToOptions(dockerHost);
+    if (opts?.socketPath) {
+      return { ...opts, socketPath: resolveExistingSocketPath(opts.socketPath) };
+    }
+    return opts;
   } catch (error) {
     if (error?.code === "ENOENT") {
+      // In packaged Electron apps, PATH may not include the docker CLI even if Docker Desktop is running.
+      // Fall back to probing common socket paths so we can still connect via Dockerode.
+      const fallbackSocketPath = resolveExistingSocketPath();
+      if (fallbackSocketPath) {
+        return { socketPath: fallbackSocketPath };
+      }
       throw new Error("Docker CLI is not installed or not available in PATH.");
     }
 
