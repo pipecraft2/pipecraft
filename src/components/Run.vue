@@ -567,6 +567,7 @@ export default {
       });
       let dataInfo = {
         cores: this.$store.state.dockerInfo.NCPU,
+        memoryBytes: this.$store.state.dockerInfo.MemTotal,
         workingDir: this.$store.state.workingDir,
         fileFormat: this.$store.state.data.fileFormat,
         readType: this.$store.state.data.readType,
