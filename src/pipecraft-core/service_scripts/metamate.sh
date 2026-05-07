@@ -70,7 +70,7 @@ if [[ "$abundance_filt" != "true" ]]; then
     printf '%s\n' "NOTICE]: abundance_filt is not 'true' — forcing default metaMATE specifications: $specifications" >&2
 else
     if [[ -z "$specifications" ]] || [[ "$specifications" == "undefined" ]]; then
-        specifications="/default_specs/specifications0.txt"
+        specifications="/default_specs/specifications.txt"
         printf '%s\n' "NOTICE]: no specifications file provided — using bundled default: $specifications" >&2
     else
         specifications=$(container_file "$specifications")
@@ -231,6 +231,8 @@ check_app_error
 
 ### metaMATE-find
 if [[ $filter_mode == "global" ]]; then
+
+    echo "filter_mode = $filter_mode"
     # quick check of the specifications file, has to contain "library" | "total" | "clade" | "taxon"
     if ! grep -q -e "library" -e "total" -e "clade" -e "taxon" $specifications; then
         printf '%s\n' "ERROR]: specifications file seems to be wrong. Does not contain any of the terms (library, total, clade, taxon).
@@ -255,16 +257,16 @@ if [[ $filter_mode == "global" ]]; then
     fi
 
     # remove old $output_dir if exists
-    if [[ -d $output_dir ]]; then
-        rm -rf $output_dir
+    if [[ -d "$output_dir" ]]; then
+        rm -rf "$output_dir"
     fi
-    mkdir -p $output_dir
+    mkdir -p "$output_dir"
     # merge reference seqs files; if reference_seqs2 is provided
     if [[ $reference_seqs2 != "undefined" ]]; then
-        cat $reference_seqs $reference_seqs2 > $output_dir/reference_seqs_merged.fasta
+        cat "$reference_seqs" "$reference_seqs2" > "$output_dir/reference_seqs_merged.fasta"
         db1=$(basename $reference_seqs)
         db2=$(basename $reference_seqs2)
-        reference_seqs=$output_dir/reference_seqs_merged.fasta
+        reference_seqs="$output_dir/reference_seqs_merged.fasta"
     else 
         db1=$(basename $reference_seqs)
         db2=$""
@@ -280,7 +282,7 @@ if [[ $filter_mode == "global" ]]; then
         --basesvariation $bases_variation \
         --table $genetic_code \
         --threads $cores \
-        --output $output_dir \
+        --output "$output_dir" \
         --overwrite $taxgroups $otu_args $metamate_extra_args 2>&1)
     check_app_error
 
@@ -299,6 +301,9 @@ fi
 
 ### metaMATE-filter-adaptive (per-sample filtering)
 if [[ $filter_mode == "per-sample" ]]; then
+
+    echo "filter_mode = $filter_mode"
+
     # quick check of the reference_seqs file
     if ! grep -q "^>" $reference_seqs; then
         printf '%s\n' "ERROR]: reference_seqs file is not a FASTA file.
@@ -308,15 +313,15 @@ if [[ $filter_mode == "per-sample" ]]; then
     fi
 
     # remove old $output_dir if exists
-    if [[ -d $output_dir ]]; then
-        rm -rf $output_dir
+    if [[ -d "$output_dir" ]]; then
+        rm -rf "$output_dir"
     fi
-    mkdir -p $output_dir
+    mkdir -p "$output_dir"
 
     # merge reference seqs files; if reference_seqs2 is provided
     if [[ $reference_seqs2 != "undefined" ]] && [[ -n "$reference_seqs2" ]]; then
-        cat $reference_seqs $reference_seqs2 > $output_dir/reference_seqs_merged.fasta
-        reference_seqs=$output_dir/reference_seqs_merged.fasta
+        cat "$reference_seqs" "$reference_seqs2" > "$output_dir/reference_seqs_merged.fasta"
+        reference_seqs="$output_dir/reference_seqs_merged.fasta"
     fi
 
     printf "# Running metaMATE-filter-adaptive (per-sample filtering)\n"
@@ -328,7 +333,7 @@ if [[ $filter_mode == "per-sample" ]]; then
         --basesvariation $bases_variation \
         --table $genetic_code \
         --threads $cores \
-        --output $output_dir \
+        --output "$output_dir" \
         --overwrite $taxgroups $otu_args $metamate_extra_args \
         --percentile $percentile \
         --criteria $criteria 2>&1)
@@ -343,15 +348,18 @@ fi
 ### metaMATE-dump 	
 if [[ $filter_mode == "global" ]]; then
 
+    echo "filter_mode = $filter_mode"
+
     # dump output name
     dump_seqs=$(basename $rep_seqs)
 
-    # metaMATE writes outputs as *_resultcache and *_results.csv (not fixed names).
-    resultcache_path=$(ls -1 $output_dir/*_resultcache 2>/dev/null | head -n 1)
-    results_csv_path=$(ls -1 $output_dir/*_results.csv 2>/dev/null | head -n 1)
+    # metaMATE writes outputs as *resultcache and *results.csv 
+    resultcache_path=$(ls -1 "$output_dir"/*resultcache 2>/dev/null | head -n 1)
+    results_csv_path=$(ls -1 "$output_dir"/*results.csv 2>/dev/null | head -n 1)
 
     # check for the presence of required metaMATE-find outputs
-    if [[ -d $output_dir ]] && [[ -n "$resultcache_path" ]] && [[ -f "$resultcache_path" ]] && [[ -n "$results_csv_path" ]] && [[ -f "$results_csv_path" ]]; then
+    if [[ -d "$output_dir" ]] && [[ -n "$resultcache_path" ]] && [[ -f "$resultcache_path" ]] && \
+    [[ -n "$results_csv_path" ]] && [[ -f "$results_csv_path" ]]; then
 
         printf "# Running metaMATE-dump\n"
 
@@ -359,11 +367,11 @@ if [[ $filter_mode == "global" ]]; then
         export NA_abund_thresh
         export output_dir
         Rlog=$(Rscript /scripts/submodules/result_index_selection.R 2>&1) 
-        echo $Rlog > $output_dir/result_index_selection.log 
+        echo "$Rlog" > "$output_dir/result_index_selection.log"
         wait
 
         # read result_index
-        read -r result_index < $output_dir/selected_result_index.txt
+        read -r result_index < "$output_dir/selected_result_index.txt"
         printf " - selcted result_index = $result_index\n"
 
         # if no results correspond with the NA_abund_thresh, then get the next best 
@@ -378,17 +386,17 @@ if [[ $filter_mode == "global" ]]; then
         check_app_error
 
         # generate a list of ASV IDs 
-        checkerror=$(seqkit seq -n $output_dir/${dump_seqs%.*}_metaMATE.filt.fasta > $output_dir/${dump_seqs%.*}_metaMATE.filt.list 2>&1)
+        checkerror=$(seqkit seq -n "$output_dir/${dump_seqs%.*}_metaMATE.filt.fasta" > "$output_dir/${dump_seqs%.*}_metaMATE.filt.list" 2>&1)
         check_app_error
 
         # filter the ASV table; include only the ASVs that are in ${dump_seqs%.*}_metaMATE.filt.list
         out_table=$(basename $table)
-        awk -v var="$output_dir/${dump_seqs%.*}" 'NR==1; NR>1 {print $0 | "grep -Fwf "var"_metaMATE.filt.list"}' $table > $output_dir/${out_table%.*}_metaMATE.filt.txt
+        awk -v var="$output_dir/${dump_seqs%.*}" 'NR==1; NR>1 {print $0 | "grep -Fwf "var"_metaMATE.filt.list"}' "$table" > "$output_dir/${out_table%.*}_metaMATE.filt.txt"
 
         # If metaMATE wrote any filtered table(s), keep them alongside Pipecraft outputs
         if compgen -G "$output_dir/*table*" > /dev/null; then
             mkdir -p "$output_dir/metamate_tables" || true
-            cp -f $output_dir/*table* "$output_dir/metamate_tables/" 2>/dev/null || true
+            cp -f "$output_dir"/*table* "$output_dir/metamate_tables/" 2>/dev/null || true
         fi
     else 
         printf '%s\n' "ERROR]: cannot find the $output_dir (metaMATE-find output) to start metaMATE-dump.
@@ -405,16 +413,16 @@ if [[ $debugger != "true" ]]; then
     if [[ -d tempdir2 ]]; then
         rm -rf tempdir2
     fi
-    if [[ -e $output_dir/result_index_selection.log ]]; then
-        rm $output_dir/result_index_selection.log
+    if [[ -e "$output_dir/result_index_selection.log" ]]; then
+        rm "$output_dir/result_index_selection.log"
     fi
 fi
 #basename of rep_seqs
 rep_seqs=$(basename $rep_seqs)
 
 # rm metaMATE formatted ASV table - not needed
-if [[ -e $output_dir/${rep_seqs%.*}_ASVcounts.csv ]]; then 
-    rm $output_dir/${rep_seqs%.*}_ASVcounts.csv 
+if [[ -e "$output_dir/${rep_seqs%.*}_ASVcounts.csv" ]]; then
+    rm "$output_dir/${rep_seqs%.*}_ASVcounts.csv"
 fi
 
 #Make README.txt file
@@ -471,7 +479,7 @@ $warn
 # metaMATE v0.5.4
     #citation: Andújar, C., Creedy, T.J., Arribas, P., López, H., Salces-Castellano, A., Pérez-Delgado, A.J., Vogler, A.P. and Emerson, B.C. (2021), Validated removal of nuclear pseudogenes and sequencing artefacts from mitochondrial metabarcode data. Mol Ecol Resour, 21: 1772-1787. https://doi.org/10.1111/1755-0998.13337
     #https://github.com/tjcreedy/metamate
-#################################################" > $output_dir/README.metaMATE-find.txt
+#################################################" > "$output_dir/README.metaMATE-find.txt"
 fi
 
 if [[ $filter_mode == "global" ]]; then
@@ -479,7 +487,7 @@ if [[ $filter_mode == "global" ]]; then
     inASV_count=$(grep -c "^>" $rep_seqs)
     rep_seqs=$(basename $rep_seqs)
     # count output ASVs
-    outASV_count=$(grep -c "^>" $output_dir/${dump_seqs%.*}_metaMATE.filt.fasta)
+    outASV_count=$(grep -c "^>" "$output_dir/${dump_seqs%.*}_metaMATE.filt.fasta")
  
     # count total sequences, skipping header and handling potential Sequence column
     nSeqs=$(awk 'BEGIN{FS=OFS="\t"}
@@ -513,9 +521,9 @@ if [[ $filter_mode == "global" ]]; then
                 if(i!=seq_col) printf "%s: %s\n", header[i], sample_sums[i]
             }
             printf "\nTotal sequences: %s\n", total
-        }' $output_dir/${out_table%.*}_metaMATE.filt.txt)
+        }' "$output_dir/${out_table%.*}_metaMATE.filt.txt")
 
-    echo "$nSeqs" > $output_dir/sequence_counts.txt
+    echo "$nSeqs" > "$output_dir/sequence_counts.txt"
 
     end=$(date +%s)
     runtime=$((end-start))
@@ -559,11 +567,11 @@ Added files to 'metamate_out' directory:
 # metaMATE v0.5.4
     #citation: Andújar, C., Creedy, T.J., Arribas, P., López, H., Salces-Castellano, A., Pérez-Delgado, A.J., Vogler, A.P. and Emerson, B.C. (2021), Validated removal of nuclear pseudogenes and sequencing artefacts from mitochondrial metabarcode data. Mol Ecol Resour, 21: 1772-1787. https://doi.org/10.1111/1755-0998.13337
     #https://github.com/tjcreedy/metamate
-#################################################" > $output_dir/README.metaMATE-dump.txt
+#################################################" > "$output_dir/README.metaMATE-dump.txt"
 fi
 
-if [[ -e $output_dir/next_best_set.csv ]]; then
-    sed -i "7i\# next_best_set.csv = contains the next best filtering settings as the metaMATE-find results.csv file did not contain NA_abund_thresh of <= $NA_abund_thresh ('nonauthentic_retained_estimate_p')." $output_dir/README.metaMATE-dump.txt
+if [[ -e "$output_dir/next_best_set.csv" ]]; then
+    sed -i "7i\# next_best_set.csv = contains the next best filtering settings as the metaMATE-find results.csv file did not contain NA_abund_thresh of <= $NA_abund_thresh ('nonauthentic_retained_estimate_p')." "$output_dir/README.metaMATE-dump.txt"
 fi
 
 
@@ -571,31 +579,31 @@ fi
 if [[ $filter_mode == "per-sample" ]]; then
 
     # rename native metaMATE outputs to more informative names
-    mv $output_dir/filter-adaptive_table_filtered.txt $output_dir/feature_table.txt
-    mv $output_dir/filter-adaptive.fasta $output_dir/features.fasta
+    mv "$output_dir/filter-adaptive_table_filtered.txt" "$output_dir/feature_table.txt"
+    mv "$output_dir/filter-adaptive.fasta" "$output_dir/features.fasta"
     # rename "*_control.txt" to passes_and_fails.txt
     control_candidates=("$output_dir"/*_control.txt)
     if [[ ${#control_candidates[@]} -eq 1 ]] && [[ -f "${control_candidates[0]}" ]]; then
         mv "${control_candidates[0]}" "$output_dir/passes_and_fails.txt"
     fi
     # remove the csv files, not needed
-    rm -f $output_dir/filter-adaptive_table.csv
-    rm -f $output_dir/*_ASVcounts.csv
+    rm -f "$output_dir/filter-adaptive_table.csv"
+    rm -f "$output_dir"/*_ASVcounts.csv
 
     # count input ASVs
-    inASV_count=$(grep -c "^>" $rep_seqs)
-    rep_seqs=$(basename $rep_seqs)
+    inASV_count=$(grep -c "^>" "$rep_seqs")
+    rep_seqs=$(basename "$rep_seqs")
 
     # count input OTUs
     if [[ $otu_mode == "true" ]]; then
-        inOTU_count=$(grep -c "^>" $otu_fasta)
-        otu_fasta=$(basename $otu_fasta)
-        otu_table=$(basename $otu_table)
-        uc=$(basename $uc)
+        inOTU_count=$(grep -c "^>" "$otu_fasta")
+        otu_fasta=$(basename "$otu_fasta")
+        otu_table=$(basename "$otu_table")
+        uc=$(basename "$uc")
     fi
 
     # count output features
-    outASV_count=$(grep -c "^>" $output_dir/features.fasta)
+    outASV_count=$(grep -c "^>" "$output_dir/features.fasta")
  
     # count total sequences, skipping header and handling potential Sequence column
     nSeqs=$(awk 'BEGIN{FS=OFS="\t"}
@@ -629,9 +637,9 @@ if [[ $filter_mode == "per-sample" ]]; then
                 if(i!=seq_col) printf "%s: %s\n", header[i], sample_sums[i]
             }
             printf "\nTotal sequences: %s\n", total
-        }' $output_dir/feature_table.txt)
+        }' "$output_dir/feature_table.txt")
 
-    echo "$nSeqs" > $output_dir/sequence_counts.txt
+    echo "$nSeqs" > "$output_dir/sequence_counts.txt"
 
     end=$(date +%s)
     runtime=$((end-start))
