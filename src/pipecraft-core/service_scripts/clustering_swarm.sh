@@ -400,9 +400,10 @@ Runtime: %s seconds
 
 Files in 'clustering_out_swarm' directory:
 --------------------------------------------
-%s       = FASTA formatted representative swarm-cluster sequences (seed sequences).
-%s               = SWARM cluster assignment file.
-%s               = SWARM statistics file.
+%s = FASTA formatted representative swarm-cluster sequences (seed sequences).
+%s = SWARM cluster assignment file.
+%s = SWARM statistics file.
+OTU_table.tsv = OTU table (tab delimited file).
 
 Input files processed               = %s
 Total input reads                   = %s
@@ -411,7 +412,6 @@ Number of seed sequences (clusters) = %s
 Core command ->
 swarm %s tempdir/Glob_derep.fasta
 
-OTU table generated and written to OTU_table.tsv in the output directory.
 " "$start_time" "$(date)" "$runtime" "$seeds_basename" "$swarms_basename" "$stats_basename" "$input_file_count" "$total_reads" "$cluster_count" "$core_command" > "$output_dir/README.txt"
 
     if [[ "$was_fastq" == "true" ]]; then
