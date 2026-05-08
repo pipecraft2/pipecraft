@@ -197,7 +197,7 @@ for seqrun in $DIRS; do
     fi
     ### OTU Table Generation from SWARM output (Polars/NumPy-accelerated)
     printf "Generating OTU table ...\n"
-    otu_table_path="$output_dir/OTU_table.txt"
+    otu_table_path="$output_dir/swarm_clusters_table.txt"
 
     python3 - "dereplicated_sequences" \
               "$swarm_output_path" \
@@ -296,7 +296,7 @@ print(f"OTUs: {n_otus}", flush=True)
 # Fallback: write with python buffered I/O
 # -------------------------------------------------------
 if HAS_POLARS:
-    col_dict = {"OTU_ID": otu_ids}
+    col_dict = {"Swarm_cluster_ID": otu_ids}
     for i, s in enumerate(samples):
         col_dict[s] = count_arr[:, i]   # numpy column slice, zero-copy into Arrow
     df = pl.DataFrame(col_dict)
@@ -304,7 +304,7 @@ if HAS_POLARS:
     print(f"Written via Polars (zero-copy Arrow build)", flush=True)
 else:
     # Fallback: buffered write with pre-joined lines
-    header = "OTU_ID\t" + "\t".join(samples) + "\n"
+    header = "Swarm_cluster_ID\t" + "\t".join(samples) + "\n"
     lines  = [header]
     for i, otu_id in enumerate(otu_ids):
         lines.append(otu_id + "\t" + "\t".join(map(str, count_arr[i])) + "\n")
@@ -364,7 +364,7 @@ Files in 'clustering_out_swarm' directory:
 %s = FASTA formatted representative swarm-cluster sequences (seed sequences).
 %s = SWARM cluster assignment file.
 %s = SWARM statistics file.
-OTU_table.txt = OTU table (tab delimited file).
+swarm_clusters_table.txt = SWARM clusters table (tab delimited file).
 
 Input files processed               = %s
 Total input reads                   = %s
