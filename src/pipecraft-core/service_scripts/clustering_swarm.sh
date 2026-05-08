@@ -197,35 +197,20 @@ for seqrun in $DIRS; do
     fi
     ### OTU Table Generation from SWARM output (Polars/NumPy-accelerated)
     printf "Generating OTU table ...\n"
-    otu_table_path="$output_dir/OTU_table.tsv"
+    otu_table_path="$output_dir/OTU_table.txt"
 
     python3 - "dereplicated_sequences" \
               "$swarm_output_path" \
               "$swarm_seeds_path" \
               "$otu_table_path" <<'PYEOF'
-import sys, os, re, subprocess
+import sys, os, re
+import numpy as np
 
-# --- Check for Polars availability, auto-install if possible ---
-HAS_POLARS = False
 try:
     import polars as pl
     HAS_POLARS = True
 except ImportError:
-    print("Polars not found. Attempting to install via pip...", flush=True)
-    try:
-        subprocess.check_call(
-            [sys.executable, "-m", "pip", "install", "--quiet", "--no-cache-dir", "polars"],
-            stdout=subprocess.DEVNULL,
-            stderr=subprocess.DEVNULL
-        )
-        import polars as pl
-        HAS_POLARS = True
-        print("Polars installed successfully.", flush=True)
-    except subprocess.CalledProcessError:
-        print("Failed to install Polars. Falling back to pure Python writer.", flush=True)
-        HAS_POLARS = False
-
-import numpy as np
+    HAS_POLARS = False
 
 derep_dir   = sys.argv[1]
 swarms_file = sys.argv[2]
@@ -233,16 +218,17 @@ seeds_file  = sys.argv[3]
 out_file    = sys.argv[4]
 
 # -------------------------------------------------------
-# STEP 1: Bulk-parse all per-sample derep FASTAs at once
-# Binary read + compiled regex on full buffer (no per-line Python loop)
+# STEP 1: Bulk-parse all per-sample derep FASTAs at once.
+# A single sha1 can occur in multiple samples (metabarcoding); we must
+# record EVERY (sample, size) pair so the OTU table credits all contributors.
 # -------------------------------------------------------
 HEADER_RE = re.compile(
     rb'>([0-9a-f]{40});size=(\d+);sample=([^;\s\n]+)',
     re.MULTILINE
 )
 
-amp_sample = {}   # sha1(str) -> sample(str)
-amp_size   = {}   # (sha1, sample) -> int size
+amp_to_samples = {}   # sha1(str) -> list[(sample(str), size(int))]
+sample_set = set()
 
 for fname in sorted(os.listdir(derep_dir)):
     if not fname.endswith('.fasta'):
@@ -254,16 +240,16 @@ for fname in sorted(os.listdir(derep_dir)):
         sha    = m.group(1).decode()
         size   = int(m.group(2))
         sample = m.group(3).decode()
-        amp_sample[sha] = sample
-        amp_size[(sha, sample)] = size
+        amp_to_samples.setdefault(sha, []).append((sample, size))
+        sample_set.add(sample)
 
 # -------------------------------------------------------
 # STEP 2: Sample index
 # -------------------------------------------------------
-samples    = sorted(set(amp_sample.values()))
+samples    = sorted(sample_set)
 sample_idx = {s: i for i, s in enumerate(samples)}
 n_samples  = len(samples)
-print(f"Samples: {n_samples}  Amplicons: {len(amp_sample)}", flush=True)
+print(f"Samples: {n_samples}  Amplicons: {len(amp_to_samples)}", flush=True)
 
 # -------------------------------------------------------
 # STEP 3: Seed IDs in order from seeds FASTA
@@ -291,10 +277,8 @@ with open(swarms_file, 'rb') as fh:
         counts = np.zeros(n_samples, dtype=np.int32)
 
         for amp_entry in line.split(b' '):
-            sha  = amp_entry.split(b';', 1)[0].decode()
-            samp = amp_sample.get(sha)
-            if samp is not None:
-                sz = amp_size.get((sha, samp), 0)
+            sha = amp_entry.split(b';', 1)[0].decode()
+            for samp, sz in amp_to_samples.get(sha, ()):
                 counts[sample_idx[samp]] += sz
 
         otu_id = seed_ids[otu_idx] if otu_idx < len(seed_ids) else f"OTU_{otu_idx}"
@@ -380,7 +364,7 @@ Files in 'clustering_out_swarm' directory:
 %s = FASTA formatted representative swarm-cluster sequences (seed sequences).
 %s = SWARM cluster assignment file.
 %s = SWARM statistics file.
-OTU_table.tsv = OTU table (tab delimited file).
+OTU_table.txt = OTU table (tab delimited file).
 
 Input files processed               = %s
 Total input reads                   = %s
