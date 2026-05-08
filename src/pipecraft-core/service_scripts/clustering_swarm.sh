@@ -62,23 +62,12 @@ output_dir=$"/input/clustering_out_swarm"
 export output_dir
 
 ###############################
-### Multi-run Check
+### Single-run mode
 ###############################
-if [[ -d "/input/multiRunDir" ]]; then
-    echo "SWARM clustering pipeline with multiple sequencing runs in multiRunDir"
-    echo "Process = clustering"
-    cd /input/multiRunDir
-    DIRS=$(find . -maxdepth 2 -mindepth 1 -type d | grep "chimeraFiltered_out" | grep -v "skip_" | grep -v "merged_runs" | grep -v "tempdir" | sed -e "s/^\.\///")
-    echo "Working in directories:"
-    echo "$DIRS"
-    multiDir="TRUE"
-    export multiDir
-else
-    echo "Working with individual sequencing run"
-    echo "Process = clustering"
-    DIRS=$(pwd)
-    echo "Working directory: $DIRS"
-fi
+echo "Working with individual sequencing run"
+echo "Process = clustering"
+DIRS=$(pwd)
+echo "Working directory: $DIRS"
 
 ###############################
 ### Start of the Workflow
@@ -91,32 +80,20 @@ for seqrun in $DIRS; do
     start=$(date +%s)
 
     cd "$seqrun"
-    if [[ "$multiDir" == "TRUE" ]]; then
-        count=$(ls -1 *."$fileFormat" 2>/dev/null | wc -l)
-        if [[ $count -eq 0 ]]; then
-            printf "[ERROR] No files with extension \"%s\" found in %s. Quitting.\n" "$fileFormat" "$seqrun" >&2
-            end_process
-        fi
-        output_dir=$"/input/multiRunDir/${seqrun%%/*}/clustering_out_swarm"
-        export output_dir
-        mkdir -p "$output_dir"
-        swarm_output_path="$output_dir/$swarm_output_file"
-        swarm_stats_path="$output_dir/$swarm_stats_file"
-        swarm_seeds_path="$output_dir/$swarm_seeds_file"
-        output_fastas+=("$swarm_seeds_path")
-        first_file_check
-        prepare_SE_env
-    else
-        output_dir=$"/input/clustering_out_swarm"
-        export output_dir
-        mkdir -p "$output_dir"
-        swarm_output_path="$output_dir/$swarm_output_file"
-        swarm_stats_path="$output_dir/$swarm_stats_file"
-        swarm_seeds_path="$output_dir/$swarm_seeds_file"
-        output_fastas=("$swarm_seeds_path")
-        first_file_check
-        prepare_SE_env
+    count=$(ls -1 *."$fileFormat" 2>/dev/null | wc -l)
+    if [[ $count -eq 0 ]]; then
+        printf "[ERROR] No files with extension \"%s\" found in %s. Quitting.\n" "$fileFormat" "$seqrun" >&2
+        end_process
     fi
+    output_dir=$"/input/clustering_out_swarm"
+    export output_dir
+    mkdir -p "$output_dir"
+    swarm_output_path="$output_dir/$swarm_output_file"
+    swarm_stats_path="$output_dir/$swarm_stats_file"
+    swarm_seeds_path="$output_dir/$swarm_seeds_file"
+    output_fastas=("$swarm_seeds_path")
+    first_file_check
+    prepare_SE_env
 
     ### Pre-process samples: Check files, decompress if needed, and validate formats.
     printf "Checking input files ...\n"
@@ -422,26 +399,11 @@ swarm %s tempdir/Glob_derep.fasta
 
     printf "\nDONE for run: %s\nTotal time: %s sec.\n" "$seqrun" "$runtime"
 
-    # Return to multiRunDir root if applicable
-    if [[ "$multiDir" == "TRUE" ]]; then
-        cd /input/multiRunDir
-    fi
+    # end single-run iteration
 done
 
-# For multi-run analyses, validate and combine output FASTA files if needed
-if [[ "$multiDir" == "TRUE" ]]; then
-    valid_fastas=()
-    for fasta in "${output_fastas[@]}"; do
-        if [[ -f "$fasta" && -s "$fasta" ]]; then
-            valid_fastas+=("$fasta")
-        else
-            printf "Warning: FASTA file not found or empty: %s\n" "$fasta" >&2
-        fi
-    done
-    output_fasta=$(IFS=,; echo "${valid_fastas[*]}")
-else
-    output_fasta="${output_fastas[0]}"
-fi
+# Single-run: set output_fasta to the generated seeds file
+output_fasta="${output_fastas[0]}"
 
 # Final output variables for downstream services
 echo "#variables for all services: "
