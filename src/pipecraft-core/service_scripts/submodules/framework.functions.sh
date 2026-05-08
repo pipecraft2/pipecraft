@@ -78,9 +78,9 @@ else
 fi
 }
 
-#######################################################
+################################################################
 ### Check if files with specified extension exist in the dir ###
-#######################################################
+###############################################################
 function first_file_check () {
 count=$(ls -1 *.$fileFormat 2>/dev/null | wc -l)
 if (( $count != 0 )); then 
@@ -93,22 +93,9 @@ Please check the extension of your files and specify again.
 fi 
 }
 
-function first_file_check_clustering () {
-count=$(ls -1 *.$fileFormat 2>/dev/null | wc -l)
-if (( $count != 0 )); then 
-    :
-else
-    printf '%s\n' "ERROR]: cannot find input ($fileFormat files).
-Please check and specify again.
->Quitting" >&2
-    end_process
-fi 
-}
-
-
-####################################################
-### Check PAIRED-END data and pepare working env ###
-####################################################
+#####################################################
+### Check PAIRED-END data and prepare working env ###
+#####################################################
 function prepare_PE_env () {
 echo "output_dir = $output_dir"
 #Remove 'old' output_dir if exist and make new empty one
@@ -152,7 +139,7 @@ else
         # Check for multiple R1/R2 occurrences first
         r1_count=$(echo "$file" | grep -o "R1" | wc -l)
         if [[ $r1_count -gt 1 ]]; then
-            printf '%s\n' "ERROR]: File '$file' contains multiple R1 strings (i.e. there was other R1 stings besides just read identifier).
+            printf '%s\n' "ERROR]: File '$file' contains multiple R1 strings (i.e. there was other R1 strings besides just read identifier).
 Sample names cannot contain R1 strings (e.g. 'sampleR1_R1.fastq' or 'sampleR11.R1.fastq' are not allowed).
 >Quitting" >&2
             end_process
@@ -455,7 +442,7 @@ done < tempdir2/seq_count_after.txt
 sed -i 's/\/input\///' "$output_dir/seq_count_summary.txt"
 
 if [[ -f tempdir2/paired_end_files.txt ]]; then
-    printf "\n[paired R2 file has the same number of sequencs as corresponding R1 file]\n" >> "$output_dir/seq_count_summary.txt"
+    printf "\n[paired R2 file has the same number of sequences as corresponding R1 file]\n" >> "$output_dir/seq_count_summary.txt"
 fi 
 
 #remove tempdir2
@@ -466,9 +453,9 @@ if [[ $debugger != "true" ]]; then
 fi
 }
 
-###############################################
+#############################################################################
 ### Cleaning up and compiling final stats file, only for assemble PE data ###
-###############################################
+#############################################################################
 function clean_and_make_stats_assemble () {
 #Delete empty output files
 find "$output_dir" -empty -type f -delete
