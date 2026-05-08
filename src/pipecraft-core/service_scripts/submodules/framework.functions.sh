@@ -386,39 +386,37 @@ Supported extensions: fastq, fq, fasta, fas, fa (and gz compressed formats).
 fi
 }
 
-###################################################
+#######################################################################
 ### Cleaning up and compiling final stats file, only for demux data ###
-###################################################
+#######################################################################
 function clean_and_make_stats_demux () {
 #Delete empty output files
-find $output_dir -empty -type f -delete
+find "$output_dir" -empty -type f -delete
 # Count input reads
-touch tempdir2/seq_count.txt
+mkdir -p tempdir2
+: > tempdir2/seq_count.txt
 if [[ -f tempdir2/paired_end_files.txt ]]; then
-    while read LINE; do
-        seqkit stats --threads 6 -T $LINE | awk -F'\t' 'BEGIN{OFS="\t";} FNR == 2 {print $1,$4}' >> tempdir2/seq_count.txt
+    while read -r LINE; do
+        seqkit stats --threads 6 -T "$LINE" | awk -F'\t' 'BEGIN{OFS="\t";} FNR == 2 {print $1,$4}' >> tempdir2/seq_count.txt
     done < tempdir2/paired_end_files.txt
 else
-    while read LINE; do
-        seqkit stats --threads 6 -T $LINE | awk -F'\t' 'BEGIN{OFS="\t";} FNR == 2 {print $1,$4}' >> tempdir2/seq_count.txt
+    while read -r LINE; do
+        seqkit stats --threads 6 -T "$LINE" | awk -F'\t' 'BEGIN{OFS="\t";} FNR == 2 {print $1,$4}' >> tempdir2/seq_count.txt
     done < tempdir2/files_in_folder.txt
 fi
 
 ### Count reads after the process
-touch tempdir2/seq_count_after.txt
-outfile_check=$(ls $output_dir/*.$fileFormat 2>/dev/null | wc -l)
-if (( $outfile_check != 0 )); then
+: > tempdir2/seq_count_after.txt
+if compgen -G "$output_dir/*.$fileFormat" > /dev/null; then
     if [[ -f tempdir2/paired_end_files.txt ]]; then
-        for file in $output_dir/*R1.$fileFormat; do
-            seqkit stats --threads 6 -T $file | awk -F'\t' 'BEGIN{OFS="\t";} FNR == 2 {print $1,$4}' | sed -e 's/demultiplex_out\///' >> tempdir2/seq_count_after.txt
-            #sum all demux seqs (column 2)
-            demux_sum=$(awk -F'\t' '{sum+=$2;} END{print sum;}' tempdir2/seq_count_after.txt)
+        for file in "$output_dir"/*R1."$fileFormat"; do
+            [[ -e "$file" ]] || continue
+            seqkit stats --threads 6 -T "$file" | awk -F'\t' 'BEGIN{OFS="\t";} FNR == 2 {print $1,$4}' | sed -e 's/demultiplex_out\///' >> tempdir2/seq_count_after.txt
         done
     else
-        for file in $output_dir/*.$fileFormat; do
-            seqkit stats --threads 6 -T $file | awk -F'\t' 'BEGIN{OFS="\t";} FNR == 2 {print $1,$4}' | sed -e 's/demultiplex_out\///' >> tempdir2/seq_count_after.txt
-            #sum all demux seqs (column 2)
-            demux_sum=$(awk -F'\t' '{sum+=$2;} END{print sum;}' tempdir2/seq_count_after.txt)
+        for file in "$output_dir"/*."$fileFormat"; do
+            [[ -e "$file" ]] || continue
+            seqkit stats --threads 6 -T "$file" | awk -F'\t' 'BEGIN{OFS="\t";} FNR == 2 {print $1,$4}' | sed -e 's/demultiplex_out\///' >> tempdir2/seq_count_after.txt
         done
     fi
 else
@@ -426,27 +424,38 @@ else
     end_process
 fi
 
+# sum all demux seqs (column 2) once (after file is complete)
+# exclude the unassigned reads file (unknown*)
+demux_sum=$(awk -F'\t' '
+  {
+    f=$1
+    gsub(/^.*\//,"",f)              # basename only
+    if (f ~ /^unknown(\.|$)/) next  # skip unknown*
+    sum+=$2
+  }
+  END{print sum+0;}
+' tempdir2/seq_count_after.txt)
 
 ### Compile a track reads summary file
-printf "Input file:\n" > $output_dir/seq_count_summary.txt
-while read LINE; do
-    file1=$(echo $LINE | awk '{print $1}')
-    count1=$(echo $LINE | awk '{print $2}')
-    printf "$file1\t$count1\n" >> $output_dir/seq_count_summary.txt    
+printf "Input file:\n" > "$output_dir/seq_count_summary.txt"
+while read -r LINE; do
+    file1=$(echo "$LINE" | awk '{print $1}')
+    count1=$(echo "$LINE" | awk '{print $2}')
+    printf "%s\t%s\n" "$file1" "$count1" >> "$output_dir/seq_count_summary.txt"
 done < tempdir2/seq_count.txt
-printf "\nSUM of demultiplexed sequences (including 'unknown.$fileFormat'; see below)\t$demux_sum" >> $output_dir/seq_count_summary.txt 
-printf "\n\nSamples\tNumber_of_seqs\n" >> $output_dir/seq_count_summary.txt
-while read LINE; do
-    file1=$(echo $LINE | awk '{print $1}')
-    count1=$(echo $LINE | awk '{print $2}')
-    printf "$file1\t$count1\n" >> $output_dir/seq_count_summary.txt    
+printf "\nSUM of demultiplexed sequences (excluding 'unknown.$fileFormat'; see below)\t%s" "$demux_sum" >> "$output_dir/seq_count_summary.txt"
+printf "\n\nSamples\tNumber_of_seqs\n" >> "$output_dir/seq_count_summary.txt"
+while read -r LINE; do
+    file1=$(echo "$LINE" | awk '{print $1}')
+    count1=$(echo "$LINE" | awk '{print $2}')
+    printf "%s\t%s\n" "$file1" "$count1" >> "$output_dir/seq_count_summary.txt"
 done < tempdir2/seq_count_after.txt
 
 #remove "/input/" from $output_dir/seq_count_summary.txt
-sed -i 's/\/input\///' $output_dir/seq_count_summary.txt
+sed -i 's/\/input\///' "$output_dir/seq_count_summary.txt"
 
 if [[ -f tempdir2/paired_end_files.txt ]]; then
-    printf "\n[paired R2 file has the same number of sequencs as corresponding R1 file]\n" >> $output_dir/seq_count_summary.txt
+    printf "\n[paired R2 file has the same number of sequencs as corresponding R1 file]\n" >> "$output_dir/seq_count_summary.txt"
 fi 
 
 #remove tempdir2
