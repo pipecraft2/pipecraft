@@ -6,15 +6,23 @@
 
 ################################################
 ###Third-party applications:
-#ITSx v1.1.3
-#seqkit v2.3.0
-#mothur 1.46.1
-#pigz v2.4
-#perl v5.32.0
+#ITSx
+#seqkit
+#mothur
+#pigz
+#perl
 #python3 with biopython
 ################################################
 printf "# pipeline = $pipeline\n"
 printf "# service = $service for $organisms\n"
+
+# Checking tool versions
+itsx_version=$(ITSx --help 2>&1 | grep -m1 '^Version:' | awk '{print $2}' 2>&1)
+seqkit_version=$(seqkit version 2>&1 | awk '{print $2}')
+mothur_version=$(mothur --version 2>&1 | grep -m1 '^Mothur version=' | sed 's/^Mothur version=//')
+printf "# ITSx (version $itsx_version)\n"
+printf "# seqkit (version $seqkit_version)\n"
+printf "# mothur (version $mothur_version)\n"
 
 #load variables
 organisms=$"-t ${organisms}"
@@ -408,13 +416,13 @@ ITSx -i input.unique.seqs -o output --preserve T --graphical F $organisms $parti
 
 ##############################################
 ###Third-party applications for this process:
-#ITSx v1.1.3 for extracting ITS regions
+#ITSx (version $itsx_version) for extracting ITS regions
     #citation: Bengtsson-Palme J., et al., 2013. Improved software detection and extraction of ITS1 and ITS2 from ribosomal ITS sequences of fungi and other eukaryotes for analysis of environmental sequencing data. Methods in Ecology and Evolution 4, 914-919.
     #microbiology.se/software/itsx/
-#seqkit v2.3.0 for converting fastq to fasta (if input was fastq)
+#seqkit (version $seqkit_version) for converting fastq to fasta (if input was fastq)
     #citation: Shen W, Le S, Li Y, Hu F (2016) SeqKit: A Cross-Platform and Ultrafast Toolkit for FASTA/Q File Manipulation. PLOS ONE 11(10): e0163962. https://doi.org/10.1371/journal.pone.0163962
     #https://bioinf.shenwei.me/seqkit/
-#mothur 1.46.1 for unique and deunique sequences prior and after extraction
+#mothur (version $mothur_version) for unique and deunique sequences prior and after extraction
     #citation: Schloss, P.D., et al., Introducing mothur: Open-source, platform-independent, community-supported software for describing and comparing microbial communities. Appl Environ Microbiol, 2009. 75(23):7537-41
     #https://github.com/mothur/mothur
 ##############################################" > $output_dir/README.txt

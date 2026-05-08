@@ -3,14 +3,11 @@
 #Input = single-end fasta/fastq files.
 #Output = FASTA formated zOTU sequences and zOTU_table.txt, and optionally OTU sequences and OTU_table.txt
 
-# Sequence denoising and clustering
-
-# disabling zOTUs clustering to OTUs for v1.1.0. Number of sequences in OTU table does not match with the seqs in zOTU table (but they should match)
-
+# UNOISE3
 
 ################################################
 ###Third-party applications:
-#vsearch v2.29.4
+#vsearch
 #GNU Parallel 20210422
 #pigz
 ################################################
@@ -38,7 +35,6 @@ denoise_level=${denoise_level}                  # list: "global" or "individual"
 chimerarm=${remove_chimeras}                    # TRUE or undefined
 cores=$"--threads ${cores}"                     # positive integer
 abskew=$"--abskew ${abskew}"                    # positive integer (default, 16)
-simtype=$"--iddef ${similarity_type}"           # list: --iddef 0; --iddef 1; --iddef 2; --iddef 3; --iddef 4
 maxaccepts=$"--maxaccepts ${maxaccepts}"        # positive integer (default, 1)
 maxrejects=$"--maxrejects ${maxrejects}"        # positive integer (default, 32)
 mask=$"--qmask ${mask}"                         # list: --qmask dust, --qmask none
@@ -218,7 +214,6 @@ for seqrun in $DIRS; do
       $strands \
       $minsize \
       $unoise_alpha \
-      $simtype \
       $mask \
       $maxaccepts \
       $maxrejects \
@@ -228,7 +223,7 @@ for seqrun in $DIRS; do
       --fasta_width 0 \
       --sizein --sizeout 2>&1)
       check_app_error
-      
+     
       ## Remove chimera
       printf "Remove chimeras ... \n"
 
@@ -271,7 +266,6 @@ for seqrun in $DIRS; do
           $strands \
           $minsize \
           $unoise_alpha \
-          $simtype \
           $mask \
           $maxaccepts \
           $maxrejects \
@@ -303,7 +297,6 @@ for seqrun in $DIRS; do
       export strands="$strands"
       export minsize="$minsize"
       export unoise_alpha="$unoise_alpha"
-      export simtype="$simtype"
       export mask="$mask"
       export maxaccepts="$maxaccepts"
       export maxrejects="$maxrejects"
@@ -391,50 +384,6 @@ for seqrun in $DIRS; do
         rm $output_dir/zOTU_table.temp
     fi
 
-    ## Perform OTU clustering (if required, id < 1)
-    if [[ $id_float != 1 ]]; then
-      printf "\n Clustering zOTUs ... \n"
-
-      ### Clustering
-      checkerror=$(vsearch --cluster_size \
-      $output_dir/zOTUs.fasta \
-      $id \
-      $simtype \
-      $strands \
-      $mask \
-      $maxaccepts \
-      $maxrejects \
-      $cores \
-      --centroids $output_dir/OTUs.fasta \
-      --uc $output_dir/OTUs.uc \
-      --fasta_width 0 \
-      --sizein --sizeout 2>&1)
-      check_app_error
-
-      ## OTU table creation
-      printf "Making OTU table ... \n"
-      Rlog=$(Rscript /scripts/submodules/ASV_OTU_merging_script.R \
-        --derepuc      tempdir/Glob_derep.uc \
-        --uc           "$output_dir"/OTUs.uc \
-        --asv          tempdir/ASV_table_long.txt \
-        --rmsingletons FALSE \
-        --fasta        $output_dir/OTUs.fasta \
-        --output       "$output_dir"/OTU_table.txt 2>&1)
-      echo $Rlog > tempdir/OTU_table_creation.log 
-      wait
-
-      # Store output files in arrays for multiple runs
-      output_feature_tables2+=("$output_dir/OTU_table.txt")
-      output_fastas2+=("$output_dir/OTUs.fasta")
-    fi # end of OTU clustering
-
-    ### remove ";sample=.*;" and ";size=" from OTU.fasta files.
-        # removing ";size=" because OTU table does not have "size" annotations; so the files would fit to LULU
-    if [[ -f $output_dir/OTUs.fasta ]]; then
-      sed -i 's/;sample=.*;/;/' $output_dir/OTUs.fasta
-      sed -i 's/;size=.*//' $output_dir/OTUs.fasta
-    fi
-
     #################################################
     ### COMPILE FINAL STATISTICS AND README FILES ###
     #################################################
@@ -506,24 +455,7 @@ Number of sequences in the zOTU table = $nSeqs
 Number of samples in the zOTU table   = $nSample
 
 Core command -> 
-UNOISE: vsearch --cluster_unoise dereplicated_sequences.fasta $strands $minsize $unoise_alpha $simtype $mask $maxaccepts $maxrejects $cores --centroids zOTUs.fasta --uc zOTUs.uc \n\n" > $output_dir/README.txt
-
-    ## If additional clustering was performed
-    if [[ $id_float != 1 ]]; then
-        size_otu=$(grep -c "^>" $output_dir/OTUs.fasta)
-        count_features "$output_dir/OTU_table.txt"
-        printf "Additional clustering of zOTUs at $id similarity threshold formed $size_otu OTUs.
-    # OTUs.fasta    = FASTA formated representative OTU sequences. Headers are renamed according to sha1 algorithm in vsearch.
-    # OTU_table.txt = OTU distribution table per sample (per input file in the working directory).
-    # OTUs.uc       = uclust-like formatted clustering results for OTUs.
-    
-    Number of Features                       = $feature_count
-    Number of sequences in the Feature table = $nSeqs
-    Number of samples in the Feature table   = $nSample
-
-    Core command -> 
-    clustering: vsearch --cluster_size zOTUs.fasta $id $simtype $strands $mask $maxaccepts $maxrejects $cores --centroids OTUs.fasta --uc OTUs.uc \n\n" >> $output_dir/README.txt
-    fi
+UNOISE: vsearch --cluster_unoise dereplicated_sequences.fasta $strands $minsize $unoise_alpha $mask $maxaccepts $maxrejects $cores --centroids zOTUs.fasta --uc zOTUs.uc \n\n" > $output_dir/README.txt
 
     ## Chimera stats
     if [[ $chimerarm == "true" ]]; then
@@ -543,7 +475,7 @@ UNOISE: vsearch --cluster_unoise dereplicated_sequences.fasta $strands $minsize 
     printf "\n
     ##############################################
     ###Third-party applications for this process:
-    #vsearch v2.23.0 for clustering
+    #vsearch (version $vsearch_version) for clustering
         #citation: Rognes T, Flouri T, Nichols B, Quince C, Mahé F (2016) VSEARCH: a versatile open source tool for metagenomics PeerJ 4:e2584
         #https://github.com/torognes/vsearch
     #GNU Parallel 20210422 for job parallelisation 
@@ -649,7 +581,6 @@ unoise_alpha="${unoise_alpha}"
 minsize="${minsize}"
 cores="${cores}"
 abskew="${abskew}"
-simtype="${simtype}"
 maxaccepts="${maxaccepts}"
 maxrejects="${maxrejects}"
 mask="${mask}"

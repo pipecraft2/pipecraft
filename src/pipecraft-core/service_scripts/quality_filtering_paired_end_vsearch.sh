@@ -5,9 +5,9 @@
 
 ############################
 ###Third-party applications:
-#vsearch v2.23.0
-#seqkit v2.3.0
-#pigz v2.4
+#vsearch
+#seqkit
+#pigz
 ############################
 
 # Checking tool versions

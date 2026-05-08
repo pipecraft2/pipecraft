@@ -6,11 +6,10 @@
 
 ################################################
 ###Third-party applications:
-#vsearch v2.23.0
-    #https://github.com/torognes/vsearch
-#GNU Parallel 20210422
-# seqkit v2.3.0
-#pigz v2.4
+#vsearch
+#GNU Parallel
+# seqkit
+#pigz
 ################################################
 # checking tool versions
 vsearch_version=$(vsearch --version 2>&1 | head -n 1 | awk '{print $2}' | sed -e "s/,//g")

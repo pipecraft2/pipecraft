@@ -5,7 +5,7 @@
 
 ################################################
 ###Third-party applications:
-#dada2 v1.28
+#dada2
 ################################################
 # Checking tool versions
 printf "# Checking tool versions ...\n"

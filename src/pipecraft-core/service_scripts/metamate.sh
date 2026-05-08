@@ -1,7 +1,13 @@
 #!/bin/bash
 
-# metaMATE v0.5.4 (https://github.com/tjcreedy/metamate) software for 
- #  removel of nuclear pseudogenes and sequencing artefacts from mitochondrial metabarcode data
+# metaMATE (https://github.com/tjcreedy/metamate)
+ # removal of nuclear pseudogenes and sequencing artefacts from mitochondrial metabarcode data
+
+# Checking tool versions
+metamate_version=$(metamate --version 2>&1 | awk 'NR==1{print $2}')
+seqkit_version=$(seqkit version 2>&1 | awk '{print $2}')
+printf "# metamate (version $metamate_version)\n"
+printf "# seqkit (version $seqkit_version)\n"
 
 #load variables
 filter_mode=${filter_mode:-$per-sample}   # global, per-sample
@@ -697,7 +703,7 @@ Added files to 'metamate_out' directory:
 
 #################################################
 ###Third-party applications for this process:
-# metaMATE v0.5.4
+# metaMATE (version $metamate_version)
     #citation: Andújar, C., Creedy, T.J., Arribas, P., López, H., Salces-Castellano, A., Pérez-Delgado, A.J., Vogler, A.P. and Emerson, B.C. (2021), Validated removal of nuclear pseudogenes and sequencing artefacts from mitochondrial metabarcode data. Mol Ecol Resour, 21: 1772-1787. https://doi.org/10.1111/1755-0998.13337
     #https://github.com/tjcreedy/metamate
 #################################################

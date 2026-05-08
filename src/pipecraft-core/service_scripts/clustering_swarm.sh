@@ -6,10 +6,10 @@
 
 ################################################
 ### Third-party applications:
-# swarm (v3.1.6)
-# vsearch (v2.30.4)
+# swarm
+# vsearch
 # GNU Parallel (20260122)
-# seqkit (v2.12.0)
+# seqkit
 # pigz
 ################################################
 

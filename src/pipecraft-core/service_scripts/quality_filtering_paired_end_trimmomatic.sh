@@ -6,17 +6,16 @@
 
 ################################################
 ###Third-party applications:
-#trimmomatic v0.40
-    #citation: Bolger, A. M., Lohse, M., & Usadel, B. (2014). Trimmomatic: A flexible trimmer for Illumina Sequence Data. Bioinformatics, btu1
-    #Distributed under the GNU GENERAL PUBLIC LICENE
-    #https://github.com/usadellab/Trimmomatic
-#seqkit v2.3.0
-    #citation: Shen W, Le S, Li Y, Hu F (2016) SeqKit: A Cross-Platform and Ultrafast Toolkit for FASTA/Q File Manipulation. PLOS ONE 11(10): e0163962. https://doi.org/10.1371/journal.pone.0163962
-    #Distributed under the MIT License
-    #Copyright © 2016-2019 Wei Shen, 2019 Oxford Nanopore Technologies.
-    #https://bioinf.shenwei.me/seqkit/
-#pigz v2.4
+#trimmomatic
+#seqkit
+#pigz
 ################################################
+
+# Checking tool versions
+trimmomatic_version=$(java -jar /trimmomatic.jar -version 2>&1)
+seqkit_version=$(seqkit version 2>&1 | awk '{print $2}')
+printf "# trimmomatic (version $trimmomatic_version)\n"
+printf "# seqkit (version $seqkit_version)\n"
 
 #load variables
 window_size=${window_size}
@@ -130,10 +129,10 @@ convert output fastq files to FASTA: seqkit fq2fa -t dna --line-width 0 input_fi
 
 ##############################################
 ###Third-party applications for this process:
-#trimmomatic v0.40 for quality filtering
+#trimmomatic (version $trimmomatic_version) for quality filtering
     #citation: Bolger, A. M., Lohse, M., & Usadel, B. (2014). Trimmomatic: A flexible trimmer for Illumina Sequence Data. Bioinformatics, btu1
     #https://github.com/usadellab/Trimmomatic
-#seqkit v2.3.0 for converting filtered fastq to fasta 
+#seqkit (version $seqkit_version) for converting filtered fastq to fasta 
     #citation: Shen W, Le S, Li Y, Hu F (2016) SeqKit: A Cross-Platform and Ultrafast Toolkit for FASTA/Q File Manipulation. PLOS ONE 11(10): e0163962. https://doi.org/10.1371/journal.pone.0163962
     #https://bioinf.shenwei.me/seqkit/
 ################################################" > $output_dir/README.txt

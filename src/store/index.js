@@ -1353,7 +1353,7 @@ export default new Vuex.Store({
           {
             scriptName: "clustering_unoise.sh",
             tooltip:
-              "tick the checkbox to cluster reads with vsearch --cluster_unoise (and optionally remove chimeras with --uchime3_denovo)",
+              "cluster reads with vsearch --cluster_unoise (and optionally remove chimeras with --uchime3_denovo)",
             imageName: 'pipecraft/vsearch_dada2:3-pc1.2.0',
             serviceName: "unoise3",
             selected: false,
@@ -2446,7 +2446,7 @@ export default new Vuex.Store({
                 value: "undefined",
                 disabled: "never",
                 tooltip:
-                  `select database either in fasta format or already built .udb (udb must be built with vsearch (v2.29.4) --makeudb_usearch). Needs to be SINTAX-formatted. 
+                  `select database either in fasta format or already built .udb (udb must be built with vsearch (same version as in PipeCraft2) --makeudb_usearch). Needs to be SINTAX-formatted. 
                   Click on the header to see the example.`,
                 type: "file",
               },

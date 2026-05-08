@@ -7,8 +7,8 @@
 
 ################################################
 ###Third-party applications:
-# BLAST 2.16.0+
-# vsearch v2.29.4
+# BLAST
+# vsearch
 ##############################################
 
 # Checking tool versions

@@ -12,6 +12,11 @@
 # seqkit
 # gawk
 ##########################################################
+# Checking tool versions
+blast_version=$(blastn -version 2>&1 | awk 'NR==1{print $2}')
+seqkit_version=$(seqkit version 2>&1 | awk '{print $2}')
+printf "# BLAST+ (version $blast_version)\n"
+printf "# seqkit (version $seqkit_version)\n"
 
 #load variables
 regex='[^/]*$'
@@ -322,7 +327,7 @@ Total run time was $runtime sec.
 
 ##########################################################
 ###Third-party applications [PLEASE CITE]:
-    #BLAST 2.14.0+
+    #BLAST (version $blast_version)
     #citation: Camacho C., Coulouris G., Avagyan V., Ma N., Papadopoulos J., Bealer K., & Madden T.L. (2008) BLAST+: architecture and applications. BMC Bioinformatics 10:421.
 #####################################################" > $output_dir/README.txt
 

@@ -11,8 +11,8 @@
  # 4. merge zOTU tables
 ################################################
 ###Third-party applications:
-# vsearch v2.29.4
-# seqkit v2.9.0
+# vsearch
+# seqkit
 ################################################
 # Checking tool versions
 printf "# Checking tool versions ...\n"

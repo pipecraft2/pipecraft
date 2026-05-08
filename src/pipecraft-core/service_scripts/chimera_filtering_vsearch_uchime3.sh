@@ -5,9 +5,9 @@
 
 ################################################
 ###Third-party applications:
-#vsearch v2.23.0
-#seqkit v2.3.0
-#pigz v2.4
+#vsearch
+#seqkit
+#pigz
 ################################################
 # checking tool versions
 vsearch_version=$(vsearch --version 2>&1 | head -n 1 | awk '{print $2}' | sed -e "s/,//g")
@@ -234,10 +234,10 @@ printf "\nSummary of sequence counts in 'seq_count_summary.txt'\n
 \nTotal run time was $runtime sec.\n\n
 ##############################################
 ###Third-party applications for this process:
-#vsearch v2.23.0 for chimera filtering
+#vsearch (version $vsearch_version) for chimera filtering
     #citation: Rognes T, Flouri T, Nichols B, Quince C, Mahé F (2016) VSEARCH: a versatile open source tool for metagenomics PeerJ 4:e2584
     #https://github.com/torognes/vsearch
-#seqkit v2.3.0 for converting fastq to fasta (if input was fastq)
+#seqkit (version $seqkit_version) for converting fastq to fasta (if input was fastq)
     #citation: Shen W, Le S, Li Y, Hu F (2016) SeqKit: A Cross-Platform and Ultrafast Toolkit for FASTA/Q File Manipulation. PLOS ONE 11(10): e0163962. https://doi.org/10.1371/journal.pone.0163962
     #https://bioinf.shenwei.me/seqkit/
 ################################################" >> $output_dir/README.txt

@@ -5,7 +5,8 @@
 
 ################################################
 ###Third-party applications:
-#vsearch, pigz v2.4
+#vsearch
+#pigz
 ################################################
 
 # checking tool versions

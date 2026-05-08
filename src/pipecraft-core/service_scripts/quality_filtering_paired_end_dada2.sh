@@ -5,8 +5,8 @@
 
 ############################
 ###Third-party applications:
-# dada2 v1.28
-# seqkit v2.3.0
+# dada2
+# seqkit
 ############################
 
 # Checking tool versions
