@@ -1234,7 +1234,7 @@ export default new Vuex.Store({
           {
             scriptName: "clustering_swarm.sh",
             tooltip: "tick the checkbox to cluster reads with SWARM",
-            imageName: "pipecraft/swarm:3.0",
+            imageName: "pipecraft/swarm:3.1",
             serviceName: "swarm",
             selected: false,
             showExtra: false,

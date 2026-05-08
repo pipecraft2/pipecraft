@@ -218,6 +218,152 @@ for seqrun in $DIRS; do
         printf "Error: SWARM clustering failed.\n" >&2
         exit 1
     fi
+    ### OTU Table Generation from SWARM output (Polars/NumPy-accelerated)
+    printf "Generating OTU table ...\n"
+    otu_table_path="$output_dir/OTU_table.tsv"
+
+    python3 - "dereplicated_sequences" \
+              "$swarm_output_path" \
+              "$swarm_seeds_path" \
+              "$otu_table_path" <<'PYEOF'
+import sys, os, re, subprocess
+
+# --- Check for Polars availability, auto-install if possible ---
+HAS_POLARS = False
+try:
+    import polars as pl
+    HAS_POLARS = True
+except ImportError:
+    print("Polars not found. Attempting to install via pip...", flush=True)
+    try:
+        subprocess.check_call(
+            [sys.executable, "-m", "pip", "install", "--quiet", "--no-cache-dir", "polars"],
+            stdout=subprocess.DEVNULL,
+            stderr=subprocess.DEVNULL
+        )
+        import polars as pl
+        HAS_POLARS = True
+        print("Polars installed successfully.", flush=True)
+    except subprocess.CalledProcessError:
+        print("Failed to install Polars. Falling back to pure Python writer.", flush=True)
+        HAS_POLARS = False
+
+import numpy as np
+
+derep_dir   = sys.argv[1]
+swarms_file = sys.argv[2]
+seeds_file  = sys.argv[3]
+out_file    = sys.argv[4]
+
+# -------------------------------------------------------
+# STEP 1: Bulk-parse all per-sample derep FASTAs at once
+# Binary read + compiled regex on full buffer (no per-line Python loop)
+# -------------------------------------------------------
+HEADER_RE = re.compile(
+    rb'>([0-9a-f]{40});size=(\d+);sample=([^;\s\n]+)',
+    re.MULTILINE
+)
+
+amp_sample = {}   # sha1(str) -> sample(str)
+amp_size   = {}   # (sha1, sample) -> int size
+
+for fname in sorted(os.listdir(derep_dir)):
+    if not fname.endswith('.fasta'):
+        continue
+    fpath = os.path.join(derep_dir, fname)
+    with open(fpath, 'rb') as fh:
+        blob = fh.read()
+    for m in HEADER_RE.finditer(blob):
+        sha    = m.group(1).decode()
+        size   = int(m.group(2))
+        sample = m.group(3).decode()
+        amp_sample[sha] = sample
+        amp_size[(sha, sample)] = size
+
+# -------------------------------------------------------
+# STEP 2: Sample index
+# -------------------------------------------------------
+samples    = sorted(set(amp_sample.values()))
+sample_idx = {s: i for i, s in enumerate(samples)}
+n_samples  = len(samples)
+print(f"Samples: {n_samples}  Amplicons: {len(amp_sample)}", flush=True)
+
+# -------------------------------------------------------
+# STEP 3: Seed IDs in order from seeds FASTA
+# -------------------------------------------------------
+seed_ids = []
+SEED_RE  = re.compile(rb'^>([^;\s]+)', re.MULTILINE)
+with open(seeds_file, 'rb') as fh:
+    blob = fh.read()
+for m in SEED_RE.finditer(blob):
+    seed_ids.append(m.group(1).decode())
+
+# -------------------------------------------------------
+# STEP 4: Parse swarms file + accumulate counts into numpy
+# Byte-level parsing to avoid UTF-8 decode overhead per entry
+# -------------------------------------------------------
+otu_ids   = []
+count_mat = []
+
+with open(swarms_file, 'rb') as fh:
+    for otu_idx, line in enumerate(fh):
+        line = line.rstrip()
+        if not line:
+            continue
+
+        counts = np.zeros(n_samples, dtype=np.int32)
+
+        for amp_entry in line.split(b' '):
+            sha  = amp_entry.split(b';', 1)[0].decode()
+            samp = amp_sample.get(sha)
+            if samp is not None:
+                sz = amp_size.get((sha, samp), 0)
+                counts[sample_idx[samp]] += sz
+
+        otu_id = seed_ids[otu_idx] if otu_idx < len(seed_ids) else f"OTU_{otu_idx}"
+        otu_ids.append(otu_id)
+        count_mat.append(counts)
+
+# Stack all OTU rows into a single 2D C-contiguous numpy array
+count_arr = np.vstack(count_mat)
+n_otus    = len(otu_ids)
+print(f"OTUs: {n_otus}", flush=True)
+
+# -------------------------------------------------------
+# STEP 5: Write TSV
+# Polars path: build DataFrame from numpy arrays (zero-copy via Arrow)
+# Fallback: write with python buffered I/O
+# -------------------------------------------------------
+if HAS_POLARS:
+    col_dict = {"OTU_ID": otu_ids}
+    for i, s in enumerate(samples):
+        col_dict[s] = count_arr[:, i]   # numpy column slice, zero-copy into Arrow
+    df = pl.DataFrame(col_dict)
+    df.write_csv(out_file, separator="\t")
+    print(f"Written via Polars (zero-copy Arrow build)", flush=True)
+else:
+    # Fallback: buffered write with pre-joined lines
+    header = "OTU_ID\t" + "\t".join(samples) + "\n"
+    lines  = [header]
+    for i, otu_id in enumerate(otu_ids):
+        lines.append(otu_id + "\t" + "\t".join(map(str, count_arr[i])) + "\n")
+        if len(lines) >= 50000:             # flush in chunks to avoid RAM spike
+            with open(out_file, 'a') as fh:
+                fh.writelines(lines)
+            lines = []
+    if lines:
+        mode = 'w' if not os.path.exists(out_file) else 'a'
+        with open(out_file, mode) as fh:
+            fh.writelines(lines)
+
+print(f"Done: {n_otus} OTUs x {n_samples} samples -> {out_file}", flush=True)
+PYEOF
+
+    if [[ $? -ne 0 ]]; then
+        printf "Error: OTU table generation failed.\n" >&2
+        exit 1
+    fi
+    printf "OTU table written to: %s\n" "$otu_table_path"
 
     #################################################
     ### CLEAN UP AND COMPILE FINAL README FILE
@@ -242,6 +388,11 @@ for seqrun in $DIRS; do
     seeds_basename=$(basename "$swarm_seeds_path")
     swarms_basename=$(basename "$swarm_output_path")
     stats_basename=$(basename "$swarm_stats_path")
+    core_command="$swarm_opts"
+    if [[ "$output_dir" == /input/* ]]; then
+        relative_output_dir="${output_dir#/input/}"
+        core_command="${core_command//$output_dir/$relative_output_dir}"
+    fi
     printf "# Reads were clustered using SWARM (see 'Core command' below for the used settings).
 Start time: %s
 End time: %s
@@ -260,8 +411,8 @@ Number of seed sequences (clusters) = %s
 Core command ->
 swarm %s tempdir/Glob_derep.fasta
 
-NOTE: OTU table generation is not included in this workflow.
-" "$start_time" "$(date)" "$runtime" "$seeds_basename" "$swarms_basename" "$stats_basename" "$input_file_count" "$total_reads" "$cluster_count" "$swarm_opts" > "$output_dir/README.txt"
+OTU table generated and written to OTU_table.tsv in the output directory.
+" "$start_time" "$(date)" "$runtime" "$seeds_basename" "$swarms_basename" "$stats_basename" "$input_file_count" "$total_reads" "$cluster_count" "$core_command" > "$output_dir/README.txt"
 
     if [[ "$was_fastq" == "true" ]]; then
         printf "\n\nInput was fastq; converted those to fasta before clustering.\nConverted fasta files in directory 'clustering_input_to_FASTA'\n" >> "$output_dir/README.txt"
