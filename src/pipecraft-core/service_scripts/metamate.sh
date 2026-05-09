@@ -174,7 +174,11 @@ printf "taxgroups = $taxgroups\n"
 #output dir
 output_dir=$"/input/metamate_out"
 echo "output_dir = $output_dir"
-
+# remove old $output_dir if exists
+if [[ -d "$output_dir" ]]; then
+    rm -rf "$output_dir"
+fi
+mkdir -p "$output_dir"
 
 #############################
 ### Start of the workflow ###
@@ -262,11 +266,6 @@ if [[ $filter_mode == "global" ]]; then
         fi
     fi
 
-    # remove old $output_dir if exists
-    if [[ -d "$output_dir" ]]; then
-        rm -rf "$output_dir"
-    fi
-    mkdir -p "$output_dir"
     # merge reference seqs files; if reference_seqs2 is provided
     if [[ $reference_seqs2 != "undefined" ]]; then
         cat "$reference_seqs" "$reference_seqs2" > "$output_dir/reference_seqs_merged.fasta"
@@ -318,12 +317,6 @@ if [[ $filter_mode == "per-sample" ]]; then
         end_process
     fi
 
-    # remove old $output_dir if exists
-    if [[ -d "$output_dir" ]]; then
-        rm -rf "$output_dir"
-    fi
-    mkdir -p "$output_dir"
-
     # merge reference seqs files; if reference_seqs2 is provided
     if [[ $reference_seqs2 != "undefined" ]] && [[ -n "$reference_seqs2" ]]; then
         cat "$reference_seqs" "$reference_seqs2" > "$output_dir/reference_seqs_merged.fasta"
@@ -357,7 +350,11 @@ if [[ $filter_mode == "global" ]]; then
     echo "filter_mode = $filter_mode"
 
     # dump output name
-    dump_seqs=$(basename $rep_seqs)
+    if [[ $otu_mode == "true" ]]; then
+        dump_seqs=$(basename $otu_fasta)
+    else
+        dump_seqs=$(basename $rep_seqs)
+    fi
 
     # metaMATE writes outputs as *resultcache and *results.csv 
     resultcache_path=$(ls -1 "$output_dir"/*resultcache 2>/dev/null | head -n 1)
@@ -379,31 +376,33 @@ if [[ $filter_mode == "global" ]]; then
         # read result_index
         read -r result_index < "$output_dir/selected_result_index.txt"
         printf " - selcted result_index = $result_index\n"
-
         # if no results correspond with the NA_abund_thresh, then get the next best 
 
         # run metaMATE-dump
         checkerror=$(metamate dump \
         --asvs $rep_seqs \
         --resultcache $resultcache_path \
-        --output $output_dir/${dump_seqs%.*}_metaMATE.filt \
+        --output $output_dir/${dump_seqs%.*}.metaMATE.fasta \
         --overwrite \
         --resultindex $result_index $otu_args 2>&1)
         check_app_error
 
-        # generate a list of ASV IDs 
-        checkerror=$(seqkit seq -n "$output_dir/${dump_seqs%.*}_metaMATE.filt.fasta" > "$output_dir/${dump_seqs%.*}_metaMATE.filt.list" 2>&1)
+        # count output features
+        out_count=$(grep -c "^>" "$output_dir/${dump_seqs%.*}.metaMATE.fasta")
+
+        # generate a list of ASV IDs that passed metaMATE-dump
+        checkerror=$(seqkit seq -n "$output_dir/${dump_seqs%.*}.metaMATE.fasta" > "$output_dir/${dump_seqs%.*}.metaMATE.list" 2>&1)
         check_app_error
 
-        # filter the ASV table; include only the ASVs that are in ${dump_seqs%.*}_metaMATE.filt.list
-        out_table=$(basename $table)
-        awk -v var="$output_dir/${dump_seqs%.*}" 'NR==1; NR>1 {print $0 | "grep -Fwf "var"_metaMATE.filt.list"}' "$table" > "$output_dir/${out_table%.*}_metaMATE.filt.txt"
-
-        # If metaMATE wrote any filtered table(s), keep them alongside Pipecraft outputs
-        if compgen -G "$output_dir/*table*" > /dev/null; then
-            mkdir -p "$output_dir/metamate_tables" || true
-            cp -f "$output_dir"/*table* "$output_dir/metamate_tables/" 2>/dev/null || true
+        # filter the ASV table; include only features that are in ${dump_seqs%.*}.metaMATE.list
+        if [[ $otu_mode == "true" ]]; then
+            out_table=$(basename "$otu_table")
+            awk -v var="$output_dir/${dump_seqs%.*}" 'NR==1; NR>1 {print $0 | "grep -Fwf "var".metaMATE.list"}' "$otu_table" > "$output_dir/${out_table%.*}.metaMATE.txt"
+        else
+            out_table=$(basename "$table")
+            awk -v var="$output_dir/${dump_seqs%.*}" 'NR==1; NR>1 {print $0 | "grep -Fwf "var".metaMATE.list"}' "$table" > "$output_dir/${out_table%.*}.metaMATE.txt"
         fi
+
     else 
         printf '%s\n' "ERROR]: cannot find the $output_dir (metaMATE-find output) to start metaMATE-dump.
 Please check that the correct working directory is specified or run metaMATE-find first. Do not use metamate_out as working directory for metaMATE-dump.
@@ -426,9 +425,25 @@ fi
 #basename of rep_seqs
 rep_seqs=$(basename $rep_seqs)
 
+# count input OTUs
+if [[ $otu_mode == "true" ]]; then
+    inOTU_count=$(grep -c "^>" "$otu_fasta")
+    otu_fasta=$(basename "$otu_fasta")
+    otu_table=$(basename "$otu_table")
+    uc=$(basename "$uc")
+fi
+
 # rm metaMATE formatted ASV table - not needed
-if [[ -e "$output_dir/${rep_seqs%.*}_ASVcounts.csv" ]]; then
-    rm "$output_dir/${rep_seqs%.*}_ASVcounts.csv"
+if compgen -G "$output_dir/*_ASVcounts.csv" > /dev/null; then
+    rm -f "$output_dir"/*_ASVcounts.csv
+fi
+# rm *aligned.fasta
+if compgen -G "$output_dir/*_aligned.fasta" > /dev/null; then
+    rm -f "$output_dir"/*_aligned.fasta
+fi
+# rm *UPGMA.tre
+if compgen -G "$output_dir/*_UPGMA.tre" > /dev/null; then
+    rm -f "$output_dir"/*_UPGMA.tre
 fi
 
 #Make README.txt file
@@ -439,7 +454,30 @@ end=$(date +%s)
 runtime=$((end-start))
 
 if [[ $filter_mode == "global" ]]; then
-    printf "### Used metaMATE-find to detect putative NUMT and other erroneous sequences.
+
+    # rename "*_control.txt" to passes_and_fails.txt
+    control_candidates=("$output_dir"/*_control.txt)
+    if [[ ${#control_candidates[@]} -eq 1 ]] && [[ -f "${control_candidates[0]}" ]]; then
+        mv "${control_candidates[0]}" "$output_dir/passes_and_fails.txt"
+    fi
+     # rename "*_clades.csv" to clades.csv
+    clades_candidates=("$output_dir"/*_clades.csv)
+    if [[ ${#clades_candidates[@]} -eq 1 ]] && [[ -f "${clades_candidates[0]}" ]]; then
+        mv "${clades_candidates[0]}" "$output_dir/clades.csv"
+    fi
+    # Move metaMATE-find outputs to sub-directory
+    mkdir -p $output_dir/metaMATE-find
+    mv $output_dir/*resultcache $output_dir/metaMATE-find/
+    mv $output_dir/*results.csv $output_dir/metaMATE-find/
+    mv $output_dir/passes_and_fails.txt $output_dir/metaMATE-find/
+    mv $output_dir/clades.csv $output_dir/metaMATE-find/
+    mv $output_dir/selected_result_index.txt $output_dir/metaMATE-find/
+    if [[ -e "$output_dir/next_best_set.csv" ]]; then
+        mv $output_dir/next_best_set.csv $output_dir/metaMATE-find/
+    fi
+
+    cat > "$output_dir/README.metaMATE-find.txt" <<EOF
+### Used metaMATE-find to detect putative NUMTs and other erroneous sequences.
 
 Start time: $start_time
 End time: $(date)
@@ -457,22 +495,45 @@ Input parameters:
 - abundance_filt: ${abundance_filt}
 - NA_abund_thresh: ${NA_abund_thresh}
 - bases_variation: ${bases_variation}
+EOF
+
+    if [[ $otu_mode == "true" ]]; then
+        cat >> "$output_dir/README.metaMATE-find.txt" <<EOF
+- otu mode: ${otu_mode}
+- uc file: $(basename "$uc")
+- otu fasta file: $(basename "$otu_fasta")
+- otu table file: $(basename "$otu_table")
 ---------------
 
-Files in 'metamate_out' directory:
-----------------------------------
-# *_aligned.fasta = aligned $rep_seqs
-# *_UPGMA.tre     = newick-format UPGMA tree file (if clade binning was specified)
-# results.csv     = metaMATE find results file, which synthesises all of the results from 
-                    applying all combinations of the specified terms and thresholds to the input ASVs, given the control groups of authentic- and non-authentic-ASVs.
-                    see this metaMATE documentation link for more info about the results file: https://github.com/tjcreedy/metamate?tab=readme-ov-file#results-find-only 
-# resultcache     = needed for dump. This is a compressed text file containing information on 
-                    the ASVs rejected or retained for each of the supplied specification terms and threshold sets of a find run.
-# *_control.txt   = a two-column tab-separated table recording all ASVs determined to be 
-                    validated-authentic or validated-non-authentic. 
-*_clades.csv      = a two-column comma-separated table recording the clade grouping for 
-                    each input ASV.
+EOF
+    fi
 
+cat >> "$output_dir/README.metaMATE-find.txt" <<EOF
+
+Files in 'metamate_out/metaMATE-find' directory:
+------------------------------------------------
+# *_aligned.fasta      = aligned $rep_seqs
+# *_UPGMA.tre          = newick-format UPGMA tree file (if clade binning was specified)
+# results.csv          = metaMATE find results file, which synthesises all of the results from 
+                         applying all combinations of the specified terms and thresholds to the input ASVs, given the control groups of authentic- and non-authentic-ASVs.
+                         see this metaMATE documentation link for more info about the results file: https://github.com/tjcreedy/metamate?tab=readme-ov-file#results-find-only 
+# resultcache          = needed for metaMATE-dump. This is a compressed text file containing information on the ASVs rejected or retained for each of the supplied specification terms and threshold sets of a find run.
+# passes_and_fails.txt = list of features with refpass, lenghtfails and stopfails.
+                            refpass = feature that perfectly matched the reference sequence
+                            lenghtfails = feature did not pass the length filter
+                            stopfails = feature did not pass the stop codon filter
+# clades.csv          = a two-column comma-separated table recording the clade grouping for each input ASV.
+# selected_result_index.txt = if present, then this file contains the 
+                              selected resultindex for results.csv file for metaMATE-dump
+EOF
+    
+    if [[ -e "$output_dir/metaMATE-find/next_best_set.csv" ]]; then
+        cat >> "$output_dir/README.metaMATE-find.txt" <<EOF
+# next_best_set.csv = contains the next best filtering settings as the metaMATE-find results.csv file did not contain NA_abund_thresh of <= $NA_abund_thresh ('nonauthentic_retained_estimate_p').
+EOF
+    fi
+
+    cat >> "$output_dir/README.metaMATE-find.txt" <<EOF
 # -> more info about the 'find' outputs: https://github.com/tjcreedy/metamate?tab=readme-ov-file#outputs 
 
 # Check out analyse_results_draft.R provided by the metaMATE developers for generating plots from a metaMATE find. 
@@ -482,18 +543,17 @@ $warn
 
 #################################################
 ###Third-party applications for this process:
-# metaMATE v0.5.4
+# metaMATE (version $metamate_version)
     #citation: Andújar, C., Creedy, T.J., Arribas, P., López, H., Salces-Castellano, A., Pérez-Delgado, A.J., Vogler, A.P. and Emerson, B.C. (2021), Validated removal of nuclear pseudogenes and sequencing artefacts from mitochondrial metabarcode data. Mol Ecol Resour, 21: 1772-1787. https://doi.org/10.1111/1755-0998.13337
     #https://github.com/tjcreedy/metamate
-#################################################" > "$output_dir/README.metaMATE-find.txt"
+#################################################
+EOF
 fi
 
 if [[ $filter_mode == "global" ]]; then
     # count input ASVs
     inASV_count=$(grep -c "^>" $rep_seqs)
     rep_seqs=$(basename $rep_seqs)
-    # count output ASVs
-    outASV_count=$(grep -c "^>" "$output_dir/${dump_seqs%.*}_metaMATE.filt.fasta")
  
     # count total sequences, skipping header and handling potential Sequence column
     nSeqs=$(awk 'BEGIN{FS=OFS="\t"}
@@ -527,13 +587,15 @@ if [[ $filter_mode == "global" ]]; then
                 if(i!=seq_col) printf "%s: %s\n", header[i], sample_sums[i]
             }
             printf "\nTotal sequences: %s\n", total
-        }' "$output_dir/${out_table%.*}_metaMATE.filt.txt")
+        }' "$output_dir/${out_table%.*}.metaMATE.txt")
 
     echo "$nSeqs" > "$output_dir/sequence_counts.txt"
 
     end=$(date +%s)
     runtime=$((end-start))
-    printf "### Used metaMATE-dump to discard putative NUMT and other erroneous sequences based on the specified threshold from metaMATE-find.
+
+    cat > "$output_dir/README.metaMATE-dump.txt" <<EOF
+### Used metaMATE-dump to discard putative NUMTs and other erroneous sequences based on the specified threshold from metaMATE-find.
 
 Start time: $start_time
 End time: $(date)
@@ -551,65 +613,101 @@ Input parameters:
 - abundance_filt: ${abundance_filt}
 - NA_abund_thresh: ${NA_abund_thresh}
 - bases_variation: ${bases_variation}
+EOF
+
+    if [[ $otu_mode == "true" ]]; then
+        cat >> "$output_dir/README.metaMATE-dump.txt" <<EOF
+- otu mode: ${otu_mode}
+- uc file: $(basename "$uc")
+- otu fasta file: $(basename "$otu_fasta")
+- otu table file: $(basename "$otu_table")
 ---------------
+EOF
+    fi
 
--Input ($rep_seqs) contained $inASV_count sequences
--metaMATE filtered output containes $outASV_count sequences
+    if [[ $otu_mode == "true" ]]; then
+        cat >> "$output_dir/README.metaMATE-dump.txt" <<EOF
 
-Added files to 'metamate_out' directory:
-----------------------------------------
-# ${dump_seqs%.*}_metaMATE.filt.fasta = output of metaMATE-dump function. 
-                                        Containes $outASV_count sequences.
-# ${dump_seqs%.*}_metaMATE.filt.list  = a list of sequence IDs from ${dump_seqs%.*}_metaMATE.filt.fasta
-# ${out_table%.*}_metaMATE.filt.txt = an ASV/OTU table containing the ASVs/OTUs 
-                                      that are in ${dump_seqs%.*}_metaMATE.filt.fasta file.
-# selected_result_index.txt = if present, then this file contains the 
-                              selected resultindex for results.csv file for metaMATE-dump
+-Input ($otu_fasta) contained $inOTU_count OTUs.
+-metaMATE filtered output contains $out_count OTUs.
 
-# -> more info about the outputs: https://github.com/tjcreedy/metamate?tab=readme-ov-file#outputs 
+EOF
+    else
+        cat >> "$output_dir/README.metaMATE-dump.txt" <<EOF
+
+-Input ($rep_seqs) contained $inASV_count sequences.
+-metaMATE filtered output contains $out_count sequences.
+
+EOF
+    fi
+
+    cat >> "$output_dir/README.metaMATE-dump.txt" <<EOF
+Files in 'metamate_out' directory:
+----------------------------------
+# ${dump_seqs%.*}.metaMATE.fasta = features retained by metaMATE. Contains $out_count sequences.
+# ${dump_seqs%.*}.metaMATE.list  = a list of sequence IDs from ${dump_seqs%.*}.metaMATE.fasta
+# ${out_table%.*}.metaMATE.txt = feature table containing the kept features. Corresponding to the features that are in ${dump_seqs%.*}.metaMATE.fasta file.
+# sequence_counts.txt = a text file containing the number of sequences per sample in the ${out_table%.*}.metaMATE.txt file.
+EOF
+
+    if [[ -e "$output_dir/otu_summary.csv" ]]; then
+        cat >> "$output_dir/README.metaMATE-dump.txt" <<EOF
+# otu_summary.csv = summary of ASV and OTU_Status.
+    Authentic: feature that perfectly matched the reference sequence
+    Non-Authentic: feature that did not pass the genetic code translation or length filter
+    Unclassified: feature that was not classified as Authentic or Non-Authentic
+
+EOF
+    fi
+
+    cat >> "$output_dir/README.metaMATE-dump.txt" <<EOF
+# -> more info about the outputs: https://github.com/tjcreedy/metamate?tab=readme-ov-file#outputs
 
 #################################################
 ###Third-party applications for this process:
-# metaMATE v0.5.4
+# metaMATE (version $metamate_version)
     #citation: Andújar, C., Creedy, T.J., Arribas, P., López, H., Salces-Castellano, A., Pérez-Delgado, A.J., Vogler, A.P. and Emerson, B.C. (2021), Validated removal of nuclear pseudogenes and sequencing artefacts from mitochondrial metabarcode data. Mol Ecol Resour, 21: 1772-1787. https://doi.org/10.1111/1755-0998.13337
     #https://github.com/tjcreedy/metamate
-#################################################" > "$output_dir/README.metaMATE-dump.txt"
-fi
-
-if [[ -e "$output_dir/next_best_set.csv" ]]; then
-    sed -i "7i\# next_best_set.csv = contains the next best filtering settings as the metaMATE-find results.csv file did not contain NA_abund_thresh of <= $NA_abund_thresh ('nonauthentic_retained_estimate_p')." "$output_dir/README.metaMATE-dump.txt"
-fi
+#################################################
+EOF
+fi # end of filter_mode == "global"
 
 
 ### README for metaMATE filter-adaptive (per-sample) mode
 if [[ $filter_mode == "per-sample" ]]; then
 
     # rename native metaMATE outputs to more informative names
-    mv "$output_dir/filter-adaptive_table_filtered.txt" "$output_dir/feature_table.txt"
-    mv "$output_dir/filter-adaptive.fasta" "$output_dir/features.fasta"
+    if [[ $otu_mode == "true" ]]; then
+        out_seqs=$(basename "$otu_fasta")
+        out_table=$(basename "$otu_table")
+        mv "$output_dir/filter-adaptive_table_filtered.txt" "$output_dir/${out_table%.*}.metaMATE.txt"
+        mv "$output_dir/filter-adaptive.fasta" "$output_dir/${out_seqs%.*}.metaMATE.fasta"
+    else
+        out_seqs=$(basename "$rep_seqs")
+        out_table=$(basename "$table")
+        mv "$output_dir/filter-adaptive_table_filtered.txt" "$output_dir/${out_table%.*}.metaMATE.txt"
+        mv "$output_dir/filter-adaptive.fasta" "$output_dir/${out_seqs%.*}.metaMATE.fasta"
+    fi
+
     # rename "*_control.txt" to passes_and_fails.txt
     control_candidates=("$output_dir"/*_control.txt)
     if [[ ${#control_candidates[@]} -eq 1 ]] && [[ -f "${control_candidates[0]}" ]]; then
         mv "${control_candidates[0]}" "$output_dir/passes_and_fails.txt"
     fi
     # remove the csv files, not needed
-    rm -f "$output_dir/filter-adaptive_table.csv"
-    rm -f "$output_dir"/*_ASVcounts.csv
+    if [[ -e "$output_dir/filter-adaptive_table.csv" ]]; then
+        rm -f "$output_dir/filter-adaptive_table.csv"
+    fi
+    if compgen -G "$output_dir/*_ASVcounts.csv" > /dev/null; then
+        rm -f "$output_dir"/*_ASVcounts.csv
+    fi
 
     # count input ASVs
     inASV_count=$(grep -c "^>" "$rep_seqs")
     rep_seqs=$(basename "$rep_seqs")
 
-    # count input OTUs
-    if [[ $otu_mode == "true" ]]; then
-        inOTU_count=$(grep -c "^>" "$otu_fasta")
-        otu_fasta=$(basename "$otu_fasta")
-        otu_table=$(basename "$otu_table")
-        uc=$(basename "$uc")
-    fi
-
     # count output features
-    outASV_count=$(grep -c "^>" "$output_dir/features.fasta")
+    out_count=$(grep -c "^>" "$output_dir/${out_seqs%.*}.metaMATE.fasta")
  
     # count total sequences, skipping header and handling potential Sequence column
     nSeqs=$(awk 'BEGIN{FS=OFS="\t"}
@@ -651,7 +749,7 @@ if [[ $filter_mode == "per-sample" ]]; then
     runtime=$((end-start))
     
     cat > "$output_dir/README.metaMATE.per-sample.txt" <<EOF
-### Used metaMATE filter-adaptive mode to discard putative NUMT and other erroneous sequences.
+### Used metaMATE filter-adaptive mode to discard putative NUMTs and other erroneous sequences.
 
 Start time: $start_time
 End time: $(date)
@@ -668,36 +766,46 @@ Input parameters:
 - bases_variation: ${bases_variation}
 - percentile: ${percentile}
 - criteria: ${criteria}
+EOF
+
+    if [[ $otu_mode == "true" ]]; then
+        cat >> "$output_dir/README.metaMATE.per-sample.txt" <<EOF
 - otu mode: ${otu_mode}
 - uc file: ${uc}
 - otu fasta file: ${otu_fasta}
 - otu table file: ${otu_table}
 ---------------
 EOF
+    fi
 
     if [[ $otu_mode == "true" ]]; then
         printf "\n-Input ($otu_fasta) contained $inOTU_count OTUs.
--metaMATE filtered output containes $outASV_count OTUs.\n" >> "$output_dir/README.metaMATE.per-sample.txt"
+-metaMATE filtered output contains $out_count OTUs.\n" >> "$output_dir/README.metaMATE.per-sample.txt"
     else
         printf "\n-Input ($rep_seqs) contained $inASV_count features.
--metaMATE filtered output containes $outASV_count features.\n" >> "$output_dir/README.metaMATE.per-sample.txt"
+-metaMATE filtered output contains $out_count features.\n" >> "$output_dir/README.metaMATE.per-sample.txt"
     fi
 
     cat >> "$output_dir/README.metaMATE.per-sample.txt" <<EOF
 
-Added files to 'metamate_out' directory:
-----------------------------------------
-# features.fasta = metaMATE filtered features. Containes $outASV_count features.
-# feature_table.txt = metaMATE filtered feature table.
+Files in 'metamate_out' directory:
+----------------------------------
+# ${out_seqs%.*}.metaMATE.fasta = features retained by metaMATE. Contains $out_count sequences.
+# ${out_table%.*}.metaMATE.txt = feature table containing the kept features. Corresponding to the features that are in ${dump_seqs%.*}.metaMATE.fasta file.
+# sequence_counts.txt = a text file containing the number of sequences per sample in the ${out_table%.*}.metaMATE.txt file.
 # passes_and_fails.txt = list of features with refpass, lenghtfails and stopfails.
                             refpass = feature that perfectly matched the reference sequence
                             lenghtfails = feature did not pass the length filter
                             stopfails = feature did not pass the stop codon filter
 # filter-adaptive_summary.csv = summary of applied thresholds, authentic and non-authentic features for each sample
-# otu_summary.csv [if otu mode = TRUE ] = summary of ASV and OTU_Status (Authentic, Non-Authentic, Unclassified.
-                                          Authentic: feature that perfectly matched the reference sequence
-                                          Non-Authentic: feature that did not pass the genetic code translation or length filter
-                                          Unclassified: feature that was not classified as Authentic or Non-Authentic
+EOF
+
+    if [[ $otu_mode == "true" ]]; then
+        cat >> "$output_dir/README.metaMATE.per-sample.txt" <<EOF
+# otu_summary.csv = summary of ASV and OTU_Status (Authentic, Non-Authentic, Unclassified.
+                    Authentic: feature that perfectly matched the reference sequence
+                    Non-Authentic: feature that did not pass the genetic code translation or length filter
+                    Unclassified: feature that was not classified as Authentic or Non-Authentic
 
 # -> more info about the outputs: https://github.com/tjcreedy/metamate?tab=readme-ov-file#outputs
 
@@ -708,14 +816,9 @@ Added files to 'metamate_out' directory:
     #https://github.com/tjcreedy/metamate
 #################################################
 EOF
-fi
+    fi
+fi # end of filter_mode == "per-sample"
 
 # Done
 printf "\nDONE "
 printf "Total time: $runtime sec.\n "
-
-#variables for all services
-echo "#variables for all services: "
-echo "workingDir=$output_dir"
-echo "fileFormat=fasta"
-echo "readType=single_end"
