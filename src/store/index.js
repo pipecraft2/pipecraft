@@ -2100,11 +2100,21 @@ export default new Vuex.Store({
               {
                 name: "fasta_file",
                 active: false,
-                btnName: "select fasta file",
+                btnName: "select file",
                 value: "undefined",
                 disabled: "never",
                 tooltip:
                   "select fasta formatted sequence file containing your OTU/ASV reads. Sequence IDs must NOT contain underlines '_' [fasta file must be in the SELECT WORKDIR directory]",
+                type: "file",
+              },
+              {
+                name: "table_file",
+                active: false,
+                btnName: "select file",
+                value: "undefined",
+                disabled: "never",
+                tooltip:
+                  "select features table file that contains corresponding features (OTUs/ASVs) to the fasta file [file must be in the SELECT WORKDIR directory]",
                 type: "file",
               },
               {
