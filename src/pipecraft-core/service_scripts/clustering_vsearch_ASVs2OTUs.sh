@@ -135,6 +135,7 @@ export ASV_table
 fastasize=$(basename "$ASV_fasta" | awk 'BEGIN{FS=OFS="."}NF{NF -=1}1')
 awk 'NR>1{for(i=3;i<=NF;i++) t+=$i; print ">"$1";size="t"\n"$2; t=0}' "$ASV_table" > "$output_dir/$fastasize.size.fasta"
 
+### Subset fasta and ASVs_table if needed:
 # Check if $fastasize.size.fasta and $ASV_fasta have different number of sequences;
 #   if so, then check if $ASV_fasta is a subset of $fastasize.size.fasta (by IDs, with stripping ;size=.*).
 # If the fasta contains IDs that are not in the ASV table, abort.
@@ -177,6 +178,26 @@ if [[ "$size_fa_count" -ne "$asv_fa_count" ]]; then
         end_process
     fi
     printf "Done. Size-annotated fasta now contains %s sequence(s).\n" "$subset_count"
+
+    # Also subset the ASV table itself, so the downstream R script (ASVs2OTUs.R)
+    # operates on the same set of ASVs as the fasta.
+    ASV_table_subset="$output_dir/$(basename "$ASV_table" | sed -E 's/\.[^.]+$//').subset.txt"
+    printf "Subsetting ASV table to '%s' ...\n" "$(basename "$ASV_table_subset")"
+    # First pass: build a set of wanted ASV IDs.
+    # Second pass: always keep the header (FNR==1), then keep rows whose 1st col is in the set.
+    awk 'NR==FNR { ids[$0]=1; next }
+         FNR==1 { print; next }
+         ($1 in ids)' \
+        tempdir/asv_fasta_ids.txt "$ASV_table" \
+        > "$ASV_table_subset"
+    subset_row_count=$(awk 'END{print NR-1}' "$ASV_table_subset")
+    if [[ "$subset_row_count" -ne "$asv_fa_count" ]]; then
+        printf "\n[ERROR]: After subsetting, ASV table '%s' has %s data row(s) but expected %s.\n    >>>Quitting\n" \
+            "$(basename "$ASV_table_subset")" "$subset_row_count" "$asv_fa_count" >&2
+        end_process
+    fi
+    export ASV_table_subset
+    printf "Done. Subsetted ASV table contains %s data row(s).\n" "$subset_row_count"
 fi
 
 # export for R
