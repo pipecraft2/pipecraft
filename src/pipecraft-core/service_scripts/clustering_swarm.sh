@@ -291,7 +291,7 @@ n_otus    = len(otu_ids)
 print(f"OTUs: {n_otus}", flush=True)
 
 # -------------------------------------------------------
-# STEP 5: Write TSV
+# STEP 5: Write TXT OTU table with header: "Swarm_cluster_ID" + sample names
 # Polars path: build DataFrame from numpy arrays (zero-copy via Arrow)
 # Fallback: write with python buffered I/O
 # -------------------------------------------------------
