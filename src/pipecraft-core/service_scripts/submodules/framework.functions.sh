@@ -598,6 +598,9 @@ seqkit stats --threads 6 -T *.$extension | awk -F'\t' 'BEGIN{OFS="\t";} NR!=1 {p
 touch tempdir2/seq_count_after.txt
 if compgen -G "$output_dir/$subdir/*.$extension" > /dev/null; then
     seqkit stats --threads 6 -T "$output_dir/$subdir"/*."$extension" | awk -F'\t' 'BEGIN{OFS="\t";} NR!=1 {print $1,$4}' >> tempdir2/seq_count_after.txt
+elif [[ "$subdir" == "no_detections" ]]; then
+    # no_detections may legitimately be empty (e.g. every input sequence had a detection)
+    printf '%s\n' "Note: no files in $output_dir/$subdir; skipping stats for this subdir."
 else
     printf '%s\n' "ERROR]: no output files generated ($output_dir/$subdir). Check settings!" >&2
     end_process
@@ -605,9 +608,9 @@ fi
 
 ### Compile a track reads summary file (seq_count_summary.txt)
 output_dir_for_sed=$(echo "$output_dir" | sed -e "s/\//\\\\\//g")
+subdir_for_sed=$(echo "$subdir" | sed -e "s/\//\\\\\//g")
 sed -e "s/\.$outfile_addition//" < tempdir2/seq_count_after.txt | \
-sed -e "s/^$output_dir_for_sed\///" | sed -e "s/^$subdir\///" > tempdir2/seq_count_after.temp
-subdir=$(echo $subdir | sed -e "s/\\\\//g")
+sed -e "s/^$output_dir_for_sed\///" | sed -e "s/^$subdir_for_sed\///" > tempdir2/seq_count_after.temp
 
 awk '
 BEGIN { print "File\tReads_in\tReads_out" }

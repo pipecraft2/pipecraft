@@ -318,7 +318,6 @@ for seqrun in $DIRS; do
         if [[ -d $output_dir/SSU/full_and_partial ]]; then
             outfile_addition=$"SSU.full_and_partial"
             subdir=$"SSU/full_and_partial"
-            subdir=$(echo $subdir | sed -e "s/\//\\\\\//g")
             clean_and_make_stats_multidir
         fi
     fi
@@ -329,7 +328,6 @@ for seqrun in $DIRS; do
         if [[ -d $output_dir/ITS1/full_and_partial ]]; then
             outfile_addition=$"ITS1.full_and_partial"
             subdir=$"ITS1/full_and_partial"
-            subdir=$(echo $subdir | sed -e "s/\//\\\\\//g")
             clean_and_make_stats_multidir
         fi
     fi
@@ -340,7 +338,6 @@ for seqrun in $DIRS; do
         if [[ -d $output_dir/5_8S/full_and_partial ]]; then
             outfile_addition=$"5_8S.full_and_partial"
             subdir=$"5_8S/full_and_partial"
-            subdir=$(echo $subdir | sed -e "s/\//\\\\\//g")
             clean_and_make_stats_multidir
         fi
     fi
@@ -351,7 +348,6 @@ for seqrun in $DIRS; do
         if [[ -d $output_dir/ITS2/full_and_partial ]]; then
             outfile_addition=$"ITS2.full_and_partial"
             subdir=$"ITS2/full_and_partial"
-            subdir=$(echo $subdir | sed -e "s/\//\\\\\//g")
             clean_and_make_stats_multidir
         fi
     fi
@@ -362,7 +358,6 @@ for seqrun in $DIRS; do
         if [[ -d $output_dir/LSU/full_and_partial ]]; then
             outfile_addition=$"LSU.full_and_partial"
             subdir=$"LSU/full_and_partial"
-            subdir=$(echo $subdir | sed -e "s/\//\\\\\//g")
             clean_and_make_stats_multidir
         fi
     fi
@@ -373,7 +368,6 @@ for seqrun in $DIRS; do
         if [[ -d $output_dir/full_ITS/full_and_partial ]]; then
             outfile_addition=$"full_and_partial"
             subdir=$"full_ITS/full_and_partial"
-            subdir=$(echo $subdir | sed -e "s/\//\\\\\//g")
             clean_and_make_stats_multidir
         fi
     fi
