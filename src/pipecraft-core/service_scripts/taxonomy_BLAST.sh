@@ -47,7 +47,7 @@ fi
 source /scripts/submodules/framework.functions.sh
 
 #output dir
-output_dir=$"/input/taxonomy_out"
+output_dir=$"/input/taxonomy_out.blast"
 
 #############################
 ### Start of the workflow ###
@@ -308,7 +308,7 @@ qstart    = start of alignment in query
 qend      = end of alignment in query
 sstart    = start of alignment in subject
 send      = end of alignment in subject
-evalue    = expect value
+evalue    = expect value; expected number of chance hits of similar quality against a database of that size; lower means a more trustworthy match (reported as 0 when e-values are extremely low, < 10e-300)
 length    = alignment length
 nident    = number of identical matches
 mismatch  = number of mismatches
