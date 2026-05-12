@@ -418,7 +418,8 @@ Runtime: $runtime seconds
 
 Files in 'ITSx_out' directory represent sequences that passed ITS Extractor.
 Regions are placed under corrseponding directory (i.e., ITS2 sequences are in 'ITS2' directory).
-Files in /no_detections directory represent sequences where no ITS regions were identified.
+
+If there were sequences with no ITS regions identified, then they are in /no_detections directory.
 
 If input was FASTQ formatted file(s), then it was converted to FASTA, and only FASTA is outputted.
 Input FASTA files (converted from FASTQ) are in ITSx_out/ITSx_input_to_FASTA directory.
