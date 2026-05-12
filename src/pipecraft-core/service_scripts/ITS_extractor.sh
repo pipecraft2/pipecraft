@@ -309,69 +309,87 @@ for seqrun in $DIRS; do
     #################################################
     printf "\nCleaning up and compiling final stats files ...\n"
 
+    # Delete empty output fasta files
+    find "$output_dir" -maxdepth 3 -empty -type f -delete
+    # Delete empty output dirs
+    find "$output_dir" -empty -type d -delete
+    
     #for each output separately (SSU,ITS1,5_8S,ITS2,LSU,full)
         #file identifier string after the process
-    if [[ -d $output_dir/SSU ]]; then
+    if [[ -d "$output_dir/SSU" && -n "$(find "$output_dir/SSU" -type f -print -quit 2>/dev/null)" ]]; then
         outfile_addition=$"SSU"
         subdir=$"SSU"
-        clean_and_make_stats_multidir
-        if [[ -d $output_dir/SSU/full_and_partial ]]; then
+        if [[ -n "$(find "$output_dir/SSU" -maxdepth 1 -type f -name "*.$extension" -print -quit 2>/dev/null)" ]]; then
+            clean_and_make_stats_multidir
+        fi
+        if [[ -d "$output_dir/SSU/full_and_partial" && -n "$(find "$output_dir/SSU/full_and_partial" -maxdepth 1 -type f -name "*.$extension" -print -quit 2>/dev/null)" ]]; then
             outfile_addition=$"SSU.full_and_partial"
             subdir=$"SSU/full_and_partial"
             clean_and_make_stats_multidir
         fi
     fi
-    if [[ -d $output_dir/ITS1 ]]; then
+    if [[ -d "$output_dir/ITS1" && -n "$(find "$output_dir/ITS1" -type f -print -quit 2>/dev/null)" ]]; then
         outfile_addition=$"ITS1"
         subdir=$"ITS1"
-        clean_and_make_stats_multidir
-        if [[ -d $output_dir/ITS1/full_and_partial ]]; then
+        if [[ -n "$(find "$output_dir/ITS1" -maxdepth 1 -type f -name "*.$extension" -print -quit 2>/dev/null)" ]]; then
+            clean_and_make_stats_multidir
+        fi
+        if [[ -d "$output_dir/ITS1/full_and_partial" && -n "$(find "$output_dir/ITS1/full_and_partial" -type f -print -quit 2>/dev/null)" ]]; then
             outfile_addition=$"ITS1.full_and_partial"
             subdir=$"ITS1/full_and_partial"
             clean_and_make_stats_multidir
         fi
     fi
-    if [[ -d $output_dir/5_8S ]]; then
+    if [[ -d "$output_dir/5_8S" && -n "$(find "$output_dir/5_8S" -type f -print -quit 2>/dev/null)" ]]; then
         outfile_addition=$"5_8S"
         subdir=$"5_8S"
-        clean_and_make_stats_multidir
-        if [[ -d $output_dir/5_8S/full_and_partial ]]; then
+        if [[ -n "$(find "$output_dir/5_8S" -maxdepth 1 -type f -name "*.$extension" -print -quit 2>/dev/null)" ]]; then
+            clean_and_make_stats_multidir
+        fi
+        
+        if [[ -d "$output_dir/5_8S/full_and_partial" && -n "$(find "$output_dir/5_8S/full_and_partial" -type f -print -quit 2>/dev/null)" ]]; then
             outfile_addition=$"5_8S.full_and_partial"
             subdir=$"5_8S/full_and_partial"
             clean_and_make_stats_multidir
         fi
     fi
-    if [[ -d $output_dir/ITS2 ]]; then
+    if [[ -d "$output_dir/ITS2" && -n "$(find "$output_dir/ITS2" -type f -print -quit 2>/dev/null)" ]]; then
         outfile_addition=$"ITS2"
         subdir=$"ITS2"
-        clean_and_make_stats_multidir
-        if [[ -d $output_dir/ITS2/full_and_partial ]]; then
+        if [[ -n "$(find "$output_dir/ITS2" -maxdepth 1 -type f -name "*.$extension" -print -quit 2>/dev/null)" ]]; then
+            clean_and_make_stats_multidir
+        fi
+        if [[ -d "$output_dir/ITS2/full_and_partial" && -n "$(find "$output_dir/ITS2/full_and_partial" -type f -print -quit 2>/dev/null)" ]]; then
             outfile_addition=$"ITS2.full_and_partial"
             subdir=$"ITS2/full_and_partial"
             clean_and_make_stats_multidir
         fi
     fi
-    if [[ -d $output_dir/LSU ]]; then
+    if [[ -d $output_dir/LSU && -n "$(find "$output_dir/LSU" -type f -print -quit 2>/dev/null)" ]]; then
         outfile_addition=$"LSU"
         subdir=$"LSU"
-        clean_and_make_stats_multidir
-        if [[ -d $output_dir/LSU/full_and_partial ]]; then
+        if [[ -n "$(find "$output_dir/LSU" -maxdepth 1 -type f -name "*.$extension" -print -quit 2>/dev/null)" ]]; then
+            clean_and_make_stats_multidir
+        fi
+        if [[ -d "$output_dir/LSU/full_and_partial" && -n "$(find "$output_dir/LSU/full_and_partial" -type f -print -quit 2>/dev/null)" ]]; then
             outfile_addition=$"LSU.full_and_partial"
             subdir=$"LSU/full_and_partial"
             clean_and_make_stats_multidir
         fi
     fi
-    if [[ -d $output_dir/full_ITS ]]; then
+    if [[ -d "$output_dir/full_ITS" && -n "$(find "$output_dir/full_ITS" -type f -print -quit 2>/dev/null)" ]]; then
         outfile_addition=$"full"
         subdir=$"full_ITS"
-        clean_and_make_stats_multidir
-        if [[ -d $output_dir/full_ITS/full_and_partial ]]; then
+        if [[ -n "$(find "$output_dir/full_ITS" -maxdepth 1 -type f -name "*.$extension" -print -quit 2>/dev/null)" ]]; then
+            clean_and_make_stats_multidir
+        fi
+        if [[ -d "$output_dir/full_ITS/full_and_partial" && -n "$(find "$output_dir/full_ITS/full_and_partial" -type f -print -quit 2>/dev/null)" ]]; then
             outfile_addition=$"full_and_partial"
             subdir=$"full_ITS/full_and_partial"
             clean_and_make_stats_multidir
         fi
     fi
-    if [[ -d $output_dir/no_detections ]]; then
+    if [[ -d "$output_dir/no_detections" && -n "$(find "$output_dir/no_detections" -type f -print -quit 2>/dev/null)" ]]; then
         outfile_addition=$"no_detections"
         subdir=$"no_detections"
         clean_and_make_stats_multidir

@@ -590,8 +590,6 @@ function clean_and_make_stats_multidir () {
 ### Count reads before and after the process
 mkdir -p tempdir2
 
-#Delete empty output files
-find "$output_dir" -empty -type f -delete
 ### Count reads before and after the process
 touch tempdir2/seq_count_before.txt
 seqkit stats --threads 6 -T *.$extension | awk -F'\t' 'BEGIN{OFS="\t";} NR!=1 {print $1,$4}' >> tempdir2/seq_count_before.txt
