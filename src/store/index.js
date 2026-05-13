@@ -768,29 +768,47 @@ export default new Vuex.Store({
             showExtra: false,
             extraInputs: [
               {
+                name: "errorEstFun",
+                items: ["PacBioErrfun", "loessErrfun"],
+                value: "loessErrfun",
+                disabled: "never",
+                tooltip:
+                  "denoising setting. DADA2 errorEstimationFunction: 'loessErrfun' for Illumina data; 'PacBioErrfun' for PacBio data",
+                type: "select",
+              },
+              {
+                name: "nbases",
+                value: (1e8).toExponential(),
+                disabled: "never",
+                tooltip:
+                  "denoising setting. The minimum number of bases to use for error rate estimation. Default is 1e8 (100 million bases)",
+                type: "numeric",
+                rules: [(v) => v >= 1 || "ERROR: specify values >= 1"],
+              },
+              {
+                name: "randomize",
+                value: true,
+                disabled: "never",
+                tooltip:
+                  "denoising setting. Default = TRUE. If TRUE, samples are picked at random from those provided. If FALSE, samples are picked in the order they are provided until enough reads are obtained.",
+                type: "bool",
+              },
+              {
                 name: "pool",
                 items: ["FALSE", "TRUE", "psuedo"],
                 value: "FALSE",
                 disabled: "never",
                 tooltip:
-                  "Denoising option. If pool = TRUE, the algorithm will pool together all samples prior to sample inference. Pooling improves the detection of rare variants, but is computationally more expensive. If pool = 'pseudo', the algorithm will perform pseudo-pooling between individually processed samples. This argument has no effect if only 1 sample is provided, and pool does not affect error rates, which are always estimated from pooled observations across samples",
+                  "denoising setting. If pool = TRUE (default = FALSE), the algorithm will pool together all samples prior to sample inference. Pooling improves the detection of rare variants, but is computationally more expensive. If pool = 'pseudo', the algorithm will perform pseudo-pooling between individually processed samples. This argument has no effect if only 1 sample is provided, and pool does not affect error rates, which are always estimated from pooled observations across samples",
                 type: "select",
               },
-              // {
-              //   name: "selfConsist",
-              //   disabled: "never",
-              //   value: false,
-              //   tooltip:
-              //     "Denoising option. If selfConsist = TRUE, the algorithm will alternate between sample inference and error rate estimation until convergence",
-              //   type: "bool",
-              // },
               {
                 name: "qualityType",
                 items: ["Auto", "FastqQuality"],
                 value: "Auto",
                 disabled: "never",
                 tooltip:
-                  "Auto means to attempt to auto-detect the fastq quality encoding. This may fail for PacBio files with uniformly high quality scores, in which case use 'FastqQuality'",
+                  "denoising setting. Auto means to attempt to auto-detect the fastq quality encoding. This may fail for PacBio files with uniformly high quality scores, in which case use 'FastqQuality'",
                 type: "select",
               },
               {
@@ -798,7 +816,7 @@ export default new Vuex.Store({
                 value: 16,
                 disabled: "never",
                 tooltip:
-                  "default = 16. Banding for Needleman-Wunsch alignments.",
+                  "denoising setting. Banding for Needleman-Wunsch alignments. Default is 16",
                 type: "numeric",
                 rules: [(v) => v >= -1 || "ERROR: specify values >= -1"],
               },
@@ -808,7 +826,7 @@ export default new Vuex.Store({
                   (0.0000000000000000000000000000000000000001).toExponential(),
                 disabled: "never",
                 tooltip:
-                  "default = 1e-40. Denoising setting; see DADA2 'setDadaOpt()' for detalis. Default value  is a conservative setting to avoid making false positive inferences, but comes at the cost of reducing the ability to identify some rare variants",
+                  "denoising setting. Default = 1e-40. See DADA2 'setDadaOpt()' for details. Default value  is a conservative setting to avoid making false positive inferences, but comes at the cost of reducing the ability to identify some rare variants",
                 type: "numeric",
                 rules: [(v) => v >= 0 || "ERROR: specify values > 0"],
               },
@@ -817,17 +835,17 @@ export default new Vuex.Store({
                 value: (0.0001).toExponential(),
                 disabled: "never",
                 tooltip:
-                  "default = 1e-4 (0.0001). Denoising setting; see DADA2 'setDadaOpt()' for detalis",
+                  "denoising setting. Default = 1e-4 (0.0001). See DADA2 'setDadaOpt()' for details",
                 type: "numeric",
                 rules: [(v) => v >= 0 || "ERROR: specify values > 0"],
               },
               {
                 name: "OMEGA_C",
                 value:
-                  (0.0000000000000000000000000000000000000001).toExponential(),
+                  (0).toExponential(),
                 disabled: "never",
                 tooltip:
-                  "default = 1e-40. Denoising setting; see DADA2 'setDadaOpt()' for detalis",
+                  "denoising setting. Default = 0. See DADA2 'setDadaOpt()' for details",
                 type: "numeric",
                 rules: [(v) => v >= 0 || "ERROR: specify values > 0"],
               },
@@ -836,7 +854,7 @@ export default new Vuex.Store({
                 disabled: "never",
                 value: false,
                 tooltip:
-                  "Default = FALSE. Denoising setting; see DADA2 'setDadaOpt()' for detalis. If set to TRUE, this removes the requirement for at least two reads with the same sequences to exist in order for a new ASV to be detected",
+                  "denoising setting. Default = FALSE. See DADA2 'setDadaOpt()' for details. If set to TRUE, this removes the requirement for at least two reads with the same sequences to exist in order for a new ASV to be detected",
                 type: "bool",
               },
             ],
@@ -846,7 +864,7 @@ export default new Vuex.Store({
                 value: 12,
                 disabled: "never",
                 tooltip:
-                  "the minimum length of the overlap required for merging the forward and reverse reads",
+                  "the minimum length of the overlap required for merging the forward and reverse reads. Default is 12",
                 type: "numeric",
                 rules: [(v) => v >= 1 || "ERROR: specify values >= 1"],
               },
@@ -854,7 +872,7 @@ export default new Vuex.Store({
                 name: "maxMismatch",
                 value: 0,
                 disabled: "never",
-                tooltip: "the maximum mismatches allowed in the overlap region",
+                tooltip: "the maximum mismatches allowed in the overlap region. Default is 0",
                 type: "numeric",
                 rules: [(v) => v >= 0 || "ERROR: specify values >= 0"],
               },
@@ -863,7 +881,7 @@ export default new Vuex.Store({
                 value: false,
                 disabled: "never",
                 tooltip:
-                  "if TRUE, overhangs in the alignment between the forwards and reverse read are trimmed off. Overhangs are when the reverse read extends past the start of the forward read, and vice-versa, as can happen when reads are longer than the amplicon and read into the other-direction primer region",
+                  "if TRUE (default = FALSE), overhangs in the alignment between the forwards and reverse read are trimmed off. Overhangs are when the reverse read extends past the start of the forward read, and vice-versa, as can happen when reads are longer than the amplicon and read into the other-direction primer region",
                 type: "bool",
               },
               {
@@ -871,7 +889,7 @@ export default new Vuex.Store({
                 value: false,
                 disabled: "never",
                 tooltip:
-                  "if TRUE, the forward and reverse-complemented reverse read are concatenated rather than merged, with a NNNNNNNNNN (10 Ns) spacer inserted between them",
+                  "if TRUE (default = FALSE), the forward and reverse-complemented reverse read are concatenated rather than merged, with a NNNNNNNNNN (10 Ns) spacer inserted between them",
                 type: "bool",
               },
             ],
@@ -905,7 +923,7 @@ export default new Vuex.Store({
                 value: 0.28,
                 disabled: "never",
                 tooltip:
-                  "Minimum score (h). Increasing this value tends to reduce the number of false positives and to decrease sensitivity. Values ranging from 0.0 to 1.0 included are accepted",
+                  "Minimum score (h). Default is 0.28. Increasing this value tends to reduce the number of false positives and to decrease sensitivity. Values ranging from 0.0 to 1.0 included are accepted",
                 max: 1,
                 min: 0,
                 step: 0.01,
@@ -5603,10 +5621,10 @@ export default new Vuex.Store({
           },
           {
             name: "OMEGA_C",
-            value: (0.0000000000000000000000000000000000000001).toExponential(),
+            value: (0).toExponential(),
             disabled: "never",
             tooltip:
-              "default = 1e-40. Denoising setting; see DADA2 'setDadaOpt()' for detalis",
+              "default = 0. Denoising setting; see DADA2 'setDadaOpt()' for detalis",
             type: "numeric",
             rules: [(v) => v >= 0 || "ERROR: specify values > 0"],
           },

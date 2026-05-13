@@ -67,6 +67,7 @@ fi
 
 #Check identifiers
 if [[ -z $read_R1 ]]; then
+    # rad_R1 is composed in framework.functions.sh (prepare_PE_env)
     printf '%s\n' "ERROR]: 'read_R1' is not detected.
     >Quitting" >&2
     end_process
@@ -93,12 +94,13 @@ wait
 #format R-log file
 sed -i "s/;; /\n/g" $output_dir/denoise_assemble.log
 
-# Rereplicate sequences per sample
+# Rereplicate sequences per sample and move ASVs to /merged_ASVs directory
+mkdir -p $output_dir/merged_ASVs
 for file in $output_dir/*.fasta; do
     samp_name=$(basename $file | awk -F "$read_R1" '{print $1}')
     echo $samp_name
     vsearch --rereplicate $file --fasta_width 0 --output $output_dir/$samp_name.fasta -relabel $samp_name.
-    rm $file
+    mv $file $output_dir/merged_ASVs
 done
 
 #################################################
@@ -134,8 +136,8 @@ Files in 'denoised_assembled.dada2':
 
 Core commands -> 
 setDadaOpt(OMEGA_A = $omegaa, OMEGA_P = $omegap, OMEGA_C = $omegac, DETECT_SINGLETONS = $detect_singletons, BAND_SIZE = $band_size)
-learn errors: errF = learnErrors(fnFs, errorEstimationFunction = loessErrfun)
-              errR = learnErrors(fnRs, errorEstimationFunction = loessErrfun)
+learn errors: errF = learnErrors(fnFs, errorEstimationFunction = $errorEstFun, randomize = $randomize, nbases = $nbases, qualityType = $qualityType)
+              errR = learnErrors(fnRs, errorEstimationFunction = $errorEstFun, randomize = $randomize, nbases = $nbases, qualityType = $qualityType)
 dereplicate:  derepFs = derepFastq(fnFs, qualityType = $qualityType)
               derepRs = derepFastq(fnRs, qualityType = $qualityType)
 denoise:      dadaFs = dada(derepFs, err = errF, pool = $pool)
