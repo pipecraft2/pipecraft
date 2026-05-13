@@ -11,25 +11,13 @@ printf "# Checking tool versions ...\n"
 dada2_version=$(Rscript -e "packageVersion('dada2')" 2>/dev/null | awk '{print $2}' | sed -e "s/‘//g" -e 's/’//g')
 printf "# DADA2 version: $dada2_version\n"
 
-#load env variables
-readType=${readType}
-dataFormat=${dataFormat}
-workingDir=${workingDir}
-
-#load variables
-minOverlap=${minOverlap}
-maxMismatch=${maxMismatch}
-trimOverhang=${trimOverhang}
-justConcatenate=${justConcatenate}
-pool=${pool}
-qualityType=${qualityType}
-
-errorEstFun=${errorEstFun}
-band_size=${BAND_SIZE}
-omegaa=${OMEGA_A}
-omegap=${OMEGA_P}
-omegac=${OMEGA_C}
-detect_singletons=${DETECT_SINGLETONS}
+# modify homopoly_gap_penalty if it is 0
+homopoly_gap_penalty=${Homopoly_gap_penalty}
+if [[ ${homopoly_gap_penalty} == 0 ]]; then
+    homopoly_gap_penalty="NULL"
+else
+    homopoly_gap_penalty=${homopoly_gap_penalty}
+fi
 
 #Source for functions
 source /scripts/submodules/framework.functions.sh
@@ -115,7 +103,7 @@ for seqrun in $DIRS; do
     runtime=$((end-start))
 
     #Make README.txt file
-    if [[ ! -z $omegaa ]]; then
+    if [[ ! -z $OMEGA_A ]]; then
         printf "# Denoising and assembling of paired-end sequencing data was performed with dada2 (see 'Core commands' below for the used settings).
 
 Start time: $start_time
@@ -134,18 +122,18 @@ Files in 'denoised_assembled.dada2':
 # *.rds = R objects for dada2.
 
 Core commands -> 
-setDadaOpt(OMEGA_A = $OMEGA_A, OMEGA_P = $omegap, OMEGA_C = $omegac, DETECT_SINGLETONS = $detect_singletons, BAND_SIZE = $band_size)
-learn errors: errF = learnErrors(fnFs, errorEstimationFunction = $errorEstFun)
-            errR = learnErrors(fnRs, errorEstimationFunction = $errorEstFun)
+setDadaOpt(OMEGA_A = $OMEGA_A, OMEGA_P = $OMEGA_P, OMEGA_C = $OMEGA_C, DETECT_SINGLETONS = $DETECT_SINGLETONS, BAND_SIZE = $BAND_SIZE, HOMOPOLYMER_GAP_PENALTY = $homopoly_gap_penalty)
+learn errors: errF = learnErrors(fnFs, errorEstimationFunction = $errorEstFun, nbases = $nbases, randomize = $randomize, qualityType = $qualityType)
+              errR = learnErrors(fnRs, errorEstimationFunction = $errorEstFun, nbases = $nbases, randomize = $randomize, qualityType = $qualityType)
 dereplicate:  derepFs = derepFastq(fnFs, qualityType = $qualityType)
-            derepRs = derepFastq(fnRs, qualityType = $qualityType)
-denoise:     dadaFs = dada(derepFs, err = errF, pool = $pool)
-            dadaRs = dada(derepRs, err = errR, pool = $pool)
+              derepRs = derepFastq(fnRs, qualityType = $qualityType)
+denoise:      dadaFs = dada(derepFs, err = errF, pool = $pool)
+              dadaRs = dada(derepRs, err = errR, pool = $pool)
                 
 Total run time was $runtime sec for denoising.
         " > $output_dir/README.txt
     fi
-    if [[ -z $omegaa ]]; then
+    if [[ -z $OMEGA_A ]]; then
         printf "
 assemble:     mergePairs(dadaFs, derepFs, dadaRs, derepRs, maxMismatch = $maxMismatch, minOverlap = $minOverlap, justConcatenate = $justConcatenate, trimOverhang = $trimOverhang)
 

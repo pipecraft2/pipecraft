@@ -778,10 +778,10 @@ export default new Vuex.Store({
               },
               {
                 name: "nbases",
-                value: (1e8).toExponential(),
+                value: (100000000).toExponential(),
                 disabled: "never",
                 tooltip:
-                  "denoising setting. The minimum number of bases to use for error rate estimation. Default is 1e8 (100 million bases)",
+                  "denoising setting. The minimum number of bases to use for error rate estimation. Default is 1e+8 (100 million bases)",
                 type: "numeric",
                 rules: [(v) => v >= 1 || "ERROR: specify values >= 1"],
               },
@@ -828,7 +828,7 @@ export default new Vuex.Store({
                 tooltip:
                   "denoising setting. Default = 1e-40. See DADA2 'setDadaOpt()' for details. Default value  is a conservative setting to avoid making false positive inferences, but comes at the cost of reducing the ability to identify some rare variants",
                 type: "numeric",
-                rules: [(v) => v >= 0 || "ERROR: specify values > 0"],
+                rules: [(v) => v >= 0 || "ERROR: specify values >= 0"],
               },
               {
                 name: "OMEGA_P",
@@ -837,7 +837,7 @@ export default new Vuex.Store({
                 tooltip:
                   "denoising setting. Default = 1e-4 (0.0001). See DADA2 'setDadaOpt()' for details",
                 type: "numeric",
-                rules: [(v) => v >= 0 || "ERROR: specify values > 0"],
+                rules: [(v) => v >= 0 || "ERROR: specify values >= 0"],
               },
               {
                 name: "OMEGA_C",
@@ -847,7 +847,7 @@ export default new Vuex.Store({
                 tooltip:
                   "denoising setting. Default = 0. See DADA2 'setDadaOpt()' for details",
                 type: "numeric",
-                rules: [(v) => v >= 0 || "ERROR: specify values > 0"],
+                rules: [(v) => v >= 0 || "ERROR: specify values >= 0"],
               },
               {
                 name: "DETECT_SINGLETONS",
@@ -5586,6 +5586,10 @@ export default new Vuex.Store({
         },
         imageName: 'pipecraft/vsearch_dada2:3-pc1.2.0',
         serviceName: "denoise",
+        // mergePairs runs inside the denoise step (RAM-efficient), but its
+        // settings are configured in the "merge Pairs" panel. Pull those
+        // env vars in when launching the denoise container.
+        extraEnvFromServices: ["merge Pairs"],
         manualLink:
           "https://pipecraft2-manual.readthedocs.io/en/latest/quicktools.html#dada2-denoise",
         selected: "always",
@@ -5602,13 +5606,30 @@ export default new Vuex.Store({
             rules: [(v) => v >= 0 || "ERROR: specify values >= 0"],
           },
           {
+            name: "nbases",
+            value: (100000000).toExponential(),
+            disabled: "never",
+            tooltip:
+              "denoising setting. The minimum number of bases to use for error rate estimation. Default is 1e+8 (100 million bases)",
+            type: "numeric",
+            rules: [(v) => v >= 1 || "ERROR: specify values >= 1"],
+          },
+          {
+            name: "randomize",
+            value: true,
+            disabled: "never",
+            tooltip:
+              "denoising setting. Default = TRUE. If TRUE, samples are picked at random from those provided. If FALSE, samples are picked in the order they are provided until enough reads are obtained.",
+            type: "bool",
+          },
+          {
             name: "OMEGA_A",
             value: (0.0000000000000000000000000000000000000001).toExponential(),
             disabled: "never",
             tooltip:
               "default = 1e-40. Denoising setting; see DADA2 'setDadaOpt()' for detalis. Default value  is a conservative setting to avoid making false positive inferences, but comes at the cost of reducing the ability to identify some rare variants",
             type: "numeric",
-            rules: [(v) => v >= 0 || "ERROR: specify values > 0"],
+            rules: [(v) => v >= 0 || "ERROR: specify values >= 0"],
           },
           {
             name: "OMEGA_P",
@@ -5617,7 +5638,7 @@ export default new Vuex.Store({
             tooltip:
               "default = 1e-4 (0.0001). Denoising setting; see DADA2 'setDadaOpt()' for detalis",
             type: "numeric",
-            rules: [(v) => v >= 0 || "ERROR: specify values > 0"],
+            rules: [(v) => v >= 0 || "ERROR: specify values >= 0"],
           },
           {
             name: "OMEGA_C",
@@ -5626,7 +5647,16 @@ export default new Vuex.Store({
             tooltip:
               "default = 0. Denoising setting; see DADA2 'setDadaOpt()' for detalis",
             type: "numeric",
-            rules: [(v) => v >= 0 || "ERROR: specify values > 0"],
+            rules: [(v) => v >= 0 || "ERROR: specify values >= 0"],
+          },
+          {
+            name: "Homopoly_gap_penalty",
+            value: 0,
+            disabled: "never",
+            tooltip:
+              "Denoising setting. The cost of gaps in homopolymer regions (>=3 repeated bases). Default is 0, homopolymer gaps to be treated as normal gaps. See DADA2 'setDadaOpt()' for detalis",
+            type: "numeric",
+            rules: [(v) => v <= 0 || "ERROR: specify values <= 0"],
           },
           {
             name: "DETECT_SINGLETONS",

@@ -10,7 +10,7 @@ cat("DADA2 version = ", base::toString(packageVersion("dada2")), "\n")
 
 #load env variables
 readType = Sys.getenv('readType')
-fileFormat= Sys.getenv('fileFormat')
+fileFormat = Sys.getenv('fileFormat')
 dataFormat = Sys.getenv('dataFormat')
 workingDir = Sys.getenv('workingDir')
 
@@ -18,12 +18,23 @@ workingDir = Sys.getenv('workingDir')
 errorEstFun = Sys.getenv('errorEstFun')
 pool = Sys.getenv('pool')
 qualityType = Sys.getenv('qualityType')
+nbases = as.numeric(Sys.getenv('nbases'))
+randomize = Sys.getenv('randomize')
+
 #setDadaOpt() settings
 omegaa = as.numeric(Sys.getenv('OMEGA_A'))
 omegap = as.numeric(Sys.getenv('OMEGA_P'))
-omegac= as.numeric(Sys.getenv('OMEGA_C'))
+omegac = as.numeric(Sys.getenv('OMEGA_C'))
 detect_singletons = Sys.getenv('DETECT_SINGLETONS')
 band_size = as.numeric(Sys.getenv('BAND_SIZE'))
+homopoly_gap_penalty_raw = Sys.getenv('Homopoly_gap_penalty')
+
+#"FALSE" or "TRUE" to FALSE or TRUE for dada2
+if (homopoly_gap_penalty_raw %in% c("", "NULL", "null", "0")) {
+    homopoly_gap_penalty = NULL
+} else {
+    homopoly_gap_penalty = as.numeric(homopoly_gap_penalty_raw)
+}
 
 cat(";; Settings:\n")
 cat(";; errorEstimationFunction = ", errorEstFun, "\n")
@@ -32,6 +43,12 @@ cat(";; OMEGA_A = ", omegaa, "\n")
 cat(";; OMEGA_P = ", omegap, "\n")
 cat(";; OMEGA_C = ", omegac, "\n")
 cat(";; DETECT_SINGLETONS = ", detect_singletons, "\n")
+cat(";; nbases = ", nbases, "\n")
+cat(";; randomize = ", randomize, "\n")
+cat(";; HOMOPOLYMER_GAP_PENALTY = ",
+    if (is.null(homopoly_gap_penalty)) "NULL" else homopoly_gap_penalty, "\n")
+cat(";; pool = ", pool, "\n")
+cat(";; qualityType = ", qualityType, "\n")
 cat(";; \n")
 
 #"FALSE" or "TRUE" to FALSE or TRUE for dada2
@@ -54,7 +71,7 @@ if (detect_singletons == "true" || detect_singletons == "TRUE"){
 }
 
 #Set DADA options
-setDadaOpt(OMEGA_A = omegaa, OMEGA_P = omegap, OMEGA_C = omegac, DETECT_SINGLETONS = detect_singletons, BAND_SIZE = band_size)
+setDadaOpt(OMEGA_A = omegaa, OMEGA_P = omegap, OMEGA_C = omegac, DETECT_SINGLETONS = detect_singletons, BAND_SIZE = band_size, HOMOPOLYMER_GAP_PENALTY = homopoly_gap_penalty)
 
 #output_dir
 path_results = Sys.getenv('output_dir')
@@ -79,10 +96,11 @@ names(qFiltered) = sample_names
 set.seed(100)
 errors = learnErrors(qFiltered,
             errorEstimationFunction = errorEstFun,
+            nbases = nbases,
             BAND_SIZE = band_size,
             multithread = TRUE,
             verbose = TRUE,
-            randomize = TRUE)
+            randomize = randomize)
 saveRDS(errors, file.path(path_results, "errors.rds"))
 
 #Error rate figures
@@ -102,7 +120,7 @@ for(sam in sample_names) {
   #Denoise
   denoised[[sam]] = dada(dereplicated,
                 err = errors,
-                BAND_SIZE = band_size,
+                pool = pool,
                 multithread = TRUE,
                 verbose = TRUE)
 }

@@ -11,19 +11,13 @@ printf "# Checking tool versions ...\n"
 dada2_version=$(Rscript -e "packageVersion('dada2')" 2>/dev/null | awk '{print $2}' | sed -e "s/‘//g" -e 's/’//g')
 printf "# DADA2 version: $dada2_version\n"
 
-#load env variables
-readType=${readType}
-extension=${fileFormat}
-dataFormat=${dataFormat}
-workingDir=${workingDir}
-
-#load variables
-minOverlap=${minOverlap}
-maxMismatch=${maxMismatch}
-trimOverhang=${trimOverhang}
-justConcatenate=${justConcatenate}
-pool=${pool}
-qualityType=${qualityType}
+# modify homopoly_gap_penalty if it is 0
+homopoly_gap_penalty=${Homopoly_gap_penalty}
+if [[ ${homopoly_gap_penalty} == 0 ]]; then
+    homopoly_gap_penalty="NULL"
+else
+    homopoly_gap_penalty=${homopoly_gap_penalty}
+fi
 
 #Source for functions
 source /scripts/submodules/framework.functions.sh
@@ -122,10 +116,10 @@ Files in 'denoised_assembled.dada2':
 # *.rds                   = R objects for dada2.
 
 Core commands -> 
-setDadaOpt(OMEGA_A = $OMEGA_A, OMEGA_P = $OMEGA_P, OMEGA_C = $OMEGA_C, DETECT_SINGLETONS = $DETECT_SINGLETONS, BAND_SIZE = $BAND_SIZE)
+setDadaOpt(OMEGA_A = $OMEGA_A, OMEGA_P = $OMEGA_P, OMEGA_C = $OMEGA_C, DETECT_SINGLETONS = $DETECT_SINGLETONS, BAND_SIZE = $BAND_SIZE, HOMOPOLYMER_GAP_PENALTY = $homopoly_gap_penalty)
 dereplicate:  dereplicated <- derepFastq(input, qualityType = $qualityType)
-learn errors: errors = learnErrors(dereplicated, errorEstimationFunction = $errorEstFun, BAND_SIZE = $BAND_SIZE)
-denoise:      denoised = dada(dereplicated, err = errors, BAND_SIZE = $BAND_SIZE)
+learn errors: errors = learnErrors(dereplicated, errorEstimationFunction = $errorEstFun, nbases = $nbases, randomize = $randomize, qualityType = $qualityType, BAND_SIZE = $BAND_SIZE)
+denoise:      denoised = dada(dereplicated, err = errors, pool = $pool, multithread = TRUE)
 
 Total run time was $runtime sec.
 ##############################################
