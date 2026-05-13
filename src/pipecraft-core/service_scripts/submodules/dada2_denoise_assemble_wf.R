@@ -22,7 +22,7 @@ trimOverhang = Sys.getenv('trimOverhang')
 justConcatenate = Sys.getenv('justConcatenate')
 pool = Sys.getenv('pool')
 qualityType = Sys.getenv('qualityType')
-errorEstFun = "loessErrfun"
+errorEstFun = Sys.getenv('errorEstFun')
 
 #setDadaOpt() settings
 omegaa = as.numeric(Sys.getenv('OMEGA_A'))

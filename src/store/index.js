@@ -2610,7 +2610,7 @@ export default new Vuex.Store({
                   "seqkit stats",
                 disabled: "never",
                 type: "link",
-                tooltip: "check the box above to run seqkit stats for a files in the folder [SELECT WORKDIR] with specified file extension",
+                tooltip: "THIS BUTTON DOES NOT DO ANYTHING! Check the box above to run seqkit stats for a files in the folder [SELECT WORKDIR] with specified file extension and press START",
               },
             ],
           },
