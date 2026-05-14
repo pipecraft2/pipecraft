@@ -188,7 +188,7 @@ Files in 'qualFiltered_out':
     # *.rds                    = R objects for dada2.
 
 Core command -> 
-filterAndTrim(inputR1, outputR1, inputR2, outputR2, maxN = $maxN, maxEE = c($maxEE, $maxEE), truncQ = $truncQ, truncLen = c($truncLen, $truncLen_R2), maxLen = $maxLen, minLen = $minLen, minQ=$minQ, rm.phix = TRUE)
+filterAndTrim(inputR1, outputR1, inputR2, outputR2, maxN = $maxN, maxEE = c($maxEE, $maxEE), truncQ = $truncQ, truncLen = c($truncLen, $truncLen_R2), trimLeft = $trimLeft, trimRight = $trimRight, maxLen = $maxLen, minLen = $minLen, minQ=$minQ, rm.phix = TRUE)
 
 Total run time was $runtime sec.
 ##############################################

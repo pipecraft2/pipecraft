@@ -22,6 +22,8 @@ truncLen_R2 = as.numeric(Sys.getenv('truncLen_R2'))
 minLen = as.numeric(Sys.getenv('minLen'))
 maxLen = as.numeric(Sys.getenv('maxLen'))
 minQ = as.numeric(Sys.getenv('minQ'))
+trimLeft = as.numeric(Sys.getenv('trimLeft'))
+trimRight = as.numeric(Sys.getenv('trimRight'))
 
 cat(";; Settings:\n")
 cat(";; maxEE = ", maxEE, "\n")
@@ -30,6 +32,8 @@ cat(";; truncQ = ", truncQ, "\n")
 cat(";; truncLen_R1 = ", truncLen_R1, "\n")
 cat(";; truncLen_R2 = ", truncLen_R2, "\n")
 cat(";; minLen = ", minLen, ";;\n")
+cat(";; trimLeft = ", trimLeft, "\n")
+cat(";; trimRight = ", trimRight, "\n")
 
 #check if gz files are provided; if yes then produce also gz compressed files.
 is_gz = strsplit(fileFormat, split="\\.")[[1]][-1]
@@ -84,6 +88,8 @@ for (i in seq(1, total_samples, by = batch_size)) {
                                 maxEE = c(maxEE, maxEE), 
                                 truncQ = truncQ,  
                                 truncLen = c(truncLen_R1, truncLen_R2),
+                                trimLeft = trimLeft,
+                                trimRight = trimRight,
                                 maxLen = maxLen, 
                                 minLen = minLen, 
                                 minQ = minQ, 

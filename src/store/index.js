@@ -580,6 +580,24 @@ export default new Vuex.Store({
             showExtra: false,
             extraInputs: [
               {
+                name: "trimLeft",
+                value: 0,
+                disabled: "never",
+                tooltip:
+                  "Default 0. The number of base pairs to remove from the start of each read",
+                type: "numeric",
+                rules: [(v) => v >= 0 || "ERROR: specify values >= 0"],
+              },
+              {
+                name: "trimRight",
+                value: 0,
+                disabled: "never",
+                tooltip:
+                  "Default 0. The number of nucleotides to remove from the end of each read",
+                type: "numeric",
+                rules: [(v) => v >= 0 || "ERROR: specify values >= 0"],
+              },
+              {
                 name: "truncQ",
                 value: 2,
                 disabled: "never",
@@ -5493,41 +5511,20 @@ export default new Vuex.Store({
         disabled: "never",
         selected: "always",
         showExtra: false,
-        extraInputs: [],
-        Inputs: [
+        extraInputs: [
           {
-            name: "maxEE",
-            value: 2,
-            disabled: "never",
-            tooltip:
-              "discard sequences with more than the specified number of expected errors",
-            type: "numeric",
-            rules: [(v) => v >= 0.1 || "ERROR: specify values >= 0.1"],
-          },
-          {
-            name: "maxN",
+            name: "trimLeft",
             value: 0,
             disabled: "never",
-            tooltip:
-              "discard sequences with more than the specified number of N's (ambiguous bases). This should be set to 0 if denoising is performed with DADA2",
+            tooltip: "Default 0. The number of base pairs to remove from the start of each read",
             type: "numeric",
             rules: [(v) => v >= 0 || "ERROR: specify values >= 0"],
           },
           {
-            name: "minLen",
-            value: 20,
+            name: "trimRight",
+            value: 0,
             disabled: "never",
-            tooltip:
-              "remove reads with length less than minLen. minLen is enforced after all other trimming and truncation",
-            type: "numeric",
-            rules: [(v) => v >= 1 || "ERROR: specify values >= 1"],
-          },
-          {
-            name: "truncQ",
-            value: 2,
-            disabled: "never",
-            tooltip:
-              "truncate reads at the first instance of a quality score less than or equal to truncQ (0 = no truncation)",
+            tooltip: "Default 0. The number of nucleotides to remove from the end of each read",
             type: "numeric",
             rules: [(v) => v >= 0 || "ERROR: specify values >= 0"],
           },
@@ -5575,6 +5572,45 @@ export default new Vuex.Store({
               "applies only for paired-end data. If TRUE, then double-checking (with seqkit pair) that only paired reads that share ids are outputted",
             type: "bool",
           },
+        ],
+        Inputs: [
+          {
+            name: "maxEE",
+            value: 2,
+            disabled: "never",
+            tooltip:
+              "discard sequences with more than the specified number of expected errors",
+            type: "numeric",
+            rules: [(v) => v >= 0.1 || "ERROR: specify values >= 0.1"],
+          },
+          {
+            name: "maxN",
+            value: 0,
+            disabled: "never",
+            tooltip:
+              "discard sequences with more than the specified number of N's (ambiguous bases). This should be set to 0 if denoising is performed with DADA2",
+            type: "numeric",
+            rules: [(v) => v >= 0 || "ERROR: specify values >= 0"],
+          },
+          {
+            name: "minLen",
+            value: 20,
+            disabled: "never",
+            tooltip:
+              "remove reads with length less than minLen. minLen is enforced after all other trimming and truncation",
+            type: "numeric",
+            rules: [(v) => v >= 1 || "ERROR: specify values >= 1"],
+          },
+          {
+            name: "truncQ",
+            value: 2,
+            disabled: "never",
+            tooltip:
+              "truncate reads at the first instance of a quality score less than or equal to truncQ (0 = no truncation)",
+            type: "numeric",
+            rules: [(v) => v >= 0 || "ERROR: specify values >= 0"],
+          },
+
         ],
       },
       {

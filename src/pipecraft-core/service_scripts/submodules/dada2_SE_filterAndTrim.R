@@ -21,6 +21,8 @@ truncLen_R1 = as.numeric(Sys.getenv('truncLen'))
 minLen = as.numeric(Sys.getenv('minLen'))
 maxLen = as.numeric(Sys.getenv('maxLen'))
 minQ = as.numeric(Sys.getenv('minQ'))
+trimLeft = as.numeric(Sys.getenv('trimLeft'))
+trimRight = as.numeric(Sys.getenv('trimRight'))
 
 cat(";; Settings:\n")
 cat(";; maxEE = ", maxEE, "\n")
@@ -28,6 +30,8 @@ cat(";; maxN = ", maxN, "\n")
 cat(";; truncQ = ", truncQ, "\n")
 cat(";; truncLen_R1 = ", truncLen_R1, "\n")
 cat(";; minLen = ", minLen, ";;\n")
+cat(";; trimLeft = ", trimLeft, "\n")
+cat(";; trimRight = ", trimRight, "\n")
 
 #check if gz files are provided; if yes then produce also gz compressed files.
 is_gz = strsplit(fileFormat, split="\\.")[[1]][-1]
@@ -59,6 +63,8 @@ qfilt = filterAndTrim(fnFs, qFiltered,
                     maxEE = maxEE, 
                     truncQ = truncQ,  
                     truncLen = truncLen_R1,
+                    trimLeft = trimLeft,
+                    trimRight = trimRight,
                     maxLen = maxLen, 
                     minLen = minLen, 
                     minQ = minQ, 

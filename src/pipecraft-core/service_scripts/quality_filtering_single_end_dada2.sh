@@ -124,7 +124,7 @@ Files in 'qualFiltered_out':
 # *.rds                    = R objects for dada2.
 
 Core command -> 
-filterAndTrim(inputR1, outputR1, maxN = $maxN, maxEE = $maxEE, truncQ = $truncQ, truncLen = $truncLen, maxLen = $maxLen, minLen = $minLen, minQ = $minQ, rm.phix = TRUE)
+filterAndTrim(inputR1, outputR1, maxN = $maxN, maxEE = $maxEE, truncQ = $truncQ, truncLen = $truncLen, trimLeft = $trimLeft, trimRight = $trimRight, maxLen = $maxLen, minLen = $minLen, minQ = $minQ, rm.phix = TRUE)
 
 ##############################################
 ###Third-party applications for this process:
