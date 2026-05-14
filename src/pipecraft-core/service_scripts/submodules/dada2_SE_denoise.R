@@ -109,23 +109,40 @@ pdf(file.path(path_results, "Error_rates.pdf"))
 dev.off()
 
 # Infer sequence variants
-denoised = vector("list", length(sample_names))
-names(denoised) = sample_names
-for(sam in sample_names) {
-  cat("Processing:", sam, "\n")
-  #Dereplicate
-  dereplicated = derepFastq(qFiltered[[sam]],
-                verbose = TRUE,
-                qualityType = qualityType)
-  #Denoise
-  denoised[[sam]] = dada(dereplicated,
+# pool=FALSE: dereplicate then denoise per sample (lowest peak RAM)
+# pool=TRUE or "pseudo": dereplicate all samples into a named list, then one dada() on that list.
+if (identical(pool, FALSE)) {
+  cat(";; Denoising per sample with pool = ", pool, "\n", sep = "")
+  denoised = vector("list", length(sample_names))
+  names(denoised) = sample_names
+  for (sam in sample_names) {
+    cat(";; Dereplicating and denoising:", sam, "\n")
+    dr = derepFastq(qFiltered[[sam]],
+                  verbose = TRUE,
+                  qualityType = qualityType)
+    denoised[[sam]] = dada(dr,
+                  err = errors,
+                  pool = FALSE,
+                  multithread = TRUE,
+                  verbose = TRUE)
+  }
+} else {
+  dereplicated = vector("list", length(sample_names))
+  names(dereplicated) = sample_names
+  for (sam in sample_names) {
+    cat(";; Dereplicating:", sam, "\n")
+    dereplicated[[sam]] = derepFastq(qFiltered[[sam]],
+                  verbose = TRUE,
+                  qualityType = qualityType)
+  }
+  cat(";; Denoising all samples with pool = ", pool, " (single dada() on list)\n", sep = "")
+  denoised = dada(dereplicated,
                 err = errors,
                 pool = pool,
                 multithread = TRUE,
                 verbose = TRUE)
 }
 saveRDS(denoised, file.path(path_results, "denoised.rds"))
-
 
 ### WRITE PER-SAMPLE DENOISED and MERGED FASTA FILES
 #make sequence table

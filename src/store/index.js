@@ -783,7 +783,7 @@ export default new Vuex.Store({
                 tooltip:
                   "denoising setting. The minimum number of bases to use for error rate estimation. Default is 1e+8 (100 million bases)",
                 type: "numeric",
-                rules: [(v) => v >= 1 || "ERROR: specify values >= 1"],
+                rules: [(v) => v >= 100000000 || "WARNING: default is 1e+8, use default if you have enough reads"],
               },
               {
                 name: "randomize",
@@ -5612,7 +5612,8 @@ export default new Vuex.Store({
             tooltip:
               "denoising setting. The minimum number of bases to use for error rate estimation. Default is 1e+8 (100 million bases)",
             type: "numeric",
-            rules: [(v) => v >= 1 || "ERROR: specify values >= 1"],
+            rules: [(v) => v >= 100000000 || "WARNING: default is 1e+8, use default if you have enough reads"],
+
           },
           {
             name: "randomize",

@@ -41,6 +41,9 @@ if (pool == "false" || pool == "FALSE"){
 if (pool == "true" || pool == "TRUE"){
     pool = TRUE
 }
+if (is.character(pool) && tolower(pool) %in% c("pseudo", "psuedo")) {
+    pool = "pseudo"
+}
 if (trimOverhang == "false" || trimOverhang == "FALSE"){
     trimOverhang = FALSE
 }
@@ -128,11 +131,17 @@ if (pool != ""){
         set.seed(100)
         # Learn R1 error rates
         errF = learnErrors(filtFs, errorEstimationFunction = loessErrfun, 
-                            nbases = nbases, multithread = TRUE, randomize = randomize, qualityType = qualityType)
+                            nbases = nbases, 
+                            multithread = TRUE, 
+                            randomize = randomize, 
+                            qualityType = qualityType)
         saveRDS(errF, (file.path(path_results, "errF.rds")))
         # Learn R2 error rates
         errR = learnErrors(filtRs, errorEstimationFunction = loessErrfun, 
-                            nbases = nbases, multithread = TRUE, randomize = randomize, qualityType = qualityType)
+                            nbases = nbases, 
+                            multithread = TRUE, 
+                            randomize = randomize, 
+                            qualityType = qualityType)
         saveRDS(errR, (file.path(path_results, "errR.rds")))
         # Error rate figures
         cat(";; ")
@@ -146,26 +155,58 @@ if (pool != ""){
         # Sample inference and merger of paired-end reads
         mergers = vector("list", length(sample_names))
         names(mergers) = sample_names
-        for(sample in sample_names) {
-          cat(";; Processing:", sample, "\n")
-          derepF = derepFastq(filtFs[[sample]], qualityType = qualityType)
-          ddF = dada(derepF, err = errF, pool = pool, multithread = TRUE)
-          derepR = derepFastq(filtRs[[sample]], qualityType = qualityType)
-          ddR = dada(derepR, err = errR, pool = pool, multithread = TRUE)
-          merger = mergePairs(ddF, derepF, ddR, derepR, 
-                                maxMismatch = maxMismatch, 
-                                minOverlap = minOverlap, 
-                                justConcatenate = justConcatenate, 
+
+        # pool=FALSE: derep + dada + merge per sample (lowest peak RAM for derep).
+        # pool=TRUE or "pseudo": derep all samples, one dada() per orientation on the
+        # full named lists, then mergePairs per sample (see ?dada2::dada, pool).
+        if (identical(pool, FALSE)) {
+          cat(";; Processing per sample with pool = ", pool, "\n", sep = "")
+          for (sample in sample_names) {
+            cat(";; Processing:", sample, "\n")
+            derepF = derepFastq(filtFs[[sample]], qualityType = qualityType)
+            ddF = dada(derepF, err = errF, pool = FALSE, multithread = TRUE)
+            derepR = derepFastq(filtRs[[sample]], qualityType = qualityType)
+            ddR = dada(derepR, err = errR, pool = FALSE, multithread = TRUE)
+            mergers[[sample]] = mergePairs(ddF, derepF, ddR, derepR,
+                                maxMismatch = maxMismatch,
+                                minOverlap = minOverlap,
+                                justConcatenate = justConcatenate,
                                 trimOverhang = trimOverhang)
-          mergers[[sample]] = merger
+          }
+          invisible(gc())
+        } else {
+          cat(";; Processing all samples with pool = ", pool, "\n", sep = "")
+          derepFs = vector("list", length(sample_names))
+          derepRs = vector("list", length(sample_names))
+          names(derepFs) = sample_names
+          names(derepRs) = sample_names
+          for (sample in sample_names) {
+            cat(";; Dereplicating:", sample, "\n")
+            derepFs[[sample]] = derepFastq(filtFs[[sample]], qualityType = qualityType)
+            derepRs[[sample]] = derepFastq(filtRs[[sample]], qualityType = qualityType)
+          }
+          cat(";; Denoising all samples (R1) with pool = ", pool, "\n", sep = "")
+          ddFs = dada(derepFs, err = errF, pool = pool, multithread = TRUE)
+          cat(";; Denoising all samples (R2) with pool = ", pool, "\n", sep = "")
+          ddRs = dada(derepRs, err = errR, pool = pool, multithread = TRUE)
+          for (sample in sample_names) {
+            cat(";; Merging:", sample, "\n")
+            mergers[[sample]] = mergePairs(ddFs[[sample]], derepFs[[sample]],
+                                ddRs[[sample]], derepRs[[sample]],
+                                maxMismatch = maxMismatch,
+                                minOverlap = minOverlap,
+                                justConcatenate = justConcatenate,
+                                trimOverhang = trimOverhang)
+          }
+          rm(derepFs, derepRs, ddFs, ddRs)
+          invisible(gc())
         }
-        rm(derepF); rm(derepR)
-        invisible(gc())
         saveRDS(mergers, (file.path(path_results, "mergers.rds")))
     }
 }
 
 ### Merge denoised paired-end reads
+ # actual mergin is done above, but this process here is for MERGE PAIRS panel status on GUI
 if (pool == ""){
     cat(";; ")
     cat(";; Working directory = ", workingDir)
