@@ -31,6 +31,8 @@ max_length=${max_length}
 maxee_rate=${maxee_rate}
 truncqual=${truncqual}
 truncee=${truncee}
+strip_left=${strip_left}
+strip_right=${strip_right}
 
 #Source for functions
 source /scripts/submodules/framework.functions.sh
@@ -60,6 +62,16 @@ if [[ $truncee == null ]] || [[ -z $truncee ]] || [[ $truncee == 0 ]]; then
     truncee=$""
 else
     truncee=$"--fastq_truncee $truncee"
+fi
+if [[ $strip_left == null ]] || [[ -z $strip_left ]] || [[ $strip_left == 0 ]]; then
+    strip_left=$""
+else
+    strip_left=$"--fastq_stripleft $strip_left"
+fi
+if [[ $strip_right == null ]] || [[ -z $strip_right ]] || [[ $strip_right == 0 ]]; then
+    strip_right=$""
+else
+    strip_right=$"--fastq_stripright $strip_right"
 fi
 
 # check if working with multiple runs or with a single sequencing run
@@ -145,6 +157,8 @@ for seqrun in $DIRS; do
         $maxee_rate \
         $truncqual \
         $truncee \
+        $strip_left \
+        $strip_right \
         --fastqout tempdir/$inputR1.$extension"
 
         #R1
@@ -161,6 +175,8 @@ for seqrun in $DIRS; do
         $maxee_rate \
         $truncqual \
         $truncee \
+        $strip_left \
+        $strip_right \
         --fastqout tempdir/$inputR1.$extension 2>&1)
         check_app_error
 
@@ -178,6 +194,8 @@ for seqrun in $DIRS; do
         $maxee_rate \
         $truncqual \
         $truncee \
+        $strip_left \
+        $strip_right \
         --fastqout tempdir/$inputR2.$extension 2>&1)
         check_app_error
 
@@ -232,7 +250,7 @@ Files in 'qualFiltered_out':
 # seq_count_summary.txt = summary of sequence counts per sample.
 
 Core commands -> 
-quality filtering: vsearch --fastq_filter input_file $maxee $maxns $trunc_length $minlen $cores $qmax $qmin $max_length $maxee_rate $truncqual $truncee --fastqout output_file
+quality filtering: vsearch --fastq_filter input_file $maxee $maxns $trunc_length $minlen $cores $qmax $qmin $max_length $maxee_rate $truncqual $truncee $strip_left $strip_right --fastqout output_file
 Synchronizing R1 and R2 reads (matching pair mates): seqkit pair -1 inputR1 -2 inputR2
 
 ##############################################

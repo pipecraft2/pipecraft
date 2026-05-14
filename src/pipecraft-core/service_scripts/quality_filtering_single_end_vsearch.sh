@@ -27,6 +27,8 @@ max_length=$max_length
 maxee_rate=$maxee_rate
 truncqual=${truncqual}
 truncee=${truncee}
+strip_left=${strip_left}
+strip_right=${strip_right}
 
 #Source for functions
 source /scripts/submodules/framework.functions.sh
@@ -58,6 +60,16 @@ if [[ $truncee == null ]] || [[ -z $truncee ]] || [[ $truncee == 0 ]]; then
     truncee=$""
 else
     truncee=$"--fastq_truncee $truncee"
+fi
+if [[ $strip_left == null ]] || [[ -z $strip_left ]] || [[ $strip_left == 0 ]]; then
+    strip_left=$""
+else
+    strip_left=$"--fastq_stripleft $strip_left"
+fi
+if [[ $strip_right == null ]] || [[ -z $strip_right ]] || [[ $strip_right == 0 ]]; then
+    strip_right=$""
+else
+    strip_right=$"--fastq_stripright $strip_right"
 fi
 
 # if working with multiRunDir, and the previous step was CUT PRIMERS
@@ -171,6 +183,8 @@ for seqrun in $DIRS; do
         $maxee_rate \
         $truncqual \
         $truncee \
+        $strip_left \
+        $strip_right \
         --fastqout $output_dir/$input.$extension 2>&1)
         check_app_error
     done
@@ -196,7 +210,7 @@ Files in 'qualFiltered_out':
 # seq_count_summary.txt     = summary of sequence counts per sample.
 
 Core command -> 
-vsearch --fastq_filter input_file $maxee $maxns $trunc_length $minlen $cores $qmax $qmin $max_length $maxee_rate $truncqual $truncee --fastqout $output_dir/output_file.fastq
+vsearch --fastq_filter input_file $maxee $maxns $trunc_length $minlen $cores $qmax $qmin $max_length $maxee_rate $truncqual $truncee $strip_left $strip_right --fastqout $output_dir/output_file.fastq
 
 #############################################
 ###Third-party applications for this process:

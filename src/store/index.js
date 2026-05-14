@@ -302,6 +302,24 @@ export default new Vuex.Store({
                     "ERROR: specify values >=0.001",
                 ],
               },
+              {
+                name: "strip_left",
+                value: 0,
+                disabled: "never",
+                tooltip:
+                  "Default 0. The number of base pairs to remove from the start of each read",
+                type: "numeric",
+                rules: [(v) => v >= 0 || "ERROR: specify values >= 0"],
+              },
+              {
+                name: "strip_right",
+                value: 0,
+                disabled: "never",
+                tooltip:
+                  "Default 0. The number of nucleotides to remove from the end of each read",
+                type: "numeric",
+                rules: [(v) => v >= 0 || "ERROR: specify values >= 0"],
+              },
             ],
             Inputs: [
               {
@@ -3023,6 +3041,24 @@ export default new Vuex.Store({
                 "ERROR: specify values >=0.001",
             ],
           },
+          {
+            name: "strip_left",
+            value: 0,
+            disabled: "never",
+            tooltip:
+              "Default 0. The number of base pairs to remove from the start of each read",
+            type: "numeric",
+            rules: [(v) => v >= 0 || "ERROR: specify values >= 0"],
+          },
+          {
+            name: "strip_right",
+            value: 0,
+            disabled: "never",
+            tooltip:
+              "Default 0. The number of nucleotides to remove from the end of each read",
+            type: "numeric",
+            rules: [(v) => v >= 0 || "ERROR: specify values >= 0"],
+          },
         ],
         Inputs: [
           {
@@ -3736,6 +3772,24 @@ export default new Vuex.Store({
                 (v >= 0) | (v == "") ||
                 "ERROR: specify values >=0.001",
             ],
+          },
+          {
+            name: "strip_left",
+            value: 0,
+            disabled: "never",
+            tooltip:
+              "Default 0. The number of base pairs to remove from the start of each read",
+            type: "numeric",
+            rules: [(v) => v >= 0 || "ERROR: specify values >= 0"],
+          },
+          {
+            name: "strip_right",
+            value: 0,
+            disabled: "never",
+            tooltip:
+              "Default 0. The number of nucleotides to remove from the end of each read",
+            type: "numeric",
+            rules: [(v) => v >= 0 || "ERROR: specify values >= 0"],
           },
         ],
         Inputs: [
