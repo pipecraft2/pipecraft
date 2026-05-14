@@ -795,7 +795,7 @@ export default new Vuex.Store({
               },
               {
                 name: "pool",
-                items: ["FALSE", "TRUE", "psuedo"],
+                items: ["FALSE", "TRUE", "pseudo"],
                 value: "FALSE",
                 disabled: "never",
                 tooltip:
@@ -5679,21 +5679,13 @@ export default new Vuex.Store({
           },
           {
             name: "pool",
-            items: ["FALSE", "TRUE", "psuedo"],
+            items: ["FALSE", "TRUE", "pseudo"],
             value: "FALSE",
             disabled: "never",
             tooltip:
               "if pool = TRUE, the algorithm will pool together all samples prior to sample inference. Pooling improves the detection of rare variants, but is computationally more expensive. If pool = 'pseudo', the algorithm will perform pseudo-pooling between individually processed samples. This argument has no effect if only 1 sample is provided, and pool does not affect error rates, which are always estimated from pooled observations across samples",
             type: "select",
           },
-          // {
-          //   name: "selfConsist",
-          //   disabled: "never",
-          //   value: false,
-          //   tooltip:
-          //     "if selfConsist = TRUE, the algorithm will alternate between sample inference and error rate estimation until convergence",
-          //   type: "bool",
-          // },
           {
             name: "qualityType",
             items: ["Auto", "FastqQuality"],
