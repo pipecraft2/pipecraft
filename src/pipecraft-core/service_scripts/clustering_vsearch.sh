@@ -18,7 +18,6 @@ printf "# vsearch (version $vsearch_version)\n"
 printf "# seqkit (version $seqkit_version)\n"
 printf "# pipeline = $pipeline\n"
 printf "# service = $service\n"
-printf "# clustering dirs = $workingDir\n"
 
 #load variables
 id=$"--id ${similarity_threshold}"          # positive float (0-1)
@@ -51,6 +50,19 @@ else
     centroid_in=$"--sizeorder"
 fi
 
+# if working with multiRunDir, and the previous step was ITSx
+if [[ -f "$workingDir/.prev_step.temp" ]]; then
+    prev_step=$(cat $workingDir/.prev_step.temp) # for checking previous step (output from ITS_extractor.sh)
+    printf "# prev_step = $prev_step\n" # expect only "ITSx" here
+    ITS_region_for_clustering=$(cat $workingDir/.ITS_region_for_clustering.temp)
+    ITS_full_and_partial=$(cat $workingDir/.ITS_full_and_partial.temp)
+    printf "# ITS_region_for_clustering = $ITS_region_for_clustering\n"
+    printf "# ITS_full_and_partial = $ITS_full_and_partial (=FALSE if empty)\n"
+    rm -f $workingDir/.prev_step.temp
+    rm -f $workingDir/.ITS_region_for_clustering.temp
+    rm -f $workingDir/.ITS_full_and_partial.temp
+fi
+
 # check if working with multiple runs or with a single sequencing run
 if [[ -d "/input/multiRunDir" ]]; then
     echo "vsearch OTUs with multiple sequencing runs in multiRunDir"
@@ -64,21 +76,9 @@ if [[ -d "/input/multiRunDir" ]]; then
     if [[ -f "/input/multiRunDir/.derep_seqs_dirs" ]]; then
         rm /input/multiRunDir/.derep_seqs_dirs
     fi
-
-    # check if prev_step.temp exists
-    if [[ -f "$workingDir/.prev_step.temp" ]]; then
-        prev_step=$(cat $workingDir/.prev_step.temp) # for checking previous step (output temp file from ITS_extractor.sh)
-        printf "# prev_step = $prev_step\n"
-        ITS_region_for_clustering=$(cat $workingDir/.ITS_region_for_clustering.temp)
-        ITS_full_and_partial=$(cat $workingDir/.ITS_full_and_partial.temp)
-        printf "# ITS_region_for_clustering = $ITS_region_for_clustering\n"
-        printf "# ITS_full_and_partial = $ITS_full_and_partial (=FALSE if empty)\n"
-        rm $workingDir/.prev_step.temp
-        rm $workingDir/.ITS_region_for_clustering.temp
-        rm $workingDir/.ITS_full_and_partial.temp
-    fi
-    
+   
     # if working with multiRunDir, and the previous step was ITSx and full_and_partial = FALSE
+    # applied both to single-end and paired-end data, with or without ITSx (last step in a pipelines is always chimeraFiltered_out or ITSx_out)
     if [[ "$prev_step" = "ITSx" ]] && [[ "$ITS_full_and_partial" == "" ]]; then 
         DIRS=$(find . -maxdepth 3 -mindepth 1 -type d | grep "ITSx_out/${ITS_region_for_clustering}" | grep -v "skip_" | grep -v "merged_runs" | grep -v "tempdir" | sed -e "s/^\.\///")
     # if working with multiRunDir, and the previous step was ITSx and full_and_partial = TRUE
@@ -112,6 +112,7 @@ for seqrun in $DIRS; do
     start=$(date +%s)
 
     cd $seqrun
+    printf "\n workingDir = $seqrun \n"
     if [[ $multiDir == "TRUE" ]]; then
         ### Check if the dir has the specified file extension; if not then ERROR
         count=$(ls -1 *.$fileFormat 2>/dev/null | wc -l)

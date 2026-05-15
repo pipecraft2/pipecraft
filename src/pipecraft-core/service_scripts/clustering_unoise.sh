@@ -43,6 +43,19 @@ mask=$"--qmask ${mask}"                         # list: --qmask dust, --qmask no
 # Source for functions
 source /scripts/submodules/framework.functions.sh
 
+# if working with multiRunDir, and the previous step was ITSx
+if [[ -f "$workingDir/.prev_step.temp" ]]; then
+    prev_step=$(cat $workingDir/.prev_step.temp) # for checking previous step
+    printf "# prev_step = $prev_step\n" # expect "assemble_paired_end_data" or "ITSx" here
+    ITS_region_for_clustering=$(cat $workingDir/.ITS_region_for_clustering.temp)
+    ITS_full_and_partial=$(cat $workingDir/.ITS_full_and_partial.temp)
+    printf "# ITS_region_for_clustering = $ITS_region_for_clustering\n"
+    printf "# ITS_full_and_partial = $ITS_full_and_partial (=FALSE if empty)\n"
+    rm -f $workingDir/.prev_step.temp
+    rm -f $workingDir/.ITS_region_for_clustering.temp
+    rm -f $workingDir/.ITS_full_and_partial.temp
+fi
+
 # check if working with multiple runs or with a single sequencing run
 if [[ -d "/input/multiRunDir" ]]; then
     echo "UNOISE pipeline with multiple sequencing runs in multiRunDir"
@@ -57,26 +70,16 @@ if [[ -d "/input/multiRunDir" ]]; then
         rm /input/multiRunDir/.derep_seqs_dirs
     fi
 
-    # check if prev_step.temp exists
-    if [[ -f "$workingDir/.prev_step.temp" ]]; then
-        prev_step=$(cat $workingDir/.prev_step.temp) # for checking previous step (output temp file from ITS_extractor.sh)
-        printf "# prev_step = $prev_step\n"
-        ITS_region_for_clustering=$(cat $workingDir/.ITS_region_for_clustering.temp)
-        ITS_full_and_partial=$(cat $workingDir/.ITS_full_and_partial.temp)
-        printf "# ITS_region_for_clustering = $ITS_region_for_clustering\n"
-        printf "# ITS_full_and_partial = $ITS_full_and_partial (=FALSE if empty)\n"
-        rm $workingDir/.prev_step.temp
-        rm $workingDir/.ITS_region_for_clustering.temp
-        rm $workingDir/.ITS_full_and_partial.temp
-    fi
-    
     # if working with multiRunDir, and the previous step was ITSx and full_and_partial = FALSE
     if [[ "$prev_step" = "ITSx" ]] && [[ "$ITS_full_and_partial" == "" ]]; then 
         DIRS=$(find . -maxdepth 3 -mindepth 1 -type d | grep "ITSx_out/${ITS_region_for_clustering}" | grep -v "skip_" | grep -v "merged_runs" | grep -v "tempdir" | sed -e "s/^\.\///")
     # if working with multiRunDir, and the previous step was ITSx and full_and_partial = TRUE
     elif [[ "$prev_step" = "ITSx" ]] && [[ "$ITS_full_and_partial" == "full_and_partial" ]]; then   
         DIRS=$(find . -maxdepth 4 -mindepth 1 -type d | grep "ITSx_out/${ITS_region_for_clustering}/${ITS_full_and_partial}" | grep -v "skip_" | grep -v "merged_runs" | grep -v "tempdir" | sed -e "s/^\.\///")
-    # if working with multiRunDir, and the previous step was not ITSx
+    # if working with multiRunDir, and the previous step was assemble_paired_end_data (paired-end data w/o ITSx)
+    elif [[ "$prev_step" = "assemble_paired_end_data" ]]; then
+        DIRS=$(find . -maxdepth 2 -mindepth 1 -type d | grep "assembled_out" | grep -v "skip_" | grep -v "merged_runs" | grep -v "tempdir" | sed -e "s/^\.\///")
+    # if working with multiRunDir, and the previous step was not ITSx nor assemble_paired_end_data (single-end data w/o ITSx)
     else
         DIRS=$(find . -maxdepth 2 -mindepth 1 -type d | grep "qualFiltered_out" | grep -v "skip_" | grep -v "merged_runs" | grep -v "tempdir" | sed -e "s/^\.\///")
     fi
@@ -354,7 +357,7 @@ for seqrun in $DIRS; do
       --rmsingletons FALSE \
       --fasta        $output_dir/zOTUs.fasta \
       --output       "$output_dir"/zOTU_table.temp 2>&1)
-    echo $Rlog > tempdir/zOTU_table_creation.log 
+    echo $Rlog > $output_dir/zOTU_table_creation.log 
     wait
 
     #format R-log file

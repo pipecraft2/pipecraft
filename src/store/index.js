@@ -2880,96 +2880,6 @@ export default new Vuex.Store({
         ],
       },
       {
-        tooltip: "assemble paired-end reads with vsearch",
-        scriptName: "assemble_paired_end_data_vsearch.sh",
-        imageName: 'pipecraft/vsearch_dada2:3-pc1.2.0',
-        serviceName: "merge reads",
-        manualLink:
-          "https://pipecraft2-manual.readthedocs.io/en/latest/quicktools.html#merge-vsearch",
-        selected: "always",
-        disabled: "single_end",
-        showExtra: false,
-        extraInputs: [
-          {
-            name: "max_diffs",
-            value: 20,
-            disabled: "never",
-            tooltip:
-              "the maximum number of non-matching nucleotides allowed in the overlap region",
-            type: "numeric",
-            rules: [(v) => v >= 0 || "ERROR: specify values >= 0"],
-          },
-          {
-            name: "max_Ns",
-            value: 0,
-            disabled: "never",
-            tooltip:
-              "discard sequences with more than the specified number of Ns",
-            type: "numeric",
-            rules: [(v) => v >= 0 || "ERROR: specify values >= 0"],
-          },
-          {
-            name: "max_length",
-            value: 999,
-            disabled: "never",
-            tooltip: "maximum length of the merged sequence",
-            type: "numeric",
-            rules: [(v) => v >= 1 || "ERROR: specify values >= 1"],
-          },
-          {
-            name: "keep_disjointed",
-            value: false,
-            disabled: "never",
-            tooltip:
-              "output reads that were not merged into separate FASTQ files",
-            type: "bool",
-          },
-          {
-            name: "fastq_qmax",
-            value: 41,
-            disabled: "never",
-            tooltip:
-              "maximum quality score accepted when reading FASTQ files. The default is 41, which is usual for recent Sanger/Illumina 1.8+ files",
-            type: "numeric",
-            rules: [(v) => v >= 1 || "ERROR: specify values >= 1"],
-          },
-        ],
-        Inputs: [
-          {
-            name: "min_overlap",
-            value: 12,
-            disabled: "never",
-            tooltip: "minimum overlap between the merged reads",
-            type: "numeric",
-            rules: [(v) => v >= 1 || "ERROR: specify values >= 1"],
-          },
-          {
-            name: "min_length",
-            value: 32,
-            disabled: "never",
-            tooltip: "minimum length of the merged sequence",
-            type: "numeric",
-            rules: [(v) => v >= 1 || "ERROR: specify values >= 1"],
-          },
-          {
-            name: "allow_merge_stagger",
-            value: true,
-            disabled: "never",
-            tooltip:
-              "allow to merge staggered read pairs. Staggered pairs are pairs where the 3' end of the reverse read has an overhang to the left of the 5' end of the forward read. This situation can occur when a very short fragment is sequenced",
-            type: "bool",
-          },
-          {
-            name: "include_only_R1",
-            value: false,
-            disabled: "never",
-            tooltip:
-              "include unassembled R1 reads to the set of assembled reads per sample. This may be relevant when working with e.g. ITS2 sequences, because the ITS2 region in some taxa is too long for assembly, therefore discarded completely after assembly process. Thus, including also unassembled R1 reads, partial ITS2 sequences for these taxa will be represented in the final output",
-            type: "bool",
-          },
-        ],
-      },
-      {
         tooltip: "quality filtering with vsearch",
         scriptName: "quality_filtering_paired_end_vsearch.sh",
         imageName: 'pipecraft/vsearch_dada2:3-pc1.2.0',
@@ -3109,6 +3019,96 @@ export default new Vuex.Store({
               "specify the maximum quality score accepted when reading FASTQ files. The default is 41, which is usual for recent Sanger/Illumina 1.8+ files. For PacBio data use 93 or see what is the maximum quality score in your data via QualityCheck module",
             type: "numeric",
             rules: [(v) => v >= 1 || "ERROR: specify values >= 1"],
+          },
+        ],
+      },
+      {
+        tooltip: "assemble paired-end reads with vsearch",
+        scriptName: "assemble_paired_end_data_vsearch.sh",
+        imageName: 'pipecraft/vsearch_dada2:3-pc1.2.0',
+        serviceName: "merge reads",
+        manualLink:
+          "https://pipecraft2-manual.readthedocs.io/en/latest/quicktools.html#merge-vsearch",
+        selected: "always",
+        disabled: "single_end",
+        showExtra: false,
+        extraInputs: [
+          {
+            name: "max_diffs",
+            value: 20,
+            disabled: "never",
+            tooltip:
+              "the maximum number of non-matching nucleotides allowed in the overlap region",
+            type: "numeric",
+            rules: [(v) => v >= 0 || "ERROR: specify values >= 0"],
+          },
+          {
+            name: "max_Ns",
+            value: 0,
+            disabled: "never",
+            tooltip:
+              "discard sequences with more than the specified number of Ns",
+            type: "numeric",
+            rules: [(v) => v >= 0 || "ERROR: specify values >= 0"],
+          },
+          {
+            name: "max_length",
+            value: 999,
+            disabled: "never",
+            tooltip: "maximum length of the merged sequence",
+            type: "numeric",
+            rules: [(v) => v >= 1 || "ERROR: specify values >= 1"],
+          },
+          {
+            name: "keep_disjointed",
+            value: false,
+            disabled: "never",
+            tooltip:
+              "output reads that were not merged into separate FASTQ files",
+            type: "bool",
+          },
+          {
+            name: "fastq_qmax",
+            value: 41,
+            disabled: "never",
+            tooltip:
+              "maximum quality score accepted when reading FASTQ files. The default is 41, which is usual for recent Sanger/Illumina 1.8+ files",
+            type: "numeric",
+            rules: [(v) => v >= 1 || "ERROR: specify values >= 1"],
+          },
+        ],
+        Inputs: [
+          {
+            name: "min_overlap",
+            value: 12,
+            disabled: "never",
+            tooltip: "minimum overlap between the merged reads",
+            type: "numeric",
+            rules: [(v) => v >= 1 || "ERROR: specify values >= 1"],
+          },
+          {
+            name: "min_length",
+            value: 32,
+            disabled: "never",
+            tooltip: "minimum length of the merged sequence",
+            type: "numeric",
+            rules: [(v) => v >= 1 || "ERROR: specify values >= 1"],
+          },
+          {
+            name: "allow_merge_stagger",
+            value: true,
+            disabled: "never",
+            tooltip:
+              "allow to merge staggered read pairs. Staggered pairs are pairs where the 3' end of the reverse read has an overhang to the left of the 5' end of the forward read. This situation can occur when a very short fragment is sequenced",
+            type: "bool",
+          },
+          {
+            name: "include_only_R1",
+            value: false,
+            disabled: "never",
+            tooltip:
+              "include unassembled R1 reads to the set of assembled reads per sample. This may be relevant when working with e.g. ITS2 sequences, because the ITS2 region in some taxa is too long for assembly, therefore discarded completely after assembly process. Thus, including also unassembled R1 reads, partial ITS2 sequences for these taxa will be represented in the final output",
+            type: "bool",
           },
         ],
       },
@@ -3612,96 +3612,6 @@ export default new Vuex.Store({
         ],
       },
       {
-        tooltip: "assemble paired-end reads with vsearch",
-        scriptName: "assemble_paired_end_data_vsearch.sh",
-        imageName: 'pipecraft/vsearch_dada2:3-pc1.2.0',
-        serviceName: "merge reads",
-        manualLink:
-          "https://pipecraft2-manual.readthedocs.io/en/latest/quicktools.html#merge-vsearch",
-        selected: "always",
-        disabled: "single_end",
-        showExtra: false,
-        extraInputs: [
-          {
-            name: "max_diffs",
-            value: 20,
-            disabled: "never",
-            tooltip:
-              "the maximum number of non-matching nucleotides allowed in the overlap region",
-            type: "numeric",
-            rules: [(v) => v >= 0 || "ERROR: specify values >= 0"],
-          },
-          {
-            name: "max_Ns",
-            value: 0,
-            disabled: "never",
-            tooltip:
-              "discard sequences with more than the specified number of Ns",
-            type: "numeric",
-            rules: [(v) => v >= 0 || "ERROR: specify values >= 0"],
-          },
-          {
-            name: "max_length",
-            value: 999,
-            disabled: "never",
-            tooltip: "maximum length of the merged sequence",
-            type: "numeric",
-            rules: [(v) => v >= 1 || "ERROR: specify values >= 1"],
-          },
-          {
-            name: "keep_disjointed",
-            value: false,
-            disabled: "never",
-            tooltip:
-              "output reads that were not merged into separate FASTQ files",
-            type: "bool",
-          },
-          {
-            name: "fastq_qmax",
-            value: 41,
-            disabled: "never",
-            tooltip:
-              "maximum quality score accepted when reading FASTQ files. The default is 41, which is usual for recent Sanger/Illumina 1.8+ files",
-            type: "numeric",
-            rules: [(v) => v >= 1 || "ERROR: specify values >= 1"],
-          },
-        ],
-        Inputs: [
-          {
-            name: "min_overlap",
-            value: 12,
-            disabled: "never",
-            tooltip: "minimum overlap between the merged reads",
-            type: "numeric",
-            rules: [(v) => v >= 1 || "ERROR: specify values >= 1"],
-          },
-          {
-            name: "min_length",
-            value: 32,
-            disabled: "never",
-            tooltip: "minimum length of the merged sequence",
-            type: "numeric",
-            rules: [(v) => v >= 1 || "ERROR: specify values >= 1"],
-          },
-          {
-            name: "allow_merge_stagger",
-            value: true,
-            disabled: "never",
-            tooltip:
-              "allow to merge staggered read pairs. Staggered pairs are pairs where the 3' end of the reverse read has an overhang to the left of the 5' end of the forward read. This situation can occur when a very short fragment is sequenced",
-            type: "bool",
-          },
-          {
-            name: "include_only_R1",
-            value: false,
-            disabled: "never",
-            tooltip:
-              "include unassembled R1 reads to the set of assembled reads per sample. This may be relevant when working with e.g. ITS2 sequences, because the ITS2 region in some taxa is too long for assembly, therefore discarded completely after assembly process. Thus, including also unassembled R1 reads, partial ITS2 sequences for these taxa will be represented in the final output",
-            type: "bool",
-          },
-        ],
-      },
-      {
         tooltip: "quality filtering with vsearch",
         scriptName: "quality_filtering_paired_end_vsearch.sh",
         imageName: 'pipecraft/vsearch_dada2:3-pc1.2.0',
@@ -3841,6 +3751,96 @@ export default new Vuex.Store({
               "specify the maximum quality score accepted when reading FASTQ files. The default is 41, which is usual for recent Sanger/Illumina 1.8+ files. For PacBio data use 93 or see what is the maximum quality score in your data via QualityCheck module",
             type: "numeric",
             rules: [(v) => v >= 1 || "ERROR: specify values >= 1"],
+          },
+        ],
+      },
+      {
+        tooltip: "assemble paired-end reads with vsearch",
+        scriptName: "assemble_paired_end_data_vsearch.sh",
+        imageName: 'pipecraft/vsearch_dada2:3-pc1.2.0',
+        serviceName: "merge reads",
+        manualLink:
+          "https://pipecraft2-manual.readthedocs.io/en/latest/quicktools.html#merge-vsearch",
+        selected: "always",
+        disabled: "single_end",
+        showExtra: false,
+        extraInputs: [
+          {
+            name: "max_diffs",
+            value: 20,
+            disabled: "never",
+            tooltip:
+              "the maximum number of non-matching nucleotides allowed in the overlap region",
+            type: "numeric",
+            rules: [(v) => v >= 0 || "ERROR: specify values >= 0"],
+          },
+          {
+            name: "max_Ns",
+            value: 0,
+            disabled: "never",
+            tooltip:
+              "discard sequences with more than the specified number of Ns",
+            type: "numeric",
+            rules: [(v) => v >= 0 || "ERROR: specify values >= 0"],
+          },
+          {
+            name: "max_length",
+            value: 999,
+            disabled: "never",
+            tooltip: "maximum length of the merged sequence",
+            type: "numeric",
+            rules: [(v) => v >= 1 || "ERROR: specify values >= 1"],
+          },
+          {
+            name: "keep_disjointed",
+            value: false,
+            disabled: "never",
+            tooltip:
+              "output reads that were not merged into separate FASTQ files",
+            type: "bool",
+          },
+          {
+            name: "fastq_qmax",
+            value: 41,
+            disabled: "never",
+            tooltip:
+              "maximum quality score accepted when reading FASTQ files. The default is 41, which is usual for recent Sanger/Illumina 1.8+ files",
+            type: "numeric",
+            rules: [(v) => v >= 1 || "ERROR: specify values >= 1"],
+          },
+        ],
+        Inputs: [
+          {
+            name: "min_overlap",
+            value: 12,
+            disabled: "never",
+            tooltip: "minimum overlap between the merged reads",
+            type: "numeric",
+            rules: [(v) => v >= 1 || "ERROR: specify values >= 1"],
+          },
+          {
+            name: "min_length",
+            value: 32,
+            disabled: "never",
+            tooltip: "minimum length of the merged sequence",
+            type: "numeric",
+            rules: [(v) => v >= 1 || "ERROR: specify values >= 1"],
+          },
+          {
+            name: "allow_merge_stagger",
+            value: true,
+            disabled: "never",
+            tooltip:
+              "allow to merge staggered read pairs. Staggered pairs are pairs where the 3' end of the reverse read has an overhang to the left of the 5' end of the forward read. This situation can occur when a very short fragment is sequenced",
+            type: "bool",
+          },
+          {
+            name: "include_only_R1",
+            value: false,
+            disabled: "never",
+            tooltip:
+              "include unassembled R1 reads to the set of assembled reads per sample. This may be relevant when working with e.g. ITS2 sequences, because the ITS2 region in some taxa is too long for assembly, therefore discarded completely after assembly process. Thus, including also unassembled R1 reads, partial ITS2 sequences for these taxa will be represented in the final output",
+            type: "bool",
           },
         ],
       },

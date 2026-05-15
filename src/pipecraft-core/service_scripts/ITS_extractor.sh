@@ -66,6 +66,13 @@ source /scripts/submodules/framework.functions.sh
 #python module for removing empty fasta records if using --partial
 run_python_module=$"python3 /scripts/submodules/remove_empty_seqs.py"
 
+# if working with multiRunDir, and the previous step was assemble_paired_end_data
+if [[ -f "$workingDir/.prev_step.temp" ]]; then
+    prev_step=$(cat $workingDir/.prev_step.temp) # for checking previous step
+    printf "# prev_step = $prev_step\n" # expect only "assemble_paired_end_data" here
+    rm -f $workingDir/.prev_step.temp
+fi
+
 # check if working with multiple runs or with a single sequencing run
 if [[ -d "/input/multiRunDir" ]]; then
     echo "ITSx with multiple sequencing runs in multiRunDir"
@@ -76,7 +83,10 @@ if [[ -d "/input/multiRunDir" ]]; then
     if [[ $pipeline == "vsearch_OTUs" ]]; then
         DIRS=$(find . -maxdepth 2 -mindepth 1 -type d | grep "chimeraFiltered_out" | grep -v "chimeraFiltered_out.dada2"| grep -v "skip_" | grep -v "merged_runs" | grep -v "tempdir" | sed -e "s/^\.\///") 
     fi
-    if [[ $pipeline == "UNOISE_ASVs" ]]; then
+    if [[ $pipeline == "UNOISE_ASVs" ]] && [[ $prev_step == "assemble_paired_end_data" ]]; then
+        DIRS=$(find . -maxdepth 2 -mindepth 1 -type d | grep "assembled_out" | grep -v "skip_" | grep -v "merged_runs" | grep -v "tempdir" | sed -e "s/^\.\///") 
+    fi
+    if [[ $pipeline == "UNOISE_ASVs" ]] && [[ $prev_step != "assemble_paired_end_data" ]]; then
         DIRS=$(find . -maxdepth 2 -mindepth 1 -type d | grep "qualFiltered_out" | grep -v "skip_" | grep -v "merged_runs" | grep -v "tempdir" | sed -e "s/^\.\///") 
     fi
     echo "working in dirs:"
@@ -101,6 +111,7 @@ for seqrun in $DIRS; do
     start=$(date +%s)
 
     cd $seqrun
+    printf "\n workingDir = $seqrun \n"
     if [[ $multiDir == "TRUE" ]]; then
         ### Check if the dir has the specified file extension; if not then ERROR
         count=$(ls -1 *.$fileFormat 2>/dev/null | wc -l)

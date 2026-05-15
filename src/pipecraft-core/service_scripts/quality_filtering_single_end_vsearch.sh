@@ -74,37 +74,25 @@ fi
 
 # if working with multiRunDir, and the previous step was CUT PRIMERS
 if [[ -f "$workingDir/.prev_step.temp" ]]; then
-    prev_step=$(cat $workingDir/.prev_step.temp) # for checking previous step (output from cut_primers_paired_end_reads.sh)
+    prev_step=$(cat $workingDir/.prev_step.temp) # for checking previous step (output from cut_primers_single_end_reads.sh)
     printf "# prev_step = $prev_step\n"
+    rm -f $workingDir/.prev_step.temp
 fi
 ###  check if working with multiple runs or with a single sequencing run
- # if working with multiRunDir, and the previous step was MERGE READS in paired_end pipeline
-if [[ -d "/input/multiRunDir" ]] && [[ $pipeline == "vsearch_OTUs" || $pipeline == "UNOISE_ASVs" ]] && [[ $prev_step == "merge_reads" ]]; then
-    echo "Pipeline run with multiple sequencing runs in multiRunDir (paired_end)"
-    echo "Process = quality filtering"
-    cd /input/multiRunDir
-    # read in directories (sequencing sets) to work with. Skip directories renamed as "skip_*"
-    DIRS=$(find . -maxdepth 2 -mindepth 1 -type d | grep "assembled_out" | grep -v "skip_" | grep -v "merged_runs" | grep -v "tempdir" | sed -e "s/^\.\///") 
-    echo "working in dirs:"
-    echo $DIRS
-    multiDir=$"TRUE"
-    export multiDir
-    rm $workingDir/.prev_step.temp
- # if working with multiRunDir, and the previous step was CUT PRIMERS in single_end pipeline
-elif [[ -d "/input/multiRunDir" ]] && [[ $pipeline == "vsearch_OTUs" || $pipeline == "UNOISE_ASVs" ]] && [[ $prev_step == "cut_primers" ]]; then
-    echo "Pipeline run with multiple sequencing runs in multiRunDir (single_end)"
-    echo "Process = quality filtering"
+ # if working with multiRunDir, and the previous step was CUT PRIMERS
+if [[ -d "/input/multiRunDir" ]] && [[ $pipeline == "vsearch_OTUs" || $pipeline == "UNOISE_ASVs" ]] && [[ $prev_step == "cut_primers" ]]; then
+    echo "Pipeline run with multiple sequencing runs in multiRunDir"
+    echo "Process = quality filtering (after cut primers)"
     cd /input/multiRunDir
     # read in directories (sequencing sets) to work with. Skip directories renamed as "skip_*"
     DIRS=$(find . -maxdepth 2 -mindepth 1 -type d | grep "primersCut_out" | grep -v "skip_" | grep -v "merged_runs" | grep -v "tempdir" | sed -e "s/^\.\///") 
     echo "working in dirs:"
     echo $DIRS
     multiDir=$"TRUE"
-    export multiDir
-    rm $workingDir/.prev_step.temp
-# if working with multiRunDir, and the previous step was not CUT PRIMERS in single_end pipeline
-elif [[ -d "/input/multiRunDir" ]] && [[ $pipeline == "vsearch_OTUs" || $pipeline == "UNOISE_ASVs" ]] && [[ $prev_step != "cut_primers" ]] && [[ $readType == "single_end" ]]; then
-    echo "Pipeline run with multiple sequencing runs in multiRunDir (single_end)"
+    export multiDir 
+# if working with multiRunDir, and the previous step was not CUT PRIMERS
+elif [[ -d "/input/multiRunDir" ]] && [[ $prev_step != "cut_primers" ]] && [[ $readType == "single_end" ]]; then
+    echo "Run with multiple sequencing runs in multiRunDir"
     echo "Process = quality filtering"
     cd /input/multiRunDir
     # read in directories (sequencing sets) to work with. Skip directories renamed as "skip_*"
@@ -129,6 +117,7 @@ for seqrun in $DIRS; do
     start=$(date +%s)
 
     cd $seqrun
+    printf "\n workingDir = $seqrun \n"
     if [[ $multiDir == "TRUE" ]]; then
         ### Check if the dir has the specified file extension; if not then ERROR
         count=$(ls -1 *.$fileFormat 2>/dev/null | wc -l)
@@ -159,7 +148,6 @@ for seqrun in $DIRS; do
     for file in *.$fileFormat; do
         #Read file name; without extension
         input=$(echo $file | sed -e "s/.$fileFormat//")
-        ## Preparing files for the process
         printf "\n____________________________________\n"
         printf "Processing $input ...\n"
         #If input is compressed, then decompress (keeping the compressed file, but overwriting if filename exists!)
@@ -190,8 +178,7 @@ for seqrun in $DIRS; do
     done
 
     #################################################
-    ### COMPILE FINAL STATISTICS AND README FILES ###
-    #################################################
+    ### COMPILE FINAL STATISTICS AND README $strip_left $strip_right ######################################
     printf "\nCleaning up and compiling final stats files ...\n"
     clean_and_make_stats
     end=$(date +%s)
