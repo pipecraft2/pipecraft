@@ -7382,9 +7382,9 @@ export default new Vuex.Store({
         }
 
         if (mostCommonExtension == null || rootMatchCount < 2) {
-          // Edge Case: No subdirectories → exit early
+          // Flat folder: accept a single supported file (e.g. one PacBio/ONT .fastq.gz)
           if (subdirectories.length === 0) {
-            return null;
+            return mostCommonExtension;
           }
 
           // Collect extensions from subdirectories in parallel
