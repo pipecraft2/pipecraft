@@ -1,19 +1,24 @@
 #!/usr/bin/Rscript
 
-# Generate an OTU table based on the clustered DADA2 ASVs (*.uc file).
+# Generate an OTU table based on the clustered ASVs.
 # Inputs = ASV_table and clusters.uc file
 # Output = OTU_table.txt
 
 library(data.table)
 
-output_dir = Sys.getenv('output_dir')
-ASV_table = Sys.getenv('ASV_table')
+output_dir        = Sys.getenv('output_dir')
+ASV_table         = Sys.getenv('ASV_table')
+ASV_table_subset  = Sys.getenv('ASV_table_subset')
 
 ## Required inputs
-inp_ASVTAB = ASV_table # ASV table file (tab delimited).
+# Prefer the subsetted ASV table (when the bash wrapper filtered the table to
+# match $ASV_fasta); otherwise fall back to the original ASV_table.
+inp_ASVTAB = if (nzchar(ASV_table_subset)) ASV_table_subset else ASV_table
+                       # ASV table file (tab delimited).
                        # First column header = "ASV", next columns = samples.
                        # 2nd COLUMN is SEQUENCE!
                        # NO SIZE ANNOTATION of ASVs.
+message("Using ASV table: ", inp_ASVTAB)
 
 inp_UC = file.path(output_dir, "OTUs.uc") # output from vsearch clustering (-uc OTU.uc)
 

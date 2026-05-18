@@ -1,8 +1,8 @@
 #!/bin/bash
 
-#Using ORFfinder to identify open reading frames
-#Workflow based on implementations in MetaWorks v1.12.0 (by Teresita M. Porter)
-# Input = fasta file.
+## Using ORFfinder to identify open reading frames
+## Workflow based on implementations in MetaWorks v1.12.0 (by Teresita M. Porter)
+## Input = fasta file and table file.
 
 ##################################
 ###Third-party applications:
@@ -10,12 +10,20 @@
 #seqkit
 #pigz
 ##################################
+
 # input fasta file
-    regex='[^/]*$'
-    rep_seqs_file_path=$(echo $fasta_file | grep -oP "$regex")
-    rep_seqs_temp=$(basename $rep_seqs_file_path) #basename, needed for macOS
-    rep_seqs_file=$(printf "/extraFiles/$rep_seqs_temp")
-    echo "rep_seqs_file = $rep_seqs_file"
+regex='[^/]*$'
+rep_seqs_file_path=$(echo $fasta_file | grep -oP "$regex")
+rep_seqs_temp=$(basename $rep_seqs_file_path) #basename, needed for macOS
+rep_seqs_file=$(printf "/extraFiles/$rep_seqs_temp")
+echo "rep_seqs_file = $rep_seqs_file"
+
+# input table file
+table_file_path=$(echo $table_file | grep -oP "$regex")
+table_temp=$(basename $table_file_path)
+table_file=$(printf "/extraFiles2/$table_temp")
+table_in_name=$(basename $table_file | awk -F "." '(NF=NF-1)' | sed -e 's/ /\./')
+echo "table_in_name = $table_in_name"
 
 # min_length    = positive integer. minimum length of the output sequence
 # max_length    = positive integer. maximum length of the output sequence
@@ -25,7 +33,14 @@
 # strand        = list [plus, minus, both]. output ORFs on specified strand only
 
 #output dir
-output_dir=$"/input/"
+output_dir=$"/input/ORF_filtered"
+
+# check if output directory exists
+if [[ -d "$output_dir" ]]; then
+    rm -rf $output_dir
+fi
+mkdir -p $output_dir
+
 # Source for functions
 source /scripts/submodules/framework.functions.sh
 
@@ -100,6 +115,22 @@ check_app_error
 
 echo "# ORFfinder DONE | "
 
+# Count ORFs and check if something was retained
+ORFs=$(grep -c "^>" $output_dir/$in_name.ORFs.fasta)
+if [[ "$ORFs" -eq 0 ]]; then
+    printf '%s\n' "ERROR]: ORFfinder removed all features! Check the specified parameters for ORFfinder." >&2
+    end_process
+fi
+
+### Filter table file
+echo "# Filtering table file | "    
+Rscript /scripts/submodules/ORFfinder_table_filter.R \
+                            --table_file $table_file \
+                            --notORFs_list $output_dir/$in_name.notORFs.list.txt \
+                            --output_dir $output_dir
+
+echo "# Table file filtered | "
+
 #################################################
 ### COMPILE FINAL STATISTICS AND README FILES ###
 #################################################
@@ -107,17 +138,22 @@ printf "\nCleaning up and compiling final stats files ...\n"
 if [[ $debugger != "true" ]]; then
     rm -r $output_dir/tempdir_filter_numts
 fi
+
 # count outputs
 input_seqs=$(grep -c "^>" $rep_seqs_file)
 nonORFs=$(grep -c "^>" $output_dir/$in_name.notORFs.fasta)
-ORFs=$(grep -c "^>" $output_dir/$in_name.ORFs.fasta)
+
+# Move notORFs.fasta and notORFs.list.txt to sub-directory
+mkdir -p $output_dir/notORFs
+mv $output_dir/$in_name.notORFs.fasta $output_dir/notORFs/$in_name.notORFs.fasta
+mv $output_dir/$in_name.notORFs.list.txt $output_dir/notORFs/$in_name.notORFs.list.txt
 
 end=$(date +%s)
 runtime=$((end-start))
 
 #Make README.txt
 in=$(echo $in_name | sed -e 's/\/extraFiles\///')
-printf "# Used ORFfinder to remove putative pseudogenes and off-targets. 
+printf "# Used ORFfinder to remove features that failed open reading frame (ORF) detection and or ORF length constraints. 
     (details in the MetaWorks user guide: https://terrimporter.github.io/MetaWorksSite/details/ - sequences are translated into every possible open reading frame (ORF) using ORFfinder, the longest ORF is reatined. Putative pseudogenes are removed as outliers with unusually small/large ORF lengths. 
 
 Start time: $start_time
@@ -130,8 +166,10 @@ Filtered output file $in.ORFs.fasta contains $ORFs sequences.
 Generated files:
 # $in.ORFs.fasta       = filtered output by the ORFfinder; sequences with the longest ORFs (open reading frames); contains $ORFs reads.
 # $in.ORFs.list.txt    = list of sequence identifiers of the above file.
-# $in.notORFs.fasta    = putative pseudogenes/off-target ORFs; contains $nonORFs reads.
-# $in.notORFs.list.txt = list of sequence identifiers of the above file.
+# "$table_in_name".ORFs.txt   = filtered table file; contains $ORFs features.
+
+# notORFs/$in.notORFs.fasta    = putative pseudogenes/off-target ORFs; contains $nonORFs reads.
+# notORFs/$in.notORFs.list.txt = list of sequence identifiers of the above file.
 
 Core commands -> 
 ORFfinder -in $rep_seqs_file_path -ml $min_length -g $genetic_code -s $start_codon -n $ignore_nested -strand $strand

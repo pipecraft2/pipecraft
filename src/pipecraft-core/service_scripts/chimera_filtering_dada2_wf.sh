@@ -4,7 +4,7 @@
 
 ################################################
 ###Third-party applications:
-# dada2 v1.28
+# dada2
 ################################################
 # Checking tool versions
 printf "# Checking tool versions ...\n"
@@ -171,7 +171,6 @@ Files in 'ASVs_out.dada2' directory:
 ------------------------------------
 # ASVs_table.txt                  = ASV-by-sample table (tab delimited file). 
 # ASVs.fasta                      = FASTA formated representative ASV sequences 
-# ASVs_table.denoised.nochim.rds  = rds formatted denoised and chimera filtered ASV table (for DADA2)
 # ASVs_table.denoised.nochim.rds  = rds formatted denoised and chimera filtered ASV table (for DADA2)
 # ASVs_table.denoised.rds         = rds formatted denoised ASV table (for DADA2) [same .rds is in denoised_assembled.dada2 dir]
 

@@ -144,7 +144,7 @@ export default new Vuex.Store({
                 tooltip:
                   "the index search window size. The default 35 means that the forward index is searched among the first 35 bp and the reverse index among the last 35 bp. This search restriction prevents random index matches in the middle of the sequence",
                 type: "numeric",
-                rules: [(v) => v >= 1 || "ERROR: specify values >= 1"],
+                rules: [(v) => v >= 0 || "ERROR: specify values >= 0"],
               },
             ],
           },
@@ -301,6 +301,24 @@ export default new Vuex.Store({
                     (v >= 0) | (v == "") ||
                     "ERROR: specify values >=0.001",
                 ],
+              },
+              {
+                name: "strip_left",
+                value: 0,
+                disabled: "never",
+                tooltip:
+                  "Default 0. The number of base pairs to remove from the start of each read",
+                type: "numeric",
+                rules: [(v) => v >= 0 || "ERROR: specify values >= 0"],
+              },
+              {
+                name: "strip_right",
+                value: 0,
+                disabled: "never",
+                tooltip:
+                  "Default 0. The number of nucleotides to remove from the end of each read",
+                type: "numeric",
+                rules: [(v) => v >= 0 || "ERROR: specify values >= 0"],
               },
             ],
             Inputs: [
@@ -580,6 +598,24 @@ export default new Vuex.Store({
             showExtra: false,
             extraInputs: [
               {
+                name: "trimLeft",
+                value: 0,
+                disabled: "never",
+                tooltip:
+                  "Default 0. The number of base pairs to remove from the start of each read",
+                type: "numeric",
+                rules: [(v) => v >= 0 || "ERROR: specify values >= 0"],
+              },
+              {
+                name: "trimRight",
+                value: 0,
+                disabled: "never",
+                tooltip:
+                  "Default 0. The number of nucleotides to remove from the end of each read",
+                type: "numeric",
+                rules: [(v) => v >= 0 || "ERROR: specify values >= 0"],
+              },
+              {
                 name: "truncQ",
                 value: 2,
                 disabled: "never",
@@ -768,29 +804,47 @@ export default new Vuex.Store({
             showExtra: false,
             extraInputs: [
               {
+                name: "errorEstFun",
+                items: ["PacBioErrfun", "loessErrfun"],
+                value: "loessErrfun",
+                disabled: "never",
+                tooltip:
+                  "denoising setting. DADA2 errorEstimationFunction: 'loessErrfun' for Illumina data; 'PacBioErrfun' for PacBio data",
+                type: "select",
+              },
+              {
+                name: "nbases",
+                value: (100000000).toExponential(),
+                disabled: "never",
+                tooltip:
+                  "denoising setting. The minimum number of bases to use for error rate estimation. Default is 1e+8 (100 million bases)",
+                type: "numeric",
+                rules: [(v) => v >= 100000000 || "WARNING: default is 1e+8, use default if you have enough reads"],
+              },
+              {
+                name: "randomize",
+                value: true,
+                disabled: "never",
+                tooltip:
+                  "denoising setting. Default = TRUE. If TRUE, samples are picked at random from those provided. If FALSE, samples are picked in the order they are provided until enough reads are obtained.",
+                type: "bool",
+              },
+              {
                 name: "pool",
-                items: ["FALSE", "TRUE", "psuedo"],
+                items: ["FALSE", "TRUE", "pseudo"],
                 value: "FALSE",
                 disabled: "never",
                 tooltip:
-                  "Denoising option. If pool = TRUE, the algorithm will pool together all samples prior to sample inference. Pooling improves the detection of rare variants, but is computationally more expensive. If pool = 'pseudo', the algorithm will perform pseudo-pooling between individually processed samples. This argument has no effect if only 1 sample is provided, and pool does not affect error rates, which are always estimated from pooled observations across samples",
+                  "denoising setting. If pool = TRUE (default = FALSE), the algorithm will pool together all samples prior to sample inference. Pooling improves the detection of rare variants, but is computationally more expensive. If pool = 'pseudo', the algorithm will perform pseudo-pooling between individually processed samples. This argument has no effect if only 1 sample is provided, and pool does not affect error rates, which are always estimated from pooled observations across samples",
                 type: "select",
               },
-              // {
-              //   name: "selfConsist",
-              //   disabled: "never",
-              //   value: false,
-              //   tooltip:
-              //     "Denoising option. If selfConsist = TRUE, the algorithm will alternate between sample inference and error rate estimation until convergence",
-              //   type: "bool",
-              // },
               {
                 name: "qualityType",
                 items: ["Auto", "FastqQuality"],
                 value: "Auto",
                 disabled: "never",
                 tooltip:
-                  "Auto means to attempt to auto-detect the fastq quality encoding. This may fail for PacBio files with uniformly high quality scores, in which case use 'FastqQuality'",
+                  "denoising setting. Auto means to attempt to auto-detect the fastq quality encoding. This may fail for PacBio files with uniformly high quality scores, in which case use 'FastqQuality'",
                 type: "select",
               },
               {
@@ -798,7 +852,7 @@ export default new Vuex.Store({
                 value: 16,
                 disabled: "never",
                 tooltip:
-                  "default = 16. Banding for Needleman-Wunsch alignments.",
+                  "denoising setting. Banding for Needleman-Wunsch alignments. Default is 16",
                 type: "numeric",
                 rules: [(v) => v >= -1 || "ERROR: specify values >= -1"],
               },
@@ -808,35 +862,35 @@ export default new Vuex.Store({
                   (0.0000000000000000000000000000000000000001).toExponential(),
                 disabled: "never",
                 tooltip:
-                  "default = 1e-40. Denoising setting; see DADA2 'setDadaOpt()' for detalis. Default value  is a conservative setting to avoid making false positive inferences, but comes at the cost of reducing the ability to identify some rare variants",
+                  "denoising setting. Default = 1e-40. See DADA2 'setDadaOpt()' for details. Default value  is a conservative setting to avoid making false positive inferences, but comes at the cost of reducing the ability to identify some rare variants",
                 type: "numeric",
-                rules: [(v) => v >= 0 || "ERROR: specify values > 0"],
+                rules: [(v) => v >= 0 || "ERROR: specify values >= 0"],
               },
               {
                 name: "OMEGA_P",
                 value: (0.0001).toExponential(),
                 disabled: "never",
                 tooltip:
-                  "default = 1e-4 (0.0001). Denoising setting; see DADA2 'setDadaOpt()' for detalis",
+                  "denoising setting. Default = 1e-4 (0.0001). See DADA2 'setDadaOpt()' for details",
                 type: "numeric",
-                rules: [(v) => v >= 0 || "ERROR: specify values > 0"],
+                rules: [(v) => v >= 0 || "ERROR: specify values >= 0"],
               },
               {
                 name: "OMEGA_C",
                 value:
-                  (0.0000000000000000000000000000000000000001).toExponential(),
+                  (0).toExponential(),
                 disabled: "never",
                 tooltip:
-                  "default = 1e-40. Denoising setting; see DADA2 'setDadaOpt()' for detalis",
+                  "denoising setting. Default = 0. See DADA2 'setDadaOpt()' for details",
                 type: "numeric",
-                rules: [(v) => v >= 0 || "ERROR: specify values > 0"],
+                rules: [(v) => v >= 0 || "ERROR: specify values >= 0"],
               },
               {
                 name: "DETECT_SINGLETONS",
                 disabled: "never",
                 value: false,
                 tooltip:
-                  "Default = FALSE. Denoising setting; see DADA2 'setDadaOpt()' for detalis. If set to TRUE, this removes the requirement for at least two reads with the same sequences to exist in order for a new ASV to be detected",
+                  "denoising setting. Default = FALSE. See DADA2 'setDadaOpt()' for details. If set to TRUE, this removes the requirement for at least two reads with the same sequences to exist in order for a new ASV to be detected",
                 type: "bool",
               },
             ],
@@ -846,7 +900,7 @@ export default new Vuex.Store({
                 value: 12,
                 disabled: "never",
                 tooltip:
-                  "the minimum length of the overlap required for merging the forward and reverse reads",
+                  "the minimum length of the overlap required for merging the forward and reverse reads. Default is 12",
                 type: "numeric",
                 rules: [(v) => v >= 1 || "ERROR: specify values >= 1"],
               },
@@ -854,7 +908,7 @@ export default new Vuex.Store({
                 name: "maxMismatch",
                 value: 0,
                 disabled: "never",
-                tooltip: "the maximum mismatches allowed in the overlap region",
+                tooltip: "the maximum mismatches allowed in the overlap region. Default is 0",
                 type: "numeric",
                 rules: [(v) => v >= 0 || "ERROR: specify values >= 0"],
               },
@@ -863,7 +917,7 @@ export default new Vuex.Store({
                 value: false,
                 disabled: "never",
                 tooltip:
-                  "if TRUE, overhangs in the alignment between the forwards and reverse read are trimmed off. Overhangs are when the reverse read extends past the start of the forward read, and vice-versa, as can happen when reads are longer than the amplicon and read into the other-direction primer region",
+                  "if TRUE (default = FALSE), overhangs in the alignment between the forwards and reverse read are trimmed off. Overhangs are when the reverse read extends past the start of the forward read, and vice-versa, as can happen when reads are longer than the amplicon and read into the other-direction primer region",
                 type: "bool",
               },
               {
@@ -871,7 +925,7 @@ export default new Vuex.Store({
                 value: false,
                 disabled: "never",
                 tooltip:
-                  "if TRUE, the forward and reverse-complemented reverse read are concatenated rather than merged, with a NNNNNNNNNN (10 Ns) spacer inserted between them",
+                  "if TRUE (default = FALSE), the forward and reverse-complemented reverse read are concatenated rather than merged, with a NNNNNNNNNN (10 Ns) spacer inserted between them",
                 type: "bool",
               },
             ],
@@ -905,7 +959,7 @@ export default new Vuex.Store({
                 value: 0.28,
                 disabled: "never",
                 tooltip:
-                  "Minimum score (h). Increasing this value tends to reduce the number of false positives and to decrease sensitivity. Values ranging from 0.0 to 1.0 included are accepted",
+                  "Minimum score (h). Default is 0.28. Increasing this value tends to reduce the number of false positives and to decrease sensitivity. Values ranging from 0.0 to 1.0 included are accepted",
                 max: 1,
                 min: 0,
                 step: 0.01,
@@ -1234,7 +1288,7 @@ export default new Vuex.Store({
           {
             scriptName: "clustering_swarm.sh",
             tooltip: "tick the checkbox to cluster reads with SWARM",
-            imageName: "pipecraft/swarm:3.0",
+            imageName: "pipecraft/swarm:3.1",
             serviceName: "swarm",
             selected: false,
             showExtra: false,
@@ -1353,7 +1407,7 @@ export default new Vuex.Store({
           {
             scriptName: "clustering_unoise.sh",
             tooltip:
-              "tick the checkbox to cluster reads with vsearch --cluster_unoise (and optionally remove chimeras with --uchime3_denovo)",
+              "cluster reads with vsearch --cluster_unoise (and optionally remove chimeras with --uchime3_denovo)",
             imageName: 'pipecraft/vsearch_dada2:3-pc1.2.0',
             serviceName: "unoise3",
             selected: false,
@@ -2100,11 +2154,21 @@ export default new Vuex.Store({
               {
                 name: "fasta_file",
                 active: false,
-                btnName: "select fasta file",
+                btnName: "select file",
                 value: "undefined",
                 disabled: "never",
                 tooltip:
                   "select fasta formatted sequence file containing your OTU/ASV reads. Sequence IDs must NOT contain underlines '_' [fasta file must be in the SELECT WORKDIR directory]",
+                type: "file",
+              },
+              {
+                name: "table_file",
+                active: false,
+                btnName: "select file",
+                value: "undefined",
+                disabled: "never",
+                tooltip:
+                  "select features table file that contains corresponding features (OTUs/ASVs) to the fasta file [file must be in the SELECT WORKDIR directory]",
                 type: "file",
               },
               {
@@ -2446,7 +2510,7 @@ export default new Vuex.Store({
                 value: "undefined",
                 disabled: "never",
                 tooltip:
-                  `select database either in fasta format or already built .udb (udb must be built with vsearch (v2.29.4) --makeudb_usearch). Needs to be SINTAX-formatted. 
+                  `select database either in fasta format or already built .udb (udb must be built with vsearch (same version as in PipeCraft2) --makeudb_usearch). Needs to be SINTAX-formatted. 
                   Click on the header to see the example.`,
                 type: "file",
               },
@@ -2600,7 +2664,7 @@ export default new Vuex.Store({
                   "seqkit stats",
                 disabled: "never",
                 type: "link",
-                tooltip: "check the box above to run seqkit stats for a files in the folder [SELECT WORKDIR] with specified file extension",
+                tooltip: "THIS BUTTON DOES NOT DO ANYTHING! Check the box above to run seqkit stats for a files in the folder [SELECT WORKDIR] with specified file extension and press START",
               },
             ],
           },
@@ -2816,6 +2880,149 @@ export default new Vuex.Store({
         ],
       },
       {
+        tooltip: "quality filtering with vsearch",
+        scriptName: "quality_filtering_paired_end_vsearch.sh",
+        imageName: 'pipecraft/vsearch_dada2:3-pc1.2.0',
+        serviceName: "quality filtering",
+        manualLink:
+          "https://pipecraft2-manual.readthedocs.io/en/latest/quicktools.html#qfilt-vsearch",
+        disabled: "never",
+        selected: "always",
+        showExtra: false,
+        extraInputs: [
+          {
+            name: "max_length",
+            value: null,
+            disabled: "never",
+            tooltip:
+              "discard sequences with more than the specified number of bases (0 or empty field = no action taken). Note that if 'trunc length' setting is specified, then 'max length' SHOULD NOT be lower than 'trunc length' (otherwise all reads are discared)",
+            type: "numeric",
+            rules: [
+              (v) =>
+                (v >= 0) | (v == "") ||
+                "ERROR: specify values >= 0",
+            ],
+          },
+          {
+            name: "qmin",
+            value: 0,
+            disabled: "never",
+            tooltip:
+              "the minimum quality score accepted for FASTQ files. The default is 0, which is usual for recent Sanger/Illumina 1.8+ files. Older formats may use scores between -5 and 2",
+            type: "numeric",
+            rules: [(v) => v >= -5 || "ERROR: specify values >= -5"],
+          },
+          {
+            name: "maxee_rate",
+            value: null,
+            disabled: "never",
+            tooltip:
+              "discard sequences with more than the specified number of expected errors per base (0 or empty field = no action taken)",
+            type: "numeric",
+            rules: [
+              (v) =>
+                (v >= 0) | (v == "") ||
+                "ERROR: specify values >=0.001",
+            ],
+          },
+          {
+            name: "truncqual",
+            value: null,
+            disabled: "never",
+            tooltip:
+              "tuncate sequences starting from the first base with the specified base quality score value or lower (0 or empty field = no action taken)",
+            type: "numeric",
+            rules: [
+              (v) =>
+                (v >= 0) | (v == "") ||
+                "ERROR: specify values >=0",
+            ],
+          },
+          {
+            name: "truncee",
+            value: null,
+            disabled: "never",
+            tooltip:
+              "truncate sequences so that their total expected error is not higher than the specified value (0 or empty field = no action taken)",
+            type: "numeric",
+            rules: [
+              (v) =>
+                (v >= 0) | (v == "") ||
+                "ERROR: specify values >=0.001",
+            ],
+          },
+          {
+            name: "strip_left",
+            value: 0,
+            disabled: "never",
+            tooltip:
+              "Default 0. The number of base pairs to remove from the start of each read",
+            type: "numeric",
+            rules: [(v) => v >= 0 || "ERROR: specify values >= 0"],
+          },
+          {
+            name: "strip_right",
+            value: 0,
+            disabled: "never",
+            tooltip:
+              "Default 0. The number of nucleotides to remove from the end of each read",
+            type: "numeric",
+            rules: [(v) => v >= 0 || "ERROR: specify values >= 0"],
+          },
+        ],
+        Inputs: [
+          {
+            name: "maxee",
+            value: 1,
+            disabled: "never",
+            tooltip:
+              "maximum number of expected errors per sequence. Sequences with higher error rates will be discarded",
+            type: "numeric",
+            rules: [(v) => v >= 0.001 || "ERROR: specify values >=0.001"],
+          },
+          {
+            name: "maxNs",
+            value: 0,
+            disabled: "never",
+            tooltip:
+              "discard sequences with more than the specified number of Ns",
+            type: "numeric",
+            rules: [(v) => v >= 0 || "ERROR: specify values >= 0"],
+          },
+          {
+            name: "min_length",
+            value: 32,
+            disabled: "never",
+            tooltip:
+              "minimum length of the filtered output sequence. Note that if 'trunc length' setting is specified, then 'min length' SHOULD BE lower than 'trunc length' (otherwise all reads are discared)",
+            type: "numeric",
+            rules: [(v) => v >= 1 || "ERROR: specify values >= 1"],
+          },
+          {
+            name: "trunc_length",
+            value: null,
+            disabled: "never",
+            tooltip:
+              "truncate sequences to the specified length (0 or empty field = no action taken). Shorter sequences are discarded; thus if specified, check that 'min length' setting is lower than 'trunc length' ('min length' therefore has basically no effect)",
+            type: "numeric",
+            rules: [
+              (v) =>
+                (v >= 0) | (v == "") ||
+                "ERROR: specify values >= 0",
+            ],
+          },
+          {
+            name: "qmax",
+            value: 41,
+            disabled: "never",
+            tooltip:
+              "specify the maximum quality score accepted when reading FASTQ files. The default is 41, which is usual for recent Sanger/Illumina 1.8+ files. For PacBio data use 93 or see what is the maximum quality score in your data via QualityCheck module",
+            type: "numeric",
+            rules: [(v) => v >= 1 || "ERROR: specify values >= 1"],
+          },
+        ],
+      },
+      {
         tooltip: "assemble paired-end reads with vsearch",
         scriptName: "assemble_paired_end_data_vsearch.sh",
         imageName: 'pipecraft/vsearch_dada2:3-pc1.2.0',
@@ -2902,131 +3109,6 @@ export default new Vuex.Store({
             tooltip:
               "include unassembled R1 reads to the set of assembled reads per sample. This may be relevant when working with e.g. ITS2 sequences, because the ITS2 region in some taxa is too long for assembly, therefore discarded completely after assembly process. Thus, including also unassembled R1 reads, partial ITS2 sequences for these taxa will be represented in the final output",
             type: "bool",
-          },
-        ],
-      },
-      {
-        tooltip: "quality filtering with vsearch",
-        scriptName: "quality_filtering_paired_end_vsearch.sh",
-        imageName: 'pipecraft/vsearch_dada2:3-pc1.2.0',
-        serviceName: "quality filtering",
-        manualLink:
-          "https://pipecraft2-manual.readthedocs.io/en/latest/quicktools.html#qfilt-vsearch",
-        disabled: "never",
-        selected: "always",
-        showExtra: false,
-        extraInputs: [
-          {
-            name: "max_length",
-            value: null,
-            disabled: "never",
-            tooltip:
-              "discard sequences with more than the specified number of bases (0 or empty field = no action taken). Note that if 'trunc length' setting is specified, then 'max length' SHOULD NOT be lower than 'trunc length' (otherwise all reads are discared)",
-            type: "numeric",
-            rules: [
-              (v) =>
-                (v >= 0) | (v == "") ||
-                "ERROR: specify values >= 0",
-            ],
-          },
-          {
-            name: "qmin",
-            value: 0,
-            disabled: "never",
-            tooltip:
-              "the minimum quality score accepted for FASTQ files. The default is 0, which is usual for recent Sanger/Illumina 1.8+ files. Older formats may use scores between -5 and 2",
-            type: "numeric",
-            rules: [(v) => v >= -5 || "ERROR: specify values >= -5"],
-          },
-          {
-            name: "maxee_rate",
-            value: null,
-            disabled: "never",
-            tooltip:
-              "discard sequences with more than the specified number of expected errors per base (0 or empty field = no action taken)",
-            type: "numeric",
-            rules: [
-              (v) =>
-                (v >= 0) | (v == "") ||
-                "ERROR: specify values >=0.001",
-            ],
-          },
-          {
-            name: "truncqual",
-            value: null,
-            disabled: "never",
-            tooltip:
-              "tuncate sequences starting from the first base with the specified base quality score value or lower (0 or empty field = no action taken)",
-            type: "numeric",
-            rules: [
-              (v) =>
-                (v >= 0) | (v == "") ||
-                "ERROR: specify values >=0",
-            ],
-          },
-          {
-            name: "truncee",
-            value: null,
-            disabled: "never",
-            tooltip:
-              "truncate sequences so that their total expected error is not higher than the specified value (0 or empty field = no action taken)",
-            type: "numeric",
-            rules: [
-              (v) =>
-                (v >= 0) | (v == "") ||
-                "ERROR: specify values >=0.001",
-            ],
-          },
-        ],
-        Inputs: [
-          {
-            name: "maxee",
-            value: 1,
-            disabled: "never",
-            tooltip:
-              "maximum number of expected errors per sequence. Sequences with higher error rates will be discarded",
-            type: "numeric",
-            rules: [(v) => v >= 0.001 || "ERROR: specify values >=0.001"],
-          },
-          {
-            name: "maxNs",
-            value: 0,
-            disabled: "never",
-            tooltip:
-              "discard sequences with more than the specified number of Ns",
-            type: "numeric",
-            rules: [(v) => v >= 0 || "ERROR: specify values >= 0"],
-          },
-          {
-            name: "min_length",
-            value: 32,
-            disabled: "never",
-            tooltip:
-              "minimum length of the filtered output sequence. Note that if 'trunc length' setting is specified, then 'min length' SHOULD BE lower than 'trunc length' (otherwise all reads are discared)",
-            type: "numeric",
-            rules: [(v) => v >= 1 || "ERROR: specify values >= 1"],
-          },
-          {
-            name: "trunc_length",
-            value: null,
-            disabled: "never",
-            tooltip:
-              "truncate sequences to the specified length (0 or empty field = no action taken). Shorter sequences are discarded; thus if specified, check that 'min length' setting is lower than 'trunc length' ('min length' therefore has basically no effect)",
-            type: "numeric",
-            rules: [
-              (v) =>
-                (v >= 0) | (v == "") ||
-                "ERROR: specify values >= 0",
-            ],
-          },
-          {
-            name: "qmax",
-            value: 41,
-            disabled: "never",
-            tooltip:
-              "specify the maximum quality score accepted when reading FASTQ files. The default is 41, which is usual for recent Sanger/Illumina 1.8+ files. For PacBio data use 93 or see what is the maximum quality score in your data via QualityCheck module",
-            type: "numeric",
-            rules: [(v) => v >= 1 || "ERROR: specify values >= 1"],
           },
         ],
       },
@@ -3530,6 +3612,149 @@ export default new Vuex.Store({
         ],
       },
       {
+        tooltip: "quality filtering with vsearch",
+        scriptName: "quality_filtering_paired_end_vsearch.sh",
+        imageName: 'pipecraft/vsearch_dada2:3-pc1.2.0',
+        serviceName: "quality filtering",
+        manualLink:
+          "https://pipecraft2-manual.readthedocs.io/en/latest/quicktools.html#qfilt-vsearch",
+        disabled: "never",
+        selected: "always",
+        showExtra: false,
+        extraInputs: [
+          {
+            name: "max_length",
+            value: null,
+            disabled: "never",
+            tooltip:
+              "discard sequences with more than the specified number of bases (0 or empty field = no action taken). Note that if 'trunc length' setting is specified, then 'max length' SHOULD NOT be lower than 'trunc length' (otherwise all reads are discared)",
+            type: "numeric",
+            rules: [
+              (v) =>
+                (v >= 0) | (v == "") ||
+                "ERROR: specify values >= 0",
+            ],
+          },
+          {
+            name: "qmin",
+            value: 0,
+            disabled: "never",
+            tooltip:
+              "the minimum quality score accepted for FASTQ files. The default is 0, which is usual for recent Sanger/Illumina 1.8+ files. Older formats may use scores between -5 and 2",
+            type: "numeric",
+            rules: [(v) => v >= -5 || "ERROR: specify values >= -5"],
+          },
+          {
+            name: "maxee_rate",
+            value: null,
+            disabled: "never",
+            tooltip:
+              "discard sequences with more than the specified number of expected errors per base (0 or empty field = no action taken)",
+            type: "numeric",
+            rules: [
+              (v) =>
+                (v >= 0) | (v == "") ||
+                "ERROR: specify values >=0.001",
+            ],
+          },
+          {
+            name: "truncqual",
+            value: null,
+            disabled: "never",
+            tooltip:
+              "tuncate sequences starting from the first base with the specified base quality score value or lower (0 or empty field = no action taken)",
+            type: "numeric",
+            rules: [
+              (v) =>
+                (v >= 0) | (v == "") ||
+                "ERROR: specify values >=0",
+            ],
+          },
+          {
+            name: "truncee",
+            value: null,
+            disabled: "never",
+            tooltip:
+              "truncate sequences so that their total expected error is not higher than the specified value (0 or empty field = no action taken)",
+            type: "numeric",
+            rules: [
+              (v) =>
+                (v >= 0) | (v == "") ||
+                "ERROR: specify values >=0.001",
+            ],
+          },
+          {
+            name: "strip_left",
+            value: 0,
+            disabled: "never",
+            tooltip:
+              "Default 0. The number of base pairs to remove from the start of each read",
+            type: "numeric",
+            rules: [(v) => v >= 0 || "ERROR: specify values >= 0"],
+          },
+          {
+            name: "strip_right",
+            value: 0,
+            disabled: "never",
+            tooltip:
+              "Default 0. The number of nucleotides to remove from the end of each read",
+            type: "numeric",
+            rules: [(v) => v >= 0 || "ERROR: specify values >= 0"],
+          },
+        ],
+        Inputs: [
+          {
+            name: "maxee",
+            value: 1,
+            disabled: "never",
+            tooltip:
+              "maximum number of expected errors per sequence. Sequences with higher error rates will be discarded",
+            type: "numeric",
+            rules: [(v) => v >= 0.001 || "ERROR: specify values >=0.001"],
+          },
+          {
+            name: "maxNs",
+            value: 0,
+            disabled: "never",
+            tooltip:
+              "discard sequences with more than the specified number of Ns",
+            type: "numeric",
+            rules: [(v) => v >= 0 || "ERROR: specify values >= 0"],
+          },
+          {
+            name: "min_length",
+            value: 32,
+            disabled: "never",
+            tooltip:
+              "minimum length of the filtered output sequence. Note that if 'trunc length' setting is specified, then 'min length' SHOULD BE lower than 'trunc length' (otherwise all reads are discared)",
+            type: "numeric",
+            rules: [(v) => v >= 1 || "ERROR: specify values >= 1"],
+          },
+          {
+            name: "trunc_length",
+            value: null,
+            disabled: "never",
+            tooltip:
+              "truncate sequences to the specified length (0 or empty field = no action taken). Shorter sequences are discarded; thus if specified, check that 'min length' setting is lower than 'trunc length' ('min length' therefore has basically no effect)",
+            type: "numeric",
+            rules: [
+              (v) =>
+                (v >= 0) | (v == "") ||
+                "ERROR: specify values >= 0",
+            ],
+          },
+          {
+            name: "qmax",
+            value: 41,
+            disabled: "never",
+            tooltip:
+              "specify the maximum quality score accepted when reading FASTQ files. The default is 41, which is usual for recent Sanger/Illumina 1.8+ files. For PacBio data use 93 or see what is the maximum quality score in your data via QualityCheck module",
+            type: "numeric",
+            rules: [(v) => v >= 1 || "ERROR: specify values >= 1"],
+          },
+        ],
+      },
+      {
         tooltip: "assemble paired-end reads with vsearch",
         scriptName: "assemble_paired_end_data_vsearch.sh",
         imageName: 'pipecraft/vsearch_dada2:3-pc1.2.0',
@@ -3616,131 +3841,6 @@ export default new Vuex.Store({
             tooltip:
               "include unassembled R1 reads to the set of assembled reads per sample. This may be relevant when working with e.g. ITS2 sequences, because the ITS2 region in some taxa is too long for assembly, therefore discarded completely after assembly process. Thus, including also unassembled R1 reads, partial ITS2 sequences for these taxa will be represented in the final output",
             type: "bool",
-          },
-        ],
-      },
-      {
-        tooltip: "quality filtering with vsearch",
-        scriptName: "quality_filtering_paired_end_vsearch.sh",
-        imageName: 'pipecraft/vsearch_dada2:3-pc1.2.0',
-        serviceName: "quality filtering",
-        manualLink:
-          "https://pipecraft2-manual.readthedocs.io/en/latest/quicktools.html#qfilt-vsearch",
-        disabled: "never",
-        selected: "always",
-        showExtra: false,
-        extraInputs: [
-          {
-            name: "max_length",
-            value: null,
-            disabled: "never",
-            tooltip:
-              "discard sequences with more than the specified number of bases (0 or empty field = no action taken). Note that if 'trunc length' setting is specified, then 'max length' SHOULD NOT be lower than 'trunc length' (otherwise all reads are discared)",
-            type: "numeric",
-            rules: [
-              (v) =>
-                (v >= 0) | (v == "") ||
-                "ERROR: specify values >= 0",
-            ],
-          },
-          {
-            name: "qmin",
-            value: 0,
-            disabled: "never",
-            tooltip:
-              "the minimum quality score accepted for FASTQ files. The default is 0, which is usual for recent Sanger/Illumina 1.8+ files. Older formats may use scores between -5 and 2",
-            type: "numeric",
-            rules: [(v) => v >= -5 || "ERROR: specify values >= -5"],
-          },
-          {
-            name: "maxee_rate",
-            value: null,
-            disabled: "never",
-            tooltip:
-              "discard sequences with more than the specified number of expected errors per base (0 or empty field = no action taken)",
-            type: "numeric",
-            rules: [
-              (v) =>
-                (v >= 0) | (v == "") ||
-                "ERROR: specify values >=0.001",
-            ],
-          },
-          {
-            name: "truncqual",
-            value: null,
-            disabled: "never",
-            tooltip:
-              "tuncate sequences starting from the first base with the specified base quality score value or lower (0 or empty field = no action taken)",
-            type: "numeric",
-            rules: [
-              (v) =>
-                (v >= 0) | (v == "") ||
-                "ERROR: specify values >=0",
-            ],
-          },
-          {
-            name: "truncee",
-            value: null,
-            disabled: "never",
-            tooltip:
-              "truncate sequences so that their total expected error is not higher than the specified value (0 or empty field = no action taken)",
-            type: "numeric",
-            rules: [
-              (v) =>
-                (v >= 0) | (v == "") ||
-                "ERROR: specify values >=0.001",
-            ],
-          },
-        ],
-        Inputs: [
-          {
-            name: "maxee",
-            value: 1,
-            disabled: "never",
-            tooltip:
-              "maximum number of expected errors per sequence. Sequences with higher error rates will be discarded",
-            type: "numeric",
-            rules: [(v) => v >= 0.001 || "ERROR: specify values >=0.001"],
-          },
-          {
-            name: "maxNs",
-            value: 0,
-            disabled: "never",
-            tooltip:
-              "discard sequences with more than the specified number of Ns",
-            type: "numeric",
-            rules: [(v) => v >= 0 || "ERROR: specify values >= 0"],
-          },
-          {
-            name: "min_length",
-            value: 32,
-            disabled: "never",
-            tooltip:
-              "minimum length of the filtered output sequence. Note that if 'trunc length' setting is specified, then 'min length' SHOULD BE lower than 'trunc length' (otherwise all reads are discared)",
-            type: "numeric",
-            rules: [(v) => v >= 1 || "ERROR: specify values >= 1"],
-          },
-          {
-            name: "trunc_length",
-            value: null,
-            disabled: "never",
-            tooltip:
-              "truncate sequences to the specified length (0 or empty field = no action taken). Shorter sequences are discarded; thus if specified, check that 'min length' setting is lower than 'trunc length' ('min length' therefore has basically no effect)",
-            type: "numeric",
-            rules: [
-              (v) =>
-                (v >= 0) | (v == "") ||
-                "ERROR: specify values >= 0",
-            ],
-          },
-          {
-            name: "qmax",
-            value: 41,
-            disabled: "never",
-            tooltip:
-              "specify the maximum quality score accepted when reading FASTQ files. The default is 41, which is usual for recent Sanger/Illumina 1.8+ files. For PacBio data use 93 or see what is the maximum quality score in your data via QualityCheck module",
-            type: "numeric",
-            rules: [(v) => v >= 1 || "ERROR: specify values >= 1"],
           },
         ],
       },
@@ -5465,41 +5565,20 @@ export default new Vuex.Store({
         disabled: "never",
         selected: "always",
         showExtra: false,
-        extraInputs: [],
-        Inputs: [
+        extraInputs: [
           {
-            name: "maxEE",
-            value: 2,
-            disabled: "never",
-            tooltip:
-              "discard sequences with more than the specified number of expected errors",
-            type: "numeric",
-            rules: [(v) => v >= 0.1 || "ERROR: specify values >= 0.1"],
-          },
-          {
-            name: "maxN",
+            name: "trimLeft",
             value: 0,
             disabled: "never",
-            tooltip:
-              "discard sequences with more than the specified number of N's (ambiguous bases). This should be set to 0 if denoising is performed with DADA2",
+            tooltip: "Default 0. The number of base pairs to remove from the start of each read",
             type: "numeric",
             rules: [(v) => v >= 0 || "ERROR: specify values >= 0"],
           },
           {
-            name: "minLen",
-            value: 20,
+            name: "trimRight",
+            value: 0,
             disabled: "never",
-            tooltip:
-              "remove reads with length less than minLen. minLen is enforced after all other trimming and truncation",
-            type: "numeric",
-            rules: [(v) => v >= 1 || "ERROR: specify values >= 1"],
-          },
-          {
-            name: "truncQ",
-            value: 2,
-            disabled: "never",
-            tooltip:
-              "truncate reads at the first instance of a quality score less than or equal to truncQ (0 = no truncation)",
+            tooltip: "Default 0. The number of nucleotides to remove from the end of each read",
             type: "numeric",
             rules: [(v) => v >= 0 || "ERROR: specify values >= 0"],
           },
@@ -5548,6 +5627,45 @@ export default new Vuex.Store({
             type: "bool",
           },
         ],
+        Inputs: [
+          {
+            name: "maxEE",
+            value: 2,
+            disabled: "never",
+            tooltip:
+              "discard sequences with more than the specified number of expected errors",
+            type: "numeric",
+            rules: [(v) => v >= 0.1 || "ERROR: specify values >= 0.1"],
+          },
+          {
+            name: "maxN",
+            value: 0,
+            disabled: "never",
+            tooltip:
+              "discard sequences with more than the specified number of N's (ambiguous bases). This should be set to 0 if denoising is performed with DADA2",
+            type: "numeric",
+            rules: [(v) => v >= 0 || "ERROR: specify values >= 0"],
+          },
+          {
+            name: "minLen",
+            value: 20,
+            disabled: "never",
+            tooltip:
+              "remove reads with length less than minLen. minLen is enforced after all other trimming and truncation",
+            type: "numeric",
+            rules: [(v) => v >= 1 || "ERROR: specify values >= 1"],
+          },
+          {
+            name: "truncQ",
+            value: 2,
+            disabled: "never",
+            tooltip:
+              "truncate reads at the first instance of a quality score less than or equal to truncQ (0 = no truncation)",
+            type: "numeric",
+            rules: [(v) => v >= 0 || "ERROR: specify values >= 0"],
+          },
+
+        ],
       },
       {
         tooltip: "select the denoising options for DADA2 'dada' function",
@@ -5558,6 +5676,10 @@ export default new Vuex.Store({
         },
         imageName: 'pipecraft/vsearch_dada2:3-pc1.2.0',
         serviceName: "denoise",
+        // mergePairs runs inside the denoise step (RAM-efficient), but its
+        // settings are configured in the "merge Pairs" panel. Pull those
+        // env vars in when launching the denoise container.
+        extraEnvFromServices: ["merge Pairs"],
         manualLink:
           "https://pipecraft2-manual.readthedocs.io/en/latest/quicktools.html#dada2-denoise",
         selected: "always",
@@ -5574,13 +5696,31 @@ export default new Vuex.Store({
             rules: [(v) => v >= 0 || "ERROR: specify values >= 0"],
           },
           {
+            name: "nbases",
+            value: (100000000).toExponential(),
+            disabled: "never",
+            tooltip:
+              "denoising setting. The minimum number of bases to use for error rate estimation. Default is 1e+8 (100 million bases)",
+            type: "numeric",
+            rules: [(v) => v >= 100000000 || "WARNING: default is 1e+8, use default if you have enough reads"],
+
+          },
+          {
+            name: "randomize",
+            value: true,
+            disabled: "never",
+            tooltip:
+              "denoising setting. Default = TRUE. If TRUE, samples are picked at random from those provided. If FALSE, samples are picked in the order they are provided until enough reads are obtained.",
+            type: "bool",
+          },
+          {
             name: "OMEGA_A",
             value: (0.0000000000000000000000000000000000000001).toExponential(),
             disabled: "never",
             tooltip:
               "default = 1e-40. Denoising setting; see DADA2 'setDadaOpt()' for detalis. Default value  is a conservative setting to avoid making false positive inferences, but comes at the cost of reducing the ability to identify some rare variants",
             type: "numeric",
-            rules: [(v) => v >= 0 || "ERROR: specify values > 0"],
+            rules: [(v) => v >= 0 || "ERROR: specify values >= 0"],
           },
           {
             name: "OMEGA_P",
@@ -5589,16 +5729,25 @@ export default new Vuex.Store({
             tooltip:
               "default = 1e-4 (0.0001). Denoising setting; see DADA2 'setDadaOpt()' for detalis",
             type: "numeric",
-            rules: [(v) => v >= 0 || "ERROR: specify values > 0"],
+            rules: [(v) => v >= 0 || "ERROR: specify values >= 0"],
           },
           {
             name: "OMEGA_C",
-            value: (0.0000000000000000000000000000000000000001).toExponential(),
+            value: (0).toExponential(),
             disabled: "never",
             tooltip:
-              "default = 1e-40. Denoising setting; see DADA2 'setDadaOpt()' for detalis",
+              "default = 0. Denoising setting; see DADA2 'setDadaOpt()' for detalis",
             type: "numeric",
-            rules: [(v) => v >= 0 || "ERROR: specify values > 0"],
+            rules: [(v) => v >= 0 || "ERROR: specify values >= 0"],
+          },
+          {
+            name: "Homopoly_gap_penalty",
+            value: 0,
+            disabled: "never",
+            tooltip:
+              "Denoising setting. The cost of gaps in homopolymer regions (>=3 repeated bases). Default is 0, homopolymer gaps to be treated as normal gaps. See DADA2 'setDadaOpt()' for detalis",
+            type: "numeric",
+            rules: [(v) => v <= 0 || "ERROR: specify values <= 0"],
           },
           {
             name: "DETECT_SINGLETONS",
@@ -5621,21 +5770,13 @@ export default new Vuex.Store({
           },
           {
             name: "pool",
-            items: ["FALSE", "TRUE", "psuedo"],
+            items: ["FALSE", "TRUE", "pseudo"],
             value: "FALSE",
             disabled: "never",
             tooltip:
               "if pool = TRUE, the algorithm will pool together all samples prior to sample inference. Pooling improves the detection of rare variants, but is computationally more expensive. If pool = 'pseudo', the algorithm will perform pseudo-pooling between individually processed samples. This argument has no effect if only 1 sample is provided, and pool does not affect error rates, which are always estimated from pooled observations across samples",
             type: "select",
           },
-          // {
-          //   name: "selfConsist",
-          //   disabled: "never",
-          //   value: false,
-          //   tooltip:
-          //     "if selfConsist = TRUE, the algorithm will alternate between sample inference and error rate estimation until convergence",
-          //   type: "bool",
-          // },
           {
             name: "qualityType",
             items: ["Auto", "FastqQuality"],

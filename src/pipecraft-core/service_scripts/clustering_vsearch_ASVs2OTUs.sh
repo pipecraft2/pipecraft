@@ -6,6 +6,8 @@
     # ASV table format = ASVs in rows, samples in columns; 2nd column must be SEQUENCE column (default PipeCraft2 ASVs workflow output)
 #Output = FASTA formated representative OTU sequences and OTU table
 
+# 11.05.2026: support the case where ASV_fasta is a subset of ASV_table.
+
 #############################
 ###Third-party applications:
 # vsearch
@@ -132,6 +134,72 @@ export ASV_table
     # NR>1 skips the first row, which are the col names.
 fastasize=$(basename "$ASV_fasta" | awk 'BEGIN{FS=OFS="."}NF{NF -=1}1')
 awk 'NR>1{for(i=3;i<=NF;i++) t+=$i; print ">"$1";size="t"\n"$2; t=0}' "$ASV_table" > "$output_dir/$fastasize.size.fasta"
+
+### Subset fasta and ASVs_table if needed:
+# Check if $fastasize.size.fasta and $ASV_fasta have different number of sequences;
+#   if so, then check if $ASV_fasta is a subset of $fastasize.size.fasta (by IDs, with stripping ;size=.*).
+# If the fasta contains IDs that are not in the ASV table, abort.
+size_fa_count=$(grep -c "^>" "$output_dir/$fastasize.size.fasta")
+asv_fa_count=$(grep -c "^>" "$ASV_fasta")
+if [[ "$size_fa_count" -ne "$asv_fa_count" ]]; then
+    printf "\nNote: '%s' has %s sequence(s); ASV table has %s. Verifying that the fasta IDs are a subset of the table.\n" \
+        "$ASV_fasta" "$asv_fa_count" "$size_fa_count"
+    awk '/^>/ { id = substr($0, 2); sub(/[[:space:];].*/, "", id); print id }' \
+        "$output_dir/$fastasize.size.fasta" | sort -u > tempdir/size_fasta_ids.txt
+    awk '/^>/ { id = substr($0, 2); sub(/[[:space:];].*/, "", id); print id }' \
+        "$ASV_fasta" | sort -u > tempdir/asv_fasta_ids.txt
+    missing_ids=$(comm -23 tempdir/asv_fasta_ids.txt tempdir/size_fasta_ids.txt)
+    if [[ -n "$missing_ids" ]]; then
+        missing_count=$(printf '%s\n' "$missing_ids" | wc -l)
+        examples=$(printf '%s\n' "$missing_ids" | head -n 10 | sed 's/^/      - /')
+        printf "\nERROR]: '%s' contains %s ID(s) that are not present in the ASV table ('%s').
+    The ASV fasta must be a subset of the ASV table (matched by sequence ID, ignoring ';size=...').
+    Examples of missing IDs (up to 10):
+%s
+    >>>Quitting\n" \
+            "$(basename "$ASV_fasta")" "$missing_count" "$(basename "$ASV_table_orig")" "$examples" >&2
+        end_process
+    fi
+    printf "OK: all %s fasta ID(s) are present in the ASV table.\n" "$asv_fa_count"
+    # Subset the size-annotated fasta to keep only the ASVs that are also in $ASV_fasta,
+    # so downstream clustering operates on the same set of sequences as the input fasta.
+    printf "Subsetting '%s' to retain only the %s ID(s) present in '%s' ...\n" \
+        "$output_dir/$fastasize.size.fasta" "$asv_fa_count" "$ASV_fasta"
+    awk 'NR==FNR { ids[$0]=1; next }
+         /^>/ { h = substr($0, 2); sub(/[[:space:];].*/, "", h); keep = (h in ids) }
+         keep' \
+        tempdir/asv_fasta_ids.txt "$output_dir/$fastasize.size.fasta" \
+        > tempdir/size_fasta_subset.fasta
+    mv tempdir/size_fasta_subset.fasta "$output_dir/$fastasize.size.fasta"
+    subset_count=$(grep -c "^>" "$output_dir/$fastasize.size.fasta")
+    if [[ "$subset_count" -ne "$asv_fa_count" ]]; then
+        printf "\n[ERROR]: After subsetting, '%s' contains %s sequence(s) but expected %s.\n    >>>Quitting\n" \
+            "$output_dir/$fastasize.size.fasta" "$subset_count" "$asv_fa_count" >&2
+        end_process
+    fi
+    printf "Done. Size-annotated fasta now contains %s sequence(s).\n" "$subset_count"
+
+    # Also subset the ASV table itself, so the downstream R script (ASVs2OTUs.R)
+    # operates on the same set of ASVs as the fasta.
+    ASV_table_subset="$output_dir/$(basename "$ASV_table" | sed -E 's/\.[^.]+$//').subset.txt"
+    printf "Subsetting ASV table to '%s' ...\n" "$(basename "$ASV_table_subset")"
+    # First pass: build a set of wanted ASV IDs.
+    # Second pass: always keep the header (FNR==1), then keep rows whose 1st col is in the set.
+    awk 'NR==FNR { ids[$0]=1; next }
+         FNR==1 { print; next }
+         ($1 in ids)' \
+        tempdir/asv_fasta_ids.txt "$ASV_table" \
+        > "$ASV_table_subset"
+    subset_row_count=$(awk 'END{print NR-1}' "$ASV_table_subset")
+    if [[ "$subset_row_count" -ne "$asv_fa_count" ]]; then
+        printf "\n[ERROR]: After subsetting, ASV table '%s' has %s data row(s) but expected %s.\n    >>>Quitting\n" \
+            "$(basename "$ASV_table_subset")" "$subset_row_count" "$asv_fa_count" >&2
+        end_process
+    fi
+    export ASV_table_subset
+    printf "Done. Subsetted ASV table contains %s data row(s).\n" "$subset_row_count"
+fi
+
 # export for R
 ASV_fasta_size=$"$output_dir/$fastasize.size.fasta"
 export ASV_fasta_size

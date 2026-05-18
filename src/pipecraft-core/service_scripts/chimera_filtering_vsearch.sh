@@ -4,10 +4,10 @@
 # Input = single-end fasta/fastq files. FASTQ files will be converted to FASTA files; output is only FASTA.
 
 ################################################
-###Third-party applications:
-#vsearch v2.23.0
-#seqkit v2.3.0
-#pigz v2.4
+### Third-party applications:
+# vsearch
+# seqkit
+# pigz
 ################################################
 # checking tool versions
 vsearch_version=$(vsearch --version 2>&1 | head -n 1 | awk '{print $2}' | sed -e "s/,//g")
@@ -15,7 +15,7 @@ seqkit_version=$(seqkit version 2>&1 | awk '{print $2}')
 printf "# vsearch (version $vsearch_version)\n"
 printf "# seqkit (version $seqkit_version)\n"
 
-#load variables
+# load variables
 id=$"--id ${pre_cluster}"                            #float (0-1)
 minuniquesize=$"--minuniquesize ${min_unique_size}"  #pos int >0
 denovo=${denovo}                                     #false or true
@@ -23,10 +23,10 @@ cores=$"--threads ${cores}"                          #pos int
 abskew=$"--abskew ${abundance_skew}"                 #pos int
 minh=$"--minh ${min_h}"                              #float (0-1)
 
-#Source for functions
+# Source for functions
 source /scripts/submodules/framework.functions.sh
 
-#load path to reference database (if specified)
+# load path to reference database (if specified)
 if [[ $reference_based == "undefined" ]]; then
     :
 else
@@ -36,19 +36,37 @@ else
     database=$db
 fi
 
-#ERROR if both chimera filtering methods = false
+# ERROR if both chimera filtering methods = false
 if [[ $reference_based == "undefined" ]] && [[ $denovo == "false" ]]; then
     printf '%s\n' "ERROR]: None of the methods, denovo or reference based, selected. >Quitting" >&2
     end_process
 fi 
 
-# check if working with multiple runs or with a single sequencing run
-if [[ -d "/input/multiRunDir" ]]; then
+# if working with multiRunDir, and the previous step was CUT PRIMERS
+if [[ -f "$workingDir/.prev_step.temp" ]]; then
+    prev_step=$(cat $workingDir/.prev_step.temp) # for checking is input was paired_end or single_end data (needed, since readType = single_end after merging paired-end reads)
+    printf "# prev_step = $prev_step\n"  # expect only "assemble_paired_end_data" here
+    rm -f $workingDir/.prev_step.temp
+fi
+
+## check if working with multiple runs or with a single sequencing run
+# Pipeline = vsearch_OTUs or UNOISE_ASVs for SINGLE-END data (then inputs are in qualFiltered_out)
+if [[ -d "/input/multiRunDir" ]] && [[ $prev_step != "assemble_paired_end_data" ]]; then
     echo "Pipeline with multiple sequencing runs in multiRunDir"
     echo "Process = chimera filtering"
     cd /input/multiRunDir
     # read in directories (sequencing sets) to work with. Skip directories renamed as "skip_*"
     DIRS=$(find . -maxdepth 2 -mindepth 1 -type d | grep "qualFiltered_out" | grep -v "skip_" | grep -v "merged_runs" | grep -v "tempdir" | sed -e "s/^\.\///") 
+    echo "working in dirs:"
+    echo $DIRS
+    multiDir=$"TRUE"
+    export multiDir
+elif [[ -d "/input/multiRunDir" ]] && [[ $prev_step == "assemble_paired_end_data" ]]; then
+    echo "Pipeline with multiple sequencing runs in multiRunDir"
+    echo "Process = chimera filtering (after assembling paired-end reads)"
+    cd /input/multiRunDir
+    # read in directories (sequencing sets) to work with. Skip directories renamed as "skip_*"
+    DIRS=$(find . -maxdepth 2 -mindepth 1 -type d | grep "assembled_out" | grep -v "skip_" | grep -v "merged_runs" | grep -v "tempdir" | sed -e "s/^\.\///") 
     echo "working in dirs:"
     echo $DIRS
     multiDir=$"TRUE"
@@ -69,6 +87,7 @@ for seqrun in $DIRS; do
     start=$(date +%s)
 
     cd $seqrun
+    printf "\n workingDir = $seqrun \n"
     if [[ $multiDir == "TRUE" ]]; then
         ### Check if the dir has the specified file extension; if not then ERROR
         count=$(ls -1 *.$fileFormat 2>/dev/null | wc -l)

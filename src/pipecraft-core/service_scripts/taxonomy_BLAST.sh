@@ -12,6 +12,11 @@
 # seqkit
 # gawk
 ##########################################################
+# Checking tool versions
+blast_version=$(blastn -version 2>&1 | awk 'NR==1{print $2}')
+seqkit_version=$(seqkit version 2>&1 | awk '{print $2}')
+printf "# BLAST+ (version $blast_version)\n"
+printf "# seqkit (version $seqkit_version)\n"
 
 #load variables
 regex='[^/]*$'
@@ -42,7 +47,7 @@ fi
 source /scripts/submodules/framework.functions.sh
 
 #output dir
-output_dir=$"/input/taxonomy_out"
+output_dir=$"/input/taxonomy_out.blast"
 
 #############################
 ### Start of the workflow ###
@@ -303,7 +308,7 @@ qstart    = start of alignment in query
 qend      = end of alignment in query
 sstart    = start of alignment in subject
 send      = end of alignment in subject
-evalue    = expect value
+evalue    = expect value; expected number of chance hits of similar quality against a database of that size; lower means a more trustworthy match (reported as 0 when e-values are extremely low, < 10e-300)
 length    = alignment length
 nident    = number of identical matches
 mismatch  = number of mismatches
@@ -322,7 +327,7 @@ Total run time was $runtime sec.
 
 ##########################################################
 ###Third-party applications [PLEASE CITE]:
-    #BLAST 2.14.0+
+    #BLAST (version $blast_version)
     #citation: Camacho C., Coulouris G., Avagyan V., Ma N., Papadopoulos J., Bealer K., & Madden T.L. (2008) BLAST+: architecture and applications. BMC Bioinformatics 10:421.
 #####################################################" > $output_dir/README.txt
 

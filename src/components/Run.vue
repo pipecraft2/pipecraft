@@ -529,6 +529,28 @@ export default {
       let envVariables = [];
       let nextFlowParams = {};
       let inputs = element.Inputs.concat(element.extraInputs);
+
+      // Honor `extraEnvFromServices: ["..."]` declared on a service: include
+      // Inputs+extraInputs from the listed sibling services in the same workflow.
+      // Used when one container needs settings configured in another panel
+      // (e.g. mergePairs runs inside the denoise step for RAM efficiency, but
+      // its settings live on the "merge Pairs" panel).
+      if (Array.isArray(element.extraEnvFromServices)) {
+        const workflowName = this.$route.params.workflowName;
+        const workflow = this.$store.state[workflowName];
+        if (Array.isArray(workflow)) {
+          element.extraEnvFromServices.forEach((otherName) => {
+            const other = workflow.find((s) => s.serviceName === otherName);
+            if (other) {
+              inputs = inputs.concat(
+                other.Inputs || [],
+                other.extraInputs || []
+              );
+            }
+          });
+        }
+      }
+
       inputs.forEach((input) => {
         let varObj = {};
         // For boolfile inputs, only include if they are active

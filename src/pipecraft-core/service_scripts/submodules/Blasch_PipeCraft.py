@@ -35,15 +35,15 @@ from collections import defaultdict
 #   - Handles mixed scenarios (some XML files exist, some missing)            #
 #                                                                             #
 # Output organization:                                                        #
-#   - non_chimeric/: Non-chimeric sequences                                   #
+#   - nonchimeric/: Non-chimeric sequences                                    #
 #   - borderline/: Borderline sequences                                       #
 #   - detailed_results/: Chimeric sequences, multiple alignments, CSV details #
 #   - xml/blast_results.zip: Compressed XML files                             #
-#   - Automatic cleanup of database directories                               #
+#   - Automatic cleanup of self_database/ directory                           #
 #                                                                             #
 # Author:        ALI HAKIMZADEH                                               #
-# Version:       1.4                                                          #
-# Date:          2025-04-01                                                   #
+# Version:       1.0.0                                                          #
+# Date:          2026-05-09                                                   #
 ###############################################################################
 
 ###############################################################################
@@ -300,7 +300,7 @@ def cleanup_databases(output_dir, databases_created=True):
         logger.info("No databases were created in this run - skipping cleanup")
         return
         
-    cleanup_dirs = ["reference_db", "databases"]
+    cleanup_dirs = ["reference_db", "self_database"]
     
     for dir_name in cleanup_dirs:
         dir_path = os.path.join(output_dir, dir_name)
@@ -344,12 +344,12 @@ def generate_blasch_readme(
         chimeric_files.extend(glob.glob(os.path.join(input_chimeras_dir, f"*chimeras{ext}")))
 
     # Count output files
-    non_chimeric_dir = os.path.join(output_dir, "non_chimeric")
+    nonchimeric_dir = os.path.join(output_dir, "nonchimeric")
     borderline_dir = os.path.join(output_dir, "borderline")
     detailed_results_dir = os.path.join(output_dir, "detailed_results")
     merged_dir = os.path.join(output_dir, "nonchimeric+rescued_reads")
 
-    non_chimeric_count = len([f for f in os.listdir(non_chimeric_dir) if f.endswith('.fasta')]) if os.path.exists(non_chimeric_dir) else 0
+    non_chimeric_count = len([f for f in os.listdir(nonchimeric_dir) if f.endswith('.fasta')]) if os.path.exists(nonchimeric_dir) else 0
     borderline_count = len([f for f in os.listdir(borderline_dir) if f.endswith('.fasta')]) if os.path.exists(borderline_dir) else 0
     chimeric_count = len([f for f in os.listdir(detailed_results_dir) if f.endswith('_chimeric.fasta')]) if os.path.exists(detailed_results_dir) else 0
     multiple_count = len([f for f in os.listdir(detailed_results_dir) if f.endswith('_multiple_alignments.fasta')]) if os.path.exists(detailed_results_dir) else 0
@@ -397,14 +397,13 @@ def generate_blasch_readme(
 
             f.write("Files in output directory:\n")
             f.write("----------------------------------------\n")
-            f.write("# non_chimeric/               = Recovered non-chimeric sequences (high confidence)\n")
+            f.write("# nonchimeric/                = Recovered non-chimeric sequences (high confidence)\n")
             f.write("# borderline/                 = Borderline sequences (moderate confidence)\n")
             if merged_dir_exists:
                 f.write("# nonchimeric+rescued_reads/  = Merged per-sample files: input nonchimeric sequences\n")
                 f.write("#                               + BlasCh-recovered non-chimeric sequences\n")
                 f.write("#                               (ready for direct use in clustering/downstream analyses)\n")
             f.write("# detailed_results/           = Detailed analysis results including:\n")
-            f.write("#   *_chimeric.fasta          = Confirmed chimeric sequences\n")
             f.write("#   *_multiple_alignments.fasta = Sequences with multiple BLAST alignments\n")
             f.write("#   *_sequence_details.csv    = Detailed classification information per sequence\n")
             f.write("# chimera_recovery_report.txt = Summary statistics of the analysis\n")
@@ -1116,10 +1115,6 @@ def parse_blast_results(args):
         bd_file = os.path.join(temp_dir, f"{trimmed_base_name}_borderline.fasta")
         write_sequences_to_file(borderline, seqs, bd_file)
 
-    if chimeric:
-        ch_file = os.path.join(detailed_results_dir, f"{trimmed_base_name}_chimeric.fasta")
-        write_sequences_to_file(chimeric, seqs, ch_file)
-
     if details:
         write_sequence_details(details, detailed_results_dir, fasta_path)
 
@@ -1245,16 +1240,16 @@ def process_blast_xml_results(
         all_multiple.update(ml)
 
     # Create organized output directories
-    non_chimeric_dir = os.path.join(output_dir, "non_chimeric")
+    nonchimeric_dir = os.path.join(output_dir, "nonchimeric")
     borderline_dir = os.path.join(output_dir, "borderline")
-    os.makedirs(non_chimeric_dir, exist_ok=True)
+    os.makedirs(nonchimeric_dir, exist_ok=True)
     os.makedirs(borderline_dir, exist_ok=True)
 
     # Copy rescued sequences to organized folders
     for fname in os.listdir(temp_dir):
         src = os.path.join(temp_dir, fname)
         if fname.endswith("_non_chimeric.fasta"):
-            dst = os.path.join(non_chimeric_dir, fname)
+            dst = os.path.join(nonchimeric_dir, fname)
             shutil.copy(src, dst)
             logger.info(f"Copied non-chimeric file: {fname} => {dst}")
         elif fname.endswith("_borderline.fasta"):
@@ -1376,7 +1371,7 @@ def main():
 
     parser.add_argument("--input_chimeras_dir", default="./",
                         help="Directory containing .chimeras files (supports .fasta/.fa/.fas extensions).")
-    parser.add_argument("--self_fasta_dir", default="./",
+    parser.add_argument("--self_fasta_dir", default="./self_database",
                         help="Directory with FASTA files for building self-databases.")
     parser.add_argument("--reference_db",
                         help="Path to a reference DB prefix or reference FASTA (script will create DB if needed).")
@@ -1415,7 +1410,7 @@ def main():
         logger.info("=== Database Setup Required ===")
         
         # 1. Create Self-Databases
-        db_path = os.path.join(args.output_dir, "databases")
+        db_path = os.path.join(args.output_dir, "self_database")
         create_self_databases(args.self_fasta_dir, db_path)
 
         # 2. Reference DB setup
@@ -1450,7 +1445,7 @@ def main():
 
     # 5. Merge input nonchimeric + rescued reads (if nonchimeric_dir provided)
     if args.nonchimeric_dir:
-        non_chimeric_out_dir = os.path.join(args.output_dir, "non_chimeric")
+        non_chimeric_out_dir = os.path.join(args.output_dir, "nonchimeric")
         merge_nonchimeric_with_rescued(args.nonchimeric_dir, non_chimeric_out_dir, args.output_dir)
 
     # 6. Generate README file
