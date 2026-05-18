@@ -12,12 +12,15 @@ cat("DADA2 version = ", base::toString(packageVersion("dada2")), "\n")
 fileFormat = Sys.getenv('fileFormat')
 
 #load  variables
-read_R1 = Sys.getenv('read_R1')
+read_R1 = Sys.getenv('read_R1') # composed in framework.functions.sh (prepare_PE_env)
 read_R2 = gsub("R1", "R2", read_R1)
 minOverlap = as.numeric(Sys.getenv('minOverlap'))
 maxMismatch = as.numeric(Sys.getenv('maxMismatch'))
 trimOverhang = Sys.getenv('trimOverhang')
 justConcatenate = Sys.getenv('justConcatenate')
+errorEstFun = Sys.getenv('errorEstFun')
+nbases = as.numeric(Sys.getenv('nbases'))
+randomize = Sys.getenv('randomize')
 pool = Sys.getenv('pool')
 qualityType = Sys.getenv('qualityType')
 band_size = as.numeric(Sys.getenv('BAND_SIZE'))
@@ -53,27 +56,49 @@ if (detect_singletons == "false" || detect_singletons == "FALSE"){
 if (detect_singletons == "true" || detect_singletons == "TRUE"){
     detect_singletons = TRUE
 }
+if (randomize == "false" || randomize == "FALSE"){
+    randomize = FALSE
+}
+if (randomize == "true" || randomize == "TRUE"){
+    randomize = TRUE
+}
+if (errorEstFun == "PacBioErrfun"){
+    errorEstFun = PacBioErrfun
+} else {
+    errorEstFun = loessErrfun
+}
 
-#Set DADA options
+# Set DADA options
 setDadaOpt(OMEGA_A = omegaa, OMEGA_P = omegap, OMEGA_C = omegac, DETECT_SINGLETONS = detect_singletons, BAND_SIZE = band_size)
 cat(";; BAND_SIZE = ", band_size, "\n")  
 
-#output path
+# output path
 path_results = "/input/denoised_assembled.dada2"
 
-#define input file paths
+# define input file paths
 fnFs = sort(list.files(pattern = read_R1, full.names = TRUE))
 fnRs = sort(list.files(pattern = read_R2, full.names = TRUE))
-#sample names
+# sample names
 sample_names = sapply(strsplit(basename(fnFs), read_R1), `[`, 1)
 cat(";; sample names = ", sample_names, "\n")
 
-#Learn the error rates
+# Learn the error rates
 cat(";; Performing DADA2 denoising ;; ")
-errF = learnErrors(fnFs, multithread = TRUE)
-errR = learnErrors(fnRs, multithread = TRUE)
+errF = learnErrors(fnFs, 
+    errorEstimationFunction = errorEstFun, 
+    randomize = randomize, 
+    nbases = nbases, 
+    qualityType = qualityType,
+    multithread = TRUE)
 
-#Error rate figures
+errR = learnErrors(fnRs, 
+    errorEstimationFunction = errorEstFun, 
+    randomize = randomize, 
+    nbases = nbases, 
+    qualityType = qualityType,
+    multithread = TRUE)
+
+# Error rate figures
 pdf(file.path(path_results, "Error_rates_R1.pdf"))
     print( plotErrors(errF) )
 dev.off()
@@ -81,12 +106,12 @@ pdf(file.path(path_results, "Error_rates_R2.pdf"))
     print( plotErrors(errR) )
 dev.off()
 
-#dereplicate
+# dereplicate
 derepFs = derepFastq(fnFs, qualityType = qualityType)
 derepRs = derepFastq(fnRs, qualityType = qualityType)
 print("derepFastq DONE")
 
-#denoise
+# denoise
 dadaFs = dada(derepFs, err = errF, pool = pool, multithread = TRUE)
 dadaRs = dada(derepRs, err = errR, pool = pool, multithread = TRUE)
 print(";; denoising DONE")
@@ -124,7 +149,8 @@ row.names(ASV_tab) = asv_headers
 cat(";; Writing per-sample fasta files ")
 for (i in 2:length(colnames(ASV_tab))){
     sample_name = colnames(ASV_tab)[i]
-    sample_file = paste(sample_name, "ASVs.fasta", sep = ".") 
+    sample_base = sub("\\.(fastq|fq)(\\.gz)?$", "", sample_name, ignore.case = TRUE)
+    sample_file = paste(sample_base, "ASVs.fasta", sep = ".")
     j = 0
     for (abundance in ASV_tab[,i]){
         j = j + 1

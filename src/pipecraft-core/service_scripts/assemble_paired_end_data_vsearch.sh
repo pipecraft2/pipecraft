@@ -5,7 +5,8 @@
 
 ################################################
 ###Third-party applications:
-#vsearch, pigz v2.4
+#vsearch
+#pigz
 ################################################
 
 # checking tool versions
@@ -29,29 +30,23 @@ notmerged_files=$keep_disjointed
 source /scripts/submodules/framework.functions.sh
 
 ## check if working with multiple runs or with a single sequencing run
-# if working with multiRunDir, and the previous step was CUT PRIMERS
-if [[ -f "$workingDir/.prev_step.temp" ]]; then
-    prev_step=$(cat $workingDir/.prev_step.temp) # for checking previous step (output from cut_primers_paired_end_reads.sh)
-    printf "# prev_step = $prev_step\n"
-fi
-if [[ -d "/input/multiRunDir" ]] && [[ $pipeline == "vsearch_OTUs" || $pipeline == "UNOISE_ASVs" ]] && [[ $prev_step == "cut_primers" ]]; then
+if [[ -d "/input/multiRunDir" ]]; then
     echo "vsearch paired-end pipeline with multiple sequencing runs in multiRunDir"
-    echo "Process = assembling paired-end reads (after cut primers)"
+    echo "Process = assembling paired-end reads"
     cd /input/multiRunDir
     # read in directories (sequencing sets) to work with. Skip directories renamed as "skip_*"
-    DIRS=$(find . -maxdepth 2 -mindepth 1 -type d | grep "primersCut_out" | grep -v "skip_" | grep -v "merged_runs" | grep -v "tempdir" | sed -e "s/^\.\///")
+    DIRS=$(find . -maxdepth 2 -mindepth 1 -type d | grep "qualFiltered_out" | grep -v "skip_" | grep -v "merged_runs" | grep -v "tempdir" | sed -e "s/^\.\///")
     echo "working in dirs:"
     echo $DIRS
     multiDir=$"TRUE"
     export multiDir
-    rm $workingDir/.prev_step.temp
-# if working with multiRunDir, but the previous step was not CUT PRIMERS
-elif [[ -d "/input/multiRunDir" ]] && [[ $prev_step != "cut_primers" ]]; then
-    echo "vsearch paired-end pipeline with multiple sequencing runs in multiRunDir"
+# if working with multiRunDir outside of pre-compiled pipeline
+elif [[ -d "/input/multiRunDir" ]] && [[ $prev_step != "cut_primers" ]] && [[ $readType == "paired_end" ]]; then
+    echo "Run with multiple sequencing runs in multiRunDir"
     echo "Process = assembling paired-end reads"
     cd /input/multiRunDir
-    # read in directories (sequencing sets) to work with. Skip directories renamed as "skip_*" [replacing ^./ with sed]
-    DIRS=$(find . -maxdepth 1 -mindepth 1 -type d | grep -v "tempdir" | grep -v "skip_" | grep -v "merged_runs" | sed -e "s/^\.\///")
+    # read in directories (sequencing sets) to work with. Skip directories renamed as "skip_*"
+    DIRS=$(find . -maxdepth 1 -mindepth 1 -type d | grep -v "skip_" | grep -v "merged_runs" | grep -v "tempdir" | sed -e "s/^\.\///") 
     echo "working in dirs:"
     echo $DIRS
     multiDir=$"TRUE"
@@ -82,7 +77,7 @@ for seqrun in $DIRS; do
     start_time=$(date)
     start=$(date +%s)
     cd $seqrun
-    
+    printf "\n workingDir = $seqrun \n"
     if [[ $multiDir == "TRUE" ]]; then
         workingDir="/input/multiRunDir/$seqrun"
         export workingDir # real WD for R
@@ -239,7 +234,7 @@ if [[ $multiDir == "TRUE" ]]; then
     workingDir=$"/input/multiRunDir"
     echo "workingDir=$workingDir"
     # var for multiRunDir pipe
-    printf "merge_reads" > $workingDir/.prev_step.temp
+    printf "assemble_paired_end_data" > $workingDir/.prev_step.temp
 else
     echo "workingDir=$output_dir"
 fi

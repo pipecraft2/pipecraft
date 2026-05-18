@@ -6,15 +6,23 @@
 
 ################################################
 ###Third-party applications:
-#ITSx v1.1.3
-#seqkit v2.3.0
-#mothur 1.46.1
-#pigz v2.4
-#perl v5.32.0
+#ITSx
+#seqkit
+#mothur
+#pigz
+#perl
 #python3 with biopython
 ################################################
 printf "# pipeline = $pipeline\n"
 printf "# service = $service for $organisms\n"
+
+# Checking tool versions
+itsx_version=$(ITSx --help 2>&1 | grep -m1 '^Version:' | awk '{print $2}' 2>&1)
+seqkit_version=$(seqkit version 2>&1 | awk '{print $2}')
+mothur_version=$(mothur --version 2>&1 | grep -m1 '^Mothur version=' | sed 's/^Mothur version=//')
+printf "# ITSx (version $itsx_version)\n"
+printf "# seqkit (version $seqkit_version)\n"
+printf "# mothur (version $mothur_version)\n"
 
 #load variables
 organisms=$"-t ${organisms}"
@@ -58,6 +66,13 @@ source /scripts/submodules/framework.functions.sh
 #python module for removing empty fasta records if using --partial
 run_python_module=$"python3 /scripts/submodules/remove_empty_seqs.py"
 
+# if working with multiRunDir, and the previous step was assemble_paired_end_data
+if [[ -f "$workingDir/.prev_step.temp" ]]; then
+    prev_step=$(cat $workingDir/.prev_step.temp) # for checking previous step
+    printf "# prev_step = $prev_step\n" # expect only "assemble_paired_end_data" here
+    rm -f $workingDir/.prev_step.temp
+fi
+
 # check if working with multiple runs or with a single sequencing run
 if [[ -d "/input/multiRunDir" ]]; then
     echo "ITSx with multiple sequencing runs in multiRunDir"
@@ -68,7 +83,10 @@ if [[ -d "/input/multiRunDir" ]]; then
     if [[ $pipeline == "vsearch_OTUs" ]]; then
         DIRS=$(find . -maxdepth 2 -mindepth 1 -type d | grep "chimeraFiltered_out" | grep -v "chimeraFiltered_out.dada2"| grep -v "skip_" | grep -v "merged_runs" | grep -v "tempdir" | sed -e "s/^\.\///") 
     fi
-    if [[ $pipeline == "UNOISE_ASVs" ]]; then
+    if [[ $pipeline == "UNOISE_ASVs" ]] && [[ $prev_step == "assemble_paired_end_data" ]]; then
+        DIRS=$(find . -maxdepth 2 -mindepth 1 -type d | grep "assembled_out" | grep -v "skip_" | grep -v "merged_runs" | grep -v "tempdir" | sed -e "s/^\.\///") 
+    fi
+    if [[ $pipeline == "UNOISE_ASVs" ]] && [[ $prev_step != "assemble_paired_end_data" ]]; then
         DIRS=$(find . -maxdepth 2 -mindepth 1 -type d | grep "qualFiltered_out" | grep -v "skip_" | grep -v "merged_runs" | grep -v "tempdir" | sed -e "s/^\.\///") 
     fi
     echo "working in dirs:"
@@ -93,6 +111,7 @@ for seqrun in $DIRS; do
     start=$(date +%s)
 
     cd $seqrun
+    printf "\n workingDir = $seqrun \n"
     if [[ $multiDir == "TRUE" ]]; then
         ### Check if the dir has the specified file extension; if not then ERROR
         count=$(ls -1 *.$fileFormat 2>/dev/null | wc -l)
@@ -301,75 +320,87 @@ for seqrun in $DIRS; do
     #################################################
     printf "\nCleaning up and compiling final stats files ...\n"
 
+    # Delete empty output fasta files
+    find "$output_dir" -maxdepth 3 -empty -type f -delete
+    # Delete empty output dirs
+    find "$output_dir" -empty -type d -delete
+    
     #for each output separately (SSU,ITS1,5_8S,ITS2,LSU,full)
         #file identifier string after the process
-    if [[ -d $output_dir/SSU ]]; then
+    if [[ -d "$output_dir/SSU" && -n "$(find "$output_dir/SSU" -type f -print -quit 2>/dev/null)" ]]; then
         outfile_addition=$"SSU"
         subdir=$"SSU"
-        clean_and_make_stats_multidir
-        if [[ -d $output_dir/SSU/full_and_partial ]]; then
+        if [[ -n "$(find "$output_dir/SSU" -maxdepth 1 -type f -name "*.$extension" -print -quit 2>/dev/null)" ]]; then
+            clean_and_make_stats_multidir
+        fi
+        if [[ -d "$output_dir/SSU/full_and_partial" && -n "$(find "$output_dir/SSU/full_and_partial" -maxdepth 1 -type f -name "*.$extension" -print -quit 2>/dev/null)" ]]; then
             outfile_addition=$"SSU.full_and_partial"
             subdir=$"SSU/full_and_partial"
-            subdir=$(echo $subdir | sed -e "s/\//\\\\\//g")
             clean_and_make_stats_multidir
         fi
     fi
-    if [[ -d $output_dir/ITS1 ]]; then
+    if [[ -d "$output_dir/ITS1" && -n "$(find "$output_dir/ITS1" -type f -print -quit 2>/dev/null)" ]]; then
         outfile_addition=$"ITS1"
         subdir=$"ITS1"
-        clean_and_make_stats_multidir
-        if [[ -d $output_dir/ITS1/full_and_partial ]]; then
+        if [[ -n "$(find "$output_dir/ITS1" -maxdepth 1 -type f -name "*.$extension" -print -quit 2>/dev/null)" ]]; then
+            clean_and_make_stats_multidir
+        fi
+        if [[ -d "$output_dir/ITS1/full_and_partial" && -n "$(find "$output_dir/ITS1/full_and_partial" -type f -print -quit 2>/dev/null)" ]]; then
             outfile_addition=$"ITS1.full_and_partial"
             subdir=$"ITS1/full_and_partial"
-            subdir=$(echo $subdir | sed -e "s/\//\\\\\//g")
             clean_and_make_stats_multidir
         fi
     fi
-    if [[ -d $output_dir/5_8S ]]; then
+    if [[ -d "$output_dir/5_8S" && -n "$(find "$output_dir/5_8S" -type f -print -quit 2>/dev/null)" ]]; then
         outfile_addition=$"5_8S"
         subdir=$"5_8S"
-        clean_and_make_stats_multidir
-        if [[ -d $output_dir/5_8S/full_and_partial ]]; then
+        if [[ -n "$(find "$output_dir/5_8S" -maxdepth 1 -type f -name "*.$extension" -print -quit 2>/dev/null)" ]]; then
+            clean_and_make_stats_multidir
+        fi
+        
+        if [[ -d "$output_dir/5_8S/full_and_partial" && -n "$(find "$output_dir/5_8S/full_and_partial" -type f -print -quit 2>/dev/null)" ]]; then
             outfile_addition=$"5_8S.full_and_partial"
             subdir=$"5_8S/full_and_partial"
-            subdir=$(echo $subdir | sed -e "s/\//\\\\\//g")
             clean_and_make_stats_multidir
         fi
     fi
-    if [[ -d $output_dir/ITS2 ]]; then
+    if [[ -d "$output_dir/ITS2" && -n "$(find "$output_dir/ITS2" -type f -print -quit 2>/dev/null)" ]]; then
         outfile_addition=$"ITS2"
         subdir=$"ITS2"
-        clean_and_make_stats_multidir
-        if [[ -d $output_dir/ITS2/full_and_partial ]]; then
+        if [[ -n "$(find "$output_dir/ITS2" -maxdepth 1 -type f -name "*.$extension" -print -quit 2>/dev/null)" ]]; then
+            clean_and_make_stats_multidir
+        fi
+        if [[ -d "$output_dir/ITS2/full_and_partial" && -n "$(find "$output_dir/ITS2/full_and_partial" -type f -print -quit 2>/dev/null)" ]]; then
             outfile_addition=$"ITS2.full_and_partial"
             subdir=$"ITS2/full_and_partial"
-            subdir=$(echo $subdir | sed -e "s/\//\\\\\//g")
             clean_and_make_stats_multidir
         fi
     fi
-    if [[ -d $output_dir/LSU ]]; then
+    if [[ -d $output_dir/LSU && -n "$(find "$output_dir/LSU" -type f -print -quit 2>/dev/null)" ]]; then
         outfile_addition=$"LSU"
         subdir=$"LSU"
-        clean_and_make_stats_multidir
-        if [[ -d $output_dir/LSU/full_and_partial ]]; then
+        if [[ -n "$(find "$output_dir/LSU" -maxdepth 1 -type f -name "*.$extension" -print -quit 2>/dev/null)" ]]; then
+            clean_and_make_stats_multidir
+        fi
+        if [[ -d "$output_dir/LSU/full_and_partial" && -n "$(find "$output_dir/LSU/full_and_partial" -type f -print -quit 2>/dev/null)" ]]; then
             outfile_addition=$"LSU.full_and_partial"
             subdir=$"LSU/full_and_partial"
-            subdir=$(echo $subdir | sed -e "s/\//\\\\\//g")
             clean_and_make_stats_multidir
         fi
     fi
-    if [[ -d $output_dir/full_ITS ]]; then
+    if [[ -d "$output_dir/full_ITS" && -n "$(find "$output_dir/full_ITS" -type f -print -quit 2>/dev/null)" ]]; then
         outfile_addition=$"full"
         subdir=$"full_ITS"
-        clean_and_make_stats_multidir
-        if [[ -d $output_dir/full_ITS/full_and_partial ]]; then
+        if [[ -n "$(find "$output_dir/full_ITS" -maxdepth 1 -type f -name "*.$extension" -print -quit 2>/dev/null)" ]]; then
+            clean_and_make_stats_multidir
+        fi
+        if [[ -d "$output_dir/full_ITS/full_and_partial" && -n "$(find "$output_dir/full_ITS/full_and_partial" -type f -print -quit 2>/dev/null)" ]]; then
             outfile_addition=$"full_and_partial"
             subdir=$"full_ITS/full_and_partial"
-            subdir=$(echo $subdir | sed -e "s/\//\\\\\//g")
             clean_and_make_stats_multidir
         fi
     fi
-    if [[ -d $output_dir/no_detections ]]; then
+    if [[ -d "$output_dir/no_detections" && -n "$(find "$output_dir/no_detections" -type f -print -quit 2>/dev/null)" ]]; then
         outfile_addition=$"no_detections"
         subdir=$"no_detections"
         clean_and_make_stats_multidir
@@ -398,7 +429,8 @@ Runtime: $runtime seconds
 
 Files in 'ITSx_out' directory represent sequences that passed ITS Extractor.
 Regions are placed under corrseponding directory (i.e., ITS2 sequences are in 'ITS2' directory).
-Files in /no_detections directory represent sequences where no ITS regions were identified.
+
+If there were sequences with no ITS regions identified, then they are in /no_detections directory.
 
 If input was FASTQ formatted file(s), then it was converted to FASTA, and only FASTA is outputted.
 Input FASTA files (converted from FASTQ) are in ITSx_out/ITSx_input_to_FASTA directory.
@@ -408,13 +440,13 @@ ITSx -i input.unique.seqs -o output --preserve T --graphical F $organisms $parti
 
 ##############################################
 ###Third-party applications for this process:
-#ITSx v1.1.3 for extracting ITS regions
+#ITSx (version $itsx_version) for extracting ITS regions
     #citation: Bengtsson-Palme J., et al., 2013. Improved software detection and extraction of ITS1 and ITS2 from ribosomal ITS sequences of fungi and other eukaryotes for analysis of environmental sequencing data. Methods in Ecology and Evolution 4, 914-919.
     #microbiology.se/software/itsx/
-#seqkit v2.3.0 for converting fastq to fasta (if input was fastq)
+#seqkit (version $seqkit_version) for converting fastq to fasta (if input was fastq)
     #citation: Shen W, Le S, Li Y, Hu F (2016) SeqKit: A Cross-Platform and Ultrafast Toolkit for FASTA/Q File Manipulation. PLOS ONE 11(10): e0163962. https://doi.org/10.1371/journal.pone.0163962
     #https://bioinf.shenwei.me/seqkit/
-#mothur 1.46.1 for unique and deunique sequences prior and after extraction
+#mothur (version $mothur_version) for unique and deunique sequences prior and after extraction
     #citation: Schloss, P.D., et al., Introducing mothur: Open-source, platform-independent, community-supported software for describing and comparing microbial communities. Appl Environ Microbiol, 2009. 75(23):7537-41
     #https://github.com/mothur/mothur
 ##############################################" > $output_dir/README.txt

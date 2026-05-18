@@ -5,9 +5,9 @@
 
 ############################
 ###Third-party applications:
-#vsearch v2.23.0
-#seqkit v2.3.0
-#pigz v2.4
+#vsearch
+#seqkit
+#pigz
 ############################
 
 # Checking tool versions
@@ -31,6 +31,8 @@ max_length=${max_length}
 maxee_rate=${maxee_rate}
 truncqual=${truncqual}
 truncee=${truncee}
+strip_left=${strip_left}
+strip_right=${strip_right}
 
 #Source for functions
 source /scripts/submodules/framework.functions.sh
@@ -61,18 +63,48 @@ if [[ $truncee == null ]] || [[ -z $truncee ]] || [[ $truncee == 0 ]]; then
 else
     truncee=$"--fastq_truncee $truncee"
 fi
+if [[ $strip_left == null ]] || [[ -z $strip_left ]] || [[ $strip_left == 0 ]]; then
+    strip_left=$""
+else
+    strip_left=$"--fastq_stripleft $strip_left"
+fi
+if [[ $strip_right == null ]] || [[ -z $strip_right ]] || [[ $strip_right == 0 ]]; then
+    strip_right=$""
+else
+    strip_right=$"--fastq_stripright $strip_right"
+fi
+
+## check if working with multiple runs or with a single sequencing run
+# if working with multiRunDir, and the previous step was CUT PRIMERS
+if [[ -f "$workingDir/.prev_step.temp" ]]; then
+    prev_step=$(cat $workingDir/.prev_step.temp) # for checking previous step (output from cut_primers_paired_end_reads.sh)
+    printf "# prev_step = $prev_step\n"
+    rm -f $workingDir/.prev_step.temp
+fi
 
 # check if working with multiple runs or with a single sequencing run
-if [[ -d "/input/multiRunDir" ]]; then
+if [[ -d "/input/multiRunDir" ]] && [[ $pipeline == "vsearch_OTUs" || $pipeline == "UNOISE_ASVs" ]] && [[ $prev_step == "cut_primers" ]]; then
     echo "vsearch paired-end pipeline with multiple sequencing runs in multiRunDir"
-    echo "Process = quality filtering"
+    echo "Process = quality filtering (after cut primers)"
     cd /input/multiRunDir
     # read in directories (sequencing sets) to work with. Skip directories renamed as "skip_*"
-    DIRS=$(find . -maxdepth 3 -mindepth 1 -type d | grep "assembled_out" | grep -v "skip_" | grep -v "merged_runs" | grep -v "tempdir" | sed -e "s/^\.\///") 
+    DIRS=$(find . -maxdepth 2 -mindepth 1 -type d | grep "primersCut_out" | grep -v "skip_" | grep -v "merged_runs" | grep -v "tempdir" | sed -e "s/^\.\///") 
     echo "working in dirs:"
     echo $DIRS
     multiDir=$"TRUE"
     export multiDir
+# if working with multiRunDir, but the previous step was not CUT PRIMERS
+elif [[ -d "/input/multiRunDir" ]] && [[ $prev_step != "cut_primers" ]]; then
+    echo "Run with multiple sequencing runs in multiRunDir"
+    echo "Process = quality filtering"
+    cd /input/multiRunDir
+    # read in directories (sequencing sets) to work with. Skip directories renamed as "skip_*"
+    DIRS=$(find . -maxdepth 1 -mindepth 1 -type d | grep -v "tempdir" | grep -v "skip_" | grep -v "merged_runs" | sed -e "s/^\.\///")
+    echo "working in dirs:"
+    echo $DIRS
+    multiDir=$"TRUE"
+    export multiDir
+# if working with individual run
 else
     echo "Working with individual sequencing run"
     echo "Process = quality filtering"
@@ -145,6 +177,8 @@ for seqrun in $DIRS; do
         $maxee_rate \
         $truncqual \
         $truncee \
+        $strip_left \
+        $strip_right \
         --fastqout tempdir/$inputR1.$extension"
 
         #R1
@@ -161,6 +195,8 @@ for seqrun in $DIRS; do
         $maxee_rate \
         $truncqual \
         $truncee \
+        $strip_left \
+        $strip_right \
         --fastqout tempdir/$inputR1.$extension 2>&1)
         check_app_error
 
@@ -178,6 +214,8 @@ for seqrun in $DIRS; do
         $maxee_rate \
         $truncqual \
         $truncee \
+        $strip_left \
+        $strip_right \
         --fastqout tempdir/$inputR2.$extension 2>&1)
         check_app_error
 
@@ -232,7 +270,7 @@ Files in 'qualFiltered_out':
 # seq_count_summary.txt = summary of sequence counts per sample.
 
 Core commands -> 
-quality filtering: vsearch --fastq_filter input_file $maxee $maxns $trunc_length $minlen $cores $qmax $qmin $max_length $maxee_rate $truncqual $truncee --fastqout output_file
+quality filtering: vsearch --fastq_filter input_file $maxee $maxns $trunc_length $minlen $cores $qmax $qmin $max_length $maxee_rate $truncqual $truncee $strip_left $strip_right --fastqout output_file
 Synchronizing R1 and R2 reads (matching pair mates): seqkit pair -1 inputR1 -2 inputR2
 
 ##############################################

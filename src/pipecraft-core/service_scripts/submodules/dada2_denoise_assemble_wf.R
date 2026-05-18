@@ -11,7 +11,7 @@ cat("DADA2 version = ", base::toString(packageVersion("dada2")), "\n")
 
 #load env variables
 readType = Sys.getenv('readType')
-fileFormat= Sys.getenv('fileFormat')
+fileFormat = Sys.getenv('fileFormat')
 dataFormat = Sys.getenv('dataFormat')
 workingDir = Sys.getenv('workingDir')
 
@@ -22,7 +22,9 @@ trimOverhang = Sys.getenv('trimOverhang')
 justConcatenate = Sys.getenv('justConcatenate')
 pool = Sys.getenv('pool')
 qualityType = Sys.getenv('qualityType')
-errorEstFun = "loessErrfun"
+errorEstFun = Sys.getenv('errorEstFun')
+nbases = as.numeric(Sys.getenv('nbases'))
+randomize = Sys.getenv('randomize')
 
 #setDadaOpt() settings
 omegaa = as.numeric(Sys.getenv('OMEGA_A'))
@@ -30,6 +32,7 @@ omegap = as.numeric(Sys.getenv('OMEGA_P'))
 omegac= as.numeric(Sys.getenv('OMEGA_C'))
 detect_singletons = Sys.getenv('DETECT_SINGLETONS')
 band_size = as.numeric(Sys.getenv('BAND_SIZE'))
+homopoly_gap_penalty_raw = Sys.getenv('Homopoly_gap_penalty')
 
 #"FALSE" or "TRUE" to FALSE or TRUE for dada2
 if (pool == "false" || pool == "FALSE"){
@@ -37,6 +40,9 @@ if (pool == "false" || pool == "FALSE"){
 }
 if (pool == "true" || pool == "TRUE"){
     pool = TRUE
+}
+if (is.character(pool) && tolower(pool) %in% c("pseudo", "psuedo")) {
+    pool = "pseudo"
 }
 if (trimOverhang == "false" || trimOverhang == "FALSE"){
     trimOverhang = FALSE
@@ -56,31 +62,62 @@ if (detect_singletons == "false" || detect_singletons == "FALSE"){
 if (detect_singletons == "true" || detect_singletons == "TRUE"){
     detect_singletons = TRUE
 }
+if (homopoly_gap_penalty_raw %in% c("", "NULL", "null", "0")) {
+    homopoly_gap_penalty = NULL
+} else {
+    homopoly_gap_penalty = as.numeric(homopoly_gap_penalty_raw)
+}
+if (randomize == "false" || randomize == "FALSE"){
+    randomize = FALSE
+}
+if (randomize == "true" || randomize == "TRUE"){
+    randomize = TRUE
+}
 
-#output_dir
+# output_dir
 path_results = Sys.getenv('output_dir')
 
-#Set DADA options
-setDadaOpt(OMEGA_A = omegaa, OMEGA_P = omegap, OMEGA_C = omegac, DETECT_SINGLETONS = detect_singletons, BAND_SIZE = band_size)
+# Set DADA options
+setDadaOpt(OMEGA_A = omegaa, 
+            OMEGA_P = omegap, 
+            OMEGA_C = omegac, 
+            DETECT_SINGLETONS = detect_singletons, 
+            BAND_SIZE = band_size, 
+            HOMOPOLYMER_GAP_PENALTY = homopoly_gap_penalty)
 
 ### Denoise
 if (pool != ""){
     cat(";; Working directory = ", workingDir)
     cat(";; errorEstimationFunction = ", errorEstFun, "\n")
-    cat(";; BAND_SIZE = ", band_size, "\n")  
+    cat(";; BAND_SIZE = ", band_size, "\n")
+    cat(";; HOMOPOLYMER_GAP_PENALTY = ",
+        if (is.null(homopoly_gap_penalty)) "NULL" else homopoly_gap_penalty, "\n")
+    cat(";; OMEGA_A = ", omegaa, "\n")
+    cat(";; OMEGA_P = ", omegap, "\n")
+    cat(";; OMEGA_C = ", omegac, "\n")
+    cat(";; DETECT_SINGLETONS = ", detect_singletons, "\n")
+    cat(";; randomize = ", randomize, "\n")
+    cat(";; nbases = ", nbases, "\n")
+    cat(";; qualityType = ", qualityType, "\n")
+    cat(";; pool = ", pool, "\n")
+    cat(";; maxMismatch = ", maxMismatch, "\n")
+    cat(";; minOverlap = ", minOverlap, "\n")
+    cat(";; justConcatenate = ", justConcatenate, "\n")
+    cat(";; trimOverhang = ", trimOverhang, "\n")
+    cat(";; ")
     cat(";; Performing DADA2 denoising ;; ")
-    #check for output dir and delete if needed
+    # check for output dir and delete if needed
     if (dir.exists(path_results)) {
         unlink(path_results, recursive=TRUE)
     }
-    #create output dir
+    # create output dir
     dir.create(path_results)
 
-    #copy rds files to denoised_assembled.dada2 (for making seq_count_summary)
+    # copy rds files to denoised_assembled.dada2 (for making seq_count_summary)
     file.copy(file.path(workingDir, "sample_names.rds"), path_results)
     file.copy(file.path(workingDir, "quality_filtered.rds"), path_results)
 
-    #filtered files path
+    # filtered files path
     filtFs = readRDS(file.path(workingDir, "filtFs.rds"))
     filtRs = readRDS(file.path(workingDir, "filtRs.rds"))
     sample_names = readRDS(file.path(workingDir, "sample_names.rds"))
@@ -92,13 +129,21 @@ if (pool != ""){
     # Denoise based on errorEstimationFunction
     if (errorEstFun == "loessErrfun"){
         set.seed(100)
-        #Learn R1 error rates
-        errF = learnErrors(filtFs, errorEstimationFunction = loessErrfun, nbases = 1e8, multithread = TRUE) # nolint
+        # Learn R1 error rates
+        errF = learnErrors(filtFs, errorEstimationFunction = loessErrfun, 
+                            nbases = nbases, 
+                            multithread = TRUE, 
+                            randomize = randomize, 
+                            qualityType = qualityType)
         saveRDS(errF, (file.path(path_results, "errF.rds")))
-        #Learn R2 error rates
-        errR = learnErrors(filtRs, errorEstimationFunction = loessErrfun, nbases = 1e8, multithread = TRUE, randomize = TRUE) # nolint
+        # Learn R2 error rates
+        errR = learnErrors(filtRs, errorEstimationFunction = loessErrfun, 
+                            nbases = nbases, 
+                            multithread = TRUE, 
+                            randomize = randomize, 
+                            qualityType = qualityType)
         saveRDS(errR, (file.path(path_results, "errR.rds")))
-        #Error rate figures
+        # Error rate figures
         cat(";; ")
         pdf(file.path(path_results, "Error_rates_R1.pdf"))
           print( plotErrors(errF) )
@@ -110,50 +155,85 @@ if (pool != ""){
         # Sample inference and merger of paired-end reads
         mergers = vector("list", length(sample_names))
         names(mergers) = sample_names
-        for(sample in sample_names) {
-          cat(";; Processing:", sample, "\n")
-          derepF = derepFastq(filtFs[[sample]])
-          ddF = dada(derepF, err = errF, multithread = TRUE)
-          derepR = derepFastq(filtRs[[sample]])
-          ddR = dada(derepR, err = errR, multithread = TRUE)
-          merger = mergePairs(ddF, derepF, ddR, derepR)
-          mergers[[sample]] = merger
+
+        # pool=FALSE: derep + dada + merge per sample (lowest peak RAM for derep).
+        # pool=TRUE or "pseudo": derep all samples, one dada() per orientation on the
+        # full named lists, then mergePairs per sample (see ?dada2::dada, pool).
+        if (identical(pool, FALSE)) {
+          cat(";; Processing per sample with pool = ", pool, "\n", sep = "")
+          for (sample in sample_names) {
+            cat(";; Processing:", sample, "\n")
+            derepF = derepFastq(filtFs[[sample]], qualityType = qualityType)
+            ddF = dada(derepF, err = errF, pool = FALSE, multithread = TRUE)
+            derepR = derepFastq(filtRs[[sample]], qualityType = qualityType)
+            ddR = dada(derepR, err = errR, pool = FALSE, multithread = TRUE)
+            mergers[[sample]] = mergePairs(ddF, derepF, ddR, derepR,
+                                maxMismatch = maxMismatch,
+                                minOverlap = minOverlap,
+                                justConcatenate = justConcatenate,
+                                trimOverhang = trimOverhang)
+          }
+          invisible(gc())
+        } else {
+          cat(";; Processing all samples with pool = ", pool, "\n", sep = "")
+          derepFs = vector("list", length(sample_names))
+          derepRs = vector("list", length(sample_names))
+          names(derepFs) = sample_names
+          names(derepRs) = sample_names
+          for (sample in sample_names) {
+            cat(";; Dereplicating:", sample, "\n")
+            derepFs[[sample]] = derepFastq(filtFs[[sample]], qualityType = qualityType)
+            derepRs[[sample]] = derepFastq(filtRs[[sample]], qualityType = qualityType)
+          }
+          cat(";; Denoising all samples (R1) with pool = ", pool, "\n", sep = "")
+          ddFs = dada(derepFs, err = errF, pool = pool, multithread = TRUE)
+          cat(";; Denoising all samples (R2) with pool = ", pool, "\n", sep = "")
+          ddRs = dada(derepRs, err = errR, pool = pool, multithread = TRUE)
+          for (sample in sample_names) {
+            cat(";; Merging:", sample, "\n")
+            mergers[[sample]] = mergePairs(ddFs[[sample]], derepFs[[sample]],
+                                ddRs[[sample]], derepRs[[sample]],
+                                maxMismatch = maxMismatch,
+                                minOverlap = minOverlap,
+                                justConcatenate = justConcatenate,
+                                trimOverhang = trimOverhang)
+          }
+          rm(derepFs, derepRs, ddFs, ddRs)
+          invisible(gc())
         }
-        rm(derepF); rm(derepR)
-        invisible(gc())
         saveRDS(mergers, (file.path(path_results, "mergers.rds")))
     }
 }
 
 ### Merge denoised paired-end reads
+ # actual mergin is done above, but this process here is for MERGE PAIRS panel status on GUI
 if (pool == ""){
+    cat(";; ")
     cat(";; Working directory = ", workingDir)
-    cat(";; Merging data with mergePairs ")
-    #load denoised data
+    # load denoised data
     mergers = readRDS(file.path(path_results, "mergers.rds"))
 
     ### WRITE PER-SAMPLE DENOISED and MERGED FASTA FILES
-    #make sequence table
+    # make sequence table
     cat(";; Writing per-sample denoised and merged fasta files ")
     ASV_tab = makeSequenceTable(mergers)
-    #rownames(ASV_tab) = gsub("_R1.*", "", rownames(ASV_tab)) #no need when doing "names(mergers) = sample_names" above
     
-    #write RDS object
+    # write RDS object
     saveRDS(ASV_tab, (file.path(path_results, "ASVs_table.denoised.rds")))
 
-    #sequence headers
+    # sequence headers
     asv_seqs = colnames(ASV_tab)
     asv_headers = openssl::sha1(asv_seqs) #header as sha1
 
-    #transpose sequence table
+    # transpose sequence table
     ASV_tab = t(ASV_tab)
-    #add sequences to 1st column
+    # add sequences to 1st column
     ASV_tab = cbind(row.names(ASV_tab), ASV_tab)
     colnames(ASV_tab)[1] = "Sequence"
-    #row names as sequence headers
+    # row names as sequence headers
     row.names(ASV_tab) = asv_headers
 
-    #Loop through each sample in the table and write per-sample fasta files
+    # Loop through each sample in the table and write per-sample fasta files
     for (i in 2:length(colnames(ASV_tab))){
         sample_name = colnames(ASV_tab)[i]
         sample_file = paste(sample_name, "ASVs.fasta", sep = ".") 
@@ -180,8 +260,8 @@ if (pool == ""){
         row_sub = apply(qfilt, 1, function(row) all(row !=0 ))
         qfilt = qfilt[row_sub, ]
 
-    #seq_count = cbind(qfilt, sapply(dadaFs, getN), sapply(dadaRs, getN), sapply(merge, getN))
-    #colnames(seq_count) = c("input", "qualFiltered", "denoised_R1", "denoised_R2", "merged")
+    # seq_count = cbind(qfilt, sapply(dadaFs, getN), sapply(dadaRs, getN), sapply(merge, getN))
+    # colnames(seq_count) = c("input", "qualFiltered", "denoised_R1", "denoised_R2", "merged")
     seq_count = cbind(qfilt, sapply(mergers, getN))
     colnames(seq_count) = c("input", "qualFiltered", "merged")
     rownames(seq_count) = sample_names

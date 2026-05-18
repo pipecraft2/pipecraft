@@ -6,10 +6,10 @@
 
 ################################################
 ### Third-party applications:
-# swarm (v3.1.6)
-# vsearch (v2.30.4)
+# swarm
+# vsearch
 # GNU Parallel (20260122)
-# seqkit (v2.12.0)
+# seqkit
 # pigz
 ################################################
 
@@ -48,7 +48,7 @@ swarm_gap_open=${swarm_gap_open}           # Gap open penalty, default 12.
 swarm_gap_ext=${swarm_gap_ext}             # Gap extension penalty, default 4.
 swarm_disable_sse3=${swarm_disable_sse3}   # Flag, default "true" to disable SSE3.
 # Thread setting: default to 4 but can be overridden.
-swarm_threads=${swarm_threads:-4}
+swarm_threads=${cores:-4}
 
 # File format and input file variables
 fileFormat=${fileFormat}                   # "fasta", "fastq", etc.
@@ -62,23 +62,12 @@ output_dir=$"/input/clustering_out_swarm"
 export output_dir
 
 ###############################
-### Multi-run Check
+### Single-run mode
 ###############################
-if [[ -d "/input/multiRunDir" ]]; then
-    echo "SWARM clustering pipeline with multiple sequencing runs in multiRunDir"
-    echo "Process = clustering"
-    cd /input/multiRunDir
-    DIRS=$(find . -maxdepth 2 -mindepth 1 -type d | grep "chimeraFiltered_out" | grep -v "skip_" | grep -v "merged_runs" | grep -v "tempdir" | sed -e "s/^\.\///")
-    echo "Working in directories:"
-    echo "$DIRS"
-    multiDir="TRUE"
-    export multiDir
-else
-    echo "Working with individual sequencing run"
-    echo "Process = clustering"
-    DIRS=$(pwd)
-    echo "Working directory: $DIRS"
-fi
+echo "Working with individual sequencing run"
+echo "Process = clustering"
+DIRS=$(pwd)
+echo "Working directory: $DIRS"
 
 ###############################
 ### Start of the Workflow
@@ -91,32 +80,20 @@ for seqrun in $DIRS; do
     start=$(date +%s)
 
     cd "$seqrun"
-    if [[ "$multiDir" == "TRUE" ]]; then
-        count=$(ls -1 *."$fileFormat" 2>/dev/null | wc -l)
-        if [[ $count -eq 0 ]]; then
-            printf "[ERROR] No files with extension \"%s\" found in %s. Quitting.\n" "$fileFormat" "$seqrun" >&2
-            end_process
-        fi
-        output_dir=$"/input/multiRunDir/${seqrun%%/*}/clustering_out_swarm"
-        export output_dir
-        mkdir -p "$output_dir"
-        swarm_output_path="$output_dir/$swarm_output_file"
-        swarm_stats_path="$output_dir/$swarm_stats_file"
-        swarm_seeds_path="$output_dir/$swarm_seeds_file"
-        output_fastas+=("$swarm_seeds_path")
-        first_file_check
-        prepare_SE_env
-    else
-        output_dir=$"/input/clustering_out_swarm"
-        export output_dir
-        mkdir -p "$output_dir"
-        swarm_output_path="$output_dir/$swarm_output_file"
-        swarm_stats_path="$output_dir/$swarm_stats_file"
-        swarm_seeds_path="$output_dir/$swarm_seeds_file"
-        output_fastas=("$swarm_seeds_path")
-        first_file_check
-        prepare_SE_env
+    count=$(ls -1 *."$fileFormat" 2>/dev/null | wc -l)
+    if [[ $count -eq 0 ]]; then
+        printf "[ERROR] No files with extension \"%s\" found in %s. Quitting.\n" "$fileFormat" "$seqrun" >&2
+        end_process
     fi
+    output_dir=$"/input/clustering_out_swarm"
+    export output_dir
+    mkdir -p "$output_dir"
+    swarm_output_path="$output_dir/$swarm_output_file"
+    swarm_stats_path="$output_dir/$swarm_stats_file"
+    swarm_seeds_path="$output_dir/$swarm_seeds_file"
+    output_fastas=("$swarm_seeds_path")
+    first_file_check
+    prepare_SE_env
 
     ### Pre-process samples: Check files, decompress if needed, and validate formats.
     printf "Checking input files ...\n"
@@ -218,6 +195,136 @@ for seqrun in $DIRS; do
         printf "Error: SWARM clustering failed.\n" >&2
         exit 1
     fi
+    ### OTU Table Generation from SWARM output (Polars/NumPy-accelerated)
+    printf "Generating OTU table ...\n"
+    otu_table_path="$output_dir/swarm_clusters_table.txt"
+
+    python3 - "dereplicated_sequences" \
+              "$swarm_output_path" \
+              "$swarm_seeds_path" \
+              "$otu_table_path" <<'PYEOF'
+import sys, os, re
+import numpy as np
+
+try:
+    import polars as pl
+    HAS_POLARS = True
+except ImportError:
+    HAS_POLARS = False
+
+derep_dir   = sys.argv[1]
+swarms_file = sys.argv[2]
+seeds_file  = sys.argv[3]
+out_file    = sys.argv[4]
+
+# -------------------------------------------------------
+# STEP 1: Bulk-parse all per-sample derep FASTAs at once.
+# A single sha1 can occur in multiple samples (metabarcoding); we must
+# record EVERY (sample, size) pair so the OTU table credits all contributors.
+# -------------------------------------------------------
+HEADER_RE = re.compile(
+    rb'>([0-9a-f]{40});size=(\d+);sample=([^;\s\n]+)',
+    re.MULTILINE
+)
+
+amp_to_samples = {}   # sha1(str) -> list[(sample(str), size(int))]
+sample_set = set()
+
+for fname in sorted(os.listdir(derep_dir)):
+    if not fname.endswith('.fasta'):
+        continue
+    fpath = os.path.join(derep_dir, fname)
+    with open(fpath, 'rb') as fh:
+        blob = fh.read()
+    for m in HEADER_RE.finditer(blob):
+        sha    = m.group(1).decode()
+        size   = int(m.group(2))
+        sample = m.group(3).decode()
+        amp_to_samples.setdefault(sha, []).append((sample, size))
+        sample_set.add(sample)
+
+# -------------------------------------------------------
+# STEP 2: Sample index
+# -------------------------------------------------------
+samples    = sorted(sample_set)
+sample_idx = {s: i for i, s in enumerate(samples)}
+n_samples  = len(samples)
+print(f"Samples: {n_samples}  Amplicons: {len(amp_to_samples)}", flush=True)
+
+# -------------------------------------------------------
+# STEP 3: Seed IDs in order from seeds FASTA
+# -------------------------------------------------------
+seed_ids = []
+SEED_RE  = re.compile(rb'^>([^;\s]+)', re.MULTILINE)
+with open(seeds_file, 'rb') as fh:
+    blob = fh.read()
+for m in SEED_RE.finditer(blob):
+    seed_ids.append(m.group(1).decode())
+
+# -------------------------------------------------------
+# STEP 4: Parse swarms file + accumulate counts into numpy
+# Byte-level parsing to avoid UTF-8 decode overhead per entry
+# -------------------------------------------------------
+otu_ids   = []
+count_mat = []
+
+with open(swarms_file, 'rb') as fh:
+    for otu_idx, line in enumerate(fh):
+        line = line.rstrip()
+        if not line:
+            continue
+
+        counts = np.zeros(n_samples, dtype=np.int32)
+
+        for amp_entry in line.split(b' '):
+            sha = amp_entry.split(b';', 1)[0].decode()
+            for samp, sz in amp_to_samples.get(sha, ()):
+                counts[sample_idx[samp]] += sz
+
+        otu_id = seed_ids[otu_idx] if otu_idx < len(seed_ids) else f"OTU_{otu_idx}"
+        otu_ids.append(otu_id)
+        count_mat.append(counts)
+
+# Stack all OTU rows into a single 2D C-contiguous numpy array
+count_arr = np.vstack(count_mat)
+n_otus    = len(otu_ids)
+print(f"OTUs: {n_otus}", flush=True)
+
+# -------------------------------------------------------
+# STEP 5: Write TXT OTU table with header: "Swarm_cluster_ID" + sample names
+# Polars path: build DataFrame from numpy arrays (zero-copy via Arrow)
+# Fallback: write with python buffered I/O
+# -------------------------------------------------------
+if HAS_POLARS:
+    col_dict = {"Swarm_cluster_ID": otu_ids}
+    for i, s in enumerate(samples):
+        col_dict[s] = count_arr[:, i]   # numpy column slice, zero-copy into Arrow
+    df = pl.DataFrame(col_dict)
+    df.write_csv(out_file, separator="\t")
+    print(f"Written via Polars (zero-copy Arrow build)", flush=True)
+else:
+    # Fallback: buffered write with pre-joined lines
+    header = "Swarm_cluster_ID\t" + "\t".join(samples) + "\n"
+    lines  = [header]
+    for i, otu_id in enumerate(otu_ids):
+        lines.append(otu_id + "\t" + "\t".join(map(str, count_arr[i])) + "\n")
+        if len(lines) >= 50000:             # flush in chunks to avoid RAM spike
+            with open(out_file, 'a') as fh:
+                fh.writelines(lines)
+            lines = []
+    if lines:
+        mode = 'w' if not os.path.exists(out_file) else 'a'
+        with open(out_file, mode) as fh:
+            fh.writelines(lines)
+
+print(f"Done: {n_otus} OTUs x {n_samples} samples -> {out_file}", flush=True)
+PYEOF
+
+    if [[ $? -ne 0 ]]; then
+        printf "Error: OTU table generation failed.\n" >&2
+        exit 1
+    fi
+    printf "OTU table written to: %s\n" "$otu_table_path"
 
     #################################################
     ### CLEAN UP AND COMPILE FINAL README FILE
@@ -242,6 +349,11 @@ for seqrun in $DIRS; do
     seeds_basename=$(basename "$swarm_seeds_path")
     swarms_basename=$(basename "$swarm_output_path")
     stats_basename=$(basename "$swarm_stats_path")
+    core_command="$swarm_opts"
+    if [[ "$output_dir" == /input/* ]]; then
+        relative_output_dir="${output_dir#/input/}"
+        core_command="${core_command//$output_dir/$relative_output_dir}"
+    fi
     printf "# Reads were clustered using SWARM (see 'Core command' below for the used settings).
 Start time: %s
 End time: %s
@@ -249,9 +361,10 @@ Runtime: %s seconds
 
 Files in 'clustering_out_swarm' directory:
 --------------------------------------------
-%s       = FASTA formatted representative swarm-cluster sequences (seed sequences).
-%s               = SWARM cluster assignment file.
-%s               = SWARM statistics file.
+%s = FASTA formatted representative swarm-cluster sequences (seed sequences).
+%s = SWARM cluster assignment file.
+%s = SWARM statistics file.
+swarm_clusters_table.txt = SWARM clusters table (tab delimited file).
 
 Input files processed               = %s
 Total input reads                   = %s
@@ -260,8 +373,7 @@ Number of seed sequences (clusters) = %s
 Core command ->
 swarm %s tempdir/Glob_derep.fasta
 
-NOTE: OTU table generation is not included in this workflow.
-" "$start_time" "$(date)" "$runtime" "$seeds_basename" "$swarms_basename" "$stats_basename" "$input_file_count" "$total_reads" "$cluster_count" "$swarm_opts" > "$output_dir/README.txt"
+" "$start_time" "$(date)" "$runtime" "$seeds_basename" "$swarms_basename" "$stats_basename" "$input_file_count" "$total_reads" "$cluster_count" "$core_command" > "$output_dir/README.txt"
 
     if [[ "$was_fastq" == "true" ]]; then
         printf "\n\nInput was fastq; converted those to fasta before clustering.\nConverted fasta files in directory 'clustering_input_to_FASTA'\n" >> "$output_dir/README.txt"
@@ -271,26 +383,11 @@ NOTE: OTU table generation is not included in this workflow.
 
     printf "\nDONE for run: %s\nTotal time: %s sec.\n" "$seqrun" "$runtime"
 
-    # Return to multiRunDir root if applicable
-    if [[ "$multiDir" == "TRUE" ]]; then
-        cd /input/multiRunDir
-    fi
+    # end single-run iteration
 done
 
-# For multi-run analyses, validate and combine output FASTA files if needed
-if [[ "$multiDir" == "TRUE" ]]; then
-    valid_fastas=()
-    for fasta in "${output_fastas[@]}"; do
-        if [[ -f "$fasta" && -s "$fasta" ]]; then
-            valid_fastas+=("$fasta")
-        else
-            printf "Warning: FASTA file not found or empty: %s\n" "$fasta" >&2
-        fi
-    done
-    output_fasta=$(IFS=,; echo "${valid_fastas[*]}")
-else
-    output_fasta="${output_fastas[0]}"
-fi
+# Single-run: set output_fasta to the generated seeds file
+output_fasta="${output_fastas[0]}"
 
 # Final output variables for downstream services
 echo "#variables for all services: "
