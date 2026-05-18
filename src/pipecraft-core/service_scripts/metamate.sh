@@ -73,14 +73,11 @@ source /scripts/submodules/framework.functions.sh
 # - If the user DOES provide a file, use it (mapped into the container).
 if [[ "$abundance_filt" != "true" ]]; then
     specifications="/default_specs/specifications0.txt"
-    printf '%s\n' "NOTICE]: abundance_filt is not 'true' — forcing default metaMATE specifications: $specifications" >&2
 else
     if [[ -z "$specifications" ]] || [[ "$specifications" == "undefined" ]]; then
         specifications="/default_specs/specifications.txt"
-        printf '%s\n' "NOTICE]: no specifications file provided — using bundled default: $specifications" >&2
     else
         specifications=$(container_file "$specifications")
-        printf '%s\n' "NOTICE]: using user-provided metaMATE specifications: $specifications" >&2
     fi
 fi
 

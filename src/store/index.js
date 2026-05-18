@@ -18,6 +18,13 @@ function getDockerInstance() {
   return new Docker(options);
 }
 
+/** Match longest supported suffix first (e.g. .fastq.gz before .fastq). */
+function matchSupportedExtension(fileName, supportedExtensions) {
+  const lower = fileName.toLowerCase();
+  const byLongestFirst = [...supportedExtensions].sort((a, b) => b.length - a.length);
+  return byLongestFirst.find((ext) => lower.endsWith(ext)) ?? null;
+}
+
 Vue.use(Vuex);
 
 export default new Vuex.Store({
@@ -1293,15 +1300,6 @@ export default new Vuex.Store({
             selected: false,
             showExtra: false,
             extraInputs: [
-              {
-                name: "swarm_threads",
-                displayName: "cores",
-                value: 4,
-                disabled: "never",
-                tooltip: "Number of CPU cores to use",
-                type: "numeric",
-                rules: [(v) => v >= 1 || "ERROR: specify values >= 1"],
-              },
               {
                 name: "swarm_boundary",
                 displayName: "boundary",
@@ -6323,20 +6321,13 @@ export default new Vuex.Store({
   getters: {
     isDockerActive: state => state.dockerStatus === "running",
     mostCommonExtenson: (state) => (files) => {
-      // Create extensions count object
-      console.log(files);
       const extensionCounts = Object.fromEntries(
         state.SUPPORTED_EXTENSIONS.map(ext => [ext, 0])
       );
-      
-      // Process each file
+
       files.forEach(file => {
-        for (const ext of state.SUPPORTED_EXTENSIONS) {
-          if (file.toLowerCase().endsWith(ext)) {
-            extensionCounts[ext]++;
-            break;
-          }
-        }
+        const ext = matchSupportedExtension(file, state.SUPPORTED_EXTENSIONS);
+        if (ext) extensionCounts[ext]++;
       });
       
       // Find most common extension
@@ -6501,18 +6492,12 @@ export default new Vuex.Store({
       });
     },
     scanFiles(state, files) {
-      // Create extensions count object from the SUPPORTED_EXTENSIONS array
       const extensionCounts = Object.fromEntries(
         state.SUPPORTED_EXTENSIONS.map(ext => [ext, 0])
       );
-      // Process each file to count extensions
       files.forEach(file => {
-        for (const ext of state.SUPPORTED_EXTENSIONS) {
-          if (file.toLowerCase().endsWith(ext)) {
-            extensionCounts[ext]++;
-            break;
-          }
-        }
+        const ext = matchSupportedExtension(file, state.SUPPORTED_EXTENSIONS);
+        if (ext) extensionCounts[ext]++;
       });
       const mostCommonExtension = Object.keys(extensionCounts).reduce((a, b) => 
         extensionCounts[a] > extensionCounts[b] ? a : b

@@ -48,7 +48,7 @@ swarm_gap_open=${swarm_gap_open}           # Gap open penalty, default 12.
 swarm_gap_ext=${swarm_gap_ext}             # Gap extension penalty, default 4.
 swarm_disable_sse3=${swarm_disable_sse3}   # Flag, default "true" to disable SSE3.
 # Thread setting: default to 4 but can be overridden.
-swarm_threads=${swarm_threads:-4}
+swarm_threads=${cores:-4}
 
 # File format and input file variables
 fileFormat=${fileFormat}                   # "fasta", "fastq", etc.
