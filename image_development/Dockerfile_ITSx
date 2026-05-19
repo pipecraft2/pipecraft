@@ -14,11 +14,11 @@ RUN apt-get update -y \
     && ./configure && make && make install \
     && cd /tmp && rm hmmer-3.4.tar.gz && rm -rf hmmer-3.4 \
     && wget https://microbiology.se/sw/ITSx_1.1.3.tar.gz -O /tmp/ITSx_1.1.3.tar.gz  \
-    && tar zxvf /tmp/ITSx_1.1.3.tar.gz -C /usr/bin/ && rm /tmp/ITSx_1.1.3.tar.gz \
-    && ln -s /usr/bin/ITSx_1.1.3/ITSx /usr/bin/ITSx \
-    && rm -rf /usr/bin/ITSx_1.1.3/ITSx_db/ \
+    && tar zxvf /tmp/ITSx_1.1.3.tar.gz -C /tmp/ \
+    && cp /tmp/ITSx_1.1.3/ITSx /usr/bin/ITSx \
+    && rm -rf /tmp/ITSx_1.1.3 && rm /tmp/ITSx_1.1.3.tar.gz \
     && git clone --depth 1 --branch 2024.04.05 https://github.com/Mycology-Microbiology-Center/ITSx_HMMs /tmp/ITSx_HMMs \
-    && mkdir -p /usr/bin/ITSx_1.1.3/ITSx_db && cp -R /tmp/ITSx_HMMs/HMMs /usr/bin/ITSx_db/ && rm -rf /tmp/ITSx_HMMs \
+    && mkdir -p /usr/bin/ITSx_db && cp -R /tmp/ITSx_HMMs/HMMs /usr/bin/ITSx_db/ && rm -rf /tmp/ITSx_HMMs \
     && wget https://github.com/mothur/mothur/releases/download/v1.46.1/Mothur.Ubuntu_20.zip -O /tmp/mothur.zip \
     && unzip /tmp/mothur.zip -d /usr/bin/ && rm /tmp/mothur.zip \
     && apt-get clean -y && rm -rf /var/lib/apt/lists/* && rm -rf /var/cache/apt/archives
