@@ -3,13 +3,9 @@ FROM ubuntu:24.04
 
 RUN apt-get update -y \
     && apt-get install build-essential -y \
-    && apt-get install python3-dev -y \
-    && apt-get install python3-pip -y \
-    && python3 -m pip install biopython \
-    && apt-get install pigz -y \
-    && apt-get install wget -y \
-    && apt-get install unzip -y \
-    && apt-get install perl -y \
+    && apt-get install -y \
+      python3-dev python3-pip python3-biopython \
+      pigz wget unzip perl \
     && wget https://github.com/shenwei356/seqkit/releases/download/v2.13.0/seqkit_linux_amd64.tar.gz -O /tmp/seqkit.tar.gz \
     && tar zxvf /tmp/seqkit.tar.gz -C /usr/bin/ && rm /tmp/seqkit.tar.gz \
     && wget https://microbiology.se/sw/ITSx_1.1.3.tar.gz -O /tmp/ITSx_1.1.3.tar.gz  \
