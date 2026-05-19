@@ -23,7 +23,8 @@ RUN apt-get update -y \
     && make \
     && make install \
     && wget https://github.com/mothur/mothur/releases/download/v1.46.1/Mothur.Ubuntu_20.zip -O /tmp/mothur.zip \
-    && unzip /tmp/mothur.zip -d /usr/bin/ && rm /tmp/mothur.zip
+    && unzip /tmp/mothur.zip -d /usr/bin/ && rm /tmp/mothur.zip \
+    && apt-get clean -y && rm -rf /var/lib/apt/lists/* && rm -rf /var/cache/apt/archives
 ENV PATH "$PATH:/usr/bin/mothur"
 #ADD src/pipecraft-core/service_scripts/submodules /bin/submodules
 
