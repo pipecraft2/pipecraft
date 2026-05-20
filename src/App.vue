@@ -7,6 +7,9 @@
 
     <v-navigation-drawer app clipped right permanent width="72" dark>
       <rightNav />
+      <template #append>
+        <UpdateButton />
+      </template>
     </v-navigation-drawer>
 
     <v-main>
@@ -22,6 +25,7 @@
 <script>
 import leftNav from "./components/leftNav";
 import rightNav from "./components/rightNav";
+import UpdateButton from "./components/UpdateButton";
 import DockerPullSnackbar from "./components/DockerPullSnackbar";
 
 export default {
@@ -31,6 +35,7 @@ export default {
   components: {
     leftNav,
     rightNav,
+    UpdateButton,
     DockerPullSnackbar
   },
 

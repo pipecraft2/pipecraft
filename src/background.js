@@ -17,8 +17,18 @@ const fs = require("fs");
 const sudo = require('sudo-prompt');
 
 
-function update() {
-  autoUpdater.checkForUpdates();
+function sendToRenderer(channel, payload) {
+  if (win && !win.isDestroyed()) {
+    win.webContents.send(channel, payload);
+  }
+}
+
+function checkForUpdates() {
+  if (isDevelopment) {
+    sendToRenderer("update-not-available");
+    return Promise.resolve();
+  }
+  return autoUpdater.checkForUpdates();
 }
 
 async function checkScriptsPermissions() {
@@ -57,60 +67,29 @@ async function checkScriptsPermissions() {
 log.info("App starting...");
 
 autoUpdater.on("checking-for-update", () => {
-  return log.info("Checking for update...");
+  log.info("Checking for update...");
+  sendToRenderer("update-checking");
 });
-autoUpdater.on("update-available", () => {
-  dialog
-    .showMessageBox({
-      type: "question",
-      title: "Found Updates",
-      message: "A newer version of pipecraft is available",
-      buttons: ["Update now", "Cancel"],
-    })
-    .then((button) => {
-      console.log(button);
-      if (button.response === 0) {
-        console.log(button);
-        autoUpdater.downloadUpdate();
-      }
-    });
-  return log.info("Update available.");
+autoUpdater.on("update-available", (info) => {
+  log.info("Update available:", info && info.version);
+  sendToRenderer("update-available", { version: info && info.version });
 });
 autoUpdater.on("update-not-available", () => {
-  dialog.showMessageBox({
-    type: "question",
-    title: "No updates found",
-    message: "Pipecraft is up to date",
-    buttons: ["Ok"],
-  });
-  win.webContents.send("update-not-available");
-  return log.info("Update not available.");
+  log.info("Update not available.");
+  sendToRenderer("update-not-available");
 });
 autoUpdater.on("error", (err) => {
-  console.log(err);
-  dialog.showMessageBox({
-    type: "error",
-    title: "Something went wrong",
-    message: `${err}`,
-  });
-  win.webContents.send("update-error", err);
-  return log.info("Error in auto-updater. " + err);
+  const message = err && err.message ? err.message : String(err);
+  log.error("Error in auto-updater:", message);
+  sendToRenderer("update-error", message);
 });
 autoUpdater.on("download-progress", (progressObj) => {
-  console.log(progressObj);
-  return log.info("downloading update");
+  log.info("Downloading update:", progressObj.percent);
+  sendToRenderer("download-progress", { percent: progressObj.percent });
 });
-autoUpdater.on("update-downloaded", () => {
-  win.webContents.send("update-downloaded");
-  log.info("Update downloaded");
-  dialog
-    .showMessageBox({
-      title: "Install Updates",
-      message: "Updates downloaded, Pipecraft will restart to install updates.",
-    })
-    .then(() => {
-      setImmediate(() => autoUpdater.quitAndInstall());
-    });
+autoUpdater.on("update-downloaded", (info) => {
+  log.info("Update downloaded:", info && info.version);
+  sendToRenderer("update-downloaded", { version: info && info.version });
 });
 
 // Scheme must be registered before the app is ready
@@ -217,9 +196,22 @@ app.on("ready", async () => {
   }
 });
 
-ipcMain.on("update", () => {
-  update();
-  console.log("updating");
+ipcMain.on("update-check", () => {
+  checkForUpdates().catch((err) => {
+    const message = err && err.message ? err.message : String(err);
+    sendToRenderer("update-error", message);
+  });
+});
+
+ipcMain.on("update-download", () => {
+  autoUpdater.downloadUpdate().catch((err) => {
+    const message = err && err.message ? err.message : String(err);
+    sendToRenderer("update-error", message);
+  });
+});
+
+ipcMain.on("update-install", () => {
+  setImmediate(() => autoUpdater.quitAndInstall());
 });
 
 // Exit cleanly on request from parent process in development mode.

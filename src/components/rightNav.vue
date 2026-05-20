@@ -81,23 +81,7 @@
       <v-tooltip left nudge-left="10">
         <template v-slot:activator="{ on }">
           <v-list-item-content v-on="on" @click="item.action">
-            <v-progress-circular
-              v-if="item.title == 'update' && updating == true"
-              indeterminate
-              color="#1DE9B6"
-              size="32"
-              ><v-icon
-                :style="
-                  `/${item.title}` == $route.path ||
-                  (item.title == 'Debug' && $store.state.data.debugger == true)
-                    ? { color: '#1DE9B6' }
-                    : { color: 'white' }
-                "
-                >{{ item.icon }}</v-icon
-              ></v-progress-circular
-            >
             <v-icon
-              v-else
               :style="
                 `/${item.title}` == $route.path ||
                 (item.title == 'Debug' && $store.state.data.debugger == true)
@@ -115,7 +99,7 @@
 </template>
 
 <script>
-const { shell, ipcRenderer } = require("electron");
+const { shell } = require("electron");
 const { dialog } = require("@electron/remote");
 const slash = require("slash");
 const fs = require("fs");
@@ -137,7 +121,6 @@ export default {
   },
   data() {
     return {
-      updating: false,
       nrOfSelectedSteps: (state) => state.selectedSteps.length + 1,
       items: [
         {
@@ -171,32 +154,10 @@ export default {
             "Green = debugging mode ON; PipeCraft will retain all temporary files",
           action: this.debug,
         },
-/*         {
-          title: "update",
-          icon: "mdi-update",
-          tooltip: "Check for updates",
-          action: this.update,
-        }, */
       ],
     };
   },
-  mounted() {
-    ipcRenderer.on("update-downloaded", () => {
-      this.updating = false;
-    });
-    ipcRenderer.on("update-not-available", () => {
-      this.updating = false;
-    });
-    ipcRenderer.on("update-error", (err) => {
-      console.log(err);
-      this.updating = false;
-    });
-  },
   methods: {
-    update() {
-      this.updating = true;
-      ipcRenderer.send("update");
-    },
     openLink(value) {
       shell.openExternal(value);
     },
