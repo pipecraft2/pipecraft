@@ -673,16 +673,43 @@ fi # end of filter_mode == "global"
 ### README for metaMATE filter-adaptive (per-sample) mode
 if [[ $filter_mode == "per-sample" ]]; then
 
+    # convert csv to tab-delimited file
+    awk -F, 'BEGIN{OFS="\t"}{$1=$1; print}' "$output_dir/filter-adaptive_table.csv" > "$output_dir/filter-adaptive_table.txt"
+    rm -f "$output_dir/filter-adaptive_table.csv" # remove the csv file
+    # Remove 2nd column ("Threshold") before transpose
+    awk -F'\t' 'BEGIN{OFS="\t"}{for(i=2;i<NF;i++) $(i)=$(i+1); NF--; print}' \
+        "$output_dir/filter-adaptive_table.txt" > "$output_dir/filter-adaptive_table.no_thresh.txt" && \
+    mv "$output_dir/filter-adaptive_table.no_thresh.txt" "$output_dir/filter-adaptive_table.txt"
+    # tranpose the table
+    awk -F'\t' '
+    {
+    for (i=1; i<=NF; i++) a[i, NR]=$i
+    if (NF>cols) cols=NF
+    rows=NR
+    }
+    END {
+    for (i=1; i<=cols; i++) {
+        for (j=1; j<=rows; j++) {
+        printf "%s%s", a[i,j], (j<rows ? "\t" : "\n")
+        }
+    }
+    }' "$output_dir/filter-adaptive_table.txt" > "$output_dir/filter-adaptive_table.transposed.txt"
+    mv "$output_dir/filter-adaptive_table.transposed.txt" "$output_dir/filter-adaptive_table.txt"
+
     # rename native metaMATE outputs to more informative names
     if [[ $otu_mode == "true" ]]; then
         out_seqs=$(basename "$otu_fasta")
         out_table=$(basename "$otu_table")
-        mv "$output_dir/filter-adaptive_table_filtered.txt" "$output_dir/${out_table%.*}.metaMATE.txt"
+        # rename the table file
+        mv "$output_dir/filter-adaptive_table.txt" "$output_dir/${out_table%.*}.metaMATE.txt"
+        # rename the fasta file
         mv "$output_dir/filter-adaptive.fasta" "$output_dir/${out_seqs%.*}.metaMATE.fasta"
     else
         out_seqs=$(basename "$rep_seqs")
         out_table=$(basename "$table")
-        mv "$output_dir/filter-adaptive_table_filtered.txt" "$output_dir/${out_table%.*}.metaMATE.txt"
+        # rename the table file
+        mv "$output_dir/filter-adaptive_table.txt" "$output_dir/${out_table%.*}.metaMATE.txt"
+        # rename the fasta file
         mv "$output_dir/filter-adaptive.fasta" "$output_dir/${out_seqs%.*}.metaMATE.fasta"
     fi
 
@@ -691,10 +718,7 @@ if [[ $filter_mode == "per-sample" ]]; then
     if [[ ${#control_candidates[@]} -eq 1 ]] && [[ -f "${control_candidates[0]}" ]]; then
         mv "${control_candidates[0]}" "$output_dir/passes_and_fails.txt"
     fi
-    # remove the csv files, not needed
-    if [[ -e "$output_dir/filter-adaptive_table.csv" ]]; then
-        rm -f "$output_dir/filter-adaptive_table.csv"
-    fi
+    # remove not needed files
     if compgen -G "$output_dir/*_ASVcounts.csv" > /dev/null; then
         rm -f "$output_dir"/*_ASVcounts.csv
     fi
