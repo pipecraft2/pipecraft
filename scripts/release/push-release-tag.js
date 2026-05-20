@@ -37,8 +37,8 @@ function parseArgs(argv) {
 }
 
 function defaultRemote() {
-  const r = git(["remote", "get-url", "fork"]);
-  return r.status === 0 ? "fork" : "origin";
+  const r = git(["remote", "get-url", "origin"]);
+  return r.status === 0 ? "origin" : "fork";
 }
 
 function main() {

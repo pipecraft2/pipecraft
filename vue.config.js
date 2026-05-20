@@ -9,7 +9,7 @@ module.exports = {
         publish: [
           {
             provider: "github",
-            owner: "METS0JA",
+            owner: "pipecraft2",
             repo: "pipecraft",
             // Must match GitHub: if a published release already exists for the tag,
             // electron-builder cannot publish as draft (see GH "existing type not compatible").
