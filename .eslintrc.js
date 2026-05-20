@@ -8,7 +8,8 @@ module.exports = {
     parser: "babel-eslint"
   },
   rules: {
-    "no-console": process.env.NODE_ENV === "production" ? "warn" : "off",
+    // Production builds run ESLint; allow console (debugging / Electron IPC logs).
+    "no-console": "off",
     "no-debugger": process.env.NODE_ENV === "production" ? "warn" : "off",
     "no-prototype-builtins": "off"
   }

@@ -5,23 +5,35 @@ module.exports = {
       nodeIntegration: true,
       externals: ["dockerode", "node-pty-prebuilt-multiarch"],
       builderOptions: {
-        publish: ["github"],
+        // Explicit GitHub target so CI publishes without relying on git remote metadata.
+        publish: [
+          {
+            provider: "github",
+            owner: "pipecraft2",
+            repo: "pipecraft",
+            // Must match GitHub: if a published release already exists for the tag,
+            // electron-builder cannot publish as draft (see GH "existing type not compatible").
+            releaseType: "release",
+          },
+        ],
+        // Windows: NSIS enables electron-updater; portable builds do not support auto-update.
         win: {
           icon: "build/icon.ico",
           target: [
             {
-              target: "portable",
-              arch: ["x64"]
-            }
-          ]
+              target: "nsis",
+              arch: ["x64"],
+            },
+          ],
         },
         linux: {
-          target: ["deb", "rpm", "AppImage"],  // Build both DEB and RPM packages
-          icon: "build/icons",     // Directory containing multiple icon sizes
+          target: ["AppImage"],
+          icon: "build/icons",
           category: "Science",
           maintainer: "PipeCraft2 Team: martin.metsoja@ut.ee, sten.anslan@ut.ee",
           vendor: "PipeCraft2",
-          synopsis: "Bioinformatics application that implements various popular tools for metabarcoding data analyses.",
+          synopsis:
+            "Bioinformatics application that implements various popular tools for metabarcoding data analyses.",
           description: "PipeCraft is a desktop application for metabarcoding data analysis.",
           desktop: {
             Name: "PipeCraft2",
@@ -30,22 +42,27 @@ module.exports = {
             Terminal: false,
             Type: "Application",
             StartupNotify: true,
-            StartupWMClass: "pipecraft"
-          }
+            StartupWMClass: "pipecraft",
+          },
         },
-        mac: { 
+        appImage: {
+          artifactName: "${productName}-${version}-linux-${arch}.AppImage",
+        },
+        mac: {
           target: [
             {
               target: "dmg",
-              arch: ["arm64", "x64" ]  // Architectures specified in target
-            }
+              // One universal binary + single DMG: Intel (x64) and Apple Silicon (arm64)
+              // without building two separate DMGs in one job (avoids intermittent
+              // GitHub runner hdiutil "Resource busy" when producing arm64 + x64 images).
+              arch: ["universal"],
+            },
           ],
           icon: "build/icon.icns", 
           hardenedRuntime: true,      // Required for macOS 10.15+ (Catalina)
           gatekeeperAssess: false,    // Skip Gatekeeper assessment
           entitlements: "build/entitlements.mac.plist",        // Path to entitlements
           entitlementsInherit: "build/entitlements.mac.plist", // Child process entitlements
-          identity: "MARTIN METSOJA (3CYD3SH29Q)", // Your signing identity 
         },
         afterSign: "build/notarize.js",
         appx: {

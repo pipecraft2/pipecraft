@@ -1,0 +1,111 @@
+# Build and publish installers to GitHub Releases when a version tag is pushed (e.g. v1.2.0).
+#
+# Required repo secrets for signed + notarized macOS builds:
+#   APPLE_ID                  — Apple ID email
+#   APPLE_APP_SPECIFIC_PASSWORD — app-specific password (not your Apple ID password)
+#   MAC_CERTS_P12             — base64-encoded .p12 distribution certificate
+#   MAC_CERTS_PASSWORD        — password for the .p12 file
+#
+# Optional (Windows code signing):
+#   CSC_LINK — path or base64 for signing cert; see https://www.electron.build/code-signing
+#
+# Linux builds produce a single AppImage.
+
+name: Release
+
+on:
+  push:
+    tags:
+      - "v*"
+
+permissions:
+  contents: write
+
+jobs:
+  publish:
+    name: Publish (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [macos-latest, windows-latest, ubuntu-latest]
+    # electron-builder getCiTag() must see a tag or TRAVIS_TAG, or GitHubPublisher skips
+    # with: publish is not "always" and build is not on tag (vue-cli child processes
+    # sometimes miss GITHUB_REF_TYPE; TRAVIS_TAG is checked first in getCiTag).
+    env:
+      TRAVIS_TAG: ${{ github.ref_name }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          # Full history + tags so electron-builder detects "on tag" in CI (shallow clones
+          # can trigger: publish is not "always" and build is not on tag).
+          fetch-depth: 0
+          ref: ${{ github.ref }}
+
+      - name: Use Node.js
+        uses: actions/setup-node@v4
+        with:
+          # This repo currently depends on packages that reject Node >=18
+          # (e.g. @achrinza/node-ipc). Node 16 is the most compatible baseline.
+          node-version: "16"
+          cache: yarn
+
+      - name: Use Python 3.11 (Windows node-gyp)
+        if: runner.os == 'Windows'
+        uses: actions/setup-python@v5
+        with:
+          # Python 3.12 removed distutils; node-gyp on Node 16 often still imports it.
+          python-version: "3.11"
+
+      - name: Pin node-gyp to Python 3.11 (Windows)
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: |
+          $py = python -c "import sys; print(sys.executable)"
+          "PYTHON=$py" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
+          "npm_config_python=$py" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
+
+      - name: Install dependencies
+        run: yarn install --frozen-lockfile
+
+      - name: Import Apple codesign certificates
+        if: runner.os == 'macOS'
+        uses: Apple-Actions/import-codesign-certs@v7.0.0
+        with:
+          p12-file-base64: ${{ secrets.MAC_CERTS_P12 }}
+          p12-password: ${{ secrets.MAC_CERTS_PASSWORD }}
+
+      - name: Build and publish to GitHub Releases (Windows)
+        if: runner.os == 'Windows'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        shell: pwsh
+        run: |
+          # Some environments inject code-signing variables. If present, electron-builder
+          # will try to sign and fail. Remove them explicitly.
+          Remove-Item Env:WIN_CSC_LINK -ErrorAction SilentlyContinue
+          Remove-Item Env:CSC_LINK -ErrorAction SilentlyContinue
+          Remove-Item Env:CSC_KEY_PASSWORD -ErrorAction SilentlyContinue
+          yarn electron:publish
+
+      - name: Build and publish to GitHub Releases (macOS)
+        if: runner.os == 'macOS'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          # Notarization (afterSign hook uses these)
+          APPLE_ID: ${{ secrets.APPLE_ID }}
+          APPLE_APP_SPECIFIC_PASSWORD: ${{ secrets.APPLE_APP_SPECIFIC_PASSWORD }}
+        shell: bash
+        run: |
+          # If CSC_* variables are injected, electron-builder will attempt to import a cert
+          # and can fail. We use the imported Keychain cert instead.
+          unset CSC_LINK CSC_KEY_PASSWORD WIN_CSC_LINK
+          yarn electron:publish
+
+      - name: Build and publish to GitHub Releases (Linux)
+        if: runner.os == 'Linux'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: yarn electron:publish

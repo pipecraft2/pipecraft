@@ -7,6 +7,10 @@
     "email": "sten.anslan@ut.ee",
     "url": "https://github.com/pipecraft2/pipecraft"
   },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/pipecraft2/pipecraft.git"
+  },
   "contributors": [
     {
       "name": "Martin Metsoja",
@@ -103,7 +107,9 @@
     "parserOptions": {
       "parser": "babel-eslint"
     },
-    "rules": {}
+    "rules": {
+      "no-console": "off"
+    }
   },
   "browserslist": [
     "> 1%",
