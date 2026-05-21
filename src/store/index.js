@@ -4898,7 +4898,7 @@ export default new Vuex.Store({
         tooltip:
           "Settings for STEP_1 (sequence filtering processes per sequencing run) in NextITS pipeline",
         scriptName: "",
-        imageName: "pipecraft/nextits:1.2.3-pc1.2.0",
+        imageName: "pipecraft/nextits:1.1.0-pc1.2.0",
         serviceName: "Step_1",
         manualLink: "https://pipecraft2-manual.readthedocs.io/en/latest/pre-defined_pipelines.html#nextits",
         disabled: "never",
@@ -5063,7 +5063,7 @@ export default new Vuex.Store({
       {
         tooltip: "Settings for STEP_2 (clustering) in NextITS pipeline",
         scriptName: "",
-        imageName: "pipecraft/nextits:1.2.3-pc1.2.0",
+        imageName: "pipecraft/nextits:1.1.0-pc1.2.0",
         serviceName: "Step_2",
         manualLink: "https://pipecraft2-manual.readthedocs.io/en/latest/pre-defined_pipelines.html#nextits",
         disabled: "never",

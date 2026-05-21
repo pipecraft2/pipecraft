@@ -1028,7 +1028,7 @@ export default {
           console.log(props);
           await this.$store.dispatch('clearContainerConflicts', "Step_1");
           await this.$store.dispatch('clearContainerConflicts', "Step_2");
-          await this.$store.dispatch('imageCheck', "pipecraft/nextits:1.2.3-pc1.2.0");
+          await this.$store.dispatch('imageCheck', "pipecraft/nextits:1.1.0-pc1.2.0");
           const escChar = String.fromCharCode(27);
           const ansiEscapePattern = new RegExp(
             `${escChar}\\[[0-9;]*[A-Za-z]`,
@@ -1060,7 +1060,7 @@ export default {
           let promise = new Promise((resolve, reject) => {
             this.$docker
               .run(
-                "pipecraft/nextits:1.2.3-pc1.2.0",
+                "pipecraft/nextits:1.1.0-pc1.2.0",
                 ["bash", "-c", `bash /scripts/NextITS_Pipeline.sh`],
                 false,
                 props,

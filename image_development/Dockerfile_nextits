@@ -1,7 +1,7 @@
-ARG NEXTITS_VERSION=1.2.3
+ARG NEXTITS_VERSION=1.1.0
 ARG NEXTFLOW_VERSION=25.10.4
 
-FROM vmikk/nextits:1.2.3 AS main
+FROM vmikk/nextits:${NEXTITS_VERSION} AS main
 
 ## Re-declare build args inside this stage so RUN can use them
 ARG NEXTITS_VERSION
@@ -22,7 +22,7 @@ RUN set -eux; \
     "${NXF_HOME}"/nextflow plugin install nf-schema@2.4.1; \
     rm -rf ./.nextflow; \
     ## Pull NextITS into $NEXTITS_DIR
-    git clone --depth 1 --branch main https://github.com/vmikk/NextITS "${NEXTITS_DIR}" ; \
+    git clone --depth 1 --branch "${NEXTITS_VERSION}" https://github.com/vmikk/NextITS "${NEXTITS_DIR}" ; \
     rm -rf "${NEXTITS_DIR}/.git" ; \
     ## Ensure the runtime user can access everything
     chown -R nextits:nextits "${NXF_HOME}" "${NEXTITS_DIR}"

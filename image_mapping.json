@@ -68,7 +68,7 @@
       "dockerfile": "image_development/Dockerfile_nextits",
       "context": ".",
       "image": "pipecraft/nextits",
-      "tags": ["1.2.3-pc1.2.0"]
+      "tags": ["1.1.0-pc1.2.0"]
     },
     {
       "name": "optimotu",
