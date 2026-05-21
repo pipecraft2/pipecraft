@@ -57,6 +57,12 @@ module.exports = {
               // GitHub runner hdiutil "Resource busy" when producing arm64 + x64 images).
               arch: ["universal"],
             },
+            {
+              // Required by electron-updater for macOS auto-updates: it cannot
+              // update from a .dmg, only from a zipped .app bundle.
+              target: "zip",
+              arch: ["universal"],
+            },
           ],
           icon: "build/icon.icns", 
           hardenedRuntime: true,      // Required for macOS 10.15+ (Catalina)
