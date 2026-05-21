@@ -1,30 +1,28 @@
-FROM ubuntu:20.04
+FROM ubuntu:24.04
 # ARG DEBIAN_FRONTEND=noninteractive
 
 RUN apt-get update -y \
     && apt-get install build-essential -y \
-    && apt-get install python3-dev -y \
-    && apt-get install python3-pip -y \
-    && python3 -m pip install biopython \
-    && apt-get install pigz -y \
-    && apt-get install wget -y \
-    && apt-get install unzip -y \
-    && apt-get install perl -y \
+    && apt-get install -y \
+      python3-dev python3-pip python3-biopython \
+      pigz wget unzip perl git \
     && wget https://github.com/shenwei356/seqkit/releases/download/v2.13.0/seqkit_linux_amd64.tar.gz -O /tmp/seqkit.tar.gz \
     && tar zxvf /tmp/seqkit.tar.gz -C /usr/bin/ && rm /tmp/seqkit.tar.gz \
+    && wget http://eddylab.org/software/hmmer/hmmer-3.4.tar.gz -O /tmp/hmmer-3.4.tar.gz  \
+    && tar zxvf /tmp/hmmer-3.4.tar.gz -C /tmp/  \
+    && cd /tmp/hmmer-3.4 \
+    && ./configure && make && make install \
+    && cd /tmp && rm hmmer-3.4.tar.gz && rm -rf hmmer-3.4 \
     && wget https://microbiology.se/sw/ITSx_1.1.3.tar.gz -O /tmp/ITSx_1.1.3.tar.gz  \
-    && tar zxvf /tmp/ITSx_1.1.3.tar.gz -C /usr/bin/ && rm /tmp/ITSx_1.1.3.tar.gz \
-    && wget http://eddylab.org/software/hmmer/hmmer-3.3.2.tar.gz -O /tmp/hmmer-3.3.2.tar.gz  \
-    && tar zxvf /tmp/hmmer-3.3.2.tar.gz -C /usr/bin/ && rm /tmp/hmmer-3.3.2.tar.gz \
-    && cp /usr/bin/ITSx_1.1.3/ITSx /usr/bin \
-    && cp  -R /usr/bin/ITSx_1.1.3/ITSx_db /usr/bin \
-    && cd /usr/bin/hmmer-3.3.2 \
-    && ./configure \
-    && make \
-    && make install \
+    && tar zxvf /tmp/ITSx_1.1.3.tar.gz -C /tmp/ \
+    && cp /tmp/ITSx_1.1.3/ITSx /usr/bin/ITSx \
+    && rm -rf /tmp/ITSx_1.1.3 && rm /tmp/ITSx_1.1.3.tar.gz \
+    && git clone --depth 1 --branch 2024.04.05 https://github.com/Mycology-Microbiology-Center/ITSx_HMMs /tmp/ITSx_HMMs \
+    && mkdir -p /usr/bin/ITSx_db && cp -R /tmp/ITSx_HMMs/HMMs /usr/bin/ITSx_db/ && rm -rf /tmp/ITSx_HMMs \
     && wget https://github.com/mothur/mothur/releases/download/v1.46.1/Mothur.Ubuntu_20.zip -O /tmp/mothur.zip \
-    && unzip /tmp/mothur.zip -d /usr/bin/ && rm /tmp/mothur.zip
-ENV PATH "$PATH:/usr/bin/mothur"
+    && unzip /tmp/mothur.zip -d /usr/bin/ && rm /tmp/mothur.zip \
+    && apt-get clean -y && rm -rf /var/lib/apt/lists/* && rm -rf /var/cache/apt/archives
+ENV PATH="$PATH:/usr/bin/mothur"
 #ADD src/pipecraft-core/service_scripts/submodules /bin/submodules
 
 
