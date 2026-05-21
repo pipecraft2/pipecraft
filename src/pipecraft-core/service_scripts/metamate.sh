@@ -696,6 +696,28 @@ if [[ $filter_mode == "per-sample" ]]; then
     }' "$output_dir/filter-adaptive_table.txt" > "$output_dir/filter-adaptive_table.transposed.txt"
     mv "$output_dir/filter-adaptive_table.transposed.txt" "$output_dir/filter-adaptive_table.txt"
 
+    ## Native metaMATE v0.5.6 has minor bug (when OTU mode is OFF). 
+     # output ASVs fasta file may contain ASVs that are not in the output table.
+     # This happens when ASV has both, 'refpass' AND 'lenghtfail' OR 'stopfail' categories; exclude those from the fasta file.
+     # This is fixed in v0.5.7; but adjusting for that in PipeCraft2 v1.2.0.
+    if [[ $otu_mode != "true" ]]; then
+        # count output ASVs
+        out_count=$(grep -c "^>" "$output_dir/filter-adaptive.fasta")
+        # count ASVs in the output table
+        out_table_count=$(awk 'END{print (NR > 0 ? NR - 1 : 0)}' "$output_dir/filter-adaptive_table.txt")
+
+        # if out_count is greater than out_table_count, keep only FASTA seqs present in the table
+        if [[ $out_count -gt $out_table_count ]]; then
+            awk -F'\t' 'NR > 1 && $1 != "" { print $1 }' \
+                "$output_dir/filter-adaptive_table.txt" > "$output_dir/filter-adaptive_table.ids"
+            checkerror=$(seqkit grep --quiet -w 0 -f "$output_dir/filter-adaptive_table.ids" \
+                "$output_dir/filter-adaptive.fasta" -o "$output_dir/filter-adaptive.fasta.tmp" 2>&1)
+            check_app_error
+            mv "$output_dir/filter-adaptive.fasta.tmp" "$output_dir/filter-adaptive.fasta"
+            rm -f "$output_dir/filter-adaptive_table.ids"
+        fi
+    fi
+
     # rename native metaMATE outputs to more informative names
     if [[ $otu_mode == "true" ]]; then
         out_seqs=$(basename "$otu_fasta")
@@ -762,7 +784,7 @@ if [[ $filter_mode == "per-sample" ]]; then
                 if(i!=seq_col) printf "%s: %s\n", header[i], sample_sums[i]
             }
             printf "\nTotal sequences: %s\n", total
-        }' "$output_dir/feature_table.txt")
+        }' "$output_dir/${out_table%.*}.metaMATE.txt")
 
     echo "$nSeqs" > "$output_dir/sequence_counts.txt"
 
