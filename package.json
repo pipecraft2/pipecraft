@@ -22,6 +22,7 @@
     "serve": "vue-cli-service serve",
     "build": "vue-cli-service build",
     "lint": "vue-cli-service lint",
+    "electron:publish": "vue-cli-service electron:build --publish always",
     "electron:build": "vue-cli-service electron:build",
     "electron:serve": "vue-cli-service electron:serve",
     "docker:build": "node scripts/docker/build_images.js",
