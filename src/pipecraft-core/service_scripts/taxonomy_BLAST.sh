@@ -184,7 +184,12 @@ NR==1 {
 {
    # pident is $19, length is $12, qlen is $5, slen is $6, sstart is $9, send is $10, qcovs is $18
    if($5+0 > 0){
-     sim = $19 * ($12 / $5)
+     if($12+0 > $5+0){
+       # alignment length > qlen means indels inflated the alignment; penalize with qlen/align_len
+       sim = $19 * ($5 / $12)
+     } else {
+       sim = $19 * ($12 / $5)
+     }
    } else {
      sim = "NA"
    }
@@ -241,7 +246,12 @@ NR==1 {
      
      # Calculate sim_score
      if(qlen+0>0){
-       sim = pident * (align_len / qlen)
+       if(align_len+0 > qlen+0){
+         # alignment length > qlen means indels inflated the alignment; penalize with qlen/align_len
+         sim = pident * (qlen / align_len)
+       } else {
+         sim = pident * (align_len / qlen)
+       }
      } else {
        sim = "NA"
      }
@@ -317,7 +327,7 @@ gaps      = total number of gaps
 sstrand   = subject strand
 qcovs     = query coverage per subject
 pident    = percentage of identical matches
-sim_score = similarity score of a hit taking the query coverage into account; calculated as (pident * (alignment length / qlen))
+sim_score = similarity score of a hit taking the query coverage into account; if alignment length <= qlen then (pident * (alignment length / qlen)), if alignment length > qlen (indels inflate the alignment) then (pident * (qlen / alignment length))
 adj_qcov  = adjusted query coverage; if qlen > slen then ((send-sstart+1)/slen)*100, otherwise equal to qcovs
 
 Core command ->
