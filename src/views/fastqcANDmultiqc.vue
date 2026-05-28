@@ -128,6 +128,7 @@ export default {
           {
             Tty: false,
             WorkingDir: "/input",
+            platform: "linux/amd64",
             HostConfig: {
               Binds: [`${this.$store.state.Qcheck.folderPath}:/input`],
             },
@@ -160,6 +161,7 @@ export default {
         .run("ewels/multiqc:1.10", [], [stdout, stderr], {
           Tty: false,
           WorkingDir: "/input",
+          platform: "linux/amd64",
           HostConfig: {
             Binds: [
               `${this.$store.state.Qcheck.folderPath}/quality_check:/input`,

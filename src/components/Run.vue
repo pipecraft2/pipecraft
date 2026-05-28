@@ -173,6 +173,7 @@ export default {
         WorkingDir: WorkingDir,
         User: `${this.userId}:${this.groupId}`,
         name: Hostname,
+        platform: "linux/amd64",
         Volumes: {},
         HostConfig: {
           Binds: Binds,
@@ -934,6 +935,7 @@ export default {
               StdinOnce: false,
               AttachStdout: true,
               AttachStderr: true,
+              Platform: "linux/amd64",
               Env: [
                 `HOST_UID=${this.userId}`,
                 `HOST_GID=${this.groupId}`,

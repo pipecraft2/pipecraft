@@ -4,7 +4,7 @@ import yaml from 'js-yaml';
 import os from "os";
 import fs from "fs";
 import path from "path";
-import { pullImageAsync, imageExists } from "dockerode-utils";
+import { imageExists } from "dockerode-utils";
 import { getDockerodeOptionsFromContextSync } from "../utils/dockerContext";
 var _ = require("lodash");
 const Swal = require("sweetalert2");
@@ -6456,40 +6456,6 @@ export default new Vuex.Store({
   mutations: {
     setSystemSpecs(state, specs) {
       state.systemSpecs = specs;
-
-      // Determine the correct image name based on architecture
-      const correctImage = specs.architecture === 'arm64'
-        ? 'pipecraft/vsearch_dada2_m:4-pc1.2.0'
-        : 'pipecraft/vsearch_dada2:4-pc1.2.0';
-
-      // Helper to update only relevant services recursively
-      function updateVsearchDADA2Images(obj) {
-        if (Array.isArray(obj)) {
-          obj.forEach(updateVsearchDADA2Images);
-        } else if (obj && typeof obj === 'object') {
-          if (
-            obj.imageName &&
-            (obj.imageName.startsWith('pipecraft/vsearch_dada2'))
-          ) {
-            obj.imageName = correctImage;
-          }
-          Object.values(obj).forEach(updateVsearchDADA2Images);
-        }
-      }
-
-      // Update all relevant imageName fields
-      const targetKeys = [
-        'steps',
-        'vsearch_OTUs',
-        'UNOISE_ASVs',
-        'NextITS',
-        'DADA2_ASVs',
-        'OptimOTU'
-      ];
-      
-      targetKeys.forEach(key => {
-        if (state[key]) updateVsearchDADA2Images(state[key]);
-      });
     },
     scanFiles(state, files) {
       const extensionCounts = Object.fromEntries(
@@ -6965,55 +6931,69 @@ export default new Vuex.Store({
     async imageCheck({ commit }, imageName) {
       const docker = getDockerInstance();
       console.log(imageName);
-      
-      let gotImg = await imageExists(docker, imageName);
-      if (gotImg === false) {
-        commit("activatePullLoader");
-        console.log(`Pulling image ${imageName}`);
-        
-        try {
-          // Track progress for all layers
-          const layerProgress = new Map();
-          
-          await pullImageAsync(docker, imageName, (output) => {
-            const event = output;
-            
-            if (event.status === 'Downloading' && event.progressDetail) {
-              const { current, total } = event.progressDetail;
-              if (current && total) {
-                // Store progress for this layer
-                layerProgress.set(event.id, { current, total });
-                
-                // Calculate overall progress
-                let totalCurrent = 0;
-                let totalTotal = 0;
-                layerProgress.forEach(({ current, total }) => {
-                  totalCurrent += current;
-                  totalTotal += total;
-                });
-                
-                const percent = Math.round((totalCurrent / totalTotal) * 100);
-                commit("updatePullProgress", percent);
-                commit("updatePullStatus", "Downloading...");
-              }
-            } else if (event.status === 'Extracting') {
-              commit("updatePullStatus", "Extracting...");
-            } else if (event.status === 'Verifying Checksum') {
-              commit("updatePullStatus", "Verifying...");
-            } else if (event.status === 'Pull complete') {
-              commit("updatePullStatus", "Complete!");
-            } else if (event.status === 'Pulling fs layer') {
-              commit("updatePullStatus", "Preparing download...");
+
+      // Force amd64 everywhere: PipeCraft's published images are amd64-only,
+      // so on arm64 hosts (Apple Silicon) we rely on Docker Desktop's Rosetta /
+      // QEMU emulation. Without an explicit platform, the daemon defaults to the
+      // host arch and pull fails with "no matching manifest for linux/arm64/v8".
+      const PLATFORM = "linux/amd64";
+      const imageNameWithTag = imageName.indexOf(":") > 0 ? imageName : `${imageName}:latest`;
+
+      let gotImg = await imageExists(docker, imageNameWithTag);
+      if (gotImg) return;
+
+      commit("activatePullLoader");
+      console.log(`Pulling image ${imageNameWithTag} (${PLATFORM})`);
+
+      try {
+        const layerProgress = new Map();
+
+        const onProgress = (event) => {
+          if (event.status === "Downloading" && event.progressDetail) {
+            const { current, total } = event.progressDetail;
+            if (current && total) {
+              layerProgress.set(event.id, { current, total });
+
+              let totalCurrent = 0;
+              let totalTotal = 0;
+              layerProgress.forEach(({ current, total }) => {
+                totalCurrent += current;
+                totalTotal += total;
+              });
+
+              const percent = Math.round((totalCurrent / totalTotal) * 100);
+              commit("updatePullProgress", percent);
+              commit("updatePullStatus", "Downloading...");
             }
+          } else if (event.status === "Extracting") {
+            commit("updatePullStatus", "Extracting...");
+          } else if (event.status === "Verifying Checksum") {
+            commit("updatePullStatus", "Verifying...");
+          } else if (event.status === "Pull complete") {
+            commit("updatePullStatus", "Complete!");
+          } else if (event.status === "Pulling fs layer") {
+            commit("updatePullStatus", "Preparing download...");
+          }
+        };
+
+        await new Promise((resolve, reject) => {
+          docker.pull(imageNameWithTag, { platform: PLATFORM }, (pullErr, stream) => {
+            if (pullErr) return reject(pullErr);
+            if (!stream) return reject(new Error(`Image '${imageNameWithTag}' could not be pulled`));
+            docker.modem.followProgress(
+              stream,
+              (err) => (err ? reject(err) : resolve()),
+              onProgress
+            );
           });
-          
-          console.log(`Pull complete`);
-          commit("deactivatePullLoader");
-        } catch (error) {
-          console.error('Error pulling image:', error);
-          commit("deactivatePullLoader");
-          throw error;
-        }
+        });
+
+        console.log(`Pull complete`);
+        commit("deactivatePullLoader");
+      } catch (error) {
+        console.error("Error pulling image:", error);
+        commit("deactivatePullLoader");
+        throw error;
       }
     },
     async clearContainerConflicts(_, Hostname) {
