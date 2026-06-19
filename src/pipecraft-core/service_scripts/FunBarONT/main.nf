@@ -6,7 +6,7 @@ if ( params.help != 0 ) {
              |
              |Required arguments:
              |
-             |  --FASTQ_DIRECTORY  Location of the directory containing demultiplexed .fastq or .fq files.
+             |  --FASTQ_DIRECTORY  Location of the directory containing demultiplexed .fastq, .fq, .fastq.gz or .fq.gz files.
              |
              |  --BLASTDB_PATH  Location of the BLAST database directory.
              |
@@ -76,8 +76,10 @@ workflow {
     
     def fastq_dir = params.FASTQ_DIRECTORY
     
-    // Find all .fastq and .fq files in the directory
-    def cmd = ["bash", "-c", "find ${fastq_dir} -maxdepth 1 -type f \\( -name '*.fastq' -o -name '*.fq' \\)"]
+    // Find all .fastq, .fq and their gzipped (.gz) counterparts in the directory.
+    // Gzipped inputs are normalised downstream by the unzip_merge_fastq process,
+    // so they are processed exactly like plain .fastq/.fq files.
+    def cmd = ["bash", "-c", "find ${fastq_dir} -maxdepth 1 -type f \\( -name '*.fastq' -o -name '*.fq' -o -name '*.fastq.gz' -o -name '*.fq.gz' \\)"]
     def file_list = cmd.execute().text.readLines()
     file_list.each { println "📂 Found: $it" }
     

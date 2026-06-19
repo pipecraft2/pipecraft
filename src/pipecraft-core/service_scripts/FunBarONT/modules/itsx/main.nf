@@ -2,12 +2,12 @@
 process its_extraction {
     input:
     val(run_id)
-    tuple val(barcode_dir_absolute), val(barcode_name), path(barcode_dir), path(BLASTDB_PATH), path(processing_dir), path(fastq_file), path(filtlong_file), path(centroids_file), path(minimap_file), path(medaka_file)
+    tuple val(barcode_dir_absolute), val(barcode_name), path(BLASTDB_PATH), path(processing_dir), path(fastq_file), path(filtlong_file), path(centroids_file), path(minimap_file), path(medaka_file)
     val(use_itsx)
     val(cpu_threads)
 
     output:
-    tuple val(barcode_dir_absolute), val(barcode_name), path(barcode_dir), path(BLASTDB_PATH), path(processing_dir), path(fastq_file), path(filtlong_file), path(centroids_file), path(minimap_file), path(medaka_file), path("${barcode_name}.after_itsx.fasta"), emit: data_tuple
+    tuple val(barcode_dir_absolute), val(barcode_name), path(BLASTDB_PATH), path(processing_dir), path(fastq_file), path(filtlong_file), path(centroids_file), path(minimap_file), path(medaka_file), path("${barcode_name}.after_itsx.fasta"), emit: data_tuple
     path("${barcode_name}.its.fasta"), emit: its_fasta
 
     publishDir "${run_id}_results/05_its_extracted/", pattern: "${barcode_name}.its.fasta", mode: 'copy'

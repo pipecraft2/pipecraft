@@ -3,11 +3,11 @@ process blastn_vs_unite {
 
     input:
     val(run_id)
-    tuple val(barcode_dir_absolute), val(barcode_name), path(barcode_dir), path(BLASTDB_PATH), path(processing_dir), path(fastq_file), path(filtlong_file), path(centroids_file), path(minimap_file), path(medaka_file), path(sequences_for_blasting)
+    tuple val(barcode_dir_absolute), val(barcode_name), path(BLASTDB_PATH), path(processing_dir), path(fastq_file), path(filtlong_file), path(centroids_file), path(minimap_file), path(medaka_file), path(sequences_for_blasting)
     val cpu_threads
 
     output:
-    tuple val(barcode_dir_absolute), val(barcode_name), path(barcode_dir), path(BLASTDB_PATH), path(processing_dir), path(fastq_file), path(filtlong_file), path(centroids_file), path(minimap_file), path(medaka_file), path(sequences_for_blasting), path("$processing_dir/${barcode_name}_blastn_results.tsv"), emit: data_tuple
+    tuple val(barcode_dir_absolute), val(barcode_name), path(BLASTDB_PATH), path(processing_dir), path(fastq_file), path(filtlong_file), path(centroids_file), path(minimap_file), path(medaka_file), path(sequences_for_blasting), path("$processing_dir/${barcode_name}_blastn_results.tsv"), emit: data_tuple
     path("${barcode_name}.blast.tsv"), emit: blast_results
 
     publishDir "${run_id}_results/06_blast_results/", pattern: "${barcode_name}.blast.tsv", mode: 'copy'

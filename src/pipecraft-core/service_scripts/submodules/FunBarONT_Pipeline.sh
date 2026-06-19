@@ -130,6 +130,11 @@ mkdir -p "$RESULTS_DIR"
 export NXF_HOME="/sequences/.nextflow"
 mkdir -p "$NXF_HOME"
 
+# Disable Nextflow's "a newer version is available" check. It is purely
+# informational, prints to stderr, and otherwise pollutes the captured logs
+# (it can mask the real error message reported back to the GUI).
+export NXF_DISABLE_CHECK_LATEST=true
+
 echo ""
 echo "Working directory: $WORK_DIR"
 echo "Results directory: $RESULTS_DIR"

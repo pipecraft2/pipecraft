@@ -2,11 +2,11 @@
 process map_fastq {
 
     input:
-    tuple val(barcode_dir_absolute), val(barcode_name), path(barcode_dir), path(BLASTDB_PATH), path(processing_dir), path(fastq_file), path(filtlong_file), path(centroids_file)
+    tuple val(barcode_dir_absolute), val(barcode_name), path(BLASTDB_PATH), path(processing_dir), path(fastq_file), path(filtlong_file), path(centroids_file)
     val cpu_threads
 
     output:
-    tuple val(barcode_dir_absolute), val(barcode_name), path(barcode_dir), path(BLASTDB_PATH), path(processing_dir), path(fastq_file), path(filtlong_file), path(centroids_file), path("$processing_dir/combined.${barcode_name}_minimap.paf"), emit: data_tuple
+    tuple val(barcode_dir_absolute), val(barcode_name), path(BLASTDB_PATH), path(processing_dir), path(fastq_file), path(filtlong_file), path(centroids_file), path("$processing_dir/combined.${barcode_name}_minimap.paf"), emit: data_tuple
 
     script:
     """

@@ -2,10 +2,10 @@ process check_if_lt_10_seqs {
     cpus 1
 
     input:
-    tuple val(barcode_dir_absolute), val(barcode_name), path(barcode_dir), path(BLASTDB_PATH), path(processing_dir), path(fastq_file)
+    tuple val(barcode_dir_absolute), val(barcode_name), path(BLASTDB_PATH), path(processing_dir), path(fastq_file)
 
     output:
-    tuple val(barcode_dir_absolute), val(barcode_name), path(barcode_dir), path(BLASTDB_PATH), path(processing_dir), path(fastq_file), env("TOO_FEW_SEQUENCES"), emit: data_tuple
+    tuple val(barcode_dir_absolute), val(barcode_name), path(BLASTDB_PATH), path(processing_dir), path(fastq_file), env("TOO_FEW_SEQUENCES"), emit: data_tuple
     
     script:
     """
@@ -21,7 +21,7 @@ process emit_empty_result {
     cpus 1
 
     input:
-    tuple val(barcode_dir_absolute), val(barcode_name), path(barcode_dir), path(BLASTDB_PATH), path(processing_dir), path(fastq_file), val(too_few_results)
+    tuple val(barcode_dir_absolute), val(barcode_name), path(BLASTDB_PATH), path(processing_dir), path(fastq_file), val(too_few_results)
 
     output:
     path("${barcode_name}.results.json") , emit: final_empty_json
@@ -35,10 +35,10 @@ process check_if_lt_10_seqs_after_chopper {
     cpus 1
 
     input:
-    tuple val(barcode_dir_absolute), val(barcode_name), path(barcode_dir), path(BLASTDB_PATH), path(processing_dir), path(fastq_file), path(chopper_file)
+    tuple val(barcode_dir_absolute), val(barcode_name), path(BLASTDB_PATH), path(processing_dir), path(fastq_file), path(chopper_file)
 
     output:
-    tuple val(barcode_dir_absolute), val(barcode_name), path(barcode_dir), path(BLASTDB_PATH), path(processing_dir), path(fastq_file), path(chopper_file), env("TOO_FEW_SEQUENCES"), emit: data_tuple
+    tuple val(barcode_dir_absolute), val(barcode_name), path(BLASTDB_PATH), path(processing_dir), path(fastq_file), path(chopper_file), env("TOO_FEW_SEQUENCES"), emit: data_tuple
     
     script:
     """
@@ -54,7 +54,7 @@ process emit_empty_result_after_chopper {
     cpus 1
 
     input:
-    tuple val(barcode_dir_absolute), val(barcode_name), path(barcode_dir), path(BLASTDB_PATH), path(processing_dir), path(fastq_file), path(chopper_file), val(too_few_results)
+    tuple val(barcode_dir_absolute), val(barcode_name), path(BLASTDB_PATH), path(processing_dir), path(fastq_file), path(chopper_file), val(too_few_results)
 
     output:
     path("${barcode_name}.results.json") , emit: final_empty_json
@@ -69,10 +69,10 @@ process check_if_at_least_one_seq_afer_racon {
     cpus 1
 
     input:
-    tuple val(barcode_dir_absolute), val(barcode_name), path(barcode_dir), path(BLASTDB_PATH), path(processing_dir), path(fastq_file), path(filtlong_file), path(centroids_file), path(minimap_file), path(racon_file)
+    tuple val(barcode_dir_absolute), val(barcode_name), path(BLASTDB_PATH), path(processing_dir), path(fastq_file), path(filtlong_file), path(centroids_file), path(minimap_file), path(racon_file)
 
     output:
-    tuple val(barcode_dir_absolute), val(barcode_name), path(barcode_dir), path(BLASTDB_PATH), path(processing_dir), path(fastq_file), path(filtlong_file), path(centroids_file), path(minimap_file), path(racon_file), env("TOO_FEW_SEQUENCES"), emit: data_tuple
+    tuple val(barcode_dir_absolute), val(barcode_name), path(BLASTDB_PATH), path(processing_dir), path(fastq_file), path(filtlong_file), path(centroids_file), path(minimap_file), path(racon_file), env("TOO_FEW_SEQUENCES"), emit: data_tuple
     
     script:
     """
@@ -88,7 +88,7 @@ process emit_empty_result_after_racon {
     cpus 1
 
     input:
-    tuple val(barcode_dir_absolute), val(barcode_name), path(barcode_dir), path(BLASTDB_PATH), path(processing_dir), path(fastq_file), path(filtlong_file), path(centroids_file), path(minimap_file), path(racon_file), val(too_few_results)
+    tuple val(barcode_dir_absolute), val(barcode_name), path(BLASTDB_PATH), path(processing_dir), path(fastq_file), path(filtlong_file), path(centroids_file), path(minimap_file), path(racon_file), val(too_few_results)
 
     output:
     path("${barcode_name}.results.json") , emit: final_empty_json

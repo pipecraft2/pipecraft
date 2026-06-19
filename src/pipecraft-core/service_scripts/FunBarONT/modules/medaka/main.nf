@@ -4,12 +4,12 @@ process polish_with_medaka {
 
     input:
     val(run_id)
-    tuple val(barcode_dir_absolute), val(barcode_name), path(barcode_dir), path(BLASTDB_PATH), path(processing_dir), path(fastq_file), path(filtlong_file), path(centroids_file), path(minimap_file), path(racon_file)
+    tuple val(barcode_dir_absolute), val(barcode_name), path(BLASTDB_PATH), path(processing_dir), path(fastq_file), path(filtlong_file), path(centroids_file), path(minimap_file), path(racon_file)
     val medaka_model
     val cpu_threads
 
     output:
-    tuple val(barcode_dir_absolute), val(barcode_name), path(barcode_dir), path(BLASTDB_PATH), path(processing_dir), path(fastq_file), path(filtlong_file), path(centroids_file), path(minimap_file), path("$processing_dir/${barcode_name}_medaka_output"), emit: data_tuple
+    tuple val(barcode_dir_absolute), val(barcode_name), path(BLASTDB_PATH), path(processing_dir), path(fastq_file), path(filtlong_file), path(centroids_file), path(minimap_file), path("$processing_dir/${barcode_name}_medaka_output"), emit: data_tuple
     path("${barcode_name}.medaka.consensus.fasta"), emit: medaka_fasta
 
     publishDir "${run_id}_results/04_polished_sequences/", pattern: "${barcode_name}.medaka.consensus.fasta", mode: 'copy'

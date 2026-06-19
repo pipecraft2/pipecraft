@@ -1251,6 +1251,25 @@ export default {
       });
     },
 
+    // Build a focused error message from Nextflow/Docker output.
+    // - Drops the benign "Nextflow X is available" update notice so it can never
+    //   mask the real failure.
+    // - When a Nextflow error block is present, surfaces that instead of an
+    //   arbitrary stream (stderr often only holds noise while the real
+    //   "ERROR ~ ..." block is on stdout).
+    extractPipelineError(stdout = '', stderr = '') {
+      const combined = `${stdout || ''}\n${stderr || ''}`;
+      const cleaned = combined
+        .split(/\r?\n/)
+        .filter((line) => !/Nextflow\s+\S+\s+is available - Please consider updating/i.test(line))
+        .join('\n');
+
+      // Prefer the Nextflow error block when we can locate it.
+      const match = cleaned.match(/(ERROR ~[\s\S]*|[^\n]*input file name collision[\s\S]*|Caused by:[\s\S]*)/);
+      const focused = (match ? match[0] : cleaned).trim();
+      return focused || 'Unknown error';
+    },
+
     // Utility: await a promise with timeout
     waitWithTimeout(promise, ms) {
       return new Promise((resolve, reject) => {
@@ -1443,7 +1462,7 @@ export default {
           });
         } else {
           await this.handleDockerError({
-            message: stderr || stdout || 'Unknown error',
+            message: this.extractPipelineError(stdout, stderr),
             StatusCode: data.StatusCode
           }, log, container, startTime);
         }

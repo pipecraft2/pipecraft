@@ -3,7 +3,7 @@ process quality_assessment_with_nanoplot {
 
     input:
     val(run_id)
-    tuple val(barcode_dir_absolute), val(barcode_name), path(barcode_dir), path(BLASTDB_PATH), path(processing_dir), path(fastq_file)
+    tuple val(barcode_dir_absolute), val(barcode_name), path(BLASTDB_PATH), path(processing_dir), path(fastq_file)
     val cpu_threads
 
     output:

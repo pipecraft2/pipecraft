@@ -3,13 +3,13 @@ process chopper_filtering {
 
     input:
     val(run_id)
-    tuple val(barcode_dir_absolute), val(barcode_name), path(barcode_dir), path(BLASTDB_PATH), path(processing_dir), path(fastq_file)
+    tuple val(barcode_dir_absolute), val(barcode_name), path(BLASTDB_PATH), path(processing_dir), path(fastq_file)
     val(chopper_min)
     val(chopper_max)
     val(cpu_threads)
 
     output:
-    tuple val(barcode_dir_absolute), val(barcode_name), path(barcode_dir), path(BLASTDB_PATH), path(processing_dir), path(fastq_file), path("${processing_dir}/combined.${barcode_name}.chopper.fasta.gz"), emit: data_tuple
+    tuple val(barcode_dir_absolute), val(barcode_name), path(BLASTDB_PATH), path(processing_dir), path(fastq_file), path("${processing_dir}/combined.${barcode_name}.chopper.fasta.gz"), emit: data_tuple
     path("${barcode_name}.chopper.fasta.gz"), emit: filtered_fasta
 
     publishDir "${run_id}_results/02_filtered_sequences/", pattern: "${barcode_name}.chopper.fasta.gz", mode: 'copy'
