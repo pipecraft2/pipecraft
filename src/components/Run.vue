@@ -45,9 +45,9 @@ import { ipcRenderer } from "electron";
 import { mapState, mapGetters } from "vuex";
 import { stringify } from "envfile";
 import cloneDeep from 'lodash/cloneDeep';
+import { getServiceScriptsPath } from "../utils/scriptsPath";
 var stdout = new WritableStream();
 var stderr = new WritableStream();
-const isDevelopment = process.env.NODE_ENV !== "production";
 
 
 
@@ -606,12 +606,7 @@ export default {
         varObj[key] = value;
         envVariables.push(stringify(varObj).replace(/(\r\n|\n|\r)/gm, ""));
       });
-      let NextFlowConfigPath =
-        isDevelopment == true
-          ? `${slash(
-              process.cwd()
-            )}/src/pipecraft-core/service_scripts/NextFlowConfig.json`
-          : `${process.resourcesPath}/src/pipecraft-core/service_scripts/NextFlowConfig.json`;
+      let NextFlowConfigPath = `${getServiceScriptsPath()}/NextFlowConfig.json`;
       if (element.serviceName == "Step_1") {
         fs.writeFile(
           NextFlowConfigPath,
@@ -624,10 +619,7 @@ export default {
       return envVariables;
     },
     getBinds_c(element, Input) {
-      let scriptsPath =
-        isDevelopment == true
-          ? `${slash(process.cwd())}/src/pipecraft-core/service_scripts`
-          : `${process.resourcesPath}/src/pipecraft-core/service_scripts`;
+      const scriptsPath = getServiceScriptsPath();
       let Binds = [`${scriptsPath}:/scripts`, `${Input}:/input`];
       let serviceInputs = element.Inputs.concat(element.extraInputs);
       serviceInputs.forEach((input, index) => {
@@ -652,10 +644,7 @@ export default {
       return Binds;
     },
     createBinds(serviceIndex, stepIndex, Input) {
-      let scriptsPath =
-        isDevelopment == true
-          ? `${slash(process.cwd())}/src/pipecraft-core/service_scripts`
-          : `${process.resourcesPath}/src/pipecraft-core/service_scripts`;
+      const scriptsPath = getServiceScriptsPath();
       let Binds = [`${scriptsPath}:/scripts`, `${Input}:/input`];
       let serviceInputs = this.selectedSteps[stepIndex].services[
         serviceIndex
@@ -681,9 +670,7 @@ export default {
       return Binds;
     },
     getOptimOTUBinds() {
-      const scriptsPath = isDevelopment 
-        ? `${slash(process.cwd())}/src/pipecraft-core/service_scripts`
-        : `${process.resourcesPath}/src/pipecraft-core/service_scripts`;
+      const scriptsPath = getServiceScriptsPath();
       const runsDir = this.$store.state.inputDir; // user-selected folder containing Run*/
       let binds = [
         `${scriptsPath}:/scripts`,
@@ -1479,13 +1466,8 @@ export default {
         throw new Error("No database file selected for FunBarONT (database_file).");
       }
 
-      const configPath = isDevelopment == true
-        ? `${slash(process.cwd())}/src/pipecraft-core/service_scripts/FunBarONTConfig.json`
-        : `${process.resourcesPath}/src/pipecraft-core/service_scripts/FunBarONTConfig.json`;
-
-      const scriptDir = isDevelopment == true
-        ? `${slash(process.cwd())}/src/pipecraft-core/service_scripts`
-        : `${process.resourcesPath}/src/pipecraft-core/service_scripts`;
+      const scriptDir = getServiceScriptsPath();
+      const configPath = `${scriptDir}/FunBarONTConfig.json`;
 
       return [
         `${workDir}:/Input:rw`,

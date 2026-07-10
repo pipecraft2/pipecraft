@@ -6,11 +6,11 @@ import fs from "fs";
 import path from "path";
 import { imageExists } from "dockerode-utils";
 import { getDockerodeOptionsFromContextSync } from "../utils/dockerContext";
+import { getServiceScriptsPath } from "../utils/scriptsPath";
 var _ = require("lodash");
 const Swal = require("sweetalert2");
 const slash = require("slash");
 const { dialog } = require("@electron/remote");
-const isDevelopment = process.env.NODE_ENV !== "production";
 
 function getDockerInstance() {
   const Docker = require("dockerode");
@@ -885,7 +885,7 @@ export default new Vuex.Store({
               {
                 name: "OMEGA_C",
                 value:
-                  (0).toExponential(),
+                  (0.0000000000000000000000000000000000000001).toExponential(),
                 disabled: "never",
                 tooltip:
                   "denoising setting. Default = 0. See DADA2 'setDadaOpt()' for details",
@@ -5731,7 +5731,7 @@ export default new Vuex.Store({
           },
           {
             name: "OMEGA_C",
-            value: (0).toExponential(),
+            value: (0.0000000000000000000000000000000000000001).toExponential(),
             disabled: "never",
             tooltip:
               "default = 0. Denoising setting; see DADA2 'setDadaOpt()' for detalis",
@@ -7076,9 +7076,8 @@ export default new Vuex.Store({
 
       
       // Write to file
-      let filePath = isDevelopment == true
-        ? `${slash(process.cwd())}/src/pipecraft-core/service_scripts/pipeline_options.yaml`
-        : `${process.resourcesPath}/src/pipecraft-core/service_scripts/pipeline_options.yaml`;
+      const scriptsDir = getServiceScriptsPath();
+      let filePath = `${scriptsDir}/pipeline_options.yaml`;
       yamlString = yamlString.replace(/: '"([^"]*)"'/g, ': "$1"');
       yamlString = yamlString.replace(/: 'FALSE'/g, ': FALSE');
       yamlString = yamlString.replace(/: null$/gm, ':');
@@ -7166,9 +7165,8 @@ export default new Vuex.Store({
         };
         
         // Write config file
-        const configPath = isDevelopment == true
-          ? `${slash(process.cwd())}/src/pipecraft-core/service_scripts/FunBarONTConfig.json`
-          : `${process.resourcesPath}/src/pipecraft-core/service_scripts/FunBarONTConfig.json`;
+        const scriptsDir = getServiceScriptsPath();
+        const configPath = `${scriptsDir}/FunBarONTConfig.json`;
         
         await fs.promises.writeFile(configPath, JSON.stringify(configObj, null, 2), 'utf8');
         

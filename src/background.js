@@ -15,7 +15,7 @@ var win;
 const createDesktopShortcut = require("create-desktop-shortcuts");
 const fs = require("fs");
 const sudo = require('sudo-prompt');
-
+const { getServiceScriptsPath } = require("./utils/scriptsPath");
 
 function sendToRenderer(channel, payload) {
   if (win && !win.isDestroyed()) {
@@ -32,7 +32,7 @@ function checkForUpdates() {
 }
 
 async function checkScriptsPermissions() {
-  const scriptsPath = `${process.resourcesPath}/src/pipecraft-core/service_scripts`;
+  const scriptsPath = getServiceScriptsPath();
 
   if (process.platform === 'linux' && !isDevelopment) {
     try {
@@ -159,6 +159,7 @@ app.on("activate", () => {
 // Some APIs can only be used after this event occurs.
 app.on("ready", async () => {
   try {
+    getServiceScriptsPath();
     await checkScriptsPermissions();
   } catch (error) {
     log.error('Failed to set permissions:', error);
