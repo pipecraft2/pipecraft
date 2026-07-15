@@ -15,13 +15,10 @@ RUN wget https://github.com/shenwei356/seqkit/releases/download/v2.13.0/seqkit_l
     tar zxvf /tmp/seqkit.tar.gz -C /usr/bin/ && rm /tmp/seqkit.tar.gz
 RUN git clone --branch v2.30.4 https://github.com/torognes/vsearch.git \
     && cd vsearch && ./autogen.sh && ./configure && make && make install
-RUN Rscript -e 'install.packages("data.table", dependencies=TRUE , repos="https://cloud.r-project.org")' \
-    && Rscript -e 'install.packages("optparse", repos="https://cloud.r-project.org")' \
-    && Rscript -e 'install.packages("dplyr", repos = "https://cloud.r-project.org/" )' \
-    && Rscript -e 'install.packages("remotes", repos = "https://cloud.r-project.org/")' \
-    && Rscript -e 'install.packages("openssl", dependencies=TRUE, repos = "https://cloud.r-project.org/")' \
-    && Rscript -e 'install.packages("devtools", dependencies=TRUE, repos = "https://cloud.r-project.org/")' \
-    && Rscript -e 'install.packages("seqinr", dependencies=TRUE, repos = "https://cloud.r-project.org/")'
+RUN Rscript -e 'pkgs <- c("data.table","optparse","dplyr","remotes","openssl","seqinr"); \
+    install.packages(pkgs, dependencies=TRUE, repos="https://cloud.r-project.org/"); \
+    missing <- pkgs[!pkgs %in% rownames(installed.packages())]; \
+    if (length(missing)) stop("Failed to install CRAN packages: ", paste(missing, collapse=", "))'
 RUN Rscript -e 'install.packages("BiocManager")'
 RUN Rscript -e 'BiocManager::install(version = "3.20", ask=FALSE)'
 RUN Rscript -e 'BiocManager::install("dada2")'
