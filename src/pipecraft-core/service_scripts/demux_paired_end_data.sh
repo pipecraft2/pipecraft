@@ -30,8 +30,25 @@ else
     no_indels=''
 fi
 minlen=$"--minimum-length ${min_length}"
-cores=$"--cores ${cores}"
 overlap=$"--overlap ${overlap}"
+
+### Check CPU cores ###
+# 'cores' is passed in by the app (Resource Manager CPU setting). Validate it,
+# then compare against the cores actually available inside the container
+# (nproc), using the smaller valid value so we never request more cores than
+# exist or run with a missing/garbage value. This single 'cores' value is then
+# used for every cutadapt (--cores) and seqkit (--threads) call below.
+detected_cores=$(nproc 2>/dev/null || echo 1)
+if [[ "$cores" =~ ^[0-9]+$ ]] && (( cores >= 1 )); then
+    if (( cores > detected_cores )); then
+        printf "# WARNING: requested %s cores but container has %s; using %s\n" "$cores" "$detected_cores" "$detected_cores"
+        cores=$detected_cores
+    fi
+else
+    printf "# WARNING: invalid 'cores' value ('%s'); using detected %s\n" "$cores" "$detected_cores"
+    cores=$detected_cores
+fi
+printf "# Using %s CPU core(s) for cutadapt and seqkit\n" "$cores"
 
 printf "overlap = $overlap\n"
 printf "no_indels = $no_indels\n"
@@ -76,7 +93,7 @@ while read LINE; do
         sed -e 's/^/>/' > tempdir2/sample_names.txt
         grep "\..." tempdir2/ValidatedBarcodesFileForDemux.fasta.temp | \
         awk 'BEGIN{FS="."}{print $4}' > tempdir2/index_rev.temp
-        touch tempdir2/index_rev.fasta
+          touch tempdir2/index_rev.fasta
         i=1
         p=$"p"
         while read HEADER; do
@@ -84,6 +101,10 @@ while read LINE; do
             sed -n $i$p tempdir2/index_rev.temp >> tempdir2/index_rev.fasta
             i=$((i + 1))
         done < tempdir2/sample_names.txt
+        # Interleave sample names and reverse indexes in one linear pass.
+        # (paste zips the two files line-by-line, replacing the previous
+        #  per-sample "sed -n Np" scan that was O(n^2) over the sample count.)
+        #paste -d '\n' tempdir2/sample_names.txt tempdir2/index_rev.temp > tempdir2/index_rev.fasta
         rm tempdir2/index_rev.temp
         #make fwd barcodes file
         sed -e 's/\.\.\..*//' < tempdir2/ValidatedBarcodesFileForDemux.fasta.temp > tempdir2/index_fwd.fasta
@@ -141,7 +162,7 @@ while read LINE; do
     $no_indels \
     $overlap \
     $minlen \
-    $cores \
+    --cores ${cores} \
     $outR1 \
     $outR2 \
     $inputR1.$fileFormat $inputR2.$fileFormat 2>&1)
@@ -155,7 +176,7 @@ while read LINE; do
     $no_indels \
     $overlap \
     $minlen \
-    $cores \
+    --cores ${cores} \
     $outR2_round2 \
     $outR1_round2 \
     $input_for_round2_R2.$fileFormat $input_for_round2_R1.$fileFormat 2>&1)
@@ -243,7 +264,7 @@ clean_and_make_stats_demux
 # Add seq count in unnamed_index_combinations to seq_count_summary.txt
 cd $output_dir
 if [[ -d unnamed_index_combinations ]]; then
-  unnamed_index_combinations_count=$(cat unnamed_index_combinations/*.R1.$fileFormat | seqkit stats --threads 6 -T  | awk -F'\t' 'BEGIN{OFS="\t";} FNR == 2 {print $4}')
+  unnamed_index_combinations_count=$(cat unnamed_index_combinations/*.R1.$fileFormat | seqkit stats --threads ${cores} -T  | awk -F'\t' 'BEGIN{OFS="\t";} FNR == 2 {print $4}')
   printf "\n Number of sequences in 'unnamed_index_combinations' dir (*.R1.$fileFormat): $unnamed_index_combinations_count" >> seq_count_summary.txt
 fi
 cd ..

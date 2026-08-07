@@ -384,11 +384,11 @@ mkdir -p tempdir2
 : > tempdir2/seq_count.txt
 if [[ -f tempdir2/paired_end_files.txt ]]; then
     while read -r LINE; do
-        seqkit stats --threads 6 -T "$LINE" | awk -F'\t' 'BEGIN{OFS="\t";} FNR == 2 {print $1,$4}' >> tempdir2/seq_count.txt
+        seqkit stats --threads "${cores:-6}" -T "$LINE" | awk -F'\t' 'BEGIN{OFS="\t";} FNR == 2 {print $1,$4}' >> tempdir2/seq_count.txt
     done < tempdir2/paired_end_files.txt
 else
     while read -r LINE; do
-        seqkit stats --threads 6 -T "$LINE" | awk -F'\t' 'BEGIN{OFS="\t";} FNR == 2 {print $1,$4}' >> tempdir2/seq_count.txt
+        seqkit stats --threads "${cores:-6}" -T "$LINE" | awk -F'\t' 'BEGIN{OFS="\t";} FNR == 2 {print $1,$4}' >> tempdir2/seq_count.txt
     done < tempdir2/files_in_folder.txt
 fi
 
@@ -398,12 +398,12 @@ if compgen -G "$output_dir/*.$fileFormat" > /dev/null; then
     if [[ -f tempdir2/paired_end_files.txt ]]; then
         for file in "$output_dir"/*R1."$fileFormat"; do
             [[ -e "$file" ]] || continue
-            seqkit stats --threads 6 -T "$file" | awk -F'\t' 'BEGIN{OFS="\t";} FNR == 2 {print $1,$4}' | sed -e 's/demultiplex_out\///' >> tempdir2/seq_count_after.txt
+            seqkit stats --threads "${cores:-6}" -T "$file" | awk -F'\t' 'BEGIN{OFS="\t";} FNR == 2 {print $1,$4}' | sed -e 's/demultiplex_out\///' >> tempdir2/seq_count_after.txt
         done
     else
         for file in "$output_dir"/*."$fileFormat"; do
             [[ -e "$file" ]] || continue
-            seqkit stats --threads 6 -T "$file" | awk -F'\t' 'BEGIN{OFS="\t";} FNR == 2 {print $1,$4}' | sed -e 's/demultiplex_out\///' >> tempdir2/seq_count_after.txt
+            seqkit stats --threads "${cores:-6}" -T "$file" | awk -F'\t' 'BEGIN{OFS="\t";} FNR == 2 {print $1,$4}' | sed -e 's/demultiplex_out\///' >> tempdir2/seq_count_after.txt
         done
     fi
 else

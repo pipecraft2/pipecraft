@@ -28,9 +28,26 @@ else
     no_indels=''
 fi
 minlen=$"--minimum-length ${min_length}"
-cores=$"--cores ${cores}"
 overlap=$"--overlap ${overlap}"
 search_window=${search_window}
+
+### Check CPU cores ###
+# 'cores' is passed in by the app (Resource Manager CPU setting). Validate it,
+# then compare against the cores actually available inside the container
+# (nproc), using the smaller valid value so we never request more cores than
+# exist or run with a missing/garbage value. This single 'cores' value is then
+# used for every cutadapt (--cores) and seqkit (--threads) call below.
+detected_cores=$(nproc 2>/dev/null || echo 1)
+if [[ "$cores" =~ ^[0-9]+$ ]] && (( cores >= 1 )); then
+    if (( cores > detected_cores )); then
+        printf "# WARNING: requested %s cores but container has %s; using %s\n" "$cores" "$detected_cores" "$detected_cores"
+        cores=$detected_cores
+    fi
+else
+    printf "# WARNING: invalid 'cores' value ('%s'); using detected %s\n" "$cores" "$detected_cores"
+    cores=$detected_cores
+fi
+printf "# Using %s CPU core(s) for cutadapt and seqkit\n" "$cores"
 ###############################
 ###############################
 
@@ -129,7 +146,7 @@ for file in *.$fileFormat; do
     --untrimmed-output $output_dir/unknown.$fileFormat \
     $overlap \
     $minlen \
-    $cores \
+    --cores ${cores} \
     $out \
     $input.$fileFormat 2>&1)
     check_app_error
