@@ -7186,23 +7186,10 @@ export default new Vuex.Store({
           const info = await docker.info();
           commit("setDockerInfo", info);
         } catch (error) {
+          // Leave dockerInfo unchanged. Workflows cannot start while Docker is
+          // inactive; resources are refreshed when status monitoring sees
+          // Docker become "running" (and again when opening Resource Manager).
           console.error("Failed to fetch Docker info:", error);
-          // Fall back to this machine's specs so workflows are not silently
-          // capped at the 1 CPU / 1 GB defaults (which slows runs and can
-          // trigger OOM kills). Surface the failure so the user can verify
-          // or override the values in the Resource Manager.
-          const fallbackNCPU = os.cpus().length;
-          const fallbackMem = os.totalmem();
-          commit("setNCPU", fallbackNCPU);
-          commit("setMemTotal", fallbackMem);
-          Swal.fire({
-            title: "Could not read Docker resources",
-            html: `PipeCraft could not query Docker for the available CPU/RAM, so it fell back to this machine's specs (${fallbackNCPU} CPU, ${Math.round(
-              fallbackMem / 1024 ** 3
-            )} GB).<br><br>Make sure Docker is running and, if needed, set CPU/RAM manually in the Resource Manager before starting a workflow.`,
-            icon: "warning",
-            theme: "dark",
-          });
         }
       }
     },
@@ -7409,7 +7396,7 @@ export default new Vuex.Store({
         return null;
       }
     },
-    async startDockerStatusMonitoring({ commit }) {
+    async startDockerStatusMonitoring({ commit, dispatch }) {
       let lastStatus = null;
       const checkDockerStatus = async () => {
         let status = "stopped";
@@ -7424,6 +7411,11 @@ export default new Vuex.Store({
         if (status !== lastStatus) {
           lastStatus = status;
           commit("updateDockerStatus", status);
+          // Load real CPU/RAM only once Docker is reachable (covers startup
+          // race where Docker is still booting when the app launches).
+          if (status === "running") {
+            dispatch("fetchDockerInfo");
+          }
         }
       };
       // Check immediately

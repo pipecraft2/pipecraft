@@ -34,19 +34,13 @@ new Vue({
   vuetify,
   render: (h) => h(App),
   created() {
-    // Fetch Docker info first
-    this.$store.dispatch('fetchDockerInfo')
-      .then(() => {
-        console.log('Docker info fetched');
-      })
-      .catch(error => {
-        console.error('Failed to fetch Docker info:', error);
-      });
-    // Gather system specs first, then start Docker monitoring
+    // Gather system specs first, then start Docker monitoring.
+    // fetchDockerInfo is dispatched by the monitor when Docker becomes
+    // "running" (and again when opening Resource Manager), so we don't
+    // race Docker Desktop boot with an eager info fetch here.
     this.$store.dispatch('gatherSystemSpecs')
       .then(specs => {
         console.log('System specs gathered:', specs);
-        // Start Docker status monitoring after system specs are gathered
         this.$store.dispatch('startDockerStatusMonitoring');
       })
       .catch(error => {
