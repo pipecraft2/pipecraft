@@ -93,6 +93,7 @@
 
 <script>
 import { mapGetters } from 'vuex';
+// Same Podman bind/cmd helpers used by workflow runs (Windows VM gzip workaround).
 import { prepareBindMounts, wrapCommandForNativeInputCopy } from "../utils/containerRuntime";
 const shell = require("electron").shell;
 const streams = require("memory-streams");

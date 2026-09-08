@@ -1,3 +1,10 @@
+/**
+ * Docker + Podman helpers for PipeCraft.
+ *
+ * dockerode talks to both engines over the same Docker-compatible API.
+ * This module finds the right socket/pipe, remembers the choice, and
+ * fixes Windows Podman bind mounts / gzip reads before a container starts.
+ */
 const { execFile, execFileSync, spawn } = require("child_process");
 const fs = require("fs");
 const os = require("os");
@@ -6,12 +13,15 @@ const { promisify } = require("util");
 
 const execFileAsync = promisify(execFile);
 
+// Saved in localStorage: "auto" | "docker" | "podman"
 const PREFERENCE_KEY = "pipecraft.containerRuntime";
 const PREFERENCES = ["auto", "docker", "podman"];
 const CLI_TIMEOUT_MS = 8000;
 const MACHINE_TIMEOUT_MS = 120000;
 
+// Last engine we successfully connected to (socket options, engine name, etc.)
 let cachedRuntime = null;
+// Background `podman system service` process, if we had to start one ourselves.
 let podmanServiceChild = null;
 
 function readRuntimePreference() {
@@ -41,6 +51,7 @@ function persistRuntimePreference(preference) {
   }
 }
 
+// Extra folders to search when PATH does not include Docker/Podman.
 function extraBinDirs() {
   const home = os.homedir();
   const programFiles = process.env.ProgramFiles || "C:\\Program Files";
@@ -73,6 +84,7 @@ function extraBinDirs() {
   return ["/usr/bin", "/usr/local/bin", "/opt/podman/bin", path.join(home, ".local", "bin")];
 }
 
+// Find `docker` / `podman` on PATH, then fall back to known install folders.
 function findExecutable(commandName) {
   const exe =
     process.platform === "win32" && !commandName.endsWith(".exe")
@@ -126,6 +138,7 @@ async function runCli(binaryPath, args, timeout = CLI_TIMEOUT_MS) {
   return String(stdout || "").trim();
 }
 
+// Turn DOCKER_HOST / CONTAINER_HOST style URLs into dockerode options.
 function parseHostToOptions(dockerHost) {
   if (!dockerHost) {
     throw new Error("Container engine returned an empty endpoint.");
@@ -207,6 +220,7 @@ function isRootUser() {
   return currentUid() === 0;
 }
 
+// Rootless Podman socket for the current Linux user (not /run/podman/...).
 function defaultRootlessPodmanSocket() {
   const xdg = process.env.XDG_RUNTIME_DIR;
   if (xdg) {
@@ -219,6 +233,7 @@ function defaultRootlessPodmanSocket() {
   return null;
 }
 
+// System-wide Podman socket (only useful when running as root).
 function defaultRootfulPodmanSocket() {
   return "/run/podman/podman.sock";
 }
@@ -286,6 +301,7 @@ function firstUsablePath(candidates, fallback) {
   return existing || fallback || null;
 }
 
+// Possible Docker sockets / Windows named pipes to try, in priority order.
 function dockerSocketCandidates(preferredSocketPath) {
   const home = os.homedir();
   const candidates = [];
@@ -310,6 +326,7 @@ function dockerSocketCandidates(preferredSocketPath) {
   return uniquePaths(candidates);
 }
 
+// Possible Podman sockets / pipes. Prefer rootless; only probe rootful as root.
 function podmanSocketCandidates(preferredSocketPath) {
   const home = os.homedir();
   const candidates = [];
@@ -354,6 +371,7 @@ function podmanSocketCandidates(preferredSocketPath) {
   return uniquePaths(candidates);
 }
 
+// Honor env overrides: Podman prefers CONTAINER_HOST, Docker uses DOCKER_HOST.
 function optionsFromEnv(engine) {
   const envHost =
     engine === "podman"
@@ -369,6 +387,7 @@ function optionsFromEnv(engine) {
   }
 }
 
+// Ask the Docker CLI which context/socket is currently active.
 function resolveDockerOptionsFromCli(dockerBin) {
   const contextName = runCliSync(dockerBin, ["context", "show"]);
   if (!contextName) {
@@ -415,6 +434,7 @@ function readPodmanInfo(podmanBin) {
   }
 }
 
+// Read the API socket path from `podman info` (most reliable source).
 function remoteSocketFromInfo(info) {
   const remote = info?.host?.remoteSocket;
   if (!remote || !remote.path) {
@@ -442,6 +462,7 @@ function remoteSocketFromInfo(info) {
   };
 }
 
+// Resolve Podman API endpoint: info → machine pipe/socket → system connection.
 function resolvePodmanOptionsFromCli(podmanBin) {
   const info = readPodmanInfo(podmanBin);
   const remote = remoteSocketFromInfo(info);
@@ -454,6 +475,7 @@ function resolvePodmanOptionsFromCli(podmanBin) {
     };
   }
 
+  // Windows/macOS: Podman runs inside a VM; the host talks over a pipe/socket.
   try {
     const machines = parseJsonSafe(runCliSync(podmanBin, ["machine", "inspect"]));
     const machine = Array.isArray(machines) ? machines[0] : machines;
@@ -494,6 +516,7 @@ function resolvePodmanOptionsFromCli(podmanBin) {
   };
 }
 
+// Normalize a found engine into one object the rest of the app can store/use.
 function describeRuntime(engine, options, extra = {}) {
   const socketPath = options?.socketPath || "";
   const rootless =
@@ -513,6 +536,7 @@ function describeRuntime(engine, options, extra = {}) {
   };
 }
 
+// Locate Docker without starting anything. Returns null if not found.
 function tryResolveDocker() {
   const dockerBin = findExecutable("docker");
   const envOptions = optionsFromEnv("docker");
@@ -550,6 +574,7 @@ function tryResolveDocker() {
   return null;
 }
 
+// Locate Podman without starting the machine/socket. Returns null if not found.
 function tryResolvePodman() {
   const podmanBin = findExecutable("podman");
   const envOptions = optionsFromEnv("podman");
@@ -616,6 +641,7 @@ function findPodmanBinary() {
   return findExecutable("podman");
 }
 
+// Linux: start the podman.socket systemd unit so the API socket appears.
 async function startPodmanSocketUnit(rootless) {
   const systemctl = findExecutable("systemctl");
   if (!systemctl) {
@@ -632,6 +658,7 @@ async function startPodmanSocketUnit(rootless) {
   }
 }
 
+// Last resort: run Podman's own HTTP API server on the expected socket path.
 function startPodmanSystemService(podmanBin, socketPath) {
   if (!podmanBin || !socketPath) {
     return;
@@ -653,6 +680,7 @@ function startPodmanSystemService(podmanBin, socketPath) {
   podmanServiceChild.unref();
 }
 
+// Windows/macOS: start the Podman VM if it exists but is stopped.
 async function ensurePodmanMachineRunning(podmanBin) {
   try {
     const listRaw = await runCli(podmanBin, ["machine", "list", "--format", "json"], CLI_TIMEOUT_MS);
@@ -678,6 +706,7 @@ async function ensurePodmanMachineRunning(podmanBin) {
   }
 }
 
+// Make Podman usable: start machine (Win/mac) or socket/service (Linux) if needed.
 async function ensurePodmanRuntime() {
   const podmanBin = findPodmanBinary();
   if (!podmanBin) {
@@ -733,6 +762,7 @@ async function ensurePodmanRuntime() {
   return tryResolvePodman();
 }
 
+// Lightweight "is Docker / Podman installed?" snapshot for the UI.
 function inspectAvailableRuntimes() {
   const docker = tryResolveDocker();
   const podmanBin = findPodmanBinary();
@@ -752,6 +782,7 @@ function inspectAvailableRuntimes() {
   };
 }
 
+// Engines to try, in order. Auto prefers Docker when both are available.
 function listRuntimeCandidates(preference = readRuntimePreference()) {
   const docker = tryResolveDocker();
   const podman = tryResolvePodman();
@@ -765,6 +796,7 @@ function listRuntimeCandidates(preference = readRuntimePreference()) {
   return [docker, podman].filter(Boolean);
 }
 
+// Sync pick of the preferred/available engine (used by $docker getter).
 function resolveContainerRuntimeSync(forceRefresh = false) {
   if (!forceRefresh && cachedRuntime) {
     return cachedRuntime;
@@ -814,6 +846,7 @@ function getDockerodeOptionsFromContextSync() {
   }
 }
 
+// Options object for `new Docker(...)` — always re-reads cache so preference switches apply.
 function getResolvedDockerodeOptions() {
   if (cachedRuntime?.options) {
     return cachedRuntime.options;
@@ -825,6 +858,7 @@ function getResolvedDockerodeOptions() {
   }
 }
 
+// Podman's /version response usually contains "podman"; Docker's does not.
 function identifyEngineFromVersion(versionInfo) {
   const blob = JSON.stringify(versionInfo || {}).toLowerCase();
   if (blob.includes("podman")) {
@@ -833,6 +867,7 @@ function identifyEngineFromVersion(versionInfo) {
   return "docker";
 }
 
+// True when the last ":..." part of a bind is options (ro/rw/Z), not a path.
 function lastSegmentIsMountOptions(segment) {
   if (!segment) {
     return false;
@@ -846,6 +881,7 @@ function lastSegmentIsMountOptions(segment) {
   return /^(ro|rw|z|Z)(,|$)/.test(segment) || segment.includes(",");
 }
 
+// Split "host:container[:opts]" safely — Windows drives use "C:" too.
 function parseBindSpec(bind) {
   if (!bind || typeof bind !== "string") {
     return null;
@@ -883,6 +919,7 @@ function formatBindSpec({ host, container, options }) {
   return options ? `${host}:${container}:${options}` : `${host}:${container}`;
 }
 
+// C:\Users\... → /mnt/c/Users/... (how Podman's Windows VM sees the host disk).
 function windowsPathToWslMount(hostPath) {
   const normalized = String(hostPath || "").replace(/\\/g, "/");
   const match = normalized.match(/^([A-Za-z]):\/(.*)$/);
@@ -892,6 +929,7 @@ function windowsPathToWslMount(hostPath) {
   return `/mnt/${match[1].toLowerCase()}/${match[2]}`;
 }
 
+// Rewrite Windows host paths for Podman: use machine mounts if known, else /mnt/<drive>/.
 function rewriteHostPathForPodman(hostPath, runtime) {
   if (process.platform !== "win32") {
     return String(hostPath || "").replace(/\\/g, "/");
@@ -912,6 +950,7 @@ function rewriteHostPathForPodman(hostPath, runtime) {
   return windowsPathToWslMount(normalized);
 }
 
+// Read VM type + shared folders from `podman machine inspect` (Win/mac only).
 function inspectPodmanMachine(podmanBin) {
   if (!podmanBin || (process.platform !== "win32" && process.platform !== "darwin")) {
     return { vmType: "", mounts: [] };
@@ -943,6 +982,7 @@ function withPodmanMachineMeta(runtime, podmanBin) {
   };
 }
 
+// Append a mount option like :Z without duplicating it.
 function appendBindOption(bind, option) {
   if (!bind) {
     return bind;
@@ -962,6 +1002,7 @@ function appendBindOption(bind, option) {
   return `${bind}:${option}`;
 }
 
+// Win/mac Podman uses a VM; host folders are shared via 9p/virtiofs, not a normal Linux FS.
 function usesPodmanVmFilesystem() {
   return (
     cachedRuntime?.engine === "podman" &&
@@ -969,6 +1010,15 @@ function usesPodmanVmFilesystem() {
   );
 }
 
+/**
+ * On Win/mac Podman, wrap the container Cmd so we:
+ * 1) copy host data from /mnt/host-input → /input (VM-local disk)
+ * 2) run the real script
+ * 3) copy results back
+ *
+ * Why: parallel .gz readers (cutadapt) often get truncated streams over the VM share.
+ * No-op on Docker and on Linux Podman.
+ */
 function wrapCommandForNativeInputCopy(command) {
   if (!usesPodmanVmFilesystem()) {
     return command;
@@ -977,9 +1027,6 @@ function wrapCommandForNativeInputCopy(command) {
     return command;
   }
 
-  // 9p/drvfs bind mounts from Windows (and sometimes macOS virtiofs) return
-  // truncated gzip streams to parallel readers like cutadapt. Copy onto the
-  // VM's native filesystem, run there, then copy results back.
   const wrapBody = (script) => `mkdir -p /input /mnt/host-input
 if [ -n "$(ls -A /mnt/host-input 2>/dev/null)" ]; then
   echo "Copying input onto the Podman VM disk (host bind mounts cannot reliably stream .gz files)..."
@@ -1015,6 +1062,7 @@ exit $status`;
   return ["bash", "-c", wrapBody(quoted)];
 }
 
+// Point /input (and /Input) binds at /mnt/host-input so the copy wrapper can stage them.
 function remapDataBindContainerPath(container) {
   if (!usesPodmanVmFilesystem() || !container) {
     return container;
@@ -1028,6 +1076,12 @@ function remapDataBindContainerPath(container) {
   return container;
 }
 
+/**
+ * Final pass on HostConfig.Binds before create/run:
+ * - Windows Podman: rewrite C:\... → /mnt/c/...
+ * - Win/mac Podman: /input → /mnt/host-input (see wrapCommandForNativeInputCopy)
+ * - Linux Podman: add :Z for SELinux
+ */
 function prepareBindMounts(binds) {
   if (!Array.isArray(binds)) {
     return binds;
@@ -1051,6 +1105,10 @@ function prepareBindMounts(binds) {
   });
 }
 
+/**
+ * Which user the container process should run as.
+ * Podman rootless / Win / mac usually need 0:0 so bind mounts are writable.
+ */
 function getContainerUser(hostUid, hostGid) {
   const runtime = cachedRuntime || null;
   if (runtime?.engine === "podman") {
@@ -1104,6 +1162,7 @@ async function getPodmanBinary() {
   return cached || findExecutable("podman");
 }
 
+// Win/mac Resource Manager: stop VM → set cpus/memory → start again.
 async function applyPodmanMachineResources({ cpus, memoryMiB }) {
   const podmanBin = await getPodmanBinary();
   if (!podmanBin) {

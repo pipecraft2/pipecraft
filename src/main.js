@@ -8,6 +8,7 @@ import { sync } from "vuex-router-sync";
 import os from 'os'
 import '@mdi/font/css/materialdesignicons.css';
 const Docker = require('dockerode');
+// Fresh dockerode client each access so Docker↔Podman switches take effect.
 const { getResolvedDockerodeOptions } = require("./utils/containerRuntime");
 
 Object.defineProperty(Vue.prototype, '$docker', {

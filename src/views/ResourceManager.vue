@@ -5,6 +5,7 @@
       <v-divider></v-divider>
       <v-card-subtitle style="color: white">Container runtime</v-card-subtitle>
       <div class="px-5 pb-4">
+        <!-- auto = prefer Docker if reachable, else Podman -->
         <v-btn-toggle
           :value="runtimePreference"
           mandatory
@@ -202,6 +203,7 @@ export default {
       this.$store.dispatch("setContainerRuntimePreference", preference);
     },
     handleApplyResources() {
+      // Win/mac: restart Docker Desktop or Podman machine so CPU/RAM take effect.
       if (this.resourceEngine === "podman") {
         this.restartPodmanMachine();
         return;

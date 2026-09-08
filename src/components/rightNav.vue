@@ -4,6 +4,7 @@
       <v-tooltip left nudge-left="10">
         <template v-slot:activator="{ on }">
           <v-list-item-content v-on="on" class="runtime-icon-wrap">
+            <!-- Show Podman logo when that engine is active; otherwise Docker icon. -->
             <span
               v-if="activeEngine === 'podman'"
               class="runtime-logo runtime-logo--podman"

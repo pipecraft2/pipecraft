@@ -22,6 +22,7 @@ const Swal = require("sweetalert2");
 const slash = require("slash");
 const { dialog } = require("@electron/remote");
 
+// Build a dockerode client for the currently selected Docker/Podman runtime.
 function getDockerInstance(runtime = getCachedRuntime()) {
   const Docker = require("dockerode");
   if (runtime?.options) {
@@ -62,6 +63,7 @@ export default new Vuex.Store({
     ],
     dockerInfo: { NCPU: 1, MemTotal: 1073741824 },
     dockerStatus: "",
+    // Which engine the user wants (auto/docker/podman) and what we last connected to.
     containerRuntime: {
       preference: readRuntimePreference(),
       active: "",
@@ -6349,6 +6351,7 @@ export default new Vuex.Store({
     isDockerActive: state => state.dockerStatus === "running",
     activeEngine: state => state.containerRuntime.active,
     engineLabel: (state, getters) => engineDisplayName(getters.activeEngine || (state.containerRuntime.preference === "auto" ? "" : state.containerRuntime.preference)),
+    // Status / error strings that mention Docker or Podman based on preference.
     runtimeStatusText: (state, getters) => {
       if (getters.isDockerActive) {
         return `${getters.engineLabel} is running`;
@@ -7267,6 +7270,7 @@ export default new Vuex.Store({
       commit("updateDockerStatus", "");
       await dispatch("probeContainerRuntimes", { force: true });
     },
+    // Ping Docker/Podman API; if Podman CLI exists but socket is down, try to start it.
     async probeContainerRuntimes({ commit, dispatch, state }, options = {}) {
       const force = Boolean(options && options.force);
       const previousStatus = state.dockerStatus;
@@ -7323,6 +7327,7 @@ export default new Vuex.Store({
         }
       }
 
+      // Auto/Podman: start machine or socket when CLI is present but API is not.
       if (!connected && (preference === "podman" || preference === "auto")) {
         try {
           const prepared = await ensurePodmanRuntime();

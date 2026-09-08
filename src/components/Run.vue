@@ -46,6 +46,7 @@ import { mapState, mapGetters } from "vuex";
 import { stringify } from "envfile";
 import cloneDeep from 'lodash/cloneDeep';
 import { getServiceScriptsPath } from "../utils/scriptsPath";
+// prepareBindMounts / wrapCommand / getContainerUser adapt binds+cmds for Podman (esp. Windows).
 import { getContainerUser, prepareBindMounts, wrapCommandForNativeInputCopy } from "../utils/containerRuntime";
 var stdout = new WritableStream();
 var stderr = new WritableStream();
@@ -224,6 +225,7 @@ export default {
               let result = await this.$docker
                 .run(
                   step.imageName,
+                  // Win/mac Podman: copy /input onto VM disk before running (gzip-safe).
                   wrapCommandForNativeInputCopy(["bash", "-c", `bash /scripts/${scriptName}`]),
                   [stdout, stderr],
                   dockerProps
