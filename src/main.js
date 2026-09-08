@@ -8,20 +8,11 @@ import { sync } from "vuex-router-sync";
 import os from 'os'
 import '@mdi/font/css/materialdesignicons.css';
 const Docker = require('dockerode');
-const { getDockerodeOptionsFromContextSync } = require("./utils/dockerContext");
-
-let dockerOptions;
-
-try {
-  dockerOptions = getDockerodeOptionsFromContextSync();
-} catch (error) {
-  console.error(error.message);
-  dockerOptions = {};
-}
+const { getResolvedDockerodeOptions } = require("./utils/containerRuntime");
 
 Object.defineProperty(Vue.prototype, '$docker', {
   get() {
-    return new Docker(dockerOptions);
+    return new Docker(getResolvedDockerodeOptions());
   }
 });
 
@@ -34,10 +25,10 @@ new Vue({
   vuetify,
   render: (h) => h(App),
   created() {
-    // Gather system specs first, then start Docker monitoring.
-    // fetchDockerInfo is dispatched by the monitor when Docker becomes
+    // Gather system specs first, then start Docker/Podman monitoring.
+    // fetchDockerInfo is dispatched by the monitor when the engine becomes
     // "running" (and again when opening Resource Manager), so we don't
-    // race Docker Desktop boot with an eager info fetch here.
+    // race engine boot with an eager info fetch here.
     this.$store.dispatch('gatherSystemSpecs')
       .then(specs => {
         console.log('System specs gathered:', specs);
@@ -45,7 +36,6 @@ new Vue({
       })
       .catch(error => {
         console.error('Failed to gather system specs:', error);
-        // Still try to start Docker monitoring even if system specs fail
         this.$store.dispatch('startDockerStatusMonitoring');
       });
     this.$store.commit('setOsType', os.type());

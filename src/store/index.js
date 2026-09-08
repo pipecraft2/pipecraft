@@ -5,17 +5,34 @@ import os from "os";
 import fs from "fs";
 import path from "path";
 import { imageExists } from "dockerode-utils";
-import { getDockerodeOptionsFromContextSync } from "../utils/dockerContext";
+import {
+  engineDisplayName,
+  ensurePodmanRuntime,
+  getCachedRuntime,
+  identifyEngineFromVersion,
+  inspectAvailableRuntimes,
+  listRuntimeCandidates,
+  readRuntimePreference,
+  setCachedRuntime,
+  setRuntimePreference as persistRuntimePreference,
+} from "../utils/containerRuntime";
 import { getServiceScriptsPath } from "../utils/scriptsPath";
 var _ = require("lodash");
 const Swal = require("sweetalert2");
 const slash = require("slash");
 const { dialog } = require("@electron/remote");
 
-function getDockerInstance() {
+function getDockerInstance(runtime = getCachedRuntime()) {
   const Docker = require("dockerode");
-  const options = getDockerodeOptionsFromContextSync();
-  return new Docker(options);
+  if (runtime?.options) {
+    return new Docker(runtime.options);
+  }
+  const candidates = listRuntimeCandidates();
+  if (!candidates.length) {
+    throw new Error("No container engine endpoint is available.");
+  }
+  setCachedRuntime(candidates[0]);
+  return new Docker(candidates[0].options);
 }
 
 /** Match longest supported suffix first (e.g. .fastq.gz before .fastq). */
@@ -45,6 +62,16 @@ export default new Vuex.Store({
     ],
     dockerInfo: { NCPU: 1, MemTotal: 1073741824 },
     dockerStatus: "",
+    containerRuntime: {
+      preference: readRuntimePreference(),
+      active: "",
+      socketPath: "",
+      rootless: false,
+      available: {
+        docker: false,
+        podman: false,
+      },
+    },
     OStype: "",
     Qcheck: {
       fileExtension: "",
@@ -6320,6 +6347,32 @@ export default new Vuex.Store({
   },
   getters: {
     isDockerActive: state => state.dockerStatus === "running",
+    activeEngine: state => state.containerRuntime.active,
+    engineLabel: (state, getters) => engineDisplayName(getters.activeEngine || (state.containerRuntime.preference === "auto" ? "" : state.containerRuntime.preference)),
+    runtimeStatusText: (state, getters) => {
+      if (getters.isDockerActive) {
+        return `${getters.engineLabel} is running`;
+      }
+      if (state.containerRuntime.preference === "podman") {
+        return "Podman is not running";
+      }
+      if (state.containerRuntime.preference === "docker") {
+        return "Docker is not running";
+      }
+      return "No container engine is running";
+    },
+    engineNotFoundMessage: (state, getters) => {
+      if (state.containerRuntime.preference === "podman") {
+        return "Failed to find Podman";
+      }
+      if (state.containerRuntime.preference === "docker") {
+        return "Failed to find Docker";
+      }
+      if (getters.engineLabel && getters.engineLabel !== "container engine") {
+        return `Failed to find ${getters.engineLabel}`;
+      }
+      return "Failed to find Docker or Podman";
+    },
     mostCommonExtenson: (state) => (files) => {
       const extensionCounts = Object.fromEntries(
         state.SUPPORTED_EXTENSIONS.map(ext => [ext, 0])
@@ -6622,6 +6675,20 @@ export default new Vuex.Store({
     },
     updateDockerStatus(state, payload) {
       state.dockerStatus = payload;
+    },
+    setRuntimePreference(state, preference) {
+      state.containerRuntime.preference = preference;
+    },
+    setActiveRuntime(state, runtime) {
+      state.containerRuntime.active = runtime?.engine || "";
+      state.containerRuntime.socketPath = runtime?.socketPath || "";
+      state.containerRuntime.rootless = Boolean(runtime?.rootless);
+    },
+    setAvailableRuntimes(state, available) {
+      state.containerRuntime.available = {
+        docker: Boolean(available?.docker?.detected),
+        podman: Boolean(available?.podman?.detected),
+      };
     },
     addInputDir(state, filePath) {
       state.inputDir = filePath;
@@ -7186,12 +7253,103 @@ export default new Vuex.Store({
           const info = await docker.info();
           commit("setDockerInfo", info);
         } catch (error) {
-          // Leave dockerInfo unchanged. Workflows cannot start while Docker is
-          // inactive; resources are refreshed when status monitoring sees
-          // Docker become "running" (and again when opening Resource Manager).
-          console.error("Failed to fetch Docker info:", error);
+          // Leave dockerInfo unchanged. Workflows cannot start while the engine
+          // is inactive; resources are refreshed when status monitoring sees
+          // it become "running" (and again when opening Resource Manager).
+          console.error("Failed to fetch container engine info:", error);
         }
       }
+    },
+    async setContainerRuntimePreference({ commit, dispatch }, preference) {
+      persistRuntimePreference(preference);
+      commit("setRuntimePreference", preference);
+      commit("setActiveRuntime", null);
+      commit("updateDockerStatus", "");
+      await dispatch("probeContainerRuntimes", { force: true });
+    },
+    async probeContainerRuntimes({ commit, dispatch, state }, options = {}) {
+      const force = Boolean(options && options.force);
+      const previousStatus = state.dockerStatus;
+      const cached = getCachedRuntime();
+
+      if (!force && cached?.options) {
+        try {
+          const Docker = require("dockerode");
+          const docker = new Docker({ ...cached.options, timeout: 5000 });
+          await docker.version();
+          commit("setActiveRuntime", cached);
+          commit("updateDockerStatus", "running");
+          if (previousStatus !== "running") {
+            await dispatch("fetchDockerInfo");
+          }
+          return "running";
+        } catch (error) {
+          setCachedRuntime(null);
+        }
+      }
+
+      const available = inspectAvailableRuntimes();
+      commit("setAvailableRuntimes", available);
+
+      const preference = state.containerRuntime.preference;
+      const candidates = listRuntimeCandidates(preference);
+      let status = "stopped";
+      let connected = null;
+
+      const pingRuntime = async (candidate) => {
+        if (!candidate?.options) {
+          return null;
+        }
+        const Docker = require("dockerode");
+        const docker = new Docker({ ...candidate.options, timeout: 5000 });
+        const version = await docker.version();
+        const engine = identifyEngineFromVersion(version) || candidate.engine;
+        return { ...candidate, engine };
+      };
+
+      for (const candidate of candidates) {
+        try {
+          connected = await pingRuntime(candidate);
+          if (connected) {
+            setCachedRuntime(connected);
+            status = "running";
+            break;
+          }
+        } catch (error) {
+          console.log(
+            `Container engine probe failed for ${candidate.engine}:`,
+            error?.message || error
+          );
+        }
+      }
+
+      if (!connected && (preference === "podman" || preference === "auto")) {
+        try {
+          const prepared = await ensurePodmanRuntime();
+          if (prepared) {
+            connected = await pingRuntime(prepared);
+            if (connected) {
+              setCachedRuntime(connected);
+              status = "running";
+            }
+          }
+        } catch (error) {
+          console.log("Podman API setup failed:", error?.message || error);
+        }
+      }
+
+      if (!connected) {
+        setCachedRuntime(null);
+        commit("setActiveRuntime", null);
+      } else {
+        commit("setActiveRuntime", connected);
+      }
+
+      commit("updateDockerStatus", status);
+      if (status === "running" && previousStatus !== "running") {
+        await dispatch("fetchDockerInfo");
+      }
+      return status;
     },
     async setWorkingDir({ commit, state, dispatch }, mode) {
       let dirPath;
@@ -7396,31 +7554,9 @@ export default new Vuex.Store({
         return null;
       }
     },
-    async startDockerStatusMonitoring({ commit, dispatch }) {
-      let lastStatus = null;
-      const checkDockerStatus = async () => {
-        let status = "stopped";
-        try {
-          const docker = getDockerInstance();
-          await docker.version();
-          status = "running";
-        } catch (error) {
-          status = "stopped";
-        }
-
-        if (status !== lastStatus) {
-          lastStatus = status;
-          commit("updateDockerStatus", status);
-          // Load real CPU/RAM only once Docker is reachable (covers startup
-          // race where Docker is still booting when the app launches).
-          if (status === "running") {
-            dispatch("fetchDockerInfo");
-          }
-        }
-      };
-      // Check immediately
+    async startDockerStatusMonitoring({ dispatch }) {
+      const checkDockerStatus = () => dispatch("probeContainerRuntimes");
       checkDockerStatus();
-      // Set up interval for continuous monitoring
       setInterval(checkDockerStatus, 10000);
     },
   },

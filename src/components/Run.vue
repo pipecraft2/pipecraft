@@ -18,7 +18,7 @@
       Missing outgroup database for protax classification
     </div>
     <div v-if="isDockerStopped">
-      Failed to find docker desktop!
+      {{ engineNotFoundMessage }}
     </div>
     <div v-if="isNoFilesSelected">
       No files selected!
@@ -46,6 +46,7 @@ import { mapState, mapGetters } from "vuex";
 import { stringify } from "envfile";
 import cloneDeep from 'lodash/cloneDeep';
 import { getServiceScriptsPath } from "../utils/scriptsPath";
+import { getContainerUser, prepareBindMounts, wrapCommandForNativeInputCopy } from "../utils/containerRuntime";
 var stdout = new WritableStream();
 var stderr = new WritableStream();
 
@@ -58,7 +59,7 @@ export default {
     ...mapState({
       selectedSteps: (state) => state.selectedSteps,
     }),
-    ...mapGetters(['isDockerActive']),
+    ...mapGetters(['isDockerActive', 'engineNotFoundMessage']),
     // Button State
     isButtonDisabled() {
       return this.isDockerStopped || 
@@ -171,7 +172,7 @@ export default {
       let dockerProps = {
         Tty: false,
         WorkingDir: WorkingDir,
-        User: `${this.userId}:${this.groupId}`,
+        User: getContainerUser(this.userId, this.groupId),
         name: Hostname,
         platform: "linux/amd64",
         Volumes: {},
@@ -210,6 +211,7 @@ export default {
               this.updateRunInfo(i, steps2Run, dockerProps.name, name);
               await this.$store.dispatch('imageCheck', step.imageName);
               await this.$store.dispatch('clearContainerConflicts', dockerProps.name);
+              console.log("Container binds:", dockerProps.HostConfig.Binds);
               console.log(dockerProps);
               let scriptName;
               if (typeof step.scriptName === "object") {
@@ -222,7 +224,7 @@ export default {
               let result = await this.$docker
                 .run(
                   step.imageName,
-                  ["bash", "-c", `bash /scripts/${scriptName}`],
+                  wrapCommandForNativeInputCopy(["bash", "-c", `bash /scripts/${scriptName}`]),
                   [stdout, stderr],
                   dockerProps
                 )
@@ -367,7 +369,7 @@ export default {
             let result = await this.$docker
               .run(
                 selectedStep.imageName,
-                ["bash", "-c", `bash /scripts/${selectedStep.scriptName}`],
+                wrapCommandForNativeInputCopy(["bash", "-c", `bash /scripts/${selectedStep.scriptName}`]),
                 [stdout, stderr],
                 dockerProps
               )
@@ -641,7 +643,7 @@ export default {
           }
         }
       });
-      return Binds;
+      return prepareBindMounts(Binds);
     },
     createBinds(serviceIndex, stepIndex, Input) {
       const scriptsPath = getServiceScriptsPath();
@@ -667,7 +669,7 @@ export default {
           }
         }
       });
-      return Binds;
+      return prepareBindMounts(Binds);
     },
     getOptimOTUBinds() {
       const scriptsPath = getServiceScriptsPath();
@@ -738,7 +740,7 @@ export default {
         });
       });
       console.log("OptimOTU container binds:", binds);
-      return binds;
+      return prepareBindMounts(binds);
     },
     findSelectedService(i) {
       let result;
@@ -784,14 +786,14 @@ export default {
       let WorkingDir = "/";
       let envVariables = this.createCustomVariableObj(step);
       let Binds = this.getBinds_c(step, this.$store.state.inputDir);
-      Binds = Binds.map(b => b.replace(/:\/input$/, ':/Input'));
+      Binds = prepareBindMounts(Binds.map(b => b.replace(/:\/input(:|$)/, ':/Input$1')));
       console.log(Math.round(Number(this.$store.state.dockerInfo.NCPU) * 1e9));
       let dockerProps = {
         Tty: false,
         WorkingDir: WorkingDir,
         name: Hostname,
         platform: "linux/amd64",
-        User: "0:0",
+        User: getContainerUser(0, 0),
         Volumes: {},
         HostConfig: {
           Binds: Binds,
@@ -916,7 +918,7 @@ export default {
             const container = await this.$docker.createContainer({
               Image: 'pipecraft/optimotu:5.1-pc1.2.0',
               name: 'optimotu',
-              Cmd: ['/scripts/run_optimotu.sh'],
+              Cmd: wrapCommandForNativeInputCopy(['/scripts/run_optimotu.sh']),
               Tty: true,
               OpenStdin: false,
               StdinOnce: false,
@@ -1050,7 +1052,7 @@ export default {
             this.$docker
               .run(
                 "pipecraft/nextits:1.1.0-pc1.2.0",
-                ["bash", "-c", `bash /scripts/NextITS_Pipeline.sh`],
+                wrapCommandForNativeInputCopy(["bash", "-c", `bash /scripts/NextITS_Pipeline.sh`]),
                 false,
                 props,
                 (err, data, container) => {
@@ -1156,7 +1158,7 @@ export default {
       const container = await this.$docker.createContainer({
         Image: imageName,
         name: containerName,
-        Cmd: command,
+        Cmd: wrapCommandForNativeInputCopy(command),
         Tty: false,
         AttachStdout: true,
         AttachStderr: true,
@@ -1169,10 +1171,11 @@ export default {
           ...env
         ],
         HostConfig: {
-          Binds: binds,
+          Binds: prepareBindMounts(binds),
           Memory: memory,
           NanoCpus: cpuCount * 1e9,
-        }
+        },
+        User: getContainerUser(userId, groupId),
       });
 
       // Attach to container (multiplexed stream)
@@ -1469,13 +1472,13 @@ export default {
       const scriptDir = getServiceScriptsPath();
       const configPath = `${scriptDir}/FunBarONTConfig.json`;
 
-      return [
+      return prepareBindMounts([
         `${workDir}:/Input:rw`,
         `${workDir}:/sequences:rw`,
         `${slash(databaseFile)}:/database/database.fasta:ro`,
         `${configPath}:/scripts/FunBarONTConfig.json:ro`,
         `${scriptDir}:/scripts:ro`
-      ];
+      ]);
     },
   },
 };

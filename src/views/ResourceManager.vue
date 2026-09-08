@@ -3,6 +3,34 @@
     <v-card width="85%" style="margin: auto; background-color: rgb(0 0 0 / 40%)">
       <v-card-title style="color: white" class="py-10">RESOURCE MANAGER</v-card-title>
       <v-divider></v-divider>
+      <v-card-subtitle style="color: white">Container runtime</v-card-subtitle>
+      <div class="px-5 pb-4">
+        <v-btn-toggle
+          :value="runtimePreference"
+          mandatory
+          dense
+          color="teal accent-3"
+          background-color="transparent"
+          @change="handleRuntimePreferenceChange"
+        >
+          <v-btn value="auto" small dark>Auto</v-btn>
+          <v-btn value="docker" small dark>Docker</v-btn>
+          <v-btn value="podman" small dark>Podman</v-btn>
+        </v-btn-toggle>
+        <div class="mt-3" style="color: white; font-size: 14px">
+          <div>{{ runtimeStatusLine }}</div>
+          <div v-if="socketPath" style="opacity: 0.8; word-break: break-all">
+            Socket: {{ socketPath }}
+          </div>
+          <div style="opacity: 0.8">
+            Detected: {{ detectedRuntimesText }}
+          </div>
+          <div v-if="!showApplyRestart" class="mt-2" style="opacity: 0.8">
+            CPU and RAM limits are applied to each workflow container. No engine restart is required on Linux.
+          </div>
+        </div>
+      </div>
+      <v-divider></v-divider>
       <v-card-subtitle
         v-if="!isDockerActive"
         style="color: white; display: flex; align-items: center"
@@ -70,22 +98,14 @@
         style="color: white"
       ></v-slider>
       <div style="display: flex; justify-content: center">
-        <v-btn v-if="this.$store.state.OStype != 'Linux'"
-          @click="
-            $store.state.OStype === 'Darwin'
-              ? restartDockerMacOS()
-              : $store.state.OStype === 'Linux'
-              ? restartDockerLinux()
-              : $store.state.OStype === 'Windows_NT'
-              ? restartDockerWin()
-              : null
-          "
+        <v-btn v-if="showApplyRestart"
+          @click="handleApplyResources"
           style="margin: auto"
           class="ma-5"
           outlined
           color="white"
         >
-          Apply & restart docker
+          {{ applyButtonText }}
         </v-btn>
       </div>
     </v-card>
@@ -98,6 +118,7 @@ const fs = require("fs");
 const path = require("path");
 import os from "os";
 import { mapState, mapGetters } from "vuex";
+import { applyPodmanMachineResources } from "../utils/containerRuntime";
 const CPU = os.cpus().length;
 const MEM = Number((os.totalmem() / 1024 ** 3).toFixed(0));
 const homeDir = require("os").homedir();
@@ -119,9 +140,12 @@ export default {
   name: "ResourceManager",
   computed: {
     ...mapState({
-      dockerSettingsPath: state => state.systemSpecs.dockerSettings
+      dockerSettingsPath: state => state.systemSpecs.dockerSettings,
+      runtimePreference: state => state.containerRuntime.preference,
+      socketPath: state => state.containerRuntime.socketPath,
+      availableRuntimes: state => state.containerRuntime.available,
     }),
-    ...mapGetters(['isDockerActive']),
+    ...mapGetters(['isDockerActive', 'engineLabel', 'runtimeStatusText', 'activeEngine']),
     ncpu: {
       get() {
         return this.$store.state.dockerInfo.NCPU;
@@ -140,6 +164,27 @@ export default {
         this.$store.commit("setMemTotal", value * 1024 ** 3);
       },
     },
+    resourceEngine() {
+      return this.activeEngine || (this.runtimePreference === "auto" ? "" : this.runtimePreference);
+    },
+    showApplyRestart() {
+      return this.$store.state.OStype !== "Linux";
+    },
+    applyButtonText() {
+      return this.resourceEngine === "podman"
+        ? "Apply & restart Podman machine"
+        : "Apply & restart Docker";
+    },
+    runtimeStatusLine() {
+      const rootless = this.$store.state.containerRuntime.rootless ? " (rootless)" : "";
+      return `${this.runtimeStatusText}${this.isDockerActive ? rootless : ""}`;
+    },
+    detectedRuntimesText() {
+      const found = [];
+      if (this.availableRuntimes.docker) found.push("Docker");
+      if (this.availableRuntimes.podman) found.push("Podman");
+      return found.length ? found.join(", ") : "none";
+    },
   },
   data() {
     return {
@@ -150,6 +195,25 @@ export default {
     };
   },
   methods: {
+    handleRuntimePreferenceChange(preference) {
+      if (!preference || preference === this.runtimePreference) {
+        return;
+      }
+      this.$store.dispatch("setContainerRuntimePreference", preference);
+    },
+    handleApplyResources() {
+      if (this.resourceEngine === "podman") {
+        this.restartPodmanMachine();
+        return;
+      }
+      if (this.$store.state.OStype === "Darwin") {
+        this.restartDockerMacOS();
+        return;
+      }
+      if (this.$store.state.OStype === "Windows_NT") {
+        this.restartDockerWin();
+      }
+    },
         updateWslConfig(memory, processors) {
       // Check if .wslconfig file exists
       if (fs.existsSync(wslConfigPath)) {
@@ -316,6 +380,70 @@ processors=${processors}
     },
     restartDockerLinux() {
       console.log("in development");
+    },
+    async restartPodmanMachine() {
+      try {
+        const confirmation = await Swal.fire({
+          title: "Warning: Podman Machine Restart Required",
+          html: `
+            <div style="text-align: left; margin: 15px 0;">
+              <p><strong>This operation will:</strong></p>
+              <ul style="margin: 10px 0; padding-left: 20px;">
+                <li>Stop the Podman machine</li>
+                <li>Apply new resource settings: <strong>${this.memtotal}GB RAM, ${this.ncpu} CPUs</strong></li>
+                <li>Start the Podman machine again</li>
+              </ul>
+              <p><strong>Any running containers will be stopped.</strong></p>
+            </div>
+          `,
+          icon: "warning",
+          showCancelButton: true,
+          confirmButtonText: "Continue",
+          cancelButtonText: "Cancel",
+          confirmButtonColor: "#d33",
+          cancelButtonColor: "#3085d6",
+          theme: "dark",
+        });
+
+        if (!confirmation.isConfirmed) {
+          return;
+        }
+
+        const progressDialog = Swal.fire({
+          title: "Applying Podman Resource Changes",
+          html: "Updating machine CPU and memory...",
+          allowOutsideClick: false,
+          showConfirmButton: false,
+          theme: "dark",
+          didOpen: () => Swal.showLoading(),
+        });
+
+        const result = await applyPodmanMachineResources({
+          cpus: this.ncpu,
+          memoryMiB: Math.round(this.memtotal * 1024),
+        });
+
+        progressDialog.update({ html: "Waiting for Podman to come back online..." });
+        await this.sleep(3000);
+        await this.$store.dispatch("probeContainerRuntimes", { force: true });
+        await this.$store.dispatch("fetchDockerInfo");
+        await progressDialog.close();
+
+        await Swal.fire({
+          title: "Resources Updated Successfully",
+          text: `Podman machine ${result.machineName} restarted with ${this.memtotal}GB RAM, ${this.ncpu} CPUs`,
+          icon: "success",
+          theme: "dark",
+          timer: 4000,
+        });
+      } catch (error) {
+        await Swal.fire({
+          title: "Update Failed",
+          text: error.message || String(error),
+          icon: "error",
+          theme: "dark",
+        });
+      }
     },
 
     // Helper method for sequential PowerShell execution

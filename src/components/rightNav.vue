@@ -3,8 +3,15 @@
     <v-list-item @click="push2ResourceManager">
       <v-tooltip left nudge-left="10">
         <template v-slot:activator="{ on }">
-          <v-list-item-content v-on="on">
-            <v-icon :size="50" :color="dockerActiveColor"> mdi-docker </v-icon>
+          <v-list-item-content v-on="on" class="runtime-icon-wrap">
+            <span
+              v-if="activeEngine === 'podman'"
+              class="runtime-logo runtime-logo--podman"
+              :style="{ backgroundColor: dockerActiveColor }"
+              role="img"
+              aria-label="Podman"
+            />
+            <v-icon v-else :size="50" :color="dockerActiveColor">mdi-docker</v-icon>
           </v-list-item-content>
         </template>
         <span>{{ dockerStatusText }}</span>
@@ -109,15 +116,13 @@ import { mapGetters } from "vuex";
 export default {
   name: "rightNav",
   computed: {
-    ...mapGetters(['isDockerActive']),
+    ...mapGetters(['isDockerActive', 'runtimeStatusText', 'activeEngine']),
     dockerActiveColor() {
       return this.isDockerActive ? '#1DE9B6' : '#FF7043';
     },
     dockerStatusText() {
-      return this.isDockerActive 
-        ? 'docker desktop is running' 
-        : 'docker desktop stopped';
-    }
+      return this.runtimeStatusText;
+    },
   },
   data() {
     return {
@@ -263,5 +268,22 @@ export default {
 }
 .material icons.primary header material icon first menu {
   margin-left: -2 px;
+}
+.runtime-icon-wrap {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 50px;
+}
+/* Official Podman seal (Simple Icons / brand mark), tinted to status color */
+.runtime-logo {
+  display: inline-block;
+  width: 44px;
+  height: 44px;
+  flex-shrink: 0;
+}
+.runtime-logo--podman {
+  -webkit-mask: url("../assets/podman.svg") center / contain no-repeat;
+  mask: url("../assets/podman.svg") center / contain no-repeat;
 }
 </style>

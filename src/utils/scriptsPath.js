@@ -41,9 +41,9 @@ function getHostScriptsPath() {
 }
 
 /**
- * Returns the host path to service_scripts for Docker bind mounts.
+ * Returns the host path to service_scripts for Docker/Podman bind mounts.
  * On Linux production (AppImage), copies bundled scripts to userData because
- * Docker cannot reliably bind-mount paths under /tmp/.mount_* FUSE mounts.
+ * the engine cannot reliably bind-mount paths under /tmp/.mount_* FUSE mounts.
  */
 function getServiceScriptsPath() {
   if (isDevelopment) {
