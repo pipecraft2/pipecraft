@@ -46,8 +46,8 @@ import { mapState, mapGetters } from "vuex";
 import { stringify } from "envfile";
 import cloneDeep from 'lodash/cloneDeep';
 import { getServiceScriptsPath } from "../utils/scriptsPath";
-// prepareBindMounts / wrapCommand / getContainerUser adapt binds+cmds for Podman (esp. Windows).
-import { getContainerUser, prepareBindMounts, wrapCommandForNativeInputCopy } from "../utils/containerRuntime";
+// prepareBindMounts / getContainerUser adapt binds and user for Podman (esp. Windows).
+import { getContainerUser, prepareBindMounts } from "../utils/containerRuntime";
 var stdout = new WritableStream();
 var stderr = new WritableStream();
 
@@ -225,8 +225,7 @@ export default {
               let result = await this.$docker
                 .run(
                   step.imageName,
-                  // Win/mac Podman: copy /input onto VM disk before running (gzip-safe).
-                  wrapCommandForNativeInputCopy(["bash", "-c", `bash /scripts/${scriptName}`]),
+                  ["bash", "-c", `bash /scripts/${scriptName}`],
                   [stdout, stderr],
                   dockerProps
                 )
@@ -371,7 +370,7 @@ export default {
             let result = await this.$docker
               .run(
                 selectedStep.imageName,
-                wrapCommandForNativeInputCopy(["bash", "-c", `bash /scripts/${selectedStep.scriptName}`]),
+                ["bash", "-c", `bash /scripts/${selectedStep.scriptName}`],
                 [stdout, stderr],
                 dockerProps
               )
@@ -920,7 +919,7 @@ export default {
             const container = await this.$docker.createContainer({
               Image: 'pipecraft/optimotu:5.1-pc1.2.0',
               name: 'optimotu',
-              Cmd: wrapCommandForNativeInputCopy(['/scripts/run_optimotu.sh']),
+              Cmd: ['/scripts/run_optimotu.sh'],
               Tty: true,
               OpenStdin: false,
               StdinOnce: false,
@@ -1054,7 +1053,7 @@ export default {
             this.$docker
               .run(
                 "pipecraft/nextits:1.1.0-pc1.2.0",
-                wrapCommandForNativeInputCopy(["bash", "-c", `bash /scripts/NextITS_Pipeline.sh`]),
+                ["bash", "-c", `bash /scripts/NextITS_Pipeline.sh`],
                 false,
                 props,
                 (err, data, container) => {
@@ -1160,7 +1159,7 @@ export default {
       const container = await this.$docker.createContainer({
         Image: imageName,
         name: containerName,
-        Cmd: wrapCommandForNativeInputCopy(command),
+        Cmd: command,
         Tty: false,
         AttachStdout: true,
         AttachStderr: true,

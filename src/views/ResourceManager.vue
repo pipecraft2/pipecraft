@@ -384,6 +384,7 @@ processors=${processors}
       console.log("in development");
     },
     async restartPodmanMachine() {
+      const isWindows = this.$store.state.OStype === "Windows_NT";
       try {
         const confirmation = await Swal.fire({
           title: "Warning: Podman Machine Restart Required",
@@ -392,7 +393,12 @@ processors=${processors}
               <p><strong>This operation will:</strong></p>
               <ul style="margin: 10px 0; padding-left: 20px;">
                 <li>Stop the Podman machine</li>
-                <li>Apply new resource settings: <strong>${this.memtotal}GB RAM, ${this.ncpu} CPUs</strong></li>
+                ${
+                  isWindows
+                    ? `<li>Update <code>~/.wslconfig</code> with <strong>${this.memtotal}GB RAM, ${this.ncpu} CPUs</strong> (WSL-wide; Podman on Windows cannot set per-machine CPU/RAM)</li>
+                <li>Shut down WSL so the new limits apply</li>`
+                    : `<li>Apply new resource settings: <strong>${this.memtotal}GB RAM, ${this.ncpu} CPUs</strong></li>`
+                }
                 <li>Start the Podman machine again</li>
               </ul>
               <p><strong>Any running containers will be stopped.</strong></p>
@@ -413,7 +419,9 @@ processors=${processors}
 
         const progressDialog = Swal.fire({
           title: "Applying Podman Resource Changes",
-          html: "Updating machine CPU and memory...",
+          html: isWindows
+            ? "Updating .wslconfig and restarting WSL/Podman..."
+            : "Updating machine CPU and memory...",
           allowOutsideClick: false,
           showConfirmButton: false,
           theme: "dark",
@@ -431,9 +439,13 @@ processors=${processors}
         await this.$store.dispatch("fetchDockerInfo");
         await progressDialog.close();
 
+        const viaNote =
+          result.appliedVia === "wslconfig"
+            ? " (via ~/.wslconfig)"
+            : "";
         await Swal.fire({
           title: "Resources Updated Successfully",
-          text: `Podman machine ${result.machineName} restarted with ${this.memtotal}GB RAM, ${this.ncpu} CPUs`,
+          text: `Podman machine ${result.machineName} restarted with ${this.memtotal}GB RAM, ${this.ncpu} CPUs${viaNote}`,
           icon: "success",
           theme: "dark",
           timer: 4000,

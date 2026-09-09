@@ -93,8 +93,7 @@
 
 <script>
 import { mapGetters } from 'vuex';
-// Same Podman bind/cmd helpers used by workflow runs (Windows VM gzip workaround).
-import { prepareBindMounts, wrapCommandForNativeInputCopy } from "../utils/containerRuntime";
+import { prepareBindMounts } from "../utils/containerRuntime";
 const shell = require("electron").shell;
 const streams = require("memory-streams");
 var stdout = new streams.WritableStream();
@@ -121,11 +120,11 @@ export default {
       let result = await this.$docker
         .run(
           "staphb/fastqc:0.11.9",
-          wrapCommandForNativeInputCopy([
+          [
             "sh",
             "-c",
             `mkdir quality_check | fastqc --outdir quality_check *$format`,
-          ]),
+          ],
           [stdout, stderr],
           {
             Tty: false,
@@ -162,7 +161,7 @@ export default {
       stderr = new streams.WritableStream();
       console.log("starting multiqc");
       let result2 = await this.$docker
-        .run("ewels/multiqc:1.10", wrapCommandForNativeInputCopy(["multiqc", "."]), [stdout, stderr], {
+        .run("ewels/multiqc:1.10", [], [stdout, stderr], {
           Tty: false,
           WorkingDir: "/input",
           platform: "linux/amd64",

@@ -3,7 +3,7 @@
  *
  * dockerode talks to both engines over the same Docker-compatible API.
  * This module finds the right socket/pipe, remembers the choice, and
- * fixes Windows Podman bind mounts / gzip reads before a container starts.
+ * fixes Windows Podman bind mounts before a container starts.
  */
 const { execFile, execFileSync, spawn } = require("child_process");
 const fs = require("fs");
@@ -695,13 +695,25 @@ async function ensurePodmanMachineRunning(podmanBin) {
       machine.Running === true ||
       machine.Running === "true" ||
       String(machine.LastUp || "").toLowerCase().includes("currently running");
-    if (running) {
-      return true;
+    if (!running) {
+      const nameArgs = machineName ? [machineName] : [];
+      await runCli(podmanBin, ["machine", "start", ...nameArgs], MACHINE_TIMEOUT_MS);
     }
-    const nameArgs = machineName ? [machineName] : [];
-    await runCli(podmanBin, ["machine", "start", ...nameArgs], MACHINE_TIMEOUT_MS);
+
+    // After start (or WSL reboot), the named pipe/socket can lag a few seconds
+    // behind "machine started". Wait so probes don't hit connect ENOENT.
+    if (process.platform === "win32") {
+      const pipePath = `\\\\.\\pipe\\${machineName || "podman-machine-default"}`;
+      await waitForPath(pipePath, 20000);
+    } else {
+      const after = tryResolvePodman();
+      if (after?.socketPath) {
+        await waitForPath(after.socketPath, 20000);
+      }
+    }
     return true;
-  } catch {
+  } catch (error) {
+    console.warn("ensurePodmanMachineRunning failed:", error?.message || error);
     return false;
   }
 }
@@ -1002,84 +1014,9 @@ function appendBindOption(bind, option) {
   return `${bind}:${option}`;
 }
 
-// Win/mac Podman uses a VM; host folders are shared via 9p/virtiofs, not a normal Linux FS.
-function usesPodmanVmFilesystem() {
-  return (
-    cachedRuntime?.engine === "podman" &&
-    (process.platform === "win32" || process.platform === "darwin")
-  );
-}
-
-/**
- * On Win/mac Podman, wrap the container Cmd so we:
- * 1) copy host data from /mnt/host-input → /input (VM-local disk)
- * 2) run the real script
- * 3) copy results back
- *
- * Why: parallel .gz readers (cutadapt) often get truncated streams over the VM share.
- * No-op on Docker and on Linux Podman.
- */
-function wrapCommandForNativeInputCopy(command) {
-  if (!usesPodmanVmFilesystem()) {
-    return command;
-  }
-  if (!Array.isArray(command) || command.length === 0) {
-    return command;
-  }
-
-  const wrapBody = (script) => `mkdir -p /input /mnt/host-input
-if [ -n "$(ls -A /mnt/host-input 2>/dev/null)" ]; then
-  echo "Copying input onto the Podman VM disk (host bind mounts cannot reliably stream .gz files)..."
-  cp -a /mnt/host-input/. /input/
-fi
-rm -rf /Input
-ln -s /input /Input
-set +e
-(
-${script}
-)
-status=$?
-echo "Copying results back to the host folder..."
-cp -a /input/. /mnt/host-input/ 2>/dev/null || true
-exit $status`;
-
-  const shell = command[0];
-  const isShellDashC =
-    command.length >= 3 &&
-    command[1] === "-c" &&
-    (shell === "bash" ||
-      shell === "/bin/bash" ||
-      shell === "sh" ||
-      shell === "/bin/sh");
-
-  if (isShellDashC) {
-    return [shell, "-c", wrapBody(command[2])];
-  }
-
-  const quoted = command
-    .map((part) => `'${String(part).replace(/'/g, `'\\''`)}'`)
-    .join(" ");
-  return ["bash", "-c", wrapBody(quoted)];
-}
-
-// Point /input (and /Input) binds at /mnt/host-input so the copy wrapper can stage them.
-function remapDataBindContainerPath(container) {
-  if (!usesPodmanVmFilesystem() || !container) {
-    return container;
-  }
-  if (container === "/input" || container.startsWith("/input/")) {
-    return container.replace(/^\/input/, "/mnt/host-input");
-  }
-  if (container === "/Input" || container.startsWith("/Input/")) {
-    return container.replace(/^\/Input/, "/mnt/host-input");
-  }
-  return container;
-}
-
 /**
  * Final pass on HostConfig.Binds before create/run:
  * - Windows Podman: rewrite C:\... → /mnt/c/...
- * - Win/mac Podman: /input → /mnt/host-input (see wrapCommandForNativeInputCopy)
  * - Linux Podman: add :Z for SELinux
  */
 function prepareBindMounts(binds) {
@@ -1096,7 +1033,6 @@ function prepareBindMounts(binds) {
     if (runtime.engine === "podman" && process.platform === "win32") {
       host = rewriteHostPathForPodman(host, runtime);
     }
-    container = remapDataBindContainerPath(container);
     let formatted = formatBindSpec({ host, container, options }) || bind;
     if (runtime.engine === "podman" && process.platform === "linux") {
       formatted = appendBindOption(formatted, "Z");
@@ -1162,7 +1098,9 @@ async function getPodmanBinary() {
   return cached || findExecutable("podman");
 }
 
-// Win/mac Resource Manager: stop VM → set cpus/memory → start again.
+// Win/mac Resource Manager: apply CPU/RAM then restart the machine.
+// On Windows, Podman uses WSL — `podman machine set --cpus/--memory` is not
+// supported there. Resources are global for all WSL2 distros via ~/.wslconfig.
 async function applyPodmanMachineResources({ cpus, memoryMiB }) {
   const podmanBin = await getPodmanBinary();
   if (!podmanBin) {
@@ -1182,14 +1120,58 @@ async function applyPodmanMachineResources({ cpus, memoryMiB }) {
     }
   }
 
-  await runCli(
-    podmanBin,
-    ["machine", "set", "--cpus", String(cpus), "--memory", String(memoryMiB), ...nameArgs],
-    CLI_TIMEOUT_MS
-  );
+  if (process.platform === "win32") {
+    writeWslResourceConfig({
+      memoryGb: Math.max(1, Math.round(Number(memoryMiB) / 1024)),
+      processors: Math.max(1, Number(cpus) || 1),
+    });
+    // WSL must fully shut down before .wslconfig is picked up.
+    try {
+      await runCli("wsl.exe", ["--shutdown"], CLI_TIMEOUT_MS);
+    } catch (error) {
+      const message = String(error?.stderr || error?.message || "");
+      if (!/no running distributions|there are no distributions/i.test(message)) {
+        throw error;
+      }
+    }
+    await new Promise((resolve) => setTimeout(resolve, 8000));
+  } else {
+    // QEMU-backed machines (typical on some Linux/mac setups) support per-VM limits.
+    await runCli(
+      podmanBin,
+      ["machine", "set", "--cpus", String(cpus), "--memory", String(memoryMiB), ...nameArgs],
+      CLI_TIMEOUT_MS
+    );
+  }
+
   await runCli(podmanBin, ["machine", "start", ...nameArgs], MACHINE_TIMEOUT_MS);
   clearRuntimeCache();
-  return { machineName: machineName || "default" };
+  return {
+    machineName: machineName || "default",
+    appliedVia: process.platform === "win32" ? "wslconfig" : "podman-machine-set",
+  };
+}
+
+function writeWslResourceConfig({ memoryGb, processors }) {
+  const wslConfigPath = path.join(os.homedir(), ".wslconfig");
+  let content = "";
+  if (fs.existsSync(wslConfigPath)) {
+    content = fs.readFileSync(wslConfigPath, "utf8");
+  }
+  if (!/\[wsl2\]/i.test(content)) {
+    content = content.trim().length ? `${content.trim()}\n\n[wsl2]\n` : "[wsl2]\n";
+  }
+  if (/^\s*memory\s*=/im.test(content)) {
+    content = content.replace(/^\s*memory\s*=\s*[^\r\n]+/im, `memory=${memoryGb}GB`);
+  } else {
+    content = content.replace(/\[wsl2\]/i, `[wsl2]\nmemory=${memoryGb}GB`);
+  }
+  if (/^\s*processors\s*=/im.test(content)) {
+    content = content.replace(/^\s*processors\s*=\s*[^\r\n]+/im, `processors=${processors}`);
+  } else {
+    content = content.replace(/\[wsl2\]/i, `[wsl2]\nprocessors=${processors}`);
+  }
+  fs.writeFileSync(wslConfigPath, content, "utf8");
 }
 
 module.exports = {
@@ -1209,8 +1191,6 @@ module.exports = {
   ensurePodmanRuntime,
   parseHostToOptions,
   prepareBindMounts,
-  usesPodmanVmFilesystem,
-  wrapCommandForNativeInputCopy,
   readRuntimePreference,
   resolveContainerRuntimeSync,
   setCachedRuntime,
