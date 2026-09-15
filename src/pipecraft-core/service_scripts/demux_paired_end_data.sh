@@ -3,6 +3,12 @@
 # Demultiplex PAIRED-END reads
 # Demultiplexing of paired-end reads in mixed orientation using single-end or paired-end indexes is supported.
 # Input = a directory with fastq/fasta files (R1.fastq; R2.fastq); and indexes file in fasta format (header as a sample name).
+#
+# Dual indexes are demultiplexed in two steps so cutadapt only opens files for
+# index combinations that are listed in the indexes file:
+#   1) unique F indexes
+#   2) for each F bin, only the R indexes paired with that F
+# Mixed orientation is still handled as two cutadapt rounds (R1/R2 swapped).
 
 ################################################
 ###Third-party applications:
@@ -23,7 +29,6 @@ oligos_file_path=$(echo $index_file | grep -oP "$regex")
 oligos_file=$(basename $oligos_file_path) #basename, needed for macOS
 indexes_file=$(printf "/extraFiles/$oligos_file")
 error_rate="-e ${index_mismatch}"
-search_window=${search_window}
 if [ "$no_indels" = true ] ; then
     no_indels=$"--no-indels"
 else
@@ -61,8 +66,8 @@ printf "cores = $cores\n"
 source /scripts/submodules/framework.functions.sh
 #output dir
 output_dir=$"/input/demultiplex_out"
-#python module for assigning sample names as based on indexes file
-run_python_module=$"python3 /scripts/submodules/assign_sample_names.demuxModule.py $indexes_file"
+#python module: per unique F, write only the R indexes listed for that F
+build_allowed_R_per_F=$"python3 /scripts/submodules/build_allowed_R_per_F.demuxModule.py"
 
 # Increase the number of open files limit
 ulimit -S -n 6000
@@ -78,6 +83,243 @@ first_file_check
 prepare_PE_env #checks also multiple R1/R2 occurrences
 ### Check barcodes file
 check_indexes_file
+
+cutadapt_demux () {
+    checkerror=$(cutadapt --quiet \
+        $error_rate \
+        $no_indels \
+        $overlap \
+        $minlen \
+        --cores ${cores} \
+        "$@" 2>&1)
+    check_app_error
+}
+
+prepare_dual_index_files () {
+    printf "Preparing dual-index files for two-step demux ...\n"
+    sed -e 's/\.\.\..*//' < tempdir2/ValidatedBarcodesFileForDemux.fasta.temp > tempdir2/index_fwd.fasta
+
+    # Uppercase before rmdup so the same F sequence is not split by case
+    # (Python matches F sequences case-insensitively).
+    seqkit seq --quiet -u -w 0 tempdir2/index_fwd.fasta | \
+        seqkit rmdup --quiet --by-seq -w 0 > tempdir2/index_fwd.uniq.fasta
+    seqkit replace --quiet tempdir2/index_fwd.uniq.fasta -w 0 -p .+ -r "indexF_{nr}" > tempdir2/index_fwd.uniq.renamed.fasta
+
+    sed -e '/^>/!s/^/search_window/' tempdir2/index_fwd.uniq.renamed.fasta > $output_dir/index_fwd.fasta
+    sed -i "s/search_window/XN{$search_window}/" $output_dir/index_fwd.fasta
+
+    mkdir -p tempdir2/R_per_F
+    $build_allowed_R_per_F \
+        tempdir2/ValidatedBarcodesFileForDemux.fasta.temp \
+        tempdir2/index_fwd.uniq.renamed.fasta \
+        tempdir2/R_per_F \
+        "$search_window"
+    if [[ $? -ne 0 ]]; then
+        printf '%s\n' "ERROR]: failed to build per-F reverse-index files from the indexes file.
+>Quitting" >&2
+        end_process
+    fi
+    if ! compgen -G "tempdir2/R_per_F/R_for_*.fasta" > /dev/null; then
+        printf '%s\n' "ERROR]: no per-F reverse-index files were written.
+>Quitting" >&2
+        end_process
+    fi
+    cat tempdir2/R_per_F/R_for_*.fasta > $output_dir/index_rev.fasta
+}
+
+prepare_single_index_file () {
+    sed -i '/^>/!s/^/search_window/' tempdir2/ValidatedBarcodesFileForDemux.fasta.temp
+    sed -i "s/search_window/XN{$search_window}/" tempdir2/ValidatedBarcodesFileForDemux.fasta.temp
+    mv tempdir2/ValidatedBarcodesFileForDemux.fasta.temp $output_dir/index_file.fasta
+}
+
+merge_round_pair () {
+    local round1_file=$1
+    local round2_file=$2
+    local final_file=$3
+    if [[ -f "$round1_file" && -f "$round2_file" ]]; then
+        cat "$round1_file" "$round2_file" > "$final_file"
+        rm -f "$round1_file" "$round2_file"
+    elif [[ -f "$round1_file" ]]; then
+        mv "$round1_file" "$final_file"
+    elif [[ -f "$round2_file" ]]; then
+        mv "$round2_file" "$final_file"
+    fi
+}
+
+merge_demux_rounds () {
+    # Merge round1 + round2 per sample (a sample may be present in only one round)
+    local dir=$1
+    local samples_file=$dir/demux_samples_to_merge.txt
+    local f base sample
+    : > "$samples_file"
+    for f in "$dir"/round1-*.R1."$fileFormat" "$dir"/round2-*.R1."$fileFormat"; do
+        [[ -f "$f" ]] || continue
+        base=$(basename "$f")
+        if [[ "$base" == round1-* ]]; then
+            sample=${base#round1-}
+        else
+            sample=${base#round2-}
+        fi
+        sample=${sample%.R1.$fileFormat}
+        if [[ "$sample" == "unknown" || "$sample" == "unknown-unknown" ]]; then
+            continue
+        fi
+        printf "%s\n" "$sample" >> "$samples_file"
+    done
+    if [[ -s "$samples_file" ]]; then
+        while read -r sample; do
+            [[ -n "$sample" ]] || continue
+            merge_round_pair \
+                "$dir/round1-${sample}.R1.$fileFormat" \
+                "$dir/round2-${sample}.R1.$fileFormat" \
+                "$dir/${sample}.R1.$fileFormat"
+            merge_round_pair \
+                "$dir/round1-${sample}.R2.$fileFormat" \
+                "$dir/round2-${sample}.R2.$fileFormat" \
+                "$dir/${sample}.R2.$fileFormat"
+        done < <(sort -u "$samples_file")
+    fi
+    rm -f "$samples_file"
+}
+
+append_to_unknown () {
+    local src_r1=$1
+    local src_r2=$2
+    if [[ ! -s "$src_r1" ]]; then
+        rm -f "$src_r1" "$src_r2"
+        return 0
+    fi
+    cat "$src_r1" >> $output_dir/unknown.R1.$fileFormat
+    cat "$src_r2" >> $output_dir/unknown.R2.$fileFormat
+    rm -f "$src_r1" "$src_r2"
+}
+
+assign_allowed_R_per_F () {
+    # $1 = round prefix (round1|round2)
+    # $2 = orientation: normal (R on R2, swap I/O) or rc (R on R1)
+    local round_prefix=$1
+    local orientation=$2
+    local rfa fname r1 r2
+    for rfa in tempdir2/R_per_F/R_for_*.fasta; do
+        [[ -f "$rfa" ]] || continue
+        fname=$(basename "$rfa" .fasta)
+        fname=${fname#R_for_}
+        r1=$output_dir/byF/${round_prefix}-${fname}.R1.$fileFormat
+        r2=$output_dir/byF/${round_prefix}-${fname}.R2.$fileFormat
+        if [[ ! -s "$r1" || ! -s "$r2" ]]; then
+            continue
+        fi
+        printf "   %s %s: assigning samples by allowed R indexes ...\n" "$round_prefix" "$fname"
+        if [[ "$orientation" == "normal" ]]; then
+            # R index is on R2; demux keys off the first input file, so swap
+            cutadapt_demux \
+                -g "file:$rfa" \
+                -o $output_dir/${round_prefix}-{name}.R2.$fileFormat \
+                -p $output_dir/${round_prefix}-{name}.R1.$fileFormat \
+                --untrimmed-output $output_dir/unnamed/${round_prefix}-${fname}-unassigned.R2.$fileFormat \
+                --untrimmed-paired-output $output_dir/unnamed/${round_prefix}-${fname}-unassigned.R1.$fileFormat \
+                $r2 $r1
+        else
+            # RC round: R index is on original R1 (already the .R1 file)
+            cutadapt_demux \
+                -g "file:$rfa" \
+                -o $output_dir/${round_prefix}-{name}.R1.$fileFormat \
+                -p $output_dir/${round_prefix}-{name}.R2.$fileFormat \
+                --untrimmed-output $output_dir/unnamed/${round_prefix}-${fname}-unassigned.R1.$fileFormat \
+                --untrimmed-paired-output $output_dir/unnamed/${round_prefix}-${fname}-unassigned.R2.$fileFormat \
+                $r1 $r2
+        fi
+        rm -f "$r1" "$r2"
+    done
+}
+
+demux_dual_two_step () {
+    mkdir -p $output_dir/byF $output_dir/unnamed
+
+    printf "   Round1: demultiplex by unique F indexes ...\n"
+    cutadapt_demux \
+        -g file:$output_dir/index_fwd.fasta \
+        -o $output_dir/byF/round1-{name}.R1.$fileFormat \
+        -p $output_dir/byF/round1-{name}.R2.$fileFormat \
+        $inputR1.$fileFormat $inputR2.$fileFormat
+
+    assign_allowed_R_per_F "round1" "normal"
+
+    if [[ -s $output_dir/byF/round1-unknown.R1.$fileFormat && -s $output_dir/byF/round1-unknown.R2.$fileFormat ]]; then
+        printf "   Round2 (RC; R1 and R2 position switched): demultiplex by unique F indexes ...\n"
+        cutadapt_demux \
+            -g file:$output_dir/index_fwd.fasta \
+            -o $output_dir/byF/round2-{name}.R2.$fileFormat \
+            -p $output_dir/byF/round2-{name}.R1.$fileFormat \
+            $output_dir/byF/round1-unknown.R2.$fileFormat \
+            $output_dir/byF/round1-unknown.R1.$fileFormat
+        rm -f $output_dir/byF/round1-unknown.R1.$fileFormat $output_dir/byF/round1-unknown.R2.$fileFormat
+        assign_allowed_R_per_F "round2" "rc"
+        append_to_unknown \
+            $output_dir/byF/round2-unknown.R1.$fileFormat \
+            $output_dir/byF/round2-unknown.R2.$fileFormat
+    else
+        append_to_unknown \
+            $output_dir/byF/round1-unknown.R1.$fileFormat \
+            $output_dir/byF/round1-unknown.R2.$fileFormat
+    fi
+
+    merge_demux_rounds "$output_dir"
+
+    # F matched but R not in the allowed list for that F -> unknown.R1/R2
+    local unassigned_r1 unassigned_r2
+    for unassigned_r1 in "$output_dir"/unnamed/*-unassigned.R1."$fileFormat"; do
+        [[ -f "$unassigned_r1" ]] || continue
+        unassigned_r2=${unassigned_r1%.R1.$fileFormat}.R2.$fileFormat
+        append_to_unknown "$unassigned_r1" "$unassigned_r2"
+    done
+
+    # F bins that were never R-assigned (empty or skipped) -> unknown, not deleted
+    local leftover_r1 leftover_r2
+    for leftover_r1 in "$output_dir"/byF/*.R1."$fileFormat"; do
+        [[ -f "$leftover_r1" ]] || continue
+        leftover_r2=${leftover_r1%.R1.$fileFormat}.R2.$fileFormat
+        append_to_unknown "$leftover_r1" "$leftover_r2"
+    done
+    rm -rf $output_dir/byF $output_dir/unnamed
+}
+
+demux_single_two_round () {
+    printf "   Round1: search index on R1 ...\n"
+    cutadapt_demux \
+        -g file:$output_dir/index_file.fasta \
+        -o $output_dir/round1-{name}.R1.$fileFormat \
+        -p $output_dir/round1-{name}.R2.$fileFormat \
+        $inputR1.$fileFormat $inputR2.$fileFormat
+
+    if [[ -s $output_dir/round1-unknown.R1.$fileFormat && -s $output_dir/round1-unknown.R2.$fileFormat ]]; then
+        printf "   Round2 (RC; R1 and R2 position switched): search index on leftover R2 ...\n"
+        cutadapt_demux \
+            -g file:$output_dir/index_file.fasta \
+            -o $output_dir/round2-{name}.R2.$fileFormat \
+            -p $output_dir/round2-{name}.R1.$fileFormat \
+            $output_dir/round1-unknown.R2.$fileFormat \
+            $output_dir/round1-unknown.R1.$fileFormat
+        rm -f $output_dir/round1-unknown.R1.$fileFormat $output_dir/round1-unknown.R2.$fileFormat
+        append_to_unknown \
+            $output_dir/round2-unknown.R1.$fileFormat \
+            $output_dir/round2-unknown.R2.$fileFormat
+    else
+        append_to_unknown \
+            $output_dir/round1-unknown.R1.$fileFormat \
+            $output_dir/round1-unknown.R2.$fileFormat
+    fi
+
+    merge_demux_rounds "$output_dir"
+}
+
+if [[ $tag == "dual" ]]; then
+    prepare_dual_index_files
+else
+    prepare_single_index_file
+fi
+
 ### Process file
 printf "Checking files ...\n"
 while read LINE; do
@@ -85,175 +327,13 @@ while read LINE; do
     inputR1=$(echo $LINE | sed -e "s/.$fileFormat//")
     inputR2=$(echo $inputR1 | sed -e 's/R1/R2/')
 
-    ### Check if dual indexes or single indexes and prepare workflow accordingly
-    if [[ $tag == "dual" ]]; then
-        #dual indexes
-        #make rev barcodes file
-        seqkit seq --quiet -n tempdir2/ValidatedBarcodesFileForDemux.fasta.temp | \
-        sed -e 's/^/>/' > tempdir2/sample_names.txt
-        grep "\..." tempdir2/ValidatedBarcodesFileForDemux.fasta.temp | \
-        awk 'BEGIN{FS="."}{print $4}' > tempdir2/index_rev.temp
-          touch tempdir2/index_rev.fasta
-        i=1
-        p=$"p"
-        while read HEADER; do
-            echo $HEADER >> tempdir2/index_rev.fasta
-            sed -n $i$p tempdir2/index_rev.temp >> tempdir2/index_rev.fasta
-            i=$((i + 1))
-        done < tempdir2/sample_names.txt
-        # Interleave sample names and reverse indexes in one linear pass.
-        # (paste zips the two files line-by-line, replacing the previous
-        #  per-sample "sed -n Np" scan that was O(n^2) over the sample count.)
-        #paste -d '\n' tempdir2/sample_names.txt tempdir2/index_rev.temp > tempdir2/index_rev.fasta
-        rm tempdir2/index_rev.temp
-        #make fwd barcodes file
-        sed -e 's/\.\.\..*//' < tempdir2/ValidatedBarcodesFileForDemux.fasta.temp > tempdir2/index_fwd.fasta
-
-        #unique index names for assigning sample names on demux files after cutadapt demux
-        seqkit rmdup --quiet tempdir2/index_fwd.fasta --by-seq -w 0 > tempdir2/index_fwd.uniq.fasta
-        seqkit replace --quiet tempdir2/index_fwd.uniq.fasta -w 0 -p .+ -r "indexF_{nr}" > tempdir2/index_fwd.uniq.renamed.fasta
-        seqkit rmdup --quiet tempdir2/index_rev.fasta --by-seq -w 0 > tempdir2/index_rev.uniq.fasta
-        seqkit replace --quiet tempdir2/index_rev.uniq.fasta -w 0 -p .+ -r "indexR_{nr}" > tempdir2/index_rev.uniq.renamed.fasta
-
-        #add search window size to indexes
-        sed -e '/^>/!s/^/search_window/' tempdir2/index_fwd.uniq.renamed.fasta > $output_dir/index_fwd.fasta
-        sed -i "s/search_window/XN{$search_window}/" $output_dir/index_fwd.fasta
-        sed -e '/^>/!s/^/search_window/' tempdir2/index_rev.uniq.renamed.fasta> $output_dir/index_rev.fasta
-        sed -i "s/search_window/XN{$search_window}/" $output_dir/index_rev.fasta
-
-        #assign demux variables
-        indexes_file_round1=$"-g file:$output_dir/index_fwd.fasta -G file:$output_dir/index_rev.fasta"
-        indexes_file_round2=$"-g file:index_fwd.fasta -G file:index_rev.fasta"
-        outR1=$"-o $output_dir/round1-{name1}-{name2}.R1.$fileFormat"
-        outR2=$"-p $output_dir/round1-{name1}-{name2}.R2.$fileFormat"
-        outR2_round2=$"-o round2-{name1}-{name2}.R2.$fileFormat"
-        outR1_round2=$"-p round2-{name1}-{name2}.R1.$fileFormat"
-        input_for_round2_R1=$"round1-unknown-unknown.R1"
-        input_for_round2_R2=$"round1-unknown-unknown.R2"
-    else
-        #single indexes
-        # Add search window size to indexes 
-        sed -i '/^>/!s/^/search_window/' tempdir2/ValidatedBarcodesFileForDemux.fasta.temp 
-        sed -i "s/search_window/XN{$search_window}/" tempdir2/ValidatedBarcodesFileForDemux.fasta.temp 
-        #Move edited indexes file with window size into output_dir 
-        mv tempdir2/ValidatedBarcodesFileForDemux.fasta.temp tempdir2/index_file.fasta
-        mv tempdir2/index_file.fasta $output_dir
-
-        #assign demux variables
-        indexes_file_round1=$"-g file:$output_dir/index_file.fasta"
-        indexes_file_round2=$"-g file:index_file.fasta"
-        outR1=$"-o $output_dir/round1-{name}.R1.$fileFormat"
-        outR2=$"-p $output_dir/round1-{name}.R2.$fileFormat"
-        outR2_round2=$"-o round2-{name}.R2.$fileFormat"
-        outR1_round2=$"-p round2-{name}.R1.$fileFormat"
-        input_for_round2_R1=$"round1-unknown.R1"
-        input_for_round2_R2=$"round1-unknown.R2"
-    fi
-
-
-    ############################
-    ### Start demultiplexing ###
-    ############################
     printf "\n# Demultiplexing with $tag indexes ... \n"
-    ### Round1 demux
-    checkerror=$(cutadapt --quiet \
-    $indexes_file_round1 \
-    $error_rate \
-    $no_indels \
-    $overlap \
-    $minlen \
-    --cores ${cores} \
-    $outR1 \
-    $outR2 \
-    $inputR1.$fileFormat $inputR2.$fileFormat 2>&1)
-    check_app_error
-
-    #Round2 demux (RC; R1 and R2 position switched!)
-    cd $output_dir
-    checkerror=$(cutadapt --quiet \
-    $indexes_file_round2 \
-    $error_rate \
-    $no_indels \
-    $overlap \
-    $minlen \
-    --cores ${cores} \
-    $outR2_round2 \
-    $outR1_round2 \
-    $input_for_round2_R2.$fileFormat $input_for_round2_R1.$fileFormat 2>&1)
-    check_app_error
-    
-    #Remove round1 unknowns and remane final unknowns
-    rm $input_for_round2_R2.$fileFormat
-    rm $input_for_round2_R1.$fileFormat
-    if [[ -f round2-unknown.R1.$fileFormat ]]; then
-        mv round2-unknown.R1.$fileFormat unknown.R1.$fileFormat
-        mv round2-unknown.R2.$fileFormat unknown.R2.$fileFormat
-    elif [[ -f round2-unknown-unknown.R1.$fileFormat ]]; then
-        mv round2-unknown-unknown.R1.$fileFormat unknown.R1.$fileFormat
-        mv round2-unknown-unknown.R2.$fileFormat unknown.R2.$fileFormat
+    if [[ $tag == "dual" ]]; then
+        demux_dual_two_step
+    else
+        demux_single_two_round
     fi
-
-    ### Merge demux outputs from round1 and round2
-    ls | grep "R1.$fileFormat" | grep "round1-" > demux_R1_list.txt
-    while read DEMUXFILES; do
-        R1=$(echo $DEMUXFILES | sed -e 's/round1-//' )
-        R2=$(echo $DEMUXFILES | sed -e 's/round1-//' | sed -e 's/R1/R2/' )
-        if [[ -f round2-$R1 ]]; then
-            cat round1-$R1 round2-$R1 > $R1
-            rm round1-$R1
-            rm round2-$R1
-        else
-            echo "round2-$R1 does not exist"
-        fi
-        if [[ -f round2-$R2 ]]; then
-            cat round1-$R2 round2-$R2 > $R2
-            rm round1-$R2
-            rm round2-$R2
-        else
-            echo "round2-$R2 does not exist"
-        fi
-    done < demux_R1_list.txt && rm demux_R1_list.txt
-    cd ..
 done < tempdir2/paired_end_files.txt
-
-# Make patterns file for assigning sample names to files if using DUAL indexes
-if [[ $tag = "dual" ]]; then
-    ls $output_dir | grep ".R1.$fileFormat" | \
-    sed -e "s/\.R1\.$fileFormat//" | \
-    grep -E -v "round2|round1|unknown" > tempdir2/demux_files.txt
-
-    #Assign sample names
-    export fileFormat
-    $run_python_module
-
-    # Move un-named combination fastq files to separate folder
-    cd $output_dir
-    for unnamed in indexF_*-indexR_*; do
-        if [[ -f $unnamed ]]; then
-            mkdir -p unnamed_index_combinations
-            mv $unnamed unnamed_index_combinations
-        fi
-    done
-    for unnamed in unknown-indexR_*; do
-        if [[ -f $unnamed ]]; then
-            mkdir -p unnamed_index_combinations
-            mv $unnamed unnamed_index_combinations
-        fi
-    done
-    for unnamed in indexF_*-unknown*; do
-        if [[ -f $unnamed ]]; then
-            mkdir -p unnamed_index_combinations
-            mv $unnamed unnamed_index_combinations
-        fi
-    done
-    # Delete empty files in unnamed_index_combinations
-    find unnamed_index_combinations -empty -type f -delete
-    cd ..
-
-    cp tempdir2/index_fwd.uniq.renamed.fasta $output_dir/unnamed_index_combinations && mv $output_dir/unnamed_index_combinations/index_fwd.uniq.renamed.fasta $output_dir/unnamed_index_combinations/index_fwd.fasta
-    cp tempdir2/index_rev.uniq.renamed.fasta $output_dir/unnamed_index_combinations && mv $output_dir/unnamed_index_combinations/index_rev.uniq.renamed.fasta $output_dir/unnamed_index_combinations/index_rev.fasta
-
-fi
 
 #################################################
 ### COMPILE FINAL STATISTICS AND README FILES ###
@@ -261,40 +341,11 @@ fi
 printf "\nCleaning up and compiling final stats files ...\n"
 clean_and_make_stats_demux
 
-# Add seq count in unnamed_index_combinations to seq_count_summary.txt
-cd $output_dir
-if [[ -d unnamed_index_combinations ]]; then
-  unnamed_index_combinations_count=$(cat unnamed_index_combinations/*.R1.$fileFormat | seqkit stats --threads ${cores} -T  | awk -F'\t' 'BEGIN{OFS="\t";} FNR == 2 {print $4}')
-  printf "\n Number of sequences in 'unnamed_index_combinations' dir (*.R1.$fileFormat): $unnamed_index_combinations_count" >> seq_count_summary.txt
-fi
-cd ..
-
 end=$(date +%s)
 runtime=$((end-start))
 
 #Make README.txt file for demultiplexed reads
-printf "# Demultiplexing was performed using cutadapt (see 'Core command' below for the used settings).
-
-Start time: $start_time
-End time: $(date)
-Runtime: $runtime seconds
-
-Files in 'demultiplex_out' directory represent per sample sequence files, that were generated based on the specified indexes file ($oligos_file).
-index_*fasta file(s) = $oligos_file but with added search window size for cutadapt.
-
-Paired-end data, has been demultiplexed taken into account that some sequences
-may be also in reverse complementary orientation (two rounds of cutadapt runs, see below).
-Output R1 and R2 reads are synchronized for merging paired-end data. 
-
-Files in 'unnamed_index_combinations' directory [if present; only when using dual indexes] represent
-index combinations that do not correspond to combinations used in indexes file ($oligos_file).
-
-IF SEQUENCE YIELD PER SAMPLE IS LOW (OR ZERO), DOUBLE-CHECK THE INDEXES FORMATTING.
-
-Core commands -> 
-Round1: cutadapt $indexes_file_round1 $error_rate $no_indels $overlap $minlen outR1 outR2 inputR1 inputR2
-Round2 (RC; R1 and R2 position switched!): cutadapt $indexes_file_round2 $error_rate $no_indels $overlap $minlen outR2_round2 outR1_round2 input_for_round2_R2 input_for_round2_R1
-
+readme_footer="
 Summary of sequence counts in 'seq_count_summary.txt'
 
 ################################################
@@ -305,7 +356,59 @@ Summary of sequence counts in 'seq_count_summary.txt'
 #seqkit (version $seqkit_version) for validating indexes file and adjusting sample names
     #citation: Shen W, Le S, Li Y, Hu F (2016) SeqKit: A Cross-Platform and Ultrafast Toolkit for FASTA/Q File Manipulation. PLOS ONE 11(10): e0163962. https://doi.org/10.1371/journal.pone.0163962
     #https://bioinf.shenwei.me/seqkit/
-##############################################" > $output_dir/README.txt
+##############################################"
+
+if [[ $tag == "dual" ]]; then
+    printf "# Demultiplexing was performed using cutadapt (paired-end / dual indexes; see 'Core command' below).
+
+Start time: $start_time
+End time: $(date)
+Runtime: $runtime seconds
+
+Indexes file: $oligos_file (paired-end indexes, FWD...REV per sample).
+index_fwd.fasta / index_rev.fasta = unique F indexes and listed R indexes with search window size for cutadapt.
+
+Paired-end data were demultiplexed in two steps so only index combinations listed in the indexes file are written:
+  1) unique F indexes
+  2) for each F bin, only the R indexes paired with that F
+Mixed orientation was handled with two cutadapt rounds (R1/R2 swapped in round 2).
+Output R1 and R2 reads are synchronized for merging paired-end data.
+
+Reads that could not be assigned to a listed index combination (no matching F index,
+or F matched but the R index is not listed for that F) are in unknown.R1/R2.
+
+IF SEQUENCE YIELD PER SAMPLE IS LOW (OR ZERO), DOUBLE-CHECK THE INDEXES FORMATTING.
+
+Core commands ->
+Round1 F: cutadapt -g file:index_fwd.fasta $error_rate $no_indels $overlap $minlen -o byF/round1-{name}.R1 -p byF/round1-{name}.R2 inputR1 inputR2
+Round1 R (per unique F; R1/R2 swapped so the R index is on the first file): cutadapt -g file:R_for_{F}.fasta $error_rate $no_indels $overlap $minlen -o round1-{name}.R2 -p round1-{name}.R1 byF/round1-{F}.R2 byF/round1-{F}.R1
+Round2 F (RC; R1 and R2 position switched!): cutadapt -g file:index_fwd.fasta $error_rate $no_indels $overlap $minlen -o byF/round2-{name}.R2 -p byF/round2-{name}.R1 round1-unknown.R2 round1-unknown.R1
+Round2 R (per unique F): cutadapt -g file:R_for_{F}.fasta $error_rate $no_indels $overlap $minlen -o round2-{name}.R1 -p round2-{name}.R2 byF/round2-{F}.R1 byF/round2-{F}.R2
+" > $output_dir/README.txt
+else
+    printf "# Demultiplexing was performed using cutadapt (single-end indexes; see 'Core command' below).
+
+Start time: $start_time
+End time: $(date)
+Runtime: $runtime seconds
+
+Indexes file: $oligos_file (single-end indexes; one barcode sequence per sample).
+index_file.fasta = $oligos_file with added search window size for cutadapt.
+
+Paired-end data were demultiplexed by searching the index on R1 (round 1) and, for leftover reads, on R2 with R1/R2 swapped (round 2; reverse-complement orientation).
+Output R1 and R2 reads are synchronized for merging paired-end data.
+
+Reads with no matching index are in unknown.R1/R2.
+
+IF SEQUENCE YIELD PER SAMPLE IS LOW (OR ZERO), DOUBLE-CHECK THE INDEXES FORMATTING.
+
+Core commands ->
+Round1: cutadapt -g file:index_file.fasta $error_rate $no_indels $overlap $minlen -o round1-{name}.R1 -p round1-{name}.R2 inputR1 inputR2
+Round2 (RC; R1 and R2 position switched!): cutadapt -g file:index_file.fasta $error_rate $no_indels $overlap $minlen -o round2-{name}.R2 -p round2-{name}.R1 round1-unknown.R2 round1-unknown.R1
+" > $output_dir/README.txt
+fi
+
+printf "%s" "$readme_footer" >> $output_dir/README.txt
 
 ###Done, files in $output_dir folder
 printf "\nDONE "

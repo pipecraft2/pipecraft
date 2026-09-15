@@ -29,7 +29,6 @@ else
 fi
 minlen=$"--minimum-length ${min_length}"
 overlap=$"--overlap ${overlap}"
-search_window=${search_window}
 
 ### Check CPU cores ###
 # 'cores' is passed in by the app (Resource Manager CPU setting). Validate it,
@@ -56,8 +55,55 @@ source /scripts/submodules/framework.functions.sh
 #output dir
 output_dir=$"/input/demultiplex_out"
 
-# Increase the number of open files limit
-ulimit -S -n 6000
+prepare_dual_linked_index_file () {
+    printf "Preparing dual-index linked adapters (FWD 5', RC(REV) 3') ...\n"
+    sed -e 's/\.\.\..*//' < tempdir2/ValidatedBarcodesFileForDemux.fasta.temp > tempdir2/index_fwd.fasta
+
+    seqkit seq --quiet -n tempdir2/ValidatedBarcodesFileForDemux.fasta.temp | \
+        sed -e 's/^/>/' > tempdir2/sample_names.txt
+    awk '!/^>/ {
+        p = index($0, "...")
+        if (p == 0) {
+            print "ERROR]: dual-index sequence is missing FWD...REV" > "/dev/stderr"
+            exit 1
+        }
+        print substr($0, p + 3)
+    }' tempdir2/ValidatedBarcodesFileForDemux.fasta.temp > tempdir2/index_rev.temp
+    if [[ $? -ne 0 ]]; then
+        printf '%s\n' "ERROR]: failed to extract reverse indexes from the indexes file.
+>Quitting" >&2
+        end_process
+    fi
+
+    n_names=$(grep -c '^>' tempdir2/sample_names.txt)
+    n_rev=$(grep -cve '^$' tempdir2/index_rev.temp)
+    if [[ "$n_names" -ne "$n_rev" ]]; then
+        printf '%s\n' "ERROR]: number of sample names ($n_names) does not match reverse indexes ($n_rev).
+>Quitting" >&2
+        end_process
+    fi
+    paste -d '\n' tempdir2/sample_names.txt tempdir2/index_rev.temp > tempdir2/index_rev.fasta
+    rm -f tempdir2/index_rev.temp tempdir2/sample_names.txt
+
+    checkerror=$(seqkit seq --quiet -t dna -r -p tempdir2/index_rev.fasta > tempdir2/index_revRC.fasta 2>&1)
+    check_app_error
+
+    # Linked adapters: 5' FWD with start-window, 3' RC(REV) with end-window
+    tr "\n" "\t" < tempdir2/index_fwd.fasta | sed -e 's/>/\n>/g' | sed '/^\n*$/d' > tempdir2/index_fwd.temp
+    tr "\n" "\t" < tempdir2/index_revRC.fasta | sed -e 's/>/\n>/g' | sed '/^\n*$/d' > tempdir2/index_revRC.temp
+    sed -i "s/\t/\tXN{$search_window}/" tempdir2/index_fwd.temp
+    sed -i "s/\t$/XN{$search_window}/" tempdir2/index_revRC.temp
+    awk 'BEGIN {FS=OFS="\t"} FNR==NR{a[$1]=$2;next} ($1 in a) {print $1,a[$1],$2}' \
+        tempdir2/index_fwd.temp tempdir2/index_revRC.temp > tempdir2/paired_index.temp
+    sed -e 's/\t/\n/' < tempdir2/paired_index.temp | sed -e 's/\t/\.\.\./' > tempdir2/index_file.fasta
+    mv tempdir2/index_file.fasta $output_dir
+}
+
+prepare_single_index_file () {
+    sed -i '/^>/!s/^/search_window/' tempdir2/ValidatedBarcodesFileForDemux.fasta.temp
+    sed -i "s/search_window/XN{$search_window}/" tempdir2/ValidatedBarcodesFileForDemux.fasta.temp
+    mv tempdir2/ValidatedBarcodesFileForDemux.fasta.temp $output_dir/index_file.fasta
+}
 
 #############################
 ### Start of the workflow ###
@@ -71,86 +117,40 @@ prepare_SE_env
 ### Check barcodes file
 check_indexes_file
 
-### Process file
+if [[ $tag == "dual" ]]; then
+    prepare_dual_linked_index_file
+else
+    prepare_single_index_file
+fi
+indexes_file_in=$"-g file:$output_dir/index_file.fasta"
+out=$"-o $output_dir/{name}.$fileFormat"
+
 printf "Checking the input file ...\n"
-#Chech that only one $fileFormat file is in the WORRKING dir
-files=$(ls $workingDir | grep -c ".$fileFormat")
-if (( $files > 1 )); then
-    printf '%s\n' "ERROR]: please include only one $fileFormat file in the WORKDIR \n
+file_count=$(grep -cve '^$' tempdir2/files_in_folder.txt)
+if (( file_count > 1 )); then
+    printf '%s\n' "ERROR]: please include only one $fileFormat file in the WORKDIR
 >Quitting" >&2
     end_process
 fi
 
-for file in *.$fileFormat; do
-    #Write file name without extension
-    input=$(echo $file | sed -e "s/.$fileFormat//")
+while read -r file; do
+    [[ -n "$file" && -f "$file" ]] || continue
+    input="${file%.$fileFormat}"
 
-    ### Check if dual indexes or single indexes and prepare workflow accordingly
-    if grep -q "\..." tempdir2/ValidatedBarcodesFileForDemux.fasta.temp; then
-        #dual indexes
-        #make rev indexes file
-        seqkit seq --quiet -n tempdir2/ValidatedBarcodesFileForDemux.fasta.temp | \
-        sed -e 's/^/>/' > tempdir2/sample_names.txt
-        grep "\..." tempdir2/ValidatedBarcodesFileForDemux.fasta.temp | \
-        awk 'BEGIN{FS="."}{print $4}' > tempdir2/index_rev.temp
-        touch tempdir2/index_rev.fasta
-        i=1
-        p=$"p"
-        while read HEADER; do
-            echo $HEADER >> tempdir2/index_rev.fasta
-            sed --quiet $i$p tempdir2/index_rev.temp >> tempdir2/index_rev.fasta
-            i=$(($i + 1))
-        done < tempdir2/sample_names.txt
-        rm tempdir2/index_rev.temp
-        #make fwd indexes file
-        sed -e 's/\.\.\..*//' < tempdir2/ValidatedBarcodesFileForDemux.fasta.temp > tempdir2/index_fwd.fasta
-        #reverse complementary REV indexes
-        checkerror=$(seqkit seq --quiet -t dna -r -p tempdir2/index_rev.fasta > tempdir2/index_revRC.fasta 2>&1)
-        check_app_error
-        #Make linked indexes files where REV indexes are in RC orientation
-        tr "\n" "\t" < tempdir2/index_fwd.fasta | sed -e 's/>/\n>/g' | sed '/^\n*$/d' > tempdir2/index_fwd.temp
-        tr "\n" "\t" < tempdir2/index_revRC.fasta | sed -e 's/>/\n>/g' | sed '/^\n*$/d' > tempdir2/index_revRC.temp
-        sed -i "s/\t/\tXN{$search_window}/" tempdir2/index_fwd.temp #add search window size to indexes
-        sed -i "s/\t$/XN{$search_window}/" tempdir2/index_revRC.temp #add search window size to indexes
-        awk 'BEGIN {FS=OFS="\t"} FNR==NR{a[$1]=$2;next} ($1 in a) {print $1,a[$1],$2}' tempdir2/index_fwd.temp tempdir2/index_revRC.temp > tempdir2/paired_index.temp
-        sed -e 's/\t/\n/' < tempdir2/paired_index.temp | sed -e 's/\t/\.\.\./' > tempdir2/index_file.fasta
-
-        #assign demux variables
-        #REV indexes are 5'-3' orientation for cutadapt search 
-        mv tempdir2/index_file.fasta $output_dir #move edited indexes file with window size into output_dir 
-        indexes_file_in=$"-g file:$output_dir/index_file.fasta"
-        out=$"-o $output_dir/{name}.$fileFormat"
-    else
-        #single indexes
-        # Add search window size to indexes 
-        sed -i '/^>/!s/^/search_window/' tempdir2/ValidatedBarcodesFileForDemux.fasta.temp 
-        sed -i "s/search_window/XN{$search_window}/" tempdir2/ValidatedBarcodesFileForDemux.fasta.temp 
-        #Move edited indexes file with window size into output_dir 
-        mv tempdir2/ValidatedBarcodesFileForDemux.fasta.temp tempdir2/index_file.fasta
-        mv tempdir2/index_file.fasta $output_dir
-        #assign demux variables
-        indexes_file_in=$"-g file:$output_dir/index_file.fasta" 
-        out=$"-o $output_dir/{name}.$fileFormat"
-    fi
-
-    ############################
-    ### Start demultiplexing ###
-    ############################
     printf "\n# Demultiplexing with $tag indexes ... \n"
-    ### Demultiplex with cutadapt
     checkerror=$(cutadapt --quiet \
-    $indexes_file_in \
-    $error_rate \
-    $no_indels \
-    --revcomp \
-    --untrimmed-output $output_dir/unknown.$fileFormat \
-    $overlap \
-    $minlen \
-    --cores ${cores} \
-    $out \
-    $input.$fileFormat 2>&1)
+        $indexes_file_in \
+        $error_rate \
+        $no_indels \
+        --revcomp \
+        --untrimmed-output $output_dir/unknown.$fileFormat \
+        $overlap \
+        $minlen \
+        --cores ${cores} \
+        $out \
+        $input.$fileFormat 2>&1)
     check_app_error
-done
+done < tempdir2/files_in_folder.txt
 
 #################################################
 ### COMPILE FINAL STATISTICS AND README FILES ###
@@ -161,35 +161,7 @@ end=$(date +%s)
 runtime=$((end-start))
 
 #Make README.txt file for demultiplexed reads
-printf "# Demultiplexing was performed using cutadapt (see 'Core command' below for the used settings).
-
-Start time: $start_time
-End time: $(date)
-Runtime: $runtime seconds
-
-Files in 'demultiplex_out' directory represent per sample sequence files, that were generated based on the specified indexes file ($oligos_file).
-index_file.fasta = $oligos_file but with added search window size for cutadapt.
-
-Data, has been demultiplexed taken into account that some sequences
-may be also in reverse complementary orientation ('--revcomp' setting).
-Sequences where reverse complementary indexes have been found 
-were reverse complemented (and sequence name appended with 'rc'), 
-so all the sequences are in uniform orientation in the files.
-
-Sequence orientation in 'demultiplex_out' reflects the indexes orientation: i.e. 
-1) if only single-end indexes have been specified, and these indexes are attached to 3'-end of a sequence,
-then sequence orientation is 3'-5'.
-2) if only single-end indexes have been specified, and these indexes are attached to 5'-end of a sequence,
-then sequence orientation is 5'-3'.
-3) if paired-end indexes have been specified (both ends of the sequence were supplemented with indexes),
-and indexes in the file were specified as 5'_indexes followed by 3'_indexes (fwd_index...rev_index),
-then sequence orientation is 5'-3'.\n
-
-IF SEQUENCE YIELD PER SAMPLE IS LOW (OR ZERO), DOUBLE-CHECK THE INDEXES FORMATTING.\n
-
-Core command -> 
-cutadapt $indexes_file_in $error_rate $no_indels --revcomp $overlap $minlen
-
+readme_footer="
 Summary of sequence counts in 'seq_count_summary.txt'
 
 ##############################################
@@ -200,7 +172,54 @@ Summary of sequence counts in 'seq_count_summary.txt'
 #seqkit (version $seqkit_version) for validating indexes file
     #citation: Shen W, Le S, Li Y, Hu F (2016) SeqKit: A Cross-Platform and Ultrafast Toolkit for FASTA/Q File Manipulation. PLOS ONE 11(10): e0163962. https://doi.org/10.1371/journal.pone.0163962
     #https://bioinf.shenwei.me/seqkit/
-##############################################" > $output_dir/README.txt
+##############################################"
+
+if [[ $tag == "dual" ]]; then
+    printf "# Demultiplexing was performed using cutadapt (single-end reads / dual indexes; see 'Core command' below).
+
+Start time: $start_time
+End time: $(date)
+Runtime: $runtime seconds
+
+Indexes file: $oligos_file (paired-end indexes, FWD...REV per sample).
+index_file.fasta = linked adapters per listed sample: XN{window}FWD...RC(REV)XN{window}
+  (5' FWD in the start window; 3' reverse-complemented REV in the end window).
+
+Mixed orientation was handled with --revcomp. Reads that matched on the reverse complement
+were reverse complemented (sequence name appended with 'rc'), so output is 5'-3'
+relative to FWD...REV. Unassigned reads are in unknown.
+
+IF SEQUENCE YIELD PER SAMPLE IS LOW (OR ZERO), DOUBLE-CHECK THE INDEXES FORMATTING.
+
+Core command ->
+cutadapt -g file:index_file.fasta $error_rate $no_indels --revcomp --untrimmed-output unknown $overlap $minlen -o {name} input
+" > $output_dir/README.txt
+else
+    printf "# Demultiplexing was performed using cutadapt (single-end reads / single-end indexes; see 'Core command' below).
+
+Start time: $start_time
+End time: $(date)
+Runtime: $runtime seconds
+
+Indexes file: $oligos_file (single-end indexes; one barcode sequence per sample).
+index_file.fasta = $oligos_file with XN{window} added at the 5' end of each index.
+
+Mixed orientation was handled with --revcomp. Reads that matched on the reverse complement
+were reverse complemented (sequence name appended with 'rc'), so all sequences are in
+uniform orientation. Unassigned reads are in unknown.
+
+Sequence orientation in demultiplex_out:
+  - index on the 5' end of the original read -> output is 5'-3'
+  - index on the 3' end of the original read -> the read is reverse complemented; remaining sequence is 3'-5' relative to the original molecule
+
+IF SEQUENCE YIELD PER SAMPLE IS LOW (OR ZERO), DOUBLE-CHECK THE INDEXES FORMATTING.
+
+Core command ->
+cutadapt -g file:index_file.fasta $error_rate $no_indels --revcomp --untrimmed-output unknown $overlap $minlen -o {name} input
+" > $output_dir/README.txt
+fi
+
+printf "%s" "$readme_footer" >> $output_dir/README.txt
 
 #Done
 printf "\nDONE "

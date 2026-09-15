@@ -831,7 +831,7 @@ Please check the indexes file and include only unique index combinations and sam
 >Quitting" >&2 && end_process \
 || :
     # report if dual indexes or single indexes
-if grep -q "\..." tempdir2/ValidatedBarcodesFileForDemux.fasta.temp; then
+if grep -qF '...' tempdir2/ValidatedBarcodesFileForDemux.fasta.temp; then
     echo "ok; dual indexes"
     tag=$"dual"
     export tag
