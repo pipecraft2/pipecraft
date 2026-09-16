@@ -13,11 +13,12 @@ const { promisify } = require("util");
 
 const execFileAsync = promisify(execFile);
 
-// Saved in localStorage: "auto" | "docker" | "podman"
+// Saved in localStorage: "docker" | "podman" | unset (ask when both are installed).
 const PREFERENCE_KEY = "pipecraft.containerRuntime";
-const PREFERENCES = ["auto", "docker", "podman"];
+const PREFERENCES = ["docker", "podman"];
 const CLI_TIMEOUT_MS = 8000;
 const MACHINE_TIMEOUT_MS = 120000;
+const DOCKER_READY_TIMEOUT_MS = 90000;
 
 // Last engine we successfully connected to (socket options, engine name, etc.)
 let cachedRuntime = null;
@@ -28,6 +29,10 @@ function readRuntimePreference() {
   try {
     if (typeof localStorage !== "undefined") {
       const stored = localStorage.getItem(PREFERENCE_KEY);
+      // Legacy "auto" meant "pick whatever is up" — treat as unset.
+      if (stored === "auto" || stored === "" || stored == null) {
+        return "";
+      }
       if (PREFERENCES.includes(stored)) {
         return stored;
       }
@@ -35,10 +40,20 @@ function readRuntimePreference() {
   } catch {
     // localStorage is unavailable in the Electron main process.
   }
-  return "auto";
+  return "";
 }
 
 function persistRuntimePreference(preference) {
+  if (preference == null || preference === "" || preference === "auto") {
+    try {
+      if (typeof localStorage !== "undefined") {
+        localStorage.removeItem(PREFERENCE_KEY);
+      }
+    } catch {
+      // Ignore persistence failures; in-memory preference still applies.
+    }
+    return "";
+  }
   if (!PREFERENCES.includes(preference)) {
     throw new Error(`Unsupported container runtime preference: ${preference}`);
   }
@@ -49,6 +64,47 @@ function persistRuntimePreference(preference) {
   } catch {
     // Ignore persistence failures; in-memory preference still applies.
   }
+  return preference;
+}
+
+function candidateForEngine(engine) {
+  if (engine === "podman") {
+    return tryResolvePodman();
+  }
+  if (engine === "docker") {
+    return tryResolveDocker();
+  }
+  return null;
+}
+
+async function pingRuntime(candidate, timeout = 5000) {
+  if (!candidate?.options) {
+    return null;
+  }
+  const Docker = require("dockerode");
+  const docker = new Docker({ ...candidate.options, timeout });
+  const version = await docker.version();
+  const engine = identifyEngineFromVersion(version) || candidate.engine;
+  return { ...candidate, engine };
+}
+
+async function waitForEngineReady(engine, timeoutMs) {
+  const started = Date.now();
+  let lastError = null;
+  while (Date.now() - started < timeoutMs) {
+    const candidate = candidateForEngine(engine);
+    if (candidate) {
+      try {
+        return await pingRuntime(candidate);
+      } catch (error) {
+        lastError = error;
+      }
+    }
+    await sleep(1500);
+  }
+  const name = engineDisplayName(engine);
+  const detail = lastError?.message ? ` ${lastError.message}` : "";
+  throw new Error(`${name} did not become ready.${detail}`);
 }
 
 // Extra folders to search when PATH does not include Docker/Podman.
@@ -718,6 +774,82 @@ async function ensurePodmanMachineRunning(podmanBin) {
   }
 }
 
+function dockerDesktopWindowsExe() {
+  const programFiles = process.env.ProgramFiles || "C:\\Program Files";
+  const candidates = [
+    path.join(programFiles, "Docker", "Docker", "Docker Desktop.exe"),
+    "C:\\Program Files\\Docker\\Docker\\Docker Desktop.exe",
+  ];
+  return candidates.find((candidate) => pathLooksUsable(candidate)) || null;
+}
+
+function spawnDetached(command, args = []) {
+  const child = spawn(command, args, {
+    detached: true,
+    stdio: "ignore",
+    windowsHide: true,
+  });
+  child.unref();
+}
+
+// Start Docker Desktop (Win/mac) or the Docker unit (Linux). Does not wait for the API.
+async function startDockerEngine() {
+  if (process.platform === "win32") {
+    const exe = dockerDesktopWindowsExe();
+    if (!exe) {
+      throw new Error(
+        "Docker Desktop was not found. Install Docker Desktop or start the Docker engine, then retry."
+      );
+    }
+    spawnDetached(exe);
+    return;
+  }
+
+  if (process.platform === "darwin") {
+    await runCli("open", ["--background", "-a", "Docker"], 15000);
+    return;
+  }
+
+  const systemctl = findExecutable("systemctl");
+  if (systemctl) {
+    const attempts = [
+      ["--user", "start", "docker-desktop"],
+      ["--user", "start", "docker.socket"],
+      ["start", "docker.socket"],
+      ["start", "docker"],
+    ];
+    for (const args of attempts) {
+      try {
+        await runCli(systemctl, args, 8000);
+        return;
+      } catch {
+        // Try the next unit name.
+      }
+    }
+  }
+
+  throw new Error(
+    "Could not start Docker. Start the Docker engine or Docker Desktop, then retry."
+  );
+}
+
+async function ensureDockerRuntime() {
+  const already = tryResolveDocker();
+  if (already) {
+    try {
+      return await pingRuntime(already);
+    } catch {
+      // Installed but not running — try to start it.
+    }
+  }
+
+  await startDockerEngine();
+  if (process.platform === "win32") {
+    await waitForPath("\\\\.\\pipe\\dockerDesktopLinuxEngine", 30000);
+  }
+  return waitForEngineReady("docker", DOCKER_READY_TIMEOUT_MS);
+}
+
 // Make Podman usable: start machine (Win/mac) or socket/service (Linux) if needed.
 async function ensurePodmanRuntime() {
   const podmanBin = findPodmanBinary();
@@ -727,14 +859,19 @@ async function ensurePodmanRuntime() {
 
   const already = tryResolvePodman();
   if (already) {
-    return already;
+    try {
+      return await pingRuntime(already);
+    } catch {
+      // Stale TCP/pipe or stopped machine — start it below.
+    }
   }
 
   if (process.platform === "darwin" || process.platform === "win32") {
     await ensurePodmanMachineRunning(podmanBin);
-    const afterMachine = tryResolvePodman();
-    if (afterMachine) {
-      return afterMachine;
+    try {
+      return await waitForEngineReady("podman", MACHINE_TIMEOUT_MS);
+    } catch {
+      // Fall through to socket/service on Linux-style installs.
     }
   }
 
@@ -749,29 +886,45 @@ async function ensurePodmanRuntime() {
   socketPath = socketPath || preferredLocalPodmanSocket(rootless);
 
   if (pathLooksUsable(socketPath)) {
-    return withPodmanMachineMeta(
-      describeRuntime("podman", { socketPath }, { binaryPath: podmanBin, rootless }),
-      podmanBin
-    );
+    try {
+      return await waitForEngineReady("podman", 15000);
+    } catch {
+      return withPodmanMachineMeta(
+        describeRuntime("podman", { socketPath }, { binaryPath: podmanBin, rootless }),
+        podmanBin
+      );
+    }
   }
 
   await startPodmanSocketUnit(rootless);
   if (await waitForPath(socketPath, 4000)) {
-    return withPodmanMachineMeta(
-      describeRuntime("podman", { socketPath }, { binaryPath: podmanBin, rootless }),
-      podmanBin
-    );
+    try {
+      return await waitForEngineReady("podman", 15000);
+    } catch {
+      return withPodmanMachineMeta(
+        describeRuntime("podman", { socketPath }, { binaryPath: podmanBin, rootless }),
+        podmanBin
+      );
+    }
   }
 
   startPodmanSystemService(podmanBin, socketPath);
   if (await waitForPath(socketPath, 8000)) {
-    return withPodmanMachineMeta(
-      describeRuntime("podman", { socketPath }, { binaryPath: podmanBin, rootless }),
-      podmanBin
-    );
+    try {
+      return await waitForEngineReady("podman", 15000);
+    } catch {
+      return withPodmanMachineMeta(
+        describeRuntime("podman", { socketPath }, { binaryPath: podmanBin, rootless }),
+        podmanBin
+      );
+    }
   }
 
-  return tryResolvePodman();
+  try {
+    return await waitForEngineReady("podman", 15000);
+  } catch {
+    return tryResolvePodman();
+  }
 }
 
 // Lightweight "is Docker / Podman installed?" snapshot for the UI.
@@ -794,18 +947,17 @@ function inspectAvailableRuntimes() {
   };
 }
 
-// Engines to try, in order. Auto prefers Docker when both are available.
+// Candidates for a chosen engine. Unset preference returns none — do not guess.
 function listRuntimeCandidates(preference = readRuntimePreference()) {
-  const docker = tryResolveDocker();
-  const podman = tryResolvePodman();
-
   if (preference === "docker") {
+    const docker = tryResolveDocker();
     return docker ? [docker] : [];
   }
   if (preference === "podman") {
+    const podman = tryResolvePodman();
     return podman ? [podman] : [];
   }
-  return [docker, podman].filter(Boolean);
+  return [];
 }
 
 // Sync pick of the preferred/available engine (used by $docker getter).
@@ -817,7 +969,8 @@ function resolveContainerRuntimeSync(forceRefresh = false) {
   const preference = readRuntimePreference();
   const candidates = listRuntimeCandidates(preference);
   if (candidates.length === 0) {
-    const wanted = preference === "auto" ? "Docker or Podman" : preference === "podman" ? "Podman" : "Docker";
+    const wanted =
+      preference === "podman" ? "Podman" : preference === "docker" ? "Docker" : "Docker or Podman";
     throw new Error(`${wanted} is not installed or its socket could not be located.`);
   }
 
@@ -1041,6 +1194,20 @@ function prepareBindMounts(binds) {
   });
 }
 
+// Podman 5/6 on WSL uses netavark+nftables. Older WSL kernels (before 2.7.5)
+// cannot apply that ruleset, so default to no container network on Windows.
+function applyEngineHostConfig(hostConfig = {}) {
+  const runtime = cachedRuntime || {};
+  if (
+    runtime.engine === "podman" &&
+    process.platform === "win32" &&
+    !hostConfig.NetworkMode
+  ) {
+    return { ...hostConfig, NetworkMode: "none" };
+  }
+  return hostConfig;
+}
+
 /**
  * Which user the container process should run as.
  * Podman rootless / Win / mac usually need 0:0 so bind mounts are writable.
@@ -1177,9 +1344,13 @@ function writeWslResourceConfig({ memoryGb, processors }) {
 module.exports = {
   PREFERENCES,
   appendBindOption,
+  applyEngineHostConfig,
   applyPodmanMachineResources,
+  candidateForEngine,
   clearRuntimeCache,
   engineDisplayName,
+  ensureDockerRuntime,
+  ensurePodmanRuntime,
   findExecutable,
   getCachedRuntime,
   getContainerUser,
@@ -1188,8 +1359,9 @@ module.exports = {
   identifyEngineFromVersion,
   inspectAvailableRuntimes,
   listRuntimeCandidates,
-  ensurePodmanRuntime,
   parseHostToOptions,
+  pingRuntime,
+  persistRuntimePreference,
   prepareBindMounts,
   readRuntimePreference,
   resolveContainerRuntimeSync,

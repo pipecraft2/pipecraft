@@ -33,10 +33,15 @@ new Vue({
     this.$store.dispatch('gatherSystemSpecs')
       .then(specs => {
         console.log('System specs gathered:', specs);
-        this.$store.dispatch('startDockerStatusMonitoring');
       })
       .catch(error => {
         console.error('Failed to gather system specs:', error);
+      })
+      .then(() => this.$store.dispatch('bootstrapContainerRuntime'))
+      .catch(error => {
+        console.error('Failed to start container engine:', error);
+      })
+      .finally(() => {
         this.$store.dispatch('startDockerStatusMonitoring');
       });
     this.$store.commit('setOsType', os.type());

@@ -93,7 +93,7 @@
 
 <script>
 import { mapGetters } from 'vuex';
-import { prepareBindMounts } from "../utils/containerRuntime";
+import { prepareBindMounts, applyEngineHostConfig } from "../utils/containerRuntime";
 const shell = require("electron").shell;
 const streams = require("memory-streams");
 var stdout = new streams.WritableStream();
@@ -130,11 +130,11 @@ export default {
             Tty: false,
             WorkingDir: "/input",
             platform: "linux/amd64",
-            HostConfig: {
+            HostConfig: applyEngineHostConfig({
               Binds: prepareBindMounts([`${this.$store.state.Qcheck.folderPath}:/input`]),
               Memory: this.$store.state.dockerInfo.MemTotal,
               NanoCpus: Math.round(Number(this.$store.state.dockerInfo.NCPU) * 1e9),
-            },
+            }),
             Env: [`format=${this.$store.state.Qcheck.fileExtension}`],
           }
         )
@@ -165,13 +165,13 @@ export default {
           Tty: false,
           WorkingDir: "/input",
           platform: "linux/amd64",
-          HostConfig: {
+          HostConfig: applyEngineHostConfig({
             Binds: prepareBindMounts([
               `${this.$store.state.Qcheck.folderPath}/quality_check:/input`,
             ]),
             Memory: this.$store.state.dockerInfo.MemTotal,
             NanoCpus: Math.round(Number(this.$store.state.dockerInfo.NCPU) * 1e9),
-          },
+          }),
           Env: [`format=${this.$store.state.Qcheck.fileExtension}`],
         })
         .then(async ([res, container]) => {

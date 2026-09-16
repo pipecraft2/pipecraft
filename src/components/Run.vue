@@ -47,7 +47,7 @@ import { stringify } from "envfile";
 import cloneDeep from 'lodash/cloneDeep';
 import { getServiceScriptsPath } from "../utils/scriptsPath";
 // prepareBindMounts / getContainerUser adapt binds and user for Podman (esp. Windows).
-import { getContainerUser, prepareBindMounts } from "../utils/containerRuntime";
+import { getContainerUser, prepareBindMounts, applyEngineHostConfig } from "../utils/containerRuntime";
 var stdout = new WritableStream();
 var stderr = new WritableStream();
 
@@ -177,11 +177,11 @@ export default {
         name: Hostname,
         platform: "linux/amd64",
         Volumes: {},
-        HostConfig: {
+        HostConfig: applyEngineHostConfig({
           Binds: Binds,
           Memory: this.$store.state.dockerInfo.MemTotal,
           NanoCpus: Math.round(Number(this.$store.state.dockerInfo.NCPU) * 1e9)
-        },
+        }),
         Env: envVariables,
       };
       return dockerProps;
@@ -796,11 +796,11 @@ export default {
         platform: "linux/amd64",
         User: getContainerUser(0, 0),
         Volumes: {},
-        HostConfig: {
+        HostConfig: applyEngineHostConfig({
           Binds: Binds,
           Memory: this.$store.state.dockerInfo.MemTotal,
           NanoCpus: Math.round(Number(this.$store.state.dockerInfo.NCPU) * 1e9)
-        },
+        }),
         Env: envVariables,
       };
       return dockerProps;
@@ -934,11 +934,11 @@ export default {
                 `fileFormat=${this.$store.state.data.fileFormat}`,
                 `readType=${this.$store.state.data.readType}`,
               ],
-              HostConfig: {
+              HostConfig: applyEngineHostConfig({
                 Binds: this.getOptimOTUBinds(),
                 Memory: this.$store.state.dockerInfo.MemTotal,
                 NanoCpus: Math.round(Number(this.$store.state.dockerInfo.NCPU) * 1e9)
-              }
+              })
             });
     
             const stream = await container.attach({
@@ -1171,11 +1171,11 @@ export default {
           `readType=${this.$store.state.data.readType}`,
           ...env
         ],
-        HostConfig: {
+        HostConfig: applyEngineHostConfig({
           Binds: prepareBindMounts(binds),
           Memory: memory,
           NanoCpus: cpuCount * 1e9,
-        },
+        }),
         User: getContainerUser(userId, groupId),
       });
 

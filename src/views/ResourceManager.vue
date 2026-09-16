@@ -5,19 +5,37 @@
       <v-divider></v-divider>
       <v-card-subtitle style="color: white">Container runtime</v-card-subtitle>
       <div class="px-5 pb-4">
-        <!-- auto = prefer Docker if reachable, else Podman -->
+        <!-- Docker | Podman switch when both are installed. Auto is gone. -->
         <v-btn-toggle
-          :value="runtimePreference"
-          mandatory
+          v-if="bothEnginesDetected"
+          :value="selectedEngine"
+          :mandatory="Boolean(selectedEngine)"
           dense
           color="teal accent-3"
           background-color="transparent"
-          @change="handleRuntimePreferenceChange"
+          :disabled="runtimeStarting"
+          @change="handleEngineChange"
         >
-          <v-btn value="auto" small dark>Auto</v-btn>
-          <v-btn value="docker" small dark>Docker</v-btn>
-          <v-btn value="podman" small dark>Podman</v-btn>
+          <v-btn value="docker" small dark :disabled="!availableRuntimes.docker">Docker</v-btn>
+          <v-btn value="podman" small dark :disabled="!availableRuntimes.podman">Podman</v-btn>
         </v-btn-toggle>
+        <v-checkbox
+          v-if="bothEnginesDetected"
+          dark
+          hide-details
+          class="mt-3"
+          :disabled="!selectedEngine || runtimeStarting"
+          :input-value="useAsDefault"
+          @change="handleDefaultChange"
+          label="Use as default"
+        ></v-checkbox>
+        <div
+          v-if="bothEnginesDetected"
+          class="mt-1"
+          style="color: white; font-size: 13px; opacity: 0.8"
+        >
+          When checked, this engine starts automatically next time. Uncheck to choose again at launch.
+        </div>
         <div class="mt-3" style="color: white; font-size: 14px">
           <div>{{ runtimeStatusLine }}</div>
           <div v-if="socketPath" style="opacity: 0.8; word-break: break-all">
@@ -114,7 +132,7 @@
 </template>
 
 <script>
-const { exec } = require("child_process");
+const { exec, execFile } = require("child_process");
 const fs = require("fs");
 const path = require("path");
 import os from "os";
@@ -143,10 +161,17 @@ export default {
     ...mapState({
       dockerSettingsPath: state => state.systemSpecs.dockerSettings,
       runtimePreference: state => state.containerRuntime.preference,
+      runtimeStarting: state => state.containerRuntime.starting,
       socketPath: state => state.containerRuntime.socketPath,
       availableRuntimes: state => state.containerRuntime.available,
     }),
-    ...mapGetters(['isDockerActive', 'engineLabel', 'runtimeStatusText', 'activeEngine']),
+    ...mapGetters(['isDockerActive', 'engineLabel', 'runtimeStatusText', 'activeEngine', 'bothEnginesDetected', 'sessionEngine']),
+    selectedEngine() {
+      return this.activeEngine || this.sessionEngine || this.runtimePreference || "";
+    },
+    useAsDefault() {
+      return Boolean(this.selectedEngine && this.runtimePreference === this.selectedEngine);
+    },
     ncpu: {
       get() {
         return this.$store.state.dockerInfo.NCPU;
@@ -166,7 +191,7 @@ export default {
       },
     },
     resourceEngine() {
-      return this.activeEngine || (this.runtimePreference === "auto" ? "" : this.runtimePreference);
+      return this.selectedEngine;
     },
     showApplyRestart() {
       return this.$store.state.OStype !== "Linux";
@@ -196,11 +221,28 @@ export default {
     };
   },
   methods: {
-    handleRuntimePreferenceChange(preference) {
-      if (!preference || preference === this.runtimePreference) {
+    async handleEngineChange(engine) {
+      if (!engine || engine === this.selectedEngine) {
         return;
       }
-      this.$store.dispatch("setContainerRuntimePreference", preference);
+      try {
+        await this.$store.dispatch("activateEngine", {
+          engine,
+          persistDefault: this.useAsDefault,
+          start: true,
+        });
+      } catch (error) {
+        await Swal.fire({
+          title: "Engine start failed",
+          text: error.message || String(error),
+          icon: "error",
+          theme: "dark",
+        });
+      }
+    },
+    handleDefaultChange(value) {
+      const checked = typeof value === "boolean" ? value : !this.useAsDefault;
+      this.$store.dispatch("setDefaultRuntime", checked ? this.selectedEngine : "");
     },
     handleApplyResources() {
       // Win/mac: restart Docker Desktop or Podman machine so CPU/RAM take effect.
@@ -317,9 +359,13 @@ processors=${processors}
           didOpen: () => Swal.showLoading()
         });
 
-        // Step 1: Stop Docker Desktop processes
-        await this.execPowerShellCommand("Stop-Process -Name 'Docker Desktop' -Force -ErrorAction SilentlyContinue");
-        await this.execPowerShellCommand("Stop-Process -Name 'com.docker.backend' -Force -ErrorAction SilentlyContinue");
+        // Step 1: Stop Docker Desktop processes (best-effort).
+        // Stop-Process still exits 1 when a name is missing or access is
+        // denied, even with -ErrorAction SilentlyContinue — do not abort.
+        await this.execPowerShellCommand(
+          "Get-Process | Where-Object { $_.ProcessName -match '^(Docker Desktop|com\\.docker\\.)' } | Stop-Process -Force -ErrorAction SilentlyContinue; exit 0",
+          { ignoreError: true }
+        );
         
         // Step 2: Shutdown WSL
         progressDialog.update({ html: 'Step 2/5: Shutting down WSL...' });
@@ -460,18 +506,24 @@ processors=${processors}
       }
     },
 
-    // Helper method for sequential PowerShell execution
-    execPowerShellCommand(command) {
+    // Helper method for sequential PowerShell execution.
+    // execFile avoids cmd.exe quote-stripping of nested -Command strings.
+    execPowerShellCommand(command, { ignoreError = false } = {}) {
       return new Promise((resolve, reject) => {
-        exec(`powershell.exe -Command "${command}"`, (error, stdout, stderr) => {
-          if (error) {
-            reject(new Error(`Command failed: ${command}\n${error.message}`));
-          } else {
-            console.log(`✅ Executed: ${command}`);
+        execFile(
+          "powershell.exe",
+          ["-NoProfile", "-NonInteractive", "-Command", command],
+          (error, stdout, stderr) => {
+            if (error && !ignoreError) {
+              reject(new Error(`Command failed: ${command}\n${error.message}`));
+              return;
+            }
+            console.log(`Executed: ${command}`);
             if (stdout) console.log(`Output: ${stdout}`);
+            if (error) console.warn(`Ignored PowerShell error: ${error.message}`);
             resolve({ stdout, stderr });
           }
-        });
+        );
       });
     },
 
