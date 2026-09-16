@@ -88,11 +88,11 @@ prepare_dual_linked_index_file () {
     checkerror=$(seqkit seq --quiet -t dna -r -p tempdir2/index_rev.fasta > tempdir2/index_revRC.fasta 2>&1)
     check_app_error
 
-    # Linked adapters: 5' FWD with start-window, 3' RC(REV) with end-window
+    # Linked adapters: XN{window}FWD...RC(REV)N{window}X
     tr "\n" "\t" < tempdir2/index_fwd.fasta | sed -e 's/>/\n>/g' | sed '/^\n*$/d' > tempdir2/index_fwd.temp
     tr "\n" "\t" < tempdir2/index_revRC.fasta | sed -e 's/>/\n>/g' | sed '/^\n*$/d' > tempdir2/index_revRC.temp
     sed -i "s/\t/\tXN{$search_window}/" tempdir2/index_fwd.temp
-    sed -i "s/\t$/XN{$search_window}/" tempdir2/index_revRC.temp
+    sed -i "s/\t$/N{${search_window}}X/" tempdir2/index_revRC.temp
     awk 'BEGIN {FS=OFS="\t"} FNR==NR{a[$1]=$2;next} ($1 in a) {print $1,a[$1],$2}' \
         tempdir2/index_fwd.temp tempdir2/index_revRC.temp > tempdir2/paired_index.temp
     sed -e 's/\t/\n/' < tempdir2/paired_index.temp | sed -e 's/\t/\.\.\./' > tempdir2/index_file.fasta
@@ -182,7 +182,7 @@ End time: $(date)
 Runtime: $runtime seconds
 
 Indexes file: $oligos_file (paired-end indexes, FWD...REV per sample).
-index_file.fasta = linked adapters per listed sample: XN{window}FWD...RC(REV)XN{window}
+index_file.fasta = linked adapters per listed sample: XN{window}FWD...RC(REV)N{window}X
   (5' FWD in the start window; 3' reverse-complemented REV in the end window).
 
 Mixed orientation was handled with --revcomp. Reads that matched on the reverse complement
