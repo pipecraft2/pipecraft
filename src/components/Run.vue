@@ -165,10 +165,13 @@ export default {
     async updateRunInfo(i, len, Hname, name) {
       this.$store.commit("addRunInfo", [true, name, i, len, Hname]);
     },
-    async getDockerProps(step) {
+    async getDockerProps(step, workflowName) {
       let Hostname = step.serviceName.replaceAll(" ", "_");
       let WorkingDir = this.$store.state.workingDir;
-      let envVariables = this.createCustomVariableObj(step);
+      let envVariables = this.createCustomVariableObj(
+        step,
+        workflowName || this.$route.params.workflowName
+      );
       let Binds = this.getBinds_c(step, this.$store.state.inputDir);
       let dockerProps = {
         Tty: false,
@@ -208,7 +211,7 @@ export default {
                 / /g,
                 "_"
               );
-              let dockerProps = await this.getDockerProps(step);
+              let dockerProps = await this.getDockerProps(step, name);
               this.updateRunInfo(i, steps2Run, dockerProps.name, name);
               await this.$store.dispatch('imageCheck', step.imageName);
               await this.$store.dispatch('clearContainerConflicts', dockerProps.name);
@@ -529,7 +532,7 @@ export default {
       });
       return envVariables;
     },
-    createCustomVariableObj(element) {
+    createCustomVariableObj(element, workflowName) {
       let envVariables = [];
       let nextFlowParams = {};
       let inputs = element.Inputs.concat(element.extraInputs);
@@ -540,8 +543,11 @@ export default {
       // (e.g. mergePairs runs inside the denoise step for RAM efficiency, but
       // its settings live on the "merge Pairs" panel).
       if (Array.isArray(element.extraEnvFromServices)) {
-        const workflowName = this.$route.params.workflowName;
-        const workflow = this.$store.state[workflowName];
+        // Prefer the workflow name from the runner (runCustomWorkFlow) over the
+        // route alone, so sibling lookup matches the workflow actually executing.
+        const resolvedName =
+          workflowName || this.$route.params.workflowName;
+        const workflow = this.$store.state[resolvedName];
         if (Array.isArray(workflow)) {
           element.extraEnvFromServices.forEach((otherName) => {
             const other = workflow.find((s) => s.serviceName === otherName);
