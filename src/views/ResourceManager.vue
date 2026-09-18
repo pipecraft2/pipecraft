@@ -134,15 +134,11 @@
 <script>
 const { exec, execFile } = require("child_process");
 const fs = require("fs");
-const path = require("path");
 import os from "os";
 import { mapState, mapGetters } from "vuex";
-import { applyPodmanMachineResources } from "../utils/containerRuntime";
+import { applyPodmanMachineResources, dockerDesktopWindowsExe, writeWslResourceConfig } from "../utils/containerRuntime";
 const CPU = os.cpus().length;
 const MEM = Number((os.totalmem() / 1024 ** 3).toFixed(0));
-const homeDir = require("os").homedir();
-// Path to the .wslconfig file
-const wslConfigPath = path.join(homeDir, ".wslconfig");
 const Swal = require("sweetalert2");
 
 const createNumberList = (start, end) =>
@@ -258,61 +254,39 @@ export default {
         this.restartDockerWin();
       }
     },
-        updateWslConfig(memory, processors) {
-      // Check if .wslconfig file exists
-      if (fs.existsSync(wslConfigPath)) {
-        // File exists, read and update it
-        fs.readFile(wslConfigPath, "utf8", (err, data) => {
-          if (err) {
-            console.error("Error reading .wslconfig file:", err);
-            return;
-          }
-
-          // Update memory and processors values
-          let updatedConfig = data.replace(/memory=\d+GB/i, `memory=${memory}`);
-          updatedConfig = updatedConfig.replace(/processors=\d+/i, `processors=${processors}`);
-
-          // Write the updated content back to the file
-          fs.writeFile(wslConfigPath, updatedConfig, "utf8", (err) => {
-            if (err) {
-              console.error("Error writing to .wslconfig file:", err);
-              return;
-            }
-            console.log(`.wslconfig updated: memory=${memory}, processors=${processors}`);
-          });
-        });
-      } else {
-        // File doesn't exist, create it
-        const defaultConfig = `[wsl2]
-memory=${memory}
-processors=${processors}
-`;
-        fs.writeFile(wslConfigPath, defaultConfig, "utf8", (err) => {
-          if (err) {
-            console.error("Error creating .wslconfig file:", err);
-            return;
-          }
-          console.log(`.wslconfig created: memory=${memory}, processors=${processors}`);
-        });
+    updateDockerSettings(memoryMiB, processors) {
+      // macOS Docker Desktop only. Windows WSL2 CPU/RAM are in ~/.wslconfig.
+      const settingsPath = this.dockerSettingsPath;
+      if (!settingsPath) {
+        console.error("Docker Desktop settings file was not found.");
+        return;
       }
-    },
-    updateDockerSettings(memory, processors) {
-      fs.readFile(this.dockerSettingsPath, "utf-8", (err, data) => {
+      fs.readFile(settingsPath, "utf-8", (err, data) => {
         if (err) {
-          console.error(`error reading file ${this.dockerSettingsPath}`);
+          console.error(`error reading file ${settingsPath}`);
           return;
         }
         let settingsJSON = JSON.parse(data);
-        settingsJSON.Cpus = processors;
-        settingsJSON.MemoryMiB = memory;
+        const cpuKeys = ["Cpus", "cpus", "CpuCount", "cpuCount"].filter((key) =>
+          Object.prototype.hasOwnProperty.call(settingsJSON, key)
+        );
+        const memKeys = ["MemoryMiB", "memoryMiB"].filter((key) =>
+          Object.prototype.hasOwnProperty.call(settingsJSON, key)
+        );
+        (cpuKeys.length ? cpuKeys : ["Cpus"]).forEach((key) => {
+          settingsJSON[key] = processors;
+        });
+        (memKeys.length ? memKeys : ["MemoryMiB"]).forEach((key) => {
+          settingsJSON[key] = memoryMiB;
+        });
         const updatedSettings = JSON.stringify(settingsJSON, null, 2);
-        fs.writeFile(this.dockerSettingsPath, updatedSettings, "utf-8", (err) => {
-          if (err) {
-            console.error(`Error writing file ${this.dockerSettingsPath}`);
+        fs.writeFile(settingsPath, updatedSettings, "utf-8", (writeErr) => {
+          if (writeErr) {
+            console.error(`Error writing file ${settingsPath}`);
             return;
           }
           console.log(
-            `Settings file updated: CPUs: ${processors}, RAM: ${memory}`
+            `Settings file updated: CPUs: ${processors}, RAM: ${memoryMiB}`
           );
         });
       });
@@ -347,8 +321,11 @@ processors=${processors}
           return; // User cancelled
         }
 
-        // Update WSL config first
-        this.updateWslConfig(`${this.memtotal}GB`, this.ncpu);
+        // WSL2 VM limits live in ~/.wslconfig, not Docker Desktop's JSON.
+        writeWslResourceConfig({
+          memoryGb: Math.max(1, Number(this.memtotal) || 1),
+          processors: Math.max(1, Number(this.ncpu) || 1),
+        });
         
         const progressDialog = Swal.fire({
           title: 'Applying WSL Resource Changes',
@@ -381,7 +358,13 @@ processors=${processors}
         
         // Step 4: Start Docker Desktop (which will start WSL with new config)
         progressDialog.update({ html: 'Step 4/5: Starting Docker Desktop...' });
-        await this.execPowerShellCommand("Start-Process 'C:\\Program Files\\Docker\\Docker\\Docker Desktop.exe'");
+        const dockerExe = dockerDesktopWindowsExe();
+        if (!dockerExe) {
+          throw new Error(
+            "Docker Desktop was not found. Install Docker Desktop, then retry."
+          );
+        }
+        await this.execPowerShellCommand(`Start-Process '${dockerExe.replace(/'/g, "''")}'`);
         
         // Step 5: Wait for Docker to initialize
         progressDialog.update({ html: 'Step 5/5: Waiting for Docker to initialize...' });

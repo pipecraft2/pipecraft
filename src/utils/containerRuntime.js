@@ -867,11 +867,16 @@ async function ensurePodmanRuntime() {
   }
 
   if (process.platform === "darwin" || process.platform === "win32") {
-    await ensurePodmanMachineRunning(podmanBin);
+    const started = await ensurePodmanMachineRunning(podmanBin);
     try {
       return await waitForEngineReady("podman", MACHINE_TIMEOUT_MS);
-    } catch {
-      // Fall through to socket/service on Linux-style installs.
+    } catch (error) {
+      const detail = error?.message ? ` ${error.message}` : "";
+      throw new Error(
+        started
+          ? `Podman machine started but the API is not ready.${detail}`
+          : `Could not start the Podman machine. Start Podman Desktop or run "podman machine start", then retry.${detail}`
+      );
     }
   }
 
@@ -997,30 +1002,19 @@ function getCachedRuntime() {
 }
 
 function getDockerodeOptionsFromContextSync() {
-  try {
-    return resolveContainerRuntimeSync().options;
-  } catch (error) {
-    if (error?.code === "ENOENT") {
-      const fallbackSocketPath = firstUsablePath(dockerSocketCandidates(), null);
-      if (fallbackSocketPath) {
-        return { socketPath: fallbackSocketPath };
-      }
-      throw new Error("Docker CLI is not installed or not available in PATH.");
-    }
-    throw error;
-  }
+  return getResolvedDockerodeOptions();
 }
 
-// Options object for `new Docker(...)` — always re-reads cache so preference switches apply.
+// Options object for `new Docker(...)`. Only the engine we connected to —
+// never dockerode's default socket, which is usually Docker even when the
+// UI is waiting on a Podman choice.
 function getResolvedDockerodeOptions() {
   if (cachedRuntime?.options) {
     return cachedRuntime.options;
   }
-  try {
-    return resolveContainerRuntimeSync().options;
-  } catch {
-    return {};
-  }
+  throw new Error(
+    "No container engine is connected. Choose Docker or Podman in Resource Manager."
+  );
 }
 
 // Podman's /version response usually contains "podman"; Docker's does not.
@@ -1194,18 +1188,36 @@ function prepareBindMounts(binds) {
   });
 }
 
-// Podman 5/6 on WSL uses netavark+nftables. Older WSL kernels (before 2.7.5)
-// cannot apply that ruleset, so default to no container network on Windows.
+// Podman 5/6 on WSL uses netavark+nftables. Very old WSL kernels (before
+// 2.7.5) cannot apply that ruleset. Do not disable networking by default —
+// taxonomy and some pipelines need outbound access. Opt in with
+// PIPECRAFT_PODMAN_NETWORK_NONE=1 or localStorage pipecraft.podmanWindowsNetworkNone=1.
 function applyEngineHostConfig(hostConfig = {}) {
   const runtime = cachedRuntime || {};
   if (
     runtime.engine === "podman" &&
     process.platform === "win32" &&
-    !hostConfig.NetworkMode
+    !hostConfig.NetworkMode &&
+    shouldDisableWindowsPodmanNetwork()
   ) {
     return { ...hostConfig, NetworkMode: "none" };
   }
   return hostConfig;
+}
+
+function shouldDisableWindowsPodmanNetwork() {
+  if (process.env.PIPECRAFT_PODMAN_NETWORK_NONE === "1") {
+    return true;
+  }
+  try {
+    if (typeof localStorage !== "undefined") {
+      const stored = localStorage.getItem("pipecraft.podmanWindowsNetworkNone");
+      return stored === "1" || stored === "true";
+    }
+  } catch {
+    // Renderer-only storage; ignore in Node/main.
+  }
+  return false;
 }
 
 /**
@@ -1351,6 +1363,7 @@ module.exports = {
   engineDisplayName,
   ensureDockerRuntime,
   ensurePodmanRuntime,
+  dockerDesktopWindowsExe,
   findExecutable,
   getCachedRuntime,
   getContainerUser,
@@ -1367,4 +1380,5 @@ module.exports = {
   resolveContainerRuntimeSync,
   setCachedRuntime,
   setRuntimePreference,
+  writeWslResourceConfig,
 };

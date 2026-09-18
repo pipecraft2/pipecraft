@@ -11,8 +11,8 @@ import {
   ensureDockerRuntime,
   ensurePodmanRuntime,
   getCachedRuntime,
+  getResolvedDockerodeOptions,
   inspectAvailableRuntimes,
-  listRuntimeCandidates,
   pingRuntime,
   persistRuntimePreference,
   readRuntimePreference,
@@ -27,15 +27,8 @@ const { dialog } = require("@electron/remote");
 // Build a dockerode client for the currently selected Docker/Podman runtime.
 function getDockerInstance(runtime = getCachedRuntime()) {
   const Docker = require("dockerode");
-  if (runtime?.options) {
-    return new Docker(runtime.options);
-  }
-  const candidates = listRuntimeCandidates();
-  if (!candidates.length) {
-    throw new Error("No container engine endpoint is available.");
-  }
-  setCachedRuntime(candidates[0]);
-  return new Docker(candidates[0].options);
+  const options = runtime?.options || getResolvedDockerodeOptions();
+  return new Docker(options);
 }
 
 /** Match longest supported suffix first (e.g. .fastq.gz before .fastq). */
@@ -7009,17 +7002,19 @@ export default new Vuex.Store({
         // Get total memory
         const totalMemory = os.totalmem();
   
+        // Docker Desktop JSON is used to apply CPU/RAM on macOS (and Linux
+        // Desktop). Windows WSL2 does not read those keys — VM limits live in
+        // %UserProfile%\.wslconfig.
         let dockerSettings = null;
-        
-        if (platform === 'win32') {
-          const winSettingsPath = path.join(os.homedir(), 'AppData', 'Roaming', 'Docker', 'settings-store.json');
-          if (fs.existsSync(winSettingsPath)) {
-            dockerSettings = winSettingsPath;
-          }
-        } else if (platform === 'darwin') {
-          const macSettingsPath = path.join(os.homedir(), 'Library', 'Group Containers', 'group.com.docker', 'settings-store.json');
+
+        if (platform === 'darwin') {
+          const macDir = path.join(os.homedir(), 'Library', 'Group Containers', 'group.com.docker');
+          const macSettingsPath = path.join(macDir, 'settings-store.json');
+          const macLegacyPath = path.join(macDir, 'settings.json');
           if (fs.existsSync(macSettingsPath)) {
             dockerSettings = macSettingsPath;
+          } else if (fs.existsSync(macLegacyPath)) {
+            dockerSettings = macLegacyPath;
           }
         } else if (platform === 'linux') {
           // Check Docker Desktop first, then fallback to regular Docker
@@ -7256,7 +7251,7 @@ export default new Vuex.Store({
         // Create config object
         const configObj = {
           database_file: "/database/database.fasta",  // Use container path, not host path
-          blastdb_path: "/blastdb",
+          blastdb_path: "/sequences/blastdb",
           run_id: runId,
           // Pipeline options
           use_itsx: useItsx ? 1 : 0,

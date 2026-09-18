@@ -1,6 +1,6 @@
 {
   "database_file": "/database/database.fasta",
-  "blastdb_path": "/blastdb",
+  "blastdb_path": "/sequences/blastdb",
   "run_id": "funbaront_run",
   "use_itsx": 1,
   "output_all_polished_seqs": 0,

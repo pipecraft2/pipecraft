@@ -93,7 +93,7 @@
 
 <script>
 import { mapGetters } from 'vuex';
-import { prepareBindMounts, applyEngineHostConfig } from "../utils/containerRuntime";
+import { prepareBindMounts, applyEngineHostConfig, getContainerUser } from "../utils/containerRuntime";
 const shell = require("electron").shell;
 const streams = require("memory-streams");
 var stdout = new streams.WritableStream();
@@ -117,19 +117,24 @@ export default {
       console.log("starting fastqc");
       await this.$store.dispatch('imageCheck', "staphb/fastqc:0.11.9");
       await this.$store.dispatch('imageCheck', "ewels/multiqc:1.10");
+      const containerUser = getContainerUser(
+        this.$store.state.systemSpecs.userId,
+        this.$store.state.systemSpecs.groupId
+      );
       let result = await this.$docker
         .run(
           "staphb/fastqc:0.11.9",
           [
             "sh",
             "-c",
-            `mkdir quality_check | fastqc --outdir quality_check *$format`,
+            `mkdir -p quality_check && fastqc --outdir quality_check *$format`,
           ],
           [stdout, stderr],
           {
             Tty: false,
             WorkingDir: "/input",
             platform: "linux/amd64",
+            ...(containerUser ? { User: containerUser } : {}),
             HostConfig: applyEngineHostConfig({
               Binds: prepareBindMounts([`${this.$store.state.Qcheck.folderPath}:/input`]),
               Memory: this.$store.state.dockerInfo.MemTotal,
@@ -165,6 +170,7 @@ export default {
           Tty: false,
           WorkingDir: "/input",
           platform: "linux/amd64",
+          ...(containerUser ? { User: containerUser } : {}),
           HostConfig: applyEngineHostConfig({
             Binds: prepareBindMounts([
               `${this.$store.state.Qcheck.folderPath}/quality_check:/input`,

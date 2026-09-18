@@ -69,8 +69,9 @@ output_dir=$"/input/demultiplex_out"
 #python module: per unique F, write only the R indexes listed for that F
 build_allowed_R_per_F=$"python3 /scripts/submodules/build_allowed_R_per_F.demuxModule.py"
 
-# Increase the number of open files limit
-ulimit -S -n 6000
+# Soft-raise the open-files limit. Rootless Podman often cannot raise it;
+# cutadapt then uses whatever the user namespace already allows.
+ulimit -S -n 6000 2>/dev/null || true
 
 #############################
 ### Start of the workflow ###

@@ -185,7 +185,11 @@ export default {
           Memory: this.$store.state.dockerInfo.MemTotal,
           NanoCpus: Math.round(Number(this.$store.state.dockerInfo.NCPU) * 1e9)
         }),
-        Env: envVariables,
+        Env: [
+          `HOST_UID=${this.userId}`,
+          `HOST_GID=${this.groupId}`,
+          ...envVariables
+        ],
       };
       return dockerProps;
     },
@@ -800,14 +804,18 @@ export default {
         WorkingDir: WorkingDir,
         name: Hostname,
         platform: "linux/amd64",
-        User: getContainerUser(0, 0),
+        User: getContainerUser(this.userId, this.groupId),
         Volumes: {},
         HostConfig: applyEngineHostConfig({
           Binds: Binds,
           Memory: this.$store.state.dockerInfo.MemTotal,
           NanoCpus: Math.round(Number(this.$store.state.dockerInfo.NCPU) * 1e9)
         }),
-        Env: envVariables,
+        Env: [
+          `HOST_UID=${this.userId}`,
+          `HOST_GID=${this.groupId}`,
+          ...envVariables
+        ],
       };
       return dockerProps;
     },
@@ -932,6 +940,7 @@ export default {
               AttachStdout: true,
               AttachStderr: true,
               Platform: "linux/amd64",
+              User: getContainerUser(this.userId, this.groupId),
               Env: [
                 `HOST_UID=${this.userId}`,
                 `HOST_GID=${this.groupId}`,

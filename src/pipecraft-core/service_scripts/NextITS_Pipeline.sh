@@ -1,7 +1,8 @@
 #!/bin/bash
 
 
-export NXF_HOME="/opt/software/conda/bin"
+export NXF_HOME="/Input/.nextflow"
+mkdir -p "$NXF_HOME"
 export NXF_ANSI_LOG="false"
 export NXF_LOG_COLOR="false"
 export NXF_ANSI="false"
