@@ -38,33 +38,24 @@ import os from 'os';
 import fs from 'fs';
 import slash from 'slash';
 import Swal from 'sweetalert2';
-import { WritableStream } from 'memory-streams';
 import { PassThrough } from 'stream';
 import JSONfn from 'json-fn';
-import { ipcRenderer } from "electron";
 import { mapState, mapGetters } from "vuex";
 import { stringify } from "envfile";
 import cloneDeep from 'lodash/cloneDeep';
 import { getServiceScriptsPath } from "../utils/scriptsPath";
-// prepareBindMounts / getContainerUser adapt binds and user for Podman (esp. Windows).
 import { getContainerUser, prepareBindMounts, applyEngineHostConfig } from "../utils/containerRuntime";
-var stdout = new WritableStream();
-var stderr = new WritableStream();
-
-
 
 export default {
   name: "Run",
   computed: {
-    // Keep the mapState for selectedSteps
     ...mapState({
       selectedSteps: (state) => state.selectedSteps,
     }),
     ...mapGetters(['isDockerActive', 'engineNotFoundMessage']),
-    // Button State
     isButtonDisabled() {
-      return this.isDockerStopped || 
-             this.isNoFilesSelected || 
+      return this.isDockerStopped ||
+             this.isNoFilesSelected ||
              this.isWorkflowNotReady;
     },
 
@@ -72,7 +63,6 @@ export default {
       return !this.isButtonDisabled;
     },
 
-    // Status Checks
     isDockerStopped() {
       return !this.isDockerActive;
     },
@@ -83,7 +73,7 @@ export default {
 
     isWorkflowNotReady() {
       const { workflowName } = this.$route.params;
-      
+
       if (!workflowName) {
         return !this.$store.getters.selectedStepsReady;
       }
@@ -95,24 +85,22 @@ export default {
       return !this.$store.getters.customWorkflowReady;
     },
 
-    // Warning States
     showOptimOTUWarning() {
-      return this.$route.params.workflowName === 'OptimOTU' && 
-             this.$store.state.OptimOTU[8].Inputs[1].value === 'undefined' || 
+      return this.$route.params.workflowName === 'OptimOTU' &&
+             this.$store.state.OptimOTU[8].Inputs[1].value === 'undefined' ||
              this.$store.state.OptimOTU[8].Inputs[1].value === 'custom';
     },
 
     showMissingServicesWarning() {
-      return !this.$store.getters.selectedStepsReady && 
+      return !this.$store.getters.selectedStepsReady &&
              !this.$route.params.workflowName;
     },
 
     showMissingInputsWarning() {
-      return 'workflowName' in this.$route.params && 
+      return 'workflowName' in this.$route.params &&
              !this.$store.getters.customWorkflowReady;
     },
 
-    // Button Styling
     buttonClasses() {
       return {
         'error-border': this.isButtonDisabled,
@@ -133,26 +121,24 @@ export default {
   methods: {
     initUserAndGroupId() {
       if (os.platform() === 'win32') {
-        // Windows - use default values
         console.log('Windows system detected, using default user/group IDs');
         this.userId = 1000;
         this.groupId = 1000;
-      } else {
-        // Linux/macOS
-        try {
-          const { execSync } = require('child_process');
-          this.userId = parseInt(execSync('id -u').toString().trim());
-          this.groupId = parseInt(execSync('id -g').toString().trim());
-          console.log(`User ID: ${this.userId}, Group ID: ${this.groupId}`);
-        } catch (error) {
-          console.warn('Could not get user/group ID, using default');
-          this.userId = 1000;
-          this.groupId = 1000;
-        }
+        return;
+      }
+      try {
+        const { execSync } = require('child_process');
+        this.userId = parseInt(execSync('id -u').toString().trim());
+        this.groupId = parseInt(execSync('id -g').toString().trim());
+        console.log(`User ID: ${this.userId}, Group ID: ${this.groupId}`);
+      } catch (error) {
+        console.warn('Could not get user/group ID, using default');
+        this.userId = 1000;
+        this.groupId = 1000;
       }
     },
     async confirmRun(name) {
-      let result = await Swal.fire({
+      return Swal.fire({
         title: `Run ${name.replace(/_/g, " ")}?`,
         showCancelButton: true,
         confirmButtonColor: "#3085d6",
@@ -160,20 +146,407 @@ export default {
         confirmButtonText: "Continue",
         theme: "dark",
       });
-      return result;
     },
     async updateRunInfo(i, len, Hname, name) {
       this.$store.commit("addRunInfo", [true, name, i, len, Hname]);
     },
+
+    handleStartClick() {
+      const { workflowName } = this.$route.params;
+
+      if (!workflowName) {
+        return this.runWorkflow({
+          name: "workflow",
+          steps: this.buildQuickToolSteps(),
+        });
+      }
+
+      if (workflowName.includes("NextITS")) {
+        return this.runWorkflow({
+          name: "NextITS",
+          steps: this.buildNextITSSteps(),
+        });
+      }
+
+      if (workflowName.includes("OptimOTU")) {
+        return this.runWorkflow({
+          name: "OptimOTU",
+          steps: this.buildOptimOTUSteps(),
+        });
+      }
+
+      if (workflowName.includes("FunBarONT")) {
+        return this.runWorkflow({
+          name: "FunBarONT",
+          steps: this.buildFunBarONTSteps(),
+          successTitle: "FunBarONT pipeline finished successfully",
+          successText: "Results are in your sequences directory",
+        });
+      }
+
+      return this.runWorkflow({
+        name: workflowName,
+        steps: this.buildPremadeSteps(workflowName),
+      });
+    },
+
+    /**
+     * One dockerode path for every workflow and every step.
+     * Removes the container when it exits. Does not reset workingDir.
+     */
+    async runContainer(spec) {
+      const {
+        imageName,
+        containerName,
+        command,
+        env = [],
+        binds,
+        workingDir,
+        log,
+        sanitizeChunk,
+      } = spec;
+
+      await this.$store.dispatch("imageCheck", imageName);
+      await this.$store.dispatch("clearContainerConflicts", containerName);
+
+      const memory = this.$store.state.dockerInfo.MemTotal;
+      const nanoCpus = Math.round(Number(this.$store.state.dockerInfo.NCPU) * 1e9);
+      const createConfig = {
+        Image: imageName,
+        name: containerName,
+        Cmd: command,
+        Tty: false,
+        AttachStdout: true,
+        AttachStderr: true,
+        Platform: "linux/amd64",
+        Env: [
+          `HOST_UID=${this.userId}`,
+          `HOST_GID=${this.groupId}`,
+          `fileFormat=${this.$store.state.data.fileFormat}`,
+          `readType=${this.$store.state.data.readType}`,
+          ...env,
+        ],
+        HostConfig: applyEngineHostConfig({
+          Binds: prepareBindMounts(binds),
+          Memory: memory,
+          NanoCpus: nanoCpus,
+        }),
+        User: getContainerUser(this.userId, this.groupId),
+      };
+      if (workingDir) {
+        createConfig.WorkingDir = workingDir;
+      }
+
+      let container = null;
+      try {
+        container = await this.$docker.createContainer(createConfig);
+
+        const attachStream = await container.attach({
+          stream: true,
+          stdout: true,
+          stderr: true,
+        });
+        const stdoutStream = new PassThrough();
+        const stderrStream = new PassThrough();
+        container.modem.demuxStream(attachStream, stdoutStream, stderrStream);
+        const endStreams = () => {
+          try { stdoutStream.end(); } catch (err) { console.debug("stdoutStream.end failed:", err && err.message); }
+          try { stderrStream.end(); } catch (err) { console.debug("stderrStream.end failed:", err && err.message); }
+        };
+        attachStream.on("end", endStreams);
+        attachStream.on("close", endStreams);
+
+        const logPromise = this.handleDemuxedStreams(
+          stdoutStream,
+          stderrStream,
+          log,
+          sanitizeChunk
+        );
+
+        await container.start();
+        const data = await container.wait();
+        endStreams();
+
+        let stdout = "";
+        let stderr = "";
+        try {
+          const res = await this.waitWithTimeout(logPromise, 2000);
+          stdout = res.stdout || "";
+          stderr = res.stderr || "";
+        } catch (err) {
+          console.debug("log drain timeout or error:", err && err.message);
+        }
+
+        return {
+          StatusCode: data.StatusCode,
+          stdout,
+          stderr,
+        };
+      } finally {
+        if (container) {
+          try {
+            await container.remove({ v: true, force: true });
+          } catch (err) {
+            const msg = err && err.message ? err.message : "";
+            if (!(msg.includes("HTTP code 404") || msg.includes("HTTP code 409"))) {
+              console.warn("Non-fatal remove error:", err);
+            }
+          }
+        }
+      }
+    },
+
+    /**
+     * Shared orchestrator. Premade pipelines pass many steps; OptimOTU,
+     * NextITS, FunBarONT, and Quick tools pass one.
+     */
+    async runWorkflow({ name, steps, successTitle, successText }) {
+      let log = null;
+      let started = false;
+      const startTime = Date.now();
+
+      try {
+        const confirmed = await this.confirmRun(name);
+        if (!confirmed.isConfirmed) {
+          return;
+        }
+        started = true;
+
+        this.$store.commit("addWorkingDir", "/input");
+        this.autoSaveConfig();
+        this.$store.state.data.pipeline = name.replace(/ /g, "_");
+
+        if (this.$store.state.data.debugger) {
+          log = fs.createWriteStream(
+            `${this.$store.state.inputDir}/Pipecraft_${name}_${new Date()
+              .toJSON()
+              .slice(0, 10)}.txt`
+          );
+        }
+
+        for (let i = 0; i < steps.length; i++) {
+          const step = steps[i];
+          if (typeof step.beforeStart === "function") {
+            try {
+              await step.beforeStart();
+            } catch (error) {
+              console.error("Failed to generate pipeline configuration:", error);
+              await Swal.fire({
+                title: "Configuration Error",
+                text:
+                  error.code === "ENOENT" || error.code === "EACCES"
+                    ? "Could not write configuration file. Check file permissions."
+                    : error.message || "Failed to generate pipeline configuration.",
+                confirmButtonText: "OK",
+                theme: "dark",
+              });
+              return;
+            }
+          }
+
+          if (step.serviceName) {
+            this.$store.state.data.service = String(step.serviceName).replace(
+              / /g,
+              "_"
+            );
+          }
+
+          const spec = typeof step.buildSpec === "function"
+            ? await step.buildSpec()
+            : step;
+          const containerName = spec.containerName;
+          this.$store.state.runInfo.active = true;
+          this.$store.state.runInfo.containerID = containerName;
+          this.updateRunInfo(i, steps.length, containerName, name);
+
+          const runResult = await this.runContainer({
+            ...spec,
+            log,
+            sanitizeChunk: spec.sanitizeChunk || step.sanitizeChunk,
+          });
+
+          if (runResult.StatusCode === 0) {
+            if (typeof step.afterStep === "function") {
+              await step.afterStep(runResult);
+            }
+            this.$store.commit("resetRunInfo");
+            continue;
+          }
+
+          const message = step.errorFromLogs
+            ? this.extractPipelineError(runResult.stdout, runResult.stderr)
+            : (runResult.stderr || runResult.stdout || "Unknown error");
+          await this.handleDockerError(
+            { message, StatusCode: runResult.StatusCode },
+            log
+          );
+          return;
+        }
+
+        await Swal.fire({
+          title: successTitle || "Workflow finished",
+          text: successText || undefined,
+          theme: "dark",
+        });
+      } catch (error) {
+        await this.handleDockerError(error, log);
+      } finally {
+        if (started) {
+          this.finishRun(log, startTime);
+        }
+      }
+    },
+
+    finishRun(log, startTime) {
+      if (log) {
+        try { log.end(); } catch (err) { console.debug("log.end failed:", err && err.message); }
+      }
+      this.$store.commit("addWorkingDir", "/input");
+      this.$store.commit("resetRunInfo");
+      if (startTime) {
+        console.log(`Total execution time: ${this.toMinsAndSecs(Date.now() - startTime)}`);
+      }
+    },
+
+    buildPremadeSteps(workflowName) {
+      const workflow = this.$store.state[workflowName] || [];
+      return workflow
+        .filter((step) => step.selected === true || step.selected === "always")
+        .map((step) => ({
+          serviceName: step.serviceName,
+          parseLog: true,
+          afterStep: (runResult) => this.applyStepLog(runResult.stdout),
+          buildSpec: async () => {
+            const dockerProps = await this.getDockerProps(step, workflowName);
+            let scriptName = step.scriptName;
+            if (typeof scriptName === "object") {
+              scriptName = scriptName[this.$store.state.data.dada2mode];
+            }
+            return {
+              imageName: step.imageName,
+              containerName: dockerProps.name,
+              command: ["bash", "-c", `bash /scripts/${scriptName}`],
+              env: dockerProps.Env,
+              binds: dockerProps.HostConfig.Binds,
+              workingDir: dockerProps.WorkingDir,
+            };
+          },
+        }));
+    },
+
+    buildQuickToolSteps() {
+      return this.selectedSteps.map((entry, i) => {
+        const selectedStep = this.findSelectedService(i);
+        return {
+          serviceName: selectedStep.serviceName,
+          buildSpec: async () => {
+            const dockerProps = await this.getDockerProps(selectedStep);
+            return {
+              imageName: selectedStep.imageName,
+              containerName: dockerProps.name,
+              command: ["bash", "-c", `bash /scripts/${selectedStep.scriptName}`],
+              env: dockerProps.Env,
+              binds: dockerProps.HostConfig.Binds,
+              workingDir: dockerProps.WorkingDir,
+            };
+          },
+        };
+      });
+    },
+
+    buildOptimOTUSteps() {
+      return [
+        {
+          serviceName: "optimotu",
+          beforeStart: async () => {
+            await this.$store.dispatch("generateOptimOTUYamlConfig");
+          },
+          buildSpec: () => ({
+            imageName: "pipecraft/optimotu:5.1-pc1.2.0",
+            containerName: "optimotu",
+            command: ["/scripts/run_optimotu_dev.sh"],
+            env: [
+              "R_ENABLE_JIT=0",
+              "R_COMPILE_PKGS=0",
+              "R_DISABLE_BYTECODE=1",
+              "R_KEEP_PKG_SOURCE=yes",
+              "LANG=C.UTF-8",
+              "LC_ALL=C.UTF-8",
+              "LC_CTYPE=C.UTF-8",
+              `HOST_OS=${this.$store.state.systemSpecs.os}`,
+              `HOST_ARCH=${this.$store.state.systemSpecs.architecture}`,
+              `rawFilesDir=${path.basename(this.$store.state.inputDir)}`,
+              "R_CLI_NUM_COLORS=0",
+              "R_CLI_NO_COLORS=true",
+              "NO_COLOR=1",
+            ],
+            binds: this.getOptimOTUBinds(),
+          }),
+        },
+      ];
+    },
+
+    buildFunBarONTSteps() {
+      return [
+        {
+          serviceName: "funbaront",
+          errorFromLogs: true,
+          beforeStart: async () => {
+            await this.$store.dispatch("generateFunBarONTConfig");
+          },
+          buildSpec: () => ({
+            imageName: "pipecraft/funbaront:1-pc1.2.0",
+            containerName: "funbaront",
+            command: ["/bin/bash", "-c", "bash /scripts/submodules/FunBarONT_Pipeline.sh"],
+            env: [
+              `HOST_OS=${this.$store.state.systemSpecs.os}`,
+              `HOST_ARCH=${this.$store.state.systemSpecs.architecture}`,
+              `rawFilesDir=${path.basename(this.$store.state.inputDir)}`,
+            ],
+            binds: this.getFunBarONTBinds(),
+          }),
+        },
+      ];
+    },
+
+    buildNextITSSteps() {
+      return [
+        {
+          serviceName: "Step_1",
+          errorFromLogs: true,
+          sanitizeChunk: (chunk) => this.sanitizeNextITSLog(chunk),
+          beforeStart: async () => {
+            await this.$store.dispatch("clearContainerConflicts", "Step_2");
+          },
+          buildSpec: () => {
+            const step = cloneDeep(this.$store.state.NextITS[0]);
+            step.Inputs = step.Inputs.concat(this.$store.state.NextITS[1].Inputs);
+            step.extraInputs = step.extraInputs.concat(
+              this.$store.state.NextITS[1].extraInputs
+            );
+            const props = this.createParamsFile(step);
+            return {
+              imageName: "pipecraft/nextits:1.1.0-pc1.2.0",
+              containerName: "Step_1",
+              command: ["bash", "-c", "bash /scripts/NextITS_Pipeline.sh"],
+              env: props.Env,
+              binds: props.HostConfig.Binds,
+              workingDir: props.WorkingDir,
+            };
+          },
+        },
+      ];
+    },
+
     async getDockerProps(step, workflowName) {
-      let Hostname = step.serviceName.replaceAll(" ", "_");
-      let WorkingDir = this.$store.state.workingDir;
-      let envVariables = this.createCustomVariableObj(
+      const Hostname = step.serviceName.replaceAll(" ", "_");
+      const WorkingDir = this.$store.state.workingDir;
+      const envVariables = this.createCustomVariableObj(
         step,
         workflowName || this.$route.params.workflowName
       );
-      let Binds = this.getBinds_c(step, this.$store.state.inputDir);
-      let dockerProps = {
+      const Binds = this.getBinds_c(step, this.$store.state.inputDir);
+      return {
         Tty: false,
         WorkingDir: WorkingDir,
         User: getContainerUser(this.userId, this.groupId),
@@ -191,294 +564,43 @@ export default {
           ...envVariables
         ],
       };
-      return dockerProps;
     },
-    async runCustomWorkFlow(name) {
-      this.confirmRun(name).then(async (result) => {
-        if (result.isConfirmed) {
-          this.$store.commit("addWorkingDir", "/input");
-          let startTime = Date.now();
-          let steps2Run = this.$store.getters.steps2Run(name);
-          this.autoSaveConfig();
-          this.$store.state.data.pipeline = name.replace(/ /g, "_");
-          let log;
-          if (this.$store.state.data.debugger == true) {
-            log = fs.createWriteStream(
-              `${this.$store.state.inputDir}/Pipecraft_${name}_${new Date()
-                .toJSON()
-                .slice(0, 10)}.txt`
-            );
-          }
-          for (let [i, step] of this.$store.state[name].entries()) {
-            if (step.selected == true || step.selected == "always") {
-              this.$store.state.data.service = step.serviceName.replace(
-                / /g,
-                "_"
-              );
-              let dockerProps = await this.getDockerProps(step, name);
-              this.updateRunInfo(i, steps2Run, dockerProps.name, name);
-              await this.$store.dispatch('imageCheck', step.imageName);
-              await this.$store.dispatch('clearContainerConflicts', dockerProps.name);
-              console.log("Container binds:", dockerProps.HostConfig.Binds);
-              console.log(dockerProps);
-              let scriptName;
-              if (typeof step.scriptName === "object") {
-                console.log(step.scriptName[this.$store.state.data.dada2mode]);
-                scriptName = step.scriptName[this.$store.state.data.dada2mode];
-              } else {
-                scriptName = step.scriptName;
-              }
-              console.log(scriptName);
-              let result = await this.$docker
-                .run(
-                  step.imageName,
-                  ["bash", "-c", `bash /scripts/${scriptName}`],
-                  [stdout, stderr],
-                  dockerProps
-                )
-                .then(async ([res, container]) => {
-                  console.log(stderr.toString());
-                  console.log(stdout.toString());
-                  res.stdout = stdout.toString();
-                  res.stderr = stderr.toString();
-                  if (res.StatusCode != 137) {
-                    container.remove({ v: true, force: true });
-                  }
-                  console.log(res);
-                  return res;
-                })
-                .catch((err) => {
-                  console.log(err);
-                  this.$store.commit("resetRunInfo");
-                  return err;
-                });
-              console.log(result);
-              if (result.StatusCode == 0) {
-                if (this.$store.state.data.debugger == true) {
-                  log.write(result.stdout.toString().replace(/[\n\r]/g, ""));
-                }
-                let newWorkingDir = this.getVariableFromLog(
-                  result.stdout,
-                  "workingDir"
-                );
-                let newDataInfo = {
-                  fileFormat: this.getVariableFromLog(
-                    result.stdout,
-                    "fileFormat"
-                  ),
-                  readType: this.getVariableFromLog(result.stdout, "readType"),
-                  output_fasta: this.getVariableFromLog(
-                    result.stdout,
-                    "output_fasta"
-                  ),
-                  output_feature_table: this.getVariableFromLog(
-                    result.stdout,
-                    "output_feature_table"
-                  ),
-                };
-                this.$store.commit(
-                  "toggle_PE_SE_scripts",
-                  newDataInfo.readType
-                );
-                this.$store.commit("addInputInfo", newDataInfo);
-                this.$store.commit("addWorkingDir", newWorkingDir);
-              } else {
-                if (result.StatusCode == 137) {
-                  if (this.$store.state.data.debugger == true) {
-                    log.write(result.stderr.toString().replace(/[\n\r]/g, ""));
-                  }
-                  Swal.fire({
-                    title: "Workflow stopped",
-                    theme: "dark",
-                  });
-                } else {
-                  let err;
-                  if (!result.stderr) {
-                    if (this.$store.state.data.debugger == true) {
-                      log.write(
-                        result.stdout.toString().replace(/[\n\r]/g, "")
-                      );
-                    }
-                    err = result;
-                  } else {
-                    if (this.$store.state.data.debugger == true) {
-                      log.write(
-                        result.stderr.toString().replace(/[\n\r]/g, "")
-                      );
-                    }
-                    err = result.stderr;
-                  }
-                  Swal.fire({
-                    title: "An error has occured while processing your data",
-                    text: err,
-                    confirmButtonText: "Quit",
-                    theme: "dark",
-                  });
-                }
-                this.$store.commit("resetRunInfo");
-                stdout = new WritableStream();
-                stderr = new WritableStream();
-                break;
-              }
-              stdout = new WritableStream();
-              stderr = new WritableStream();
-              console.log(`Finished step ${i + 1}: ${step.serviceName}`);
-              this.$store.commit("resetRunInfo");
-              if (result.StatusCode == 0) {
-                steps2Run -= 1;
-                if (steps2Run == 0) {
-                  Swal.fire({
-                    title: "Workflow finished",
-                    theme: "dark",
-                  });
-                }
-              }
-            }
-          }
-          let totalTime = this.toMinsAndSecs(Date.now() - startTime);
-          this.$store.commit("addWorkingDir", "/input");
-          this.$store.commit("resetRunInfo");
-          console.log(totalTime);
-        }
-      });
-    },
-    async runWorkFlow() {
-      this.confirmRun("workflow").then(async (result) => {
-        if (result.isConfirmed) {
-          this.$store.commit("addWorkingDir", "/input");
-          let startTime = Date.now();
-          let steps2Run = this.$store.getters.steps2Run("selectedSteps");
-          console.log(`${this.$store.state.inputDir}`);
-          this.autoSaveConfig();
-          let log;
-          if (this.$store.state.data.debugger == true) {
-            log = fs.createWriteStream(
-              `${
-                this.$store.state.inputDir
-              }/Pipecraft_CustomWorkflow_${new Date()
-                .toJSON()
-                .slice(0, 10)}.txt`
-            );
-          }
-          this.$store.state.data.pipeline =
-            `quick_tools_${this.selectedSteps.stepName}`.replace(/ /g, "_");
-          for (let [i, step] of this.selectedSteps.entries()) {
-            let selectedStep = this.findSelectedService(i);
 
-            this.$store.state.data.service = selectedStep.serviceName.replace(
-              / /g,
-              "_"
-            );
-            let dockerProps = await this.getDockerProps(selectedStep);
-            console.log(dockerProps);
-            this.updateRunInfo(i, steps2Run, dockerProps.name, "workflow");
-            await this.$store.dispatch('imageCheck', selectedStep.imageName);
-            await this.$store.dispatch('clearContainerConflicts', dockerProps.name);
-            let result = await this.$docker
-              .run(
-                selectedStep.imageName,
-                ["bash", "-c", `bash /scripts/${selectedStep.scriptName}`],
-                [stdout, stderr],
-                dockerProps
-              )
-              .then(async ([res, container]) => {
-                res.stdout = stdout.toString();
-                res.stderr = stderr.toString();
-                if (res.StatusCode != 137) {
-                  container.remove({ v: true, force: true });
-                }
-                console.log(res);
-                return res;
-              })
-              .catch((err) => {
-                console.log(err);
-                this.$store.commit("resetRunInfo");
-                return err;
-              });
-            console.log(result);
-            if (result.StatusCode == 0) {
-              if (this.$store.state.data.debugger == true) {
-                log.write(result.stdout.toString().replace(/[\n\r]/g, ""));
-              }
-              let newWorkingDir = this.getVariableFromLog(
-                result.stdout,
-                "workingDir"
-              );
-              let newDataInfo = {
-                fileFormat: this.getVariableFromLog(
-                  result.stdout,
-                  "fileFormat"
-                ),
-                readType: this.getVariableFromLog(result.stdout, "readType"),
-              };
-              this.$store.commit("addInputInfo", newDataInfo);
-              this.$store.commit("addWorkingDir", newWorkingDir);
-            } else {
-              if (result.StatusCode == 137) {
-                if (this.$store.state.data.debugger == true) {
-                  log.write(result.stderr.toString().replace(/[\n\r]/g, ""));
-                }
-                Swal.fire({
-                  title: "Workflow stopped",
-                  theme: "dark",
-                });
-              } else {
-                let err;
-                if (!result.stderr) {
-                  if (this.$store.state.data.debugger == true) {
-                    log.write(result.stdout.toString().replace(/[\n\r]/g, ""));
-                  }
-                  err = result;
-                } else {
-                  err = result.stderr;
-                  if (this.$store.state.data.debugger == true) {
-                    log.write(result.stderr.toString().replace(/[\n\r]/g, ""));
-                  }
-                }
-                Swal.fire({
-                  title: "An error has occured while processing your data",
-                  text: err,
-                  confirmButtonText: "Quit",
-                  theme: "dark",
-                });
-              }
-              this.$store.commit("resetRunInfo");
-              stdout = new WritableStream();
-              stderr = new WritableStream();
-              break;
-            }
-            stdout = new WritableStream();
-            stderr = new WritableStream();
-            console.log(`Finished step ${i + 1}: ${step.stepName}`);
-            this.$store.commit("resetRunInfo");
-            if (result.StatusCode == 0) {
-              // steps2Run -= 1;
-              if (steps2Run == 0) {
-                Swal.fire({
-                  title: "Workflow finished",
-                  theme: "dark",
-                });
-              }
-            }
-          }
-          let totalTime = this.toMinsAndSecs(Date.now() - startTime);
-          this.$store.commit("addWorkingDir", "/input");
-          this.$store.commit("resetRunInfo");
-          console.log(totalTime);
-        }
+    applyStepLog(stdout) {
+      const newWorkingDir = this.getVariableFromLog(stdout, "workingDir");
+      const newDataInfo = {
+        fileFormat: this.getVariableFromLog(stdout, "fileFormat"),
+        readType: this.getVariableFromLog(stdout, "readType"),
+        output_fasta: this.getVariableFromLog(stdout, "output_fasta"),
+        output_feature_table: this.getVariableFromLog(
+          stdout,
+          "output_feature_table"
+        ),
+      };
+      if (newDataInfo.readType) {
+        this.$store.commit("toggle_PE_SE_scripts", newDataInfo.readType);
+      }
+      this.$store.commit("addInputInfo", {
+        fileFormat: newDataInfo.fileFormat || this.$store.state.data.fileFormat,
+        readType: newDataInfo.readType || this.$store.state.data.readType,
+        output_fasta: newDataInfo.output_fasta,
+        output_feature_table: newDataInfo.output_feature_table,
       });
+      if (newWorkingDir) {
+        this.$store.commit("addWorkingDir", newWorkingDir);
+      }
     },
+
     getVariableFromLog(log, varName) {
       try {
         var re = new RegExp(`(${varName}=.*)`, "g");
         const matches = log.match(re);
-        
-        // Check if we found any matches
+
         if (!matches || matches.length === 0) {
           console.warn(`No match found for variable: ${varName}`);
           return null;
         }
-        
+
         let value = matches[0].replace('"', "").split("=")[1];
         return value || null;
       } catch (error) {
@@ -486,69 +608,12 @@ export default {
         return null;
       }
     },
-    createVariableObj(stepIndex, serviceIndex) {
-      let envVariables = [];
-      this.selectedSteps[stepIndex].services[serviceIndex].Inputs.forEach(
-        (input) => {
-          let varObj = {};
-          // For boolfile inputs, only include if they are active
-          if (input.type === "boolfile") {
-            if (input.active === true) {
-              varObj[input.name] = input.value;
-            } else {
-              varObj[input.name] = "undefined";
-            }
-          } else {
-            varObj[input.name] = input.value;
-          }
-          envVariables.push(stringify(varObj).replace(/(\r\n|\n|\r)/gm, ""));
-        }
-      );
-      this.selectedSteps[stepIndex].services[serviceIndex].extraInputs.forEach(
-        (input) => {
-          let varObj = {};
-          // For boolfile inputs, only include if they are active
-          if (input.type === "boolfile") {
-            if (input.active === true) {
-              varObj[input.name] = input.value;
-            } else {
-              varObj[input.name] = "undefined";
-            }
-          } else {
-            varObj[input.name] = input.value;
-          }
-          envVariables.push(stringify(varObj).replace(/(\r\n|\n|\r)/gm, ""));
-        }
-      );
-      let dataInfo = {
-        workingDir: this.$store.state.workingDir,
-        fileFormat: this.$store.state.data.fileFormat,
-        readType: this.$store.state.data.readType,
-        debugger: this.$store.sate.data.debugger,
-        dada2mode: this.$store.state.data.dada2mode,
-        pipeline: this.$store.state.data.pipeline,
-        service: this.$store.state.data.service,
-      };
-      Object.entries(dataInfo).forEach(([key, value]) => {
-        let varObj = {};
-        varObj[key] = value;
-        envVariables.push(stringify(varObj).replace(/(\r\n|\n|\r)/gm, ""));
-      });
-      return envVariables;
-    },
     createCustomVariableObj(element, workflowName) {
       let envVariables = [];
       let nextFlowParams = {};
       let inputs = element.Inputs.concat(element.extraInputs);
 
-      // Honor `extraEnvFromServices: ["..."]` declared on a service: include
-      // Inputs+extraInputs from the listed sibling services in the same workflow.
-      // Used when one container needs settings configured in another panel
-      // (e.g. mergePairs runs inside the denoise step for RAM efficiency, but
-      // its settings live on the "merge Pairs" panel).
       if (Array.isArray(element.extraEnvFromServices)) {
-        // Prefer the workflow name from the runner (runCustomWorkFlow) over the
-        // route alone, so sibling lookup matches the workflow actually executing.
         const resolvedName =
           workflowName || this.$route.params.workflowName;
         const workflow = this.$store.state[resolvedName];
@@ -567,7 +632,6 @@ export default {
 
       inputs.forEach((input) => {
         let varObj = {};
-        // For boolfile inputs, only include if they are active
         if (input.type === "boolfile") {
           if (input.active === true && input.value != "undefined" && input.value != "") {
             if (Array.isArray(input.value)) {
@@ -581,11 +645,9 @@ export default {
             }
             varObj[input.name] = input.value;
           } else {
-            // For inactive boolfile inputs, set to "undefined"
             varObj[input.name] = "undefined";
           }
         } else {
-          // For non-boolfile inputs, process normally
           if (input.value != "undefined" && input.value != "") {
             if (Array.isArray(input.value)) {
               nextFlowParams[input.name] = input.value.join();
@@ -656,95 +718,59 @@ export default {
       });
       return prepareBindMounts(Binds);
     },
-    createBinds(serviceIndex, stepIndex, Input) {
-      const scriptsPath = getServiceScriptsPath();
-      let Binds = [`${scriptsPath}:/scripts`, `${Input}:/input`];
-      let serviceInputs = this.selectedSteps[stepIndex].services[
-        serviceIndex
-      ].Inputs.concat(
-        this.selectedSteps[stepIndex].services[serviceIndex].extraInputs
-      );
-      serviceInputs.forEach((input, index) => {
-        if (
-          input.type == "file" ||
-          (input.type == "boolfile" && input.active == true)
-        ) {
-          let correctedPath = path.dirname(slash(input.value));
-          // let fileName = path.parse(correctedPath).base;
-          if (index == 0) {
-            let bind = `${correctedPath}:/extraFiles`;
-            Binds.push(bind);
-          } else {
-            let bind = `${correctedPath}:/extraFiles${index + 1}`;
-            Binds.push(bind);
-          }
-        }
-      });
-      return prepareBindMounts(Binds);
-    },
     getOptimOTUBinds() {
       const scriptsPath = getServiceScriptsPath();
-      const runsDir = this.$store.state.inputDir; // user-selected folder containing Run*/
+      const runsDir = this.$store.state.inputDir;
       let binds = [
         `${scriptsPath}:/scripts`,
-        // Mount runsDir as sequences root (outputs will be written here)
         `${runsDir}:/optimotu_targets/sequences`,
-        // Mount runsDir again as 01_raw (read-only view for inputs)
         `${runsDir}:/optimotu_targets/sequences/01_raw:rw`,
       ];
 
-      // Process all inputs from OptimOTU workflow
       this.$store.state.OptimOTU.forEach((service) => {
-        // Combine regular and extra inputs
         const allInputs = [...(service.Inputs || []), ...(service.extraInputs || [])];
         allInputs.forEach((input) => {
-          // Handle specific boolfile inputs
           if (input.type === "boolfile" && input.active === true && input.value) {
             const correctedPath = path.dirname(slash(input.value));
 
-            // Handle each boolfile input specifically
             if (input.name === "custom_sample_table") {
               binds.push(`${correctedPath}:/optimotu_targets/custom_sample_tables`);
-              // Note: In your YAML, you'd reference this as /optimotu_targets/data/sample_tables/${fileName}
-            } 
+            }
             else if (input.name === "positive_control") {
               binds.push(`${correctedPath}:/optimotu_targets/positive_control`);
-              // Note: In your YAML, you'd reference this as /optimotu_targets/data/controls/positive/${fileName}
             }
             else if (input.name === "spike_in") {
               binds.push(`${correctedPath}:/optimotu_targets/spike_in`);
-              // Note: In your YAML, you'd reference this as /optimotu_targets/data/controls/spike_in/${fileName}
             }
           }
-          // Special handling for specific inputs
-          if (input.name === "cluster_thresholds" && 
-              input.value !== "Fungi_GSSP" && 
+          if (input.name === "cluster_thresholds" &&
+              input.value !== "Fungi_GSSP" &&
               input.value !== "Metazoa_MBRAVE") {
-              
+
             const correctedPath = path.dirname(slash(input.value));
             binds.push(`${correctedPath}:/optimotu_targets/metadata/custom_thresholds`);
           }
 
-          if (input.name === "model_file" && 
-              input.value !== "ITS3_ITS4.cm" && 
-              input.value !== "f/gITS7_ITS4.cm" && 
+          if (input.name === "model_file" &&
+              input.value !== "ITS3_ITS4.cm" &&
+              input.value !== "f/gITS7_ITS4.cm" &&
               input.value !== "COI.hmm") {
-              
+
             const correctedPath = path.dirname(slash(input.value));
             binds.push(`${correctedPath}:/optimotu_targets/data/custom_models`);
           }
 
-          if (input.name === "with_outgroup" && 
+          if (input.name === "with_outgroup" &&
               input.value !== "UNITE_SHs") {
-              
+
             const correctedPath = path.dirname(slash(input.value));
             binds.push(`${correctedPath}:/optimotu_targets/data/outgroup`);
           }
 
-          if (input.name === "location" && 
-              input.value !== "protaxFungi" && 
+          if (input.name === "location" &&
+              input.value !== "protaxFungi" &&
               input.value !== "protaxAnimal") {
-              
+
             const correctedPath = path.dirname(slash(input.value));
             binds.push(`${correctedPath}:/optimotu_targets/protaxCustom`);
           }
@@ -753,6 +779,26 @@ export default {
       console.log("OptimOTU container binds:", binds);
       return prepareBindMounts(binds);
     },
+    getFunBarONTBinds() {
+      const taxonomyConfig = this.$store.state.FunBarONT[2];
+      const workDir = this.$store.state.inputDir || "";
+      const databaseFile = taxonomyConfig?.Inputs?.find(i => i.name === 'database_file')?.value || "";
+
+      if (!databaseFile) {
+        throw new Error("No database file selected for FunBarONT (database_file).");
+      }
+
+      const scriptDir = getServiceScriptsPath();
+      const configPath = `${scriptDir}/FunBarONTConfig.json`;
+
+      return prepareBindMounts([
+        `${workDir}:/Input:rw`,
+        `${workDir}:/sequences:rw`,
+        `${slash(databaseFile)}:/database/database.fasta:ro`,
+        `${configPath}:/scripts/FunBarONTConfig.json:ro`,
+        `${scriptDir}:/scripts:ro`
+      ]);
+    },
     findSelectedService(i) {
       let result;
       this.selectedSteps[i].services.forEach((input) => {
@@ -760,16 +806,6 @@ export default {
           result = input;
         }
       });
-      return result;
-    },
-    async runStep(envVariables, scriptName, imageName) {
-      var result = await ipcRenderer.sendSync(
-        "runStep",
-        imageName,
-        scriptName,
-        envVariables,
-        this.$store.state.workingDir
-      );
       return result;
     },
     toMinsAndSecs(millis) {
@@ -798,8 +834,7 @@ export default {
       let envVariables = this.createCustomVariableObj(step);
       let Binds = this.getBinds_c(step, this.$store.state.inputDir);
       Binds = prepareBindMounts(Binds.map(b => b.replace(/:\/input(:|$)/, ':/Input$1')));
-      console.log(Math.round(Number(this.$store.state.dockerInfo.NCPU) * 1e9));
-      let dockerProps = {
+      return {
         Tty: false,
         WorkingDir: WorkingDir,
         name: Hostname,
@@ -817,425 +852,46 @@ export default {
           ...envVariables
         ],
       };
-      return dockerProps;
     },
-    async runOptimOTU_dev() {
-      let container = null;
-      let log = null;
-      let startTime = null;
-      console.log(Math.round(Number(this.$store.state.dockerInfo.NCPU)))
-      
-      try {
-        const result = await this.confirmRun('OptimOTU');
-        if (!result.isConfirmed) return;
-        const setup = await this.setupWorkflow('OptimOTU');
-        startTime = setup.startTime;
-        log = setup.log;
-      
-        this.$store.state.runInfo.active = true;
-        this.$store.state.runInfo.containerID = 'optimotu';
-      
-        try {
-          await this.$store.dispatch('generateOptimOTUYamlConfig');
-        } catch (error) {
-          console.error('Failed to generate YAML config:', error);
-          
-          await Swal.fire({
-            title: "Configuration Error",
-            text: error.code === 'ENOENT' || error.code === 'EACCES' 
-              ? "Could not write configuration file. Check file permissions."
-              : "Failed to generate pipeline configuration.",
-            confirmButtonText: "OK",
-            theme: "dark",
-          });
-          
-          this.$store.commit("resetRunInfo");
-          return;
-        }
-        
-        const { container: dockerContainer, stdoutStream, stderrStream } = await this.executeDockerContainer({
-          imageName: 'pipecraft/optimotu:5.1-pc1.2.0',
-          containerName: 'optimotu',
-          command: ['/scripts/run_optimotu_dev.sh'],
-          env: [
-            'R_ENABLE_JIT=0',
-            'R_COMPILE_PKGS=0',
-            'R_DISABLE_BYTECODE=1',
-            'R_KEEP_PKG_SOURCE=yes',
-            'LANG=C.UTF-8',
-            'LC_ALL=C.UTF-8',
-            'LC_CTYPE=C.UTF-8',
-            `HOST_OS=${this.$store.state.systemSpecs.os}`,
-            `HOST_ARCH=${this.$store.state.systemSpecs.architecture}`,
-            `rawFilesDir=${path.basename(this.$store.state.inputDir)}`,
-            'R_CLI_NUM_COLORS=0',
-            'R_CLI_NO_COLORS=true',
-            'NO_COLOR=1'
-          ],
-          binds: this.getOptimOTUBinds(),
-          memory: this.$store.state.dockerInfo.MemTotal,
-          cpuCount: Math.round(this.$store.state.dockerInfo.NCPU),
-          userId: this.userId,
-          groupId: this.groupId
-        });
-      
-        container = dockerContainer;
-
-        // Start log capture but don't block on it yet
-        const logPromise = this.handleDemuxedStreams(stdoutStream, stderrStream, log);
-
-        // Wait for the container process to finish (authoritative)
-        const data = await container.wait();
-
-        // Ensure streams are closed so logPromise can resolve
-        try { stdoutStream.end(); } catch (err) { console.debug('stdoutStream.end failed (likely closed):', err && err.message ? err.message : err); }
-        try { stderrStream.end(); } catch (err) { console.debug('stderrStream.end failed (likely closed):', err && err.message ? err.message : err); }
-
-        // Drain any remaining logs with a timeout safeguard
-        let stdout = '';
-        let stderr = '';
-        try {
-          const res = await this.waitWithTimeout(logPromise, 2000);
-          stdout = res.stdout || '';
-          stderr = res.stderr || '';
-        } catch (err) {
-          console.debug('log drain timeout or error:', err && err.message ? err.message : err);
-        }
-        await this.cleanupWorkflow(container, log, startTime);
-        if (data.StatusCode === 0) {
-          await Swal.fire({
-            title: "Workflow finished",
-            theme: "dark",
-          });
-        } else {
-          await this.handleDockerError({ 
-            message: stderr || stdout || 'Unknown error',
-            StatusCode: data.StatusCode 
-          }, log, container, startTime);
-        }
-      
-      } catch (error) {
-        await this.handleDockerError(error, log, container, startTime);
-      }
-    },
-
-    async runOptimOTU() {
-      this.confirmRun('OptimOTU').then(async (result) => {
-        if (result.isConfirmed) {
-          console.log(this.$route.params.workflowName);
-          this.autoSaveConfig();
-          this.$store.state.runInfo.active = true;
-          this.$store.state.runInfo.containerID = 'optimotu';
-          await this.$store.dispatch('generateOptimOTUYamlConfig');
-          await this.$store.dispatch('imageCheck', 'pipecraft/optimotu:5.1-pc1.2.0');
-          await this.$store.dispatch('clearContainerConflicts', 'optimotu');
-          try {            
-            const container = await this.$docker.createContainer({
-              Image: 'pipecraft/optimotu:5.1-pc1.2.0',
-              name: 'optimotu',
-              Cmd: ['/scripts/run_optimotu.sh'],
-              Tty: true,
-              OpenStdin: false,
-              StdinOnce: false,
-              AttachStdout: true,
-              AttachStderr: true,
-              Platform: "linux/amd64",
-              User: getContainerUser(this.userId, this.groupId),
-              Env: [
-                `HOST_UID=${this.userId}`,
-                `HOST_GID=${this.groupId}`,
-                `HOST_OS=${this.$store.state.systemSpecs.os}`,
-                `HOST_ARCH=${this.$store.state.systemSpecs.architecture}`,
-                `fileFormat=${this.$store.state.data.fileFormat}`,
-                `readType=${this.$store.state.data.readType}`,
-              ],
-              HostConfig: applyEngineHostConfig({
-                Binds: this.getOptimOTUBinds(),
-                Memory: this.$store.state.dockerInfo.MemTotal,
-                NanoCpus: Math.round(Number(this.$store.state.dockerInfo.NCPU) * 1e9)
-              })
-            });
-    
-            const stream = await container.attach({
-              stream: true,
-              stdout: true,
-              stderr: true,
-            });
-    
-            stream.on('data', (data) => {
-              console.log(data.toString());
-            });
-            
-            await container.start();
-    
-            const data = await container.wait();
-            console.log('Container exited with status code:', data.StatusCode);
-            this.$store.commit("resetRunInfo");
-
-            if (data.StatusCode == 0) {
-              Swal.fire("Workflow finished");
-            } else {
-              Swal.fire({
-                title: "An error has occured while processing your data",
-                text: "Check the log file for more information",
-                confirmButtonText: "Quit",
-              });
-            }
-            await container.remove({ v: true, force: true });
-          } catch (err) {
-            console.error('Error running container:', err);
-            this.$store.commit("resetRunInfo");
-            
-            // Check if the error is due to the user stopping the container
-            if (err.message && err.message.includes('HTTP code 404')) {
-              Swal.fire({
-                title: "Workflow stopped",
-                confirmButtonText: "Quit",
-              });
-            } else {
-              Swal.fire({
-                title: "An error has occurred while processing your data",
-                text: err.toString(),
-                confirmButtonText: "Quit",
-              });
-            }
-          } 
-        }
-      });
-    },
-    async generateAndSaveYaml() {
-      try {
-        const yamlString = await this.$store.dispatch('generateOptimOTUYamlConfig');
-        console.log('Generated YAML:', yamlString);
-        console.log('YAML configuration generated successfully');
-        // Maybe show a success message to the user
-      } catch (error) {
-        console.error('Error generating YAML configuration:', error);
-        // Handle the error, maybe show an error message to the user
-      }
-    },
-    async runNextITS() {
-      this.autoSaveConfig();
-      var writeLog = this.$store.state.data.debugger;
-      this.confirmRun("NextITS").then(async (result) => {
-        if (result.isConfirmed) {
-          this.$store.state.runInfo.active = true;
-          this.$store.state.runInfo.containerID = "Step_1";
-          let log;
-          if (this.$store.state.data.debugger == true) {
-            log = fs.createWriteStream("NextITS_log.txt");
-          }
-          let stdout = new WritableStream();
-          let step = cloneDeep(this.$store.state.NextITS[0]);
-          step.Inputs = step.Inputs.concat(this.$store.state.NextITS[1].Inputs);
-          step.extraInputs = step.extraInputs.concat(
-            this.$store.state.NextITS[1].extraInputs
-          );
-          let props = this.createParamsFile(step);
-          console.log(props);
-          await this.$store.dispatch('clearContainerConflicts', "Step_1");
-          await this.$store.dispatch('clearContainerConflicts', "Step_2");
-          await this.$store.dispatch('imageCheck', "pipecraft/nextits:1.1.0-pc1.2.0");
-          const escChar = String.fromCharCode(27);
-          const ansiEscapePattern = new RegExp(
-            `${escChar}\\[[0-9;]*[A-Za-z]`,
-            "g"
-          );
-          const stripControlChars = (text) => {
-            let result = "";
-            for (let i = 0; i < text.length; i += 1) {
-              const code = text.charCodeAt(i);
-              if (code === 9 || code === 10) {
-                result += text[i];
-              } else if (code >= 32 && code !== 127) {
-                result += text[i];
-              }
-            }
-            return result;
-          };
-          const sanitizeLogChunk = (chunk) =>
-            stripControlChars(
-              chunk
-                // Strip ANSI escape sequences
-                .replace(ansiEscapePattern, "")
-                // Remove block drawing chars used in Nextflow banners
-                .replace(/[\u2580-\u259F]/g, "")
-                // Drop carriage returns to avoid messy inline updates
-                .replace(/\r/g, "")
-            );
-
-          let promise = new Promise((resolve, reject) => {
-            this.$docker
-              .run(
-                "pipecraft/nextits:1.1.0-pc1.2.0",
-                ["bash", "-c", `bash /scripts/NextITS_Pipeline.sh`],
-                false,
-                props,
-                (err, data, container) => {
-                  console.log(container);
-                  console.log(data);
-                  console.log(stdout.toString());
-                  if (err) {
-                    console.log(err);
-                    reject(err);
-                  } else {
-                    resolve(data);
-                  }
-                }
-              )
-
-              .on("stream", (stream) => {
-                stream.on("data", function (data) {
-                  const cleaned = sanitizeLogChunk(data.toString());
-                  console.log(cleaned);
-                  if (writeLog == true) {
-                    log.write(cleaned);
-                  }
-                  // term.write(data.toString().replace(/[\n\r]/g, "") + "\n");
-                  stdout.write(cleaned);
-                });
-              });
-          });
-          let result = await promise;
-          console.log(result);
-          this.$store.commit("resetRunInfo");
-          if (result.StatusCode == 0) {
-            Swal.fire({
-              title: "Workflow finished",
-              theme: "dark",
-            });
-          } else {
-            Swal.fire({
-              title: "An error has occured while processing your data",
-              text: "unknown error, check result/pipeline_info/execution_report for more info",
-              confirmButtonText: "Quit",
-              theme: "dark",
-            });
+    sanitizeNextITSLog(chunk) {
+      const escChar = String.fromCharCode(27);
+      const ansiEscapePattern = new RegExp(
+        `${escChar}\\[[0-9;]*[A-Za-z]`,
+        "g"
+      );
+      const stripControlChars = (text) => {
+        let result = "";
+        for (let i = 0; i < text.length; i += 1) {
+          const code = text.charCodeAt(i);
+          if (code === 9 || code === 10) {
+            result += text[i];
+          } else if (code >= 32 && code !== 127) {
+            result += text[i];
           }
         }
-      });
-    },
-    handleStartClick() {
-      const { workflowName } = this.$route.params;
-      
-      if (!workflowName) {
-        return this.runWorkFlow();
-      }
-
-      if (workflowName.includes('NextITS')) {
-        return this.runNextITS();
-      }
-
-      if (workflowName.includes('OptimOTU')) {
-        return this.runOptimOTU_dev();
-      }
-
-      if (workflowName.includes('FunBarONT')) {
-        return this.runFunBarONT();
-      }
-
-      return this.runCustomWorkFlow(workflowName);
-    },
-    // Common setup for all workflows
-    async setupWorkflow(name) {
-      this.$store.commit("addWorkingDir", "/input");
-      const startTime = Date.now();
-      this.autoSaveConfig();
-      
-      let log = null;
-      if (this.$store.state.data.debugger) {
-        log = fs.createWriteStream(
-          `${this.$store.state.inputDir}/Pipecraft_${name}_${new Date().toJSON().slice(0, 10)}.txt`
-        );
-      }
-      
-      return { startTime, log };
-    },
-
-    // Common Docker execution
-    async executeDockerContainer(config) {
-      const {
-        imageName,
-        containerName,
-        command,
-        env,
-        binds,
-        memory,
-        cpuCount,
-        userId,
-        groupId
-      } = config;
-
-      // Check image and clear conflicts
-      await this.$store.dispatch('imageCheck', imageName);
-      await this.$store.dispatch('clearContainerConflicts', containerName);
-
-      // Create container
-      const container = await this.$docker.createContainer({
-        Image: imageName,
-        name: containerName,
-        Cmd: command,
-        Tty: false,
-        AttachStdout: true,
-        AttachStderr: true,
-        Platform: "linux/amd64",
-        Env: [
-          `HOST_UID=${userId}`,
-          `HOST_GID=${groupId}`,
-          `fileFormat=${this.$store.state.data.fileFormat}`,
-          `readType=${this.$store.state.data.readType}`,
-          ...env
-        ],
-        HostConfig: applyEngineHostConfig({
-          Binds: prepareBindMounts(binds),
-          Memory: memory,
-          NanoCpus: cpuCount * 1e9,
-        }),
-        User: getContainerUser(userId, groupId),
-      });
-
-      // Attach to container (multiplexed stream)
-      const attachStream = await container.attach({
-        stream: true,
-        stdout: true,
-        stderr: true,
-      });
-
-      // Demux stdout/stderr into separate streams
-      const stdoutStream = new PassThrough();
-      const stderrStream = new PassThrough();
-      // dockerode exposes modem for demuxing multiplexed streams
-      // In TTY=false mode, attach() returns multiplexed stream
-      container.modem.demuxStream(attachStream, stdoutStream, stderrStream);
-
-      // Propagate end/close so readers resolve
-      const endStreams = () => {
-        try { stdoutStream.end(); } catch (err) { console.debug('stdoutStream.end on attach close failed:', err && err.message ? err.message : err); }
-        try { stderrStream.end(); } catch (err) { console.debug('stderrStream.end on attach close failed:', err && err.message ? err.message : err); }
+        return result;
       };
-      attachStream.on('end', endStreams);
-      attachStream.on('close', endStreams);
-
-      // Start container
-      await container.start();
-      
-      return { container, stdoutStream, stderrStream };
+      return stripControlChars(
+        chunk
+          .replace(ansiEscapePattern, "")
+          .replace(/[\u2580-\u259F]/g, "")
+          .replace(/\r/g, "")
+      );
     },
-
-    // Properly handle demuxed stdout/stderr streams
-    handleDemuxedStreams(stdoutStream, stderrStream, log) {
+    handleDemuxedStreams(stdoutStream, stderrStream, log, sanitizeChunk) {
       return new Promise((resolve) => {
         let stdout = '';
         let stderr = '';
+        const clean = (text) => (sanitizeChunk ? sanitizeChunk(text) : text);
 
         const onStdout = (data) => {
-          const text = data.toString();
+          const text = clean(data.toString());
           console.log(text);
           stdout += text;
           if (log) log.write(text);
         };
         const onStderr = (data) => {
-          const text = data.toString();
+          const text = clean(data.toString());
           console.log(text);
           stderr += text;
           if (log) log.write(text);
@@ -1257,12 +913,6 @@ export default {
       });
     },
 
-    // Build a focused error message from Nextflow/Docker output.
-    // - Drops the benign "Nextflow X is available" update notice so it can never
-    //   mask the real failure.
-    // - When a Nextflow error block is present, surfaces that instead of an
-    //   arbitrary stream (stderr often only holds noise while the real
-    //   "ERROR ~ ..." block is on stdout).
     extractPipelineError(stdout = '', stderr = '') {
       const combined = `${stdout || ''}\n${stderr || ''}`;
       const cleaned = combined
@@ -1270,13 +920,11 @@ export default {
         .filter((line) => !/Nextflow\s+\S+\s+is available - Please consider updating/i.test(line))
         .join('\n');
 
-      // Prefer the Nextflow error block when we can locate it.
       const match = cleaned.match(/(ERROR ~[\s\S]*|[^\n]*input file name collision[\s\S]*|Caused by:[\s\S]*)/);
       const focused = (match ? match[0] : cleaned).trim();
       return focused || 'Unknown error';
     },
 
-    // Utility: await a promise with timeout
     waitWithTimeout(promise, ms) {
       return new Promise((resolve, reject) => {
         const t = setTimeout(() => reject(new Error('timeout')), ms);
@@ -1285,12 +933,10 @@ export default {
       });
     },
 
-    // Common error handling
-    async handleDockerError(error, log, container = null, startTime = null) {
+    async handleDockerError(error, log) {
       const statusCode = error?.StatusCode ?? null;
       const message = error?.message || '';
 
-      // Prefer info logs for expected stop scenarios
       const isGracefulStop =
         statusCode === 137 ||
         message.includes('HTTP code 404') ||
@@ -1305,7 +951,6 @@ export default {
 
       const readable = toReadable(error);
 
-      // Log
       if (isGracefulStop) {
         console.info('Docker stop detected:', readable);
       } else {
@@ -1315,186 +960,38 @@ export default {
         log.write(`Error: ${readable}\n`);
       }
 
-      // UX
       if (isGracefulStop) {
         await Swal.fire({
           title: "Workflow stopped",
           theme: "dark",
         });
-      } else {
-        // Try to append tail of pipeline log for more context
-        let extra = '';
-        try {
-          const dataDir = path.dirname(this.$store.state.inputDir);
-          const logPath = path.join(dataDir, 'optimotu_targets.log');
-          const content = await fs.promises.readFile(logPath, 'utf8');
-          const lines = content.split(/\r?\n/);
-          const tail = lines.slice(-50).join('\n');
-          extra = tail.trim();
-        } catch (_) {
-          // ignore if log not available
-        }
-
-        const summary = extra && (!readable || readable === 'Unknown error')
-          ? extra
-          : (extra ? `${readable}\n\n--- Last log lines ---\n${extra}` : readable);
-
-        const esc = (s) => s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
-
-        await Swal.fire({
-          title: "An error has occurred while processing your data",
-          html: `<pre style="text-align:left;white-space:pre-wrap;max-height:50vh;overflow:auto">${esc(summary)}</pre>`,
-          confirmButtonText: "OK",
-          theme: "dark",
-          width: 900
-        });
+        return;
       }
 
-      // Always attempt cleanup even on error
-      if (container || startTime) {
-        await this.cleanupWorkflow(container, log, startTime);
-      }
-    },
-
-    // Common cleanup (idempotent)
-    async cleanupWorkflow(container, log, startTime) {
-      if (container) {
-        // Try to stop first (ignore if already stopped/removed)
-        try {
-          await container.stop({ t: 5 });
-        } catch (err) {
-          // Ignore common non-fatal stop errors
-          const msg = err?.message || '';
-          if (!(msg.includes('HTTP code 304') || msg.includes('HTTP code 404') || msg.includes('is already in progress'))) {
-            console.warn('Non-fatal stop error:', err);
-          }
-        }
-
-        // Then remove (ignore if already removed or removing)
-        try {
-          await container.remove({ v: true, force: true });
-        } catch (err) {
-          const msg = err?.message || '';
-          if (!(msg.includes('HTTP code 404') || msg.includes('HTTP code 409'))) {
-            console.warn('Non-fatal remove error:', err);
-          }
-        }
-      }
-      if (log) {
-        log.end();
-      }
-      this.$store.commit("addWorkingDir", "/input");
-      this.$store.commit("resetRunInfo");
-      
-      if (startTime) {
-        const totalTime = this.toMinsAndSecs(Date.now() - startTime);
-        console.log(`Total execution time: ${totalTime}`);
-      }
-    },
-    async runFunBarONT() {
-      let container = null;
-      let log = null;
-      let startTime = null;
-
+      let extra = '';
       try {
-        const result = await this.confirmRun('FunBarONT');
-        if (!result.isConfirmed) return;
-
-        const setup = await this.setupWorkflow('FunBarONT');
-        startTime = setup.startTime;
-        log = setup.log;
-
-        this.$store.state.runInfo.active = true;
-        this.$store.state.runInfo.containerID = 'funbaront';
-
-        try {
-          await this.$store.dispatch('generateFunBarONTConfig');
-        } catch (error) {
-          console.error('Failed to generate FunBarONT config:', error);
-
-          await Swal.fire({
-            title: "Configuration Error",
-            text: error.code === 'ENOENT' || error.code === 'EACCES'
-              ? "Could not write configuration file. Check file permissions."
-              : "Failed to generate pipeline configuration.",
-            confirmButtonText: "OK",
-            theme: "dark",
-          });
-
-          await this.cleanupWorkflow(container, log, startTime);
-          return;
-        }
-
-        const { container: dockerContainer, stdoutStream, stderrStream } = await this.executeDockerContainer({
-          imageName: 'pipecraft/funbaront:1-pc1.2.0',
-          containerName: 'funbaront',
-          command: ['/bin/bash', '-c', 'bash /scripts/submodules/FunBarONT_Pipeline.sh'],
-          env: [
-            `HOST_OS=${this.$store.state.systemSpecs.os}`,
-            `HOST_ARCH=${this.$store.state.systemSpecs.architecture}`,
-            `rawFilesDir=${path.basename(this.$store.state.inputDir)}`
-          ],
-          binds: this.getFunBarONTBinds(),
-          memory: this.$store.state.dockerInfo.MemTotal,
-          cpuCount: Math.round(this.$store.state.dockerInfo.NCPU),
-          userId: this.userId,
-          groupId: this.groupId
-        });
-
-        container = dockerContainer;
-
-        const logPromise = this.handleDemuxedStreams(stdoutStream, stderrStream, log);
-        const data = await container.wait();
-
-        try { stdoutStream.end(); } catch (err) { console.debug('stdoutStream.end failed (likely closed):', err && err.message ? err.message : err); }
-        try { stderrStream.end(); } catch (err) { console.debug('stderrStream.end failed (likely closed):', err && err.message ? err.message : err); }
-
-        let stdout = '';
-        let stderr = '';
-        try {
-          const res = await this.waitWithTimeout(logPromise, 2000);
-          stdout = res.stdout || '';
-          stderr = res.stderr || '';
-        } catch (err) {
-          console.debug('log drain timeout or error:', err && err.message ? err.message : err);
-        }
-
-        await this.cleanupWorkflow(container, log, startTime);
-        if (data.StatusCode === 0) {
-          await Swal.fire({
-            title: "FunBarONT pipeline finished successfully",
-            text: "Results are in your sequences directory",
-            theme: "dark",
-          });
-        } else {
-          await this.handleDockerError({
-            message: this.extractPipelineError(stdout, stderr),
-            StatusCode: data.StatusCode
-          }, log, container, startTime);
-        }
-      } catch (error) {
-        await this.handleDockerError(error, log, container, startTime);
-      }
-    },
-    getFunBarONTBinds() {
-      const taxonomyConfig = this.$store.state.FunBarONT[2];
-      const workDir = this.$store.state.inputDir || "";
-      const databaseFile = taxonomyConfig?.Inputs?.find(i => i.name === 'database_file')?.value || "";
-
-      if (!databaseFile) {
-        throw new Error("No database file selected for FunBarONT (database_file).");
+        const dataDir = path.dirname(this.$store.state.inputDir);
+        const logPath = path.join(dataDir, 'optimotu_targets.log');
+        const content = await fs.promises.readFile(logPath, 'utf8');
+        const lines = content.split(/\r?\n/);
+        extra = lines.slice(-50).join('\n').trim();
+      } catch (_) {
+        // ignore if log not available
       }
 
-      const scriptDir = getServiceScriptsPath();
-      const configPath = `${scriptDir}/FunBarONTConfig.json`;
+      const summary = extra && (!readable || readable === 'Unknown error')
+        ? extra
+        : (extra ? `${readable}\n\n--- Last log lines ---\n${extra}` : readable);
 
-      return prepareBindMounts([
-        `${workDir}:/Input:rw`,
-        `${workDir}:/sequences:rw`,
-        `${slash(databaseFile)}:/database/database.fasta:ro`,
-        `${configPath}:/scripts/FunBarONTConfig.json:ro`,
-        `${scriptDir}:/scripts:ro`
-      ]);
+      const esc = (s) => s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+
+      await Swal.fire({
+        title: "An error has occurred while processing your data",
+        html: `<pre style="text-align:left;white-space:pre-wrap;max-height:50vh;overflow:auto">${esc(summary)}</pre>`,
+        confirmButtonText: "OK",
+        theme: "dark",
+        width: 900
+      });
     },
   },
 };
