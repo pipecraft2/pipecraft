@@ -111,7 +111,7 @@ export default new Vuex.Store({
     steps: [
       {
         stepName: "demultiplex",
-        disabled: "demultiplexed",
+        disabled: "never",
         services: [
           {
             tooltip:
@@ -6650,32 +6650,6 @@ export default new Vuex.Store({
         if (payload == "single_end") {
           state.selectedSteps = state.selectedSteps.filter(
             (item) => !(item.stepName == "assemble paired-end")
-          );
-        }
-      }
-    },
-    toggle_demux_mux(state, payload) {
-      for (const [key] of Object.entries(state.customWorkflowInfo)) {
-        for (let i = 0; i < state[key].length; i++) {
-          if (
-            payload == "demultiplexed" &&
-            state[key][i].disabled == "demultiplexed"
-          ) {
-            console.log(state[key][i].disabled);
-            state[key][i].selected = false;
-          }
-          if (
-            payload == "multiplexed" &&
-            state[key][i].disabled == "demultiplexed"
-          ) {
-            state[key][i].selected = true;
-          }
-        }
-      }
-      for (let i = 0; i < state.selectedSteps.length; i++) {
-        if (payload == "demultiplexed") {
-          state.selectedSteps = state.selectedSteps.filter(
-            (item) => !(item.stepName == "demultiplex")
           );
         }
       }

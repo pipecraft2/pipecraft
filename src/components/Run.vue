@@ -570,19 +570,18 @@ export default {
       const newWorkingDir = this.getVariableFromLog(stdout, "workingDir");
       const newDataInfo = {
         fileFormat: this.getVariableFromLog(stdout, "fileFormat"),
-        readType: this.getVariableFromLog(stdout, "readType"),
         output_fasta: this.getVariableFromLog(stdout, "output_fasta"),
         output_feature_table: this.getVariableFromLog(
           stdout,
           "output_feature_table"
         ),
       };
-      if (newDataInfo.readType) {
-        this.$store.commit("toggle_PE_SE_scripts", newDataInfo.readType);
-      }
+      // Keep data.readType as the workdir choice. Merge/assemble logs
+      // print readType=single_end; applying that mid-run would hide the
+      // merge step and rewrite PE/SE script names for every workflow.
       this.$store.commit("addInputInfo", {
         fileFormat: newDataInfo.fileFormat || this.$store.state.data.fileFormat,
-        readType: newDataInfo.readType || this.$store.state.data.readType,
+        readType: this.$store.state.data.readType,
         output_fasta: newDataInfo.output_fasta,
         output_feature_table: newDataInfo.output_feature_table,
       });
