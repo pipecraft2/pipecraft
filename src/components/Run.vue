@@ -44,7 +44,13 @@ import { mapState, mapGetters } from "vuex";
 import { stringify } from "envfile";
 import cloneDeep from 'lodash/cloneDeep';
 import { getServiceScriptsPath } from "../utils/scriptsPath";
-import { getContainerUser, prepareBindMounts, applyEngineHostConfig } from "../utils/containerRuntime";
+import {
+  getContainerUser,
+  prepareBindMounts,
+  applyEngineHostConfig,
+  hostPathsFromBinds,
+  reclaimBindMountOwnership,
+} from "../utils/containerRuntime";
 
 export default {
   name: "Run",
@@ -204,6 +210,7 @@ export default {
         workingDir,
         log,
         sanitizeChunk,
+        runAsRoot = false,
       } = spec;
 
       await this.$store.dispatch("imageCheck", imageName);
@@ -231,7 +238,9 @@ export default {
           Memory: memory,
           NanoCpus: nanoCpus,
         }),
-        User: getContainerUser(this.userId, this.groupId),
+        // OptimOTU (and similar) need root inside the image FS; scripts chown
+        // bind mounts back to HOST_UID. Podman is always 0:0 via getContainerUser.
+        User: getContainerUser(this.userId, this.groupId, { asRoot: runAsRoot }),
       };
       if (workingDir) {
         createConfig.WorkingDir = workingDir;
@@ -292,6 +301,13 @@ export default {
               console.warn("Non-fatal remove error:", err);
             }
           }
+        }
+        // Rootless Podman: if the process ran as a non-0 UID, bind mounts land
+        // in the subordinate range (lock icon). Reclaim as the host user.
+        try {
+          await reclaimBindMountOwnership(hostPathsFromBinds(binds));
+        } catch (err) {
+          console.warn("Ownership reclaim failed:", err && err.message);
         }
       }
     },
@@ -462,9 +478,11 @@ export default {
             await this.$store.dispatch("generateOptimOTUYamlConfig");
           },
           buildSpec: () => ({
-            imageName: "pipecraft/optimotu:5.1-pc1.2.0",
+            imageName: "pipecraft/optimotu:5.1",
             containerName: "optimotu",
             command: ["/scripts/run_optimotu_dev.sh"],
+            // Docker: write into root-owned /optimotu_targets; script chowns sequences.
+            runAsRoot: true,
             env: [
               "R_ENABLE_JIT=0",
               "R_COMPILE_PKGS=0",
@@ -715,7 +733,7 @@ export default {
           }
         }
       });
-      return prepareBindMounts(Binds);
+      return Binds;
     },
     getOptimOTUBinds() {
       const scriptsPath = getServiceScriptsPath();
@@ -776,7 +794,7 @@ export default {
         });
       });
       console.log("OptimOTU container binds:", binds);
-      return prepareBindMounts(binds);
+      return binds;
     },
     getFunBarONTBinds() {
       const taxonomyConfig = this.$store.state.FunBarONT[2];
@@ -790,13 +808,13 @@ export default {
       const scriptDir = getServiceScriptsPath();
       const configPath = `${scriptDir}/FunBarONTConfig.json`;
 
-      return prepareBindMounts([
+      return [
         `${workDir}:/Input:rw`,
         `${workDir}:/sequences:rw`,
         `${slash(databaseFile)}:/database/database.fasta:ro`,
         `${configPath}:/scripts/FunBarONTConfig.json:ro`,
         `${scriptDir}:/scripts:ro`
-      ]);
+      ];
     },
     findSelectedService(i) {
       let result;

@@ -1034,6 +1034,11 @@ function lastSegmentIsMountOptions(segment) {
   if (segment.startsWith("/") || segment.startsWith("\\")) {
     return false;
   }
+  // SELinux relabel flags are a single letter; must not be treated as a drive letter.
+  if (/^[zZ]$/.test(segment)) {
+    return true;
+  }
+  // Reject other single letters (e.g. stray Windows drive-letter fragments).
   if (/^[A-Za-z]$/.test(segment)) {
     return false;
   }
@@ -1222,22 +1227,96 @@ function shouldDisableWindowsPodmanNetwork() {
 
 /**
  * Which user the container process should run as.
- * Podman rootless / Win / mac usually need 0:0 so bind mounts are writable.
+ *
+ * Podman must run as 0:0:
+ * - rootless: container UID 0 maps to the host user, so bind-mount writes are
+ *   owned by you. Using hostUid:hostGid (e.g. 1000:1000) maps through the
+ *   subordinate range and locks files as 100xxx on the host.
+ * - rootful / Win / mac: 0:0 is writable; scripts chown via HOST_UID when needed.
+ *
+ * Docker normally runs as hostUid:hostGid so bind-mount outputs are already
+ * owned by the user. Pass { asRoot: true } for images that must write into
+ * root-owned paths inside the image (e.g. OptimOTU → /optimotu_targets). Those
+ * scripts must chown bind mounts via HOST_UID afterward.
+ *
+ * Also honor the saved preference when cachedRuntime is briefly unset so we
+ * never fall through to hostUid:hostGid under Podman by accident.
  */
-function getContainerUser(hostUid, hostGid) {
+function getContainerUser(hostUid, hostGid, options = {}) {
   const runtime = cachedRuntime || null;
-  if (runtime?.engine === "podman") {
-    if (process.platform === "linux" && runtime.rootless) {
-      return "0:0";
-    }
-    if (process.platform === "win32" || process.platform === "darwin") {
-      return "0:0";
-    }
+  const engine = runtime?.engine || readRuntimePreference();
+  if (engine === "podman" || options.asRoot) {
+    return "0:0";
   }
   if (hostUid == null || hostGid == null) {
     return undefined;
   }
   return `${hostUid}:${hostGid}`;
+}
+
+/**
+ * After a rootless Podman run, reclaim bind-mount files that were written as a
+ * subordinate UID (lock icon in the file manager). Inside `podman unshare`,
+ * UID 0 is the host user — chown to 0:0 remaps ownership back to you.
+ * No-op for Docker / rootful / non-Linux / missing paths.
+ */
+async function reclaimBindMountOwnership(hostPaths) {
+  if (process.platform === "win32") {
+    return;
+  }
+
+  let runtime = cachedRuntime;
+  let engine = runtime?.engine || readRuntimePreference();
+  if (!runtime && engine !== "docker") {
+    runtime = tryResolvePodman();
+    if (runtime) {
+      engine = "podman";
+    }
+  }
+  if (engine !== "podman") {
+    return;
+  }
+  if (runtime && runtime.rootless === false) {
+    return;
+  }
+
+  const paths = [...new Set((hostPaths || []).filter(Boolean))].filter((p) => {
+    try {
+      return fs.existsSync(p);
+    } catch {
+      return false;
+    }
+  });
+  if (!paths.length) {
+    return;
+  }
+
+  const podmanBin = runtime?.binaryPath || findExecutable("podman");
+  if (!podmanBin) {
+    return;
+  }
+
+  try {
+    await runCli(podmanBin, ["unshare", "chown", "-R", "0:0", ...paths], CLI_TIMEOUT_MS * 4);
+  } catch (error) {
+    console.warn(
+      "Could not reclaim bind-mount ownership via podman unshare:",
+      error?.message || error
+    );
+  }
+}
+
+/** Host paths from dockerode-style "host:container[:opts]" bind specs. */
+function hostPathsFromBinds(binds) {
+  if (!Array.isArray(binds)) {
+    return [];
+  }
+  return binds
+    .map((bind) => {
+      const parsed = parseBindSpec(bind);
+      return parsed?.host || null;
+    })
+    .filter(Boolean);
 }
 
 function engineDisplayName(engine) {
@@ -1369,6 +1448,7 @@ module.exports = {
   getContainerUser,
   getDockerodeOptionsFromContextSync,
   getResolvedDockerodeOptions,
+  hostPathsFromBinds,
   identifyEngineFromVersion,
   inspectAvailableRuntimes,
   listRuntimeCandidates,
@@ -1377,6 +1457,7 @@ module.exports = {
   persistRuntimePreference,
   prepareBindMounts,
   readRuntimePreference,
+  reclaimBindMountOwnership,
   resolveContainerRuntimeSync,
   setCachedRuntime,
   setRuntimePreference,

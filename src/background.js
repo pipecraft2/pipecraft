@@ -12,10 +12,107 @@ autoUpdater.logger = require("electron-log");
 autoUpdater.logger.transports.file.level = "info";
 autoUpdater.autoDownload = false;
 var win;
-const createDesktopShortcut = require("create-desktop-shortcuts");
 const fs = require("fs");
+const os = require("os");
+const { execFileSync } = require("child_process");
 const sudo = require('sudo-prompt');
 const { getServiceScriptsPath } = require("./utils/scriptsPath");
+
+// AppImage chrome-sandbox cannot be root+setuid on a FUSE mount, and Ubuntu
+// 24.04+ often blocks the unprivileged userns fallback. Disable Chromium's
+// sandbox on Linux so the app starts without ELECTRON_DISABLE_SANDBOX=1.
+// Must run before app is ready.
+if (process.platform === "linux") {
+  app.commandLine.appendSwitch("no-sandbox");
+}
+
+const APPIMAGE_ICON_NAME = "pipecraft";
+
+/**
+ * Install XDG menu + Desktop launchers with a durable icon under ~/.local.
+ * Re-runs on every AppImage start so relocating the file updates Exec=.
+ * (Stock file managers still show a generic icon on the .AppImage itself.)
+ */
+function installAppImageDesktopIntegration() {
+  if (process.platform !== "linux" || !process.env.APPIMAGE) {
+    return;
+  }
+
+  const appImagePath = process.env.APPIMAGE;
+  const home = os.homedir();
+  const iconSrcCandidates = [
+    path.join(process.resourcesPath, "src", "pipecraft-core", "icon32x32.png"),
+    path.join(process.resourcesPath, "build", "icons", "icon.png"),
+  ];
+  const iconSrc = iconSrcCandidates.find((p) => fs.existsSync(p));
+  if (!iconSrc) {
+    log.warn("AppImage desktop integration: no icon found in resources");
+    return;
+  }
+
+  const iconsDir = path.join(
+    home,
+    ".local",
+    "share",
+    "icons",
+    "hicolor",
+    "512x512",
+    "apps"
+  );
+  const appsDir = path.join(home, ".local", "share", "applications");
+  const desktopDir = path.join(home, "Desktop");
+  const iconDest = path.join(iconsDir, `${APPIMAGE_ICON_NAME}.png`);
+
+  fs.mkdirSync(iconsDir, { recursive: true });
+  fs.mkdirSync(appsDir, { recursive: true });
+  fs.copyFileSync(iconSrc, iconDest);
+
+  const desktopEntry = [
+    "[Desktop Entry]",
+    "Type=Application",
+    "Name=PipeCraft2",
+    "Comment=Software for metabarcoding data analysis",
+    `Exec="${appImagePath}" --no-sandbox %U`,
+    `Icon=${APPIMAGE_ICON_NAME}`,
+    "Terminal=false",
+    "Categories=Science;Biology;Bioinformatics;",
+    "StartupWMClass=pipecraft",
+    "StartupNotify=true",
+    "",
+  ].join("\n");
+
+  const writeLauncher = (filePath, markTrusted) => {
+    fs.writeFileSync(filePath, desktopEntry, { mode: 0o755 });
+    if (!markTrusted) {
+      return;
+    }
+    try {
+      execFileSync("gio", ["set", filePath, "metadata::trusted", "true"], {
+        stdio: "ignore",
+      });
+    } catch (err) {
+      log.debug("Could not mark desktop launcher trusted:", err && err.message);
+    }
+  };
+
+  writeLauncher(path.join(appsDir, "pipecraft.desktop"), false);
+
+  if (fs.existsSync(desktopDir)) {
+    writeLauncher(path.join(desktopDir, "PipeCraft2.desktop"), true);
+  }
+
+  try {
+    execFileSync(
+      "gtk-update-icon-cache",
+      ["-f", "-t", path.join(home, ".local", "share", "icons", "hicolor")],
+      { stdio: "ignore" }
+    );
+  } catch {
+    // Optional; missing cache tool is fine.
+  }
+
+  log.info("AppImage desktop integration installed (menu + Desktop shortcut)");
+}
 
 function sendToRenderer(channel, payload) {
   if (win && !win.isDestroyed()) {
@@ -170,30 +267,19 @@ app.on("ready", async () => {
     );
   }
   createWindow();
-  session.defaultSession.loadExtension(path.join(__dirname, '..', 'devtools5'));
-  if (process.env.APPIMAGE && !process.env.WEBPACK_DEV_SERVER_URL) {
-    fs.copyFile(
-      `${process.resourcesPath}/src/pipecraft-core/icon32x32.png`,
-      "/var/tmp/icon32x32.png",
-      (err) => {
-        if (err) {
-          console.log("Error Found:", err);
-        }
-      }
-    );
-    createDesktopShortcut({
-      onlyCurrentOS: true,
-      verbose: true,
-      linux: {
-        filePath: `${process.env.APPIMAGE}`,
-        name: "Pipecraft",
-        description: "metabarcoding",
-        icon: `/var/tmp/icon32x32.png`,
-        type: "Application",
-        terminal: false,
-        chmod: true,
-      },
+  // DevTools Vue extension is only present in local/dev layouts, not AppImage.
+  const devtoolsPath = path.join(__dirname, "..", "devtools5");
+  if (isDevelopment && fs.existsSync(devtoolsPath)) {
+    session.defaultSession.loadExtension(devtoolsPath).catch((err) => {
+      log.warn("Failed to load DevTools extension:", err);
     });
+  }
+  if (process.env.APPIMAGE && !process.env.WEBPACK_DEV_SERVER_URL) {
+    try {
+      installAppImageDesktopIntegration();
+    } catch (err) {
+      log.warn("AppImage desktop integration failed:", err);
+    }
   }
 });
 

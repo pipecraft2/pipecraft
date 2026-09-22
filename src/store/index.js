@@ -4449,7 +4449,7 @@ export default new Vuex.Store({
       {
         tooltip: "Specify target taxa and sequence orientation",
         scriptName:"xxx.sh",
-        imageName: "pipecraft/optimotu:5.1-pc1.2.0",
+        imageName: "pipecraft/optimotu:5.1",
         serviceName: "target taxa and sequence orientation",
         manualLink: "https://pipecraft2-manual.readthedocs.io/en/latest/pre-defined_pipelines.html#target-taxa-and-sequence-orientation",
         disabled: "never",
