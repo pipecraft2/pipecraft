@@ -2630,7 +2630,7 @@ export default new Vuex.Store({
             tooltip:
               "assign taxonomy with BOLDigger3 (query against BOLD Systems v5 online database)",
             scriptName: "taxonomy_boldigger3.sh",
-            imageName: "pipecraft/boldigger3:2.2.0",
+            imageName: "pipecraft/boldigger3:3.0.3",
             serviceName: "BOLDigger3",
             selected: false,
             showExtra: false,

@@ -7,6 +7,7 @@
  */
 const { execFile, execFileSync, spawn } = require("child_process");
 const fs = require("fs");
+const net = require("net");
 const os = require("os");
 const path = require("path");
 const { promisify } = require("util");
@@ -305,18 +306,75 @@ function sleep(ms) {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
+function isWindowsPipe(candidate) {
+  return (
+    process.platform === "win32" &&
+    typeof candidate === "string" &&
+    candidate.includes("\\pipe\\")
+  );
+}
+
+// fs.existsSync cannot see Windows named pipes (it returns false even while
+// a client can connect). Probe with a short-lived connection instead.
+function probePipe(pipePath, timeoutMs = 1000) {
+  return new Promise((resolve) => {
+    const socket = net.connect(pipePath);
+    let settled = false;
+    let timer = null;
+    const finish = (ok) => {
+      if (settled) {
+        return;
+      }
+      settled = true;
+      clearTimeout(timer);
+      socket.destroy();
+      resolve(ok);
+    };
+    timer = setTimeout(() => finish(false), timeoutMs);
+    socket.once("connect", () => finish(true));
+    socket.once("error", () => finish(false));
+  });
+}
+
 async function waitForPath(targetPath, timeoutMs) {
   if (!targetPath) {
     return false;
   }
   const started = Date.now();
   while (Date.now() - started < timeoutMs) {
-    if (pathLooksUsable(targetPath)) {
+    if (isWindowsPipe(targetPath)) {
+      if (await probePipe(targetPath)) {
+        return true;
+      }
+    } else if (pathLooksUsable(targetPath)) {
       return true;
     }
     await sleep(200);
   }
+  if (isWindowsPipe(targetPath)) {
+    return probePipe(targetPath);
+  }
   return pathLooksUsable(targetPath);
+}
+
+function cliErrorText(error) {
+  return String(error?.stderr || error?.message || error || "");
+}
+
+function isMachineRunning(machine) {
+  return (
+    machine?.Running === true ||
+    machine?.Running === "true" ||
+    String(machine?.LastUp || "").toLowerCase().includes("currently running")
+  );
+}
+
+function isMachineStarting(machine) {
+  return machine?.Starting === true || machine?.Starting === "true";
+}
+
+function windowsMachinePipe(machineName) {
+  return `\\\\.\\pipe\\${machineName || "podman-machine-default"}`;
 }
 
 function collectSocketsUnder(dir, fileName = "podman.sock") {
@@ -736,6 +794,55 @@ function startPodmanSystemService(podmanBin, socketPath) {
   podmanServiceChild.unref();
 }
 
+async function startPodmanMachine(podmanBin, nameArgs) {
+  try {
+    await runCli(podmanBin, ["machine", "start", ...nameArgs], MACHINE_TIMEOUT_MS);
+    return "started";
+  } catch (error) {
+    if (/already running/i.test(cliErrorText(error))) {
+      return "already-running";
+    }
+    throw error;
+  }
+}
+
+async function stopPodmanMachine(podmanBin, nameArgs) {
+  try {
+    await runCli(podmanBin, ["machine", "stop", ...nameArgs], MACHINE_TIMEOUT_MS);
+  } catch (error) {
+    const message = cliErrorText(error);
+    if (/not running|already stopped|does not exist/i.test(message)) {
+      return;
+    }
+    if (process.platform !== "win32") {
+      throw error;
+    }
+    const distro = nameArgs[0] || "podman-machine-default";
+    await runCli("wsl.exe", ["--terminate", distro], CLI_TIMEOUT_MS);
+  }
+}
+
+// WSL can stay "running" after win-sshproxy exits. `machine start` then
+// no-ops ("already running") and Docker clients get connect ENOENT because
+// the named pipe was never bound. Stop and start so API forwarding comes back.
+async function ensureWindowsPodmanPipe(podmanBin, nameArgs, pipePath, machine) {
+  const pipeUp = await probePipe(pipePath);
+  if (pipeUp && isMachineRunning(machine) && !isMachineStarting(machine)) {
+    return true;
+  }
+
+  const started = await startPodmanMachine(podmanBin, nameArgs);
+  if (await waitForPath(pipePath, 15000)) {
+    return true;
+  }
+
+  if (started === "already-running" || isMachineRunning(machine) || isMachineStarting(machine)) {
+    await stopPodmanMachine(podmanBin, nameArgs);
+    await startPodmanMachine(podmanBin, nameArgs);
+  }
+  return waitForPath(pipePath, 30000);
+}
+
 // Windows/macOS: start the Podman VM if it exists but is stopped.
 async function ensurePodmanMachineRunning(podmanBin) {
   try {
@@ -747,25 +854,23 @@ async function ensurePodmanMachineRunning(podmanBin) {
     const machineName = defaultMachineName(machines);
     const machine =
       machines.find((item) => item.Name === machineName) || machines[0];
-    const running =
-      machine.Running === true ||
-      machine.Running === "true" ||
-      String(machine.LastUp || "").toLowerCase().includes("currently running");
-    if (!running) {
-      const nameArgs = machineName ? [machineName] : [];
-      await runCli(podmanBin, ["machine", "start", ...nameArgs], MACHINE_TIMEOUT_MS);
+    const nameArgs = machineName ? [machineName] : [];
+
+    if (process.platform === "win32") {
+      return ensureWindowsPodmanPipe(
+        podmanBin,
+        nameArgs,
+        windowsMachinePipe(machineName),
+        machine
+      );
     }
 
-    // After start (or WSL reboot), the named pipe/socket can lag a few seconds
-    // behind "machine started". Wait so probes don't hit connect ENOENT.
-    if (process.platform === "win32") {
-      const pipePath = `\\\\.\\pipe\\${machineName || "podman-machine-default"}`;
-      await waitForPath(pipePath, 20000);
-    } else {
-      const after = tryResolvePodman();
-      if (after?.socketPath) {
-        await waitForPath(after.socketPath, 20000);
-      }
+    if (!isMachineRunning(machine) || isMachineStarting(machine)) {
+      await startPodmanMachine(podmanBin, nameArgs);
+    }
+    const after = tryResolvePodman();
+    if (after?.socketPath) {
+      await waitForPath(after.socketPath, 20000);
     }
     return true;
   } catch (error) {
