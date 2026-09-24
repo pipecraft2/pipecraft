@@ -19,6 +19,7 @@ import {
   setCachedRuntime,
 } from "../utils/containerRuntime";
 import { getServiceScriptsPath } from "../utils/scriptsPath";
+import { applyPseudogeneDefaults } from "../utils/metaworksConfig";
 var _ = require("lodash");
 const Swal = require("sweetalert2");
 const slash = require("slash");
@@ -30,6 +31,28 @@ function getDockerInstance(runtime = getCachedRuntime()) {
   const options = runtime?.options || getResolvedDockerodeOptions();
   return new Docker(options);
 }
+
+function metaworksField(state, name) {
+  const services = state.MetaWorks || [];
+  for (let i = 0; i < services.length; i++) {
+    const inputs = [].concat(services[i].Inputs || [], services[i].extraInputs || []);
+    const found = inputs.find((input) => input.name === name);
+    if (found) return found.value;
+  }
+  return undefined;
+}
+
+function metaworksSelected(state, serviceName) {
+  const services = state.MetaWorks || [];
+  const panel = services.find((service) => service.serviceName === serviceName);
+  return Boolean(panel && panel.selected === true);
+}
+
+const MW_PROTEIN_MARKERS = ["COI", "rbcL_eukaryota", "rbcL_diatom", "rbcL_landPlant"];
+const MW_PROTEIN =
+  '["COI","rbcL_eukaryota","rbcL_diatom","rbcL_landPlant"].includes(metaworksField(state, "marker"))';
+const MW_PSEUDO =
+  'metaworksSelected(state, "pseudogene filtering") == true && ' + MW_PROTEIN;
 
 /** Match longest supported suffix first (e.g. .fastq.gz before .fastq). */
 function matchSupportedExtension(fileName, supportedExtensions) {
@@ -4237,213 +4260,321 @@ export default new Vuex.Store({
       },
       
     ],
-    // Metaworks_COI: [
-    //   {
-    //     tooltip:
-    //       "MetaWorks v1.12.0 ASVs workflow for Illumina (paired-end) COI amplicons",
-    //     scriptName: "metaworks_paired_end_ASV.sh",
-    //     imageName: "pipecraft/metaworks:1.12.0",
-    //     serviceName: "metaworks_COI",
-    //     disabled: "never",
-    //     selected: "always",
-    //     showExtra: false,
-    //     extraInputs: [
-    //       {
-    //         name: "quality_cutoff",
-    //         value: 13,
-    //         disabled: "never",
-    //         tooltip:
-    //           "Assemble paired-end reads setting. Phred score quality cutoff (default 20)",
-    //         type: "numeric",
-    //         rules: [(v) => v >= 0 || "ERROR: specify values >= 0"],
-    //       },
-    //       {
-    //         name: "min_overlap",
-    //         value: 25,
-    //         disabled: "never",
-    //         tooltip:
-    //           "Assemble paired-end reads setting. Minimum overlap (bp) length between R1 and R2 reads when merging reads",
-    //         type: "numeric",
-    //         rules: [(v) => v >= 0 || "ERROR: specify values >= 0"],
-    //       },
-    //       {
-    //         name: "match_fraction",
-    //         value: 0.9,
-    //         disabled: "never",
-    //         tooltip:
-    //           "Assemble paired-end reads setting. Minimum fraction of matching overlap (default 0.90) when merging reads",
-    //         type: "numeric",
-    //         rules: [(v) => v >= 0 || "ERROR: specify values >= 0"],
-    //       },
-    //       {
-    //         name: "mismatch_fraction",
-    //         value: [0.02],
-    //         disabled: "never",
-    //         tooltip:
-    //           "Assemble paired-end reads setting. Maximum fraction of mismatches allowed in overlap (default 0.02) when merging reads",
-    //         type: "numeric",
-    //         rules: [(v) => v >= 0 || "ERROR: specify values >= 0"],
-    //       },
-    //       {
-    //         name: "primer_mismatch",
-    //         value: 1,
-    //         disabled: "never",
-    //         tooltip:
-    //           "CUT PRIMERS setting. Maximum number of mismatches when searching and clipping primers",
-    //         type: "numeric",
-    //         rules: [(v) => v >= 1 || "ERROR: specify values >= 1"],
-    //       },
-    //       {
-    //         name: "primer_overlap",
-    //         value: 15,
-    //         disabled: "never",
-    //         tooltip:
-    //           "CUT_PRIMERS setting. Minimum overlap to primer sequence when searching and clipping primers",
-    //         type: "numeric",
-    //         rules: [(v) => v >= 1 || "ERROR: specify values >= 1"],
-    //       },
-    //       {
-    //         name: "min_seq_len",
-    //         value: 150,
-    //         disabled: "never",
-    //         tooltip:
-    //           "CUT_PRIMERS setting. Minimum sequence length (bp) to retain after trimming primers",
-    //         type: "numeric",
-    //         rules: [(v) => v >= 0 || "ERROR: specify values >= 0"],
-    //       },
-    //       {
-    //         name: "qual_cutoff_3end",
-    //         value: 20,
-    //         disabled: "never",
-    //         tooltip:
-    //           "QUALITY FILT setting. Phred quality score cutoffs at the 3' end during quality filtering",
-    //         type: "numeric",
-    //         rules: [(v) => v >= 1 || "ERROR: specify values >= 1"],
-    //       },
-    //       {
-    //         name: "qual_cutoff_5end",
-    //         value: 20,
-    //         disabled: "never",
-    //         tooltip:
-    //           "QUALITY FILT setting. Phred quality score cutoffs at the 5' end during quality filtering",
-    //         type: "numeric",
-    //         rules: [(v) => v >= 1 || "ERROR: specify values >= 1"],
-    //       },
-    //       {
-    //         name: "maxNs",
-    //         value: 0,
-    //         disabled: "never",
-    //         tooltip: "QUALITY FILT setting. Maximum number of Ns in the read",
-    //         type: "numeric",
-    //         rules: [(v) => v >= 1 || "ERROR: specify values >= 1"],
-    //       },
-    //       // denoise
-    //       {
-    //         name: "minsize",
-    //         value: 8,
-    //         disabled: "never",
-    //         tooltip:
-    //           "UNOISE denoising setting. minimum number of reads per cluster to retain (default 8)",
-    //         type: "numeric",
-    //         rules: [(v) => v >= 0 || "ERROR: specify values >= 0"],
-    //       },
-    //       {
-    //         name: "pseudogene_filtering",
-    //         value: true,
-    //         disabled: "never",
-    //         tooltip:
-    //           "Filter out putative pseudogenes based on unusually short/long open reading frames (uses ORFfinder)",
-    //         type: "bool",
-    //       },
-    //       {
-    //         name: "genetic_code",
-    //         items: ["1", "2", "5"],
-    //         value: "5",
-    //         disabled: "never",
-    //         tooltip:
-    //           "Pseudogene filtering setting. Genetic code translation table: 1 = standard code (use for rbcL); 2 = vertebrate mitochondrial (use for COI if targeting vertebrates); 5 = invertebrate mitochondrial (use for COI if targeting invertebrates)",
-    //         type: "select",
-    //       },
-    //       {
-    //         name: "orf_len",
-    //         value: 75,
-    //         disabled: "never",
-    //         tooltip:
-    //           "Pseudogene filtering setting. Minimum length of an open reading frame",
-    //         type: "numeric",
-    //         rules: [(v) => v >= 0 || "ERROR: specify values >= 0"],
-    //       },
-    //     ],
-    //     Inputs: [
-    //       {
-    //         name: "filename_structure",
-    //         value: ["{sample}.R{read}"],
-    //         disabled: "single_end",
-    //         tooltip:
-    //           "specify the sample filename structure. E.g. 'mysample1.R1.fastq' = {sample}.R{read}; 'mysample1_L001_R1_001.fastq' = {sample}_L001_R{read}_001",
-    //         type: "chip",
-    //         rules: [(v) => v.length <= 1 || "ADD ONLY ONE IDENTIFIER"],
-    //       },
-    //       // {
-    //       //   name: "marker",
-    //       //   items: [
-    //       //     "16S",
-    //       //     "18S_eukaryota",
-    //       //     "18S_diatom",
-    //       //     "12S_fish",
-    //       //     "12S_vertebrate",
-    //       //     "ITS_fungi",
-    //       //     "28S_fungi",
-    //       //     "rbcL_eukaryota",
-    //       //     "rbcL_diatom",
-    //       //     "rbcL_landPlant",
-    //       //     "ITS_plants",
-    //       //     "COI",
-    //       //   ],
-    //       //   value: "COI",
-    //       //   disabled: "never",
-    //       //   tooltip: "Which marker classifier will you be using?",
-    //       //   type: "select",
-    //       // },
-    //       // {
-    //       //   name: "ITS_region",
-    //       //   items: ["ITS1", "ITS2"],
-    //       //   value: "ITS2",
-    //       //   disabled: "never",
-    //       //   tooltip:
-    //       //     "when marker = ITS, specify which region to extract with ITSx (if using other marker, then this setting is ignored)",
-    //       //   type: "select",
-    //       // },
-    //       {
-    //         name: "forward_primers",
-    //         value: ["GGWACWGGWTGAACWGTWTAYCCYCC"],
-    //         disabled: "never",
-    //         tooltip: "specify forward primer (5'-3'); add up to 13 primers",
-    //         type: "chip",
-    //         iupac: true,
-    //         rules: [(v) => v.length <= 13 || "TOO MANY PRIMERS"],
-    //       },
-    //       {
-    //         name: "reverse_primers",
-    //         value: ["TANACYTCNGGRTGNCCRAARAAYCA"],
-    //         disabled: "never",
-    //         tooltip: "specify reverse primer (3'-5'); add up to 13 primers",
-    //         type: "chip",
-    //         iupac: true,
-    //         rules: [(v) => v.length <= 13 || "TOO MANY PRIMERS"],
-    //       },
-    //       {
-    //         name: "database",
-    //         btnName: "select RDP db",
-    //         value: "undefined",
-    //         disabled: "never",
-    //         tooltip:
-    //           "RDP-trained reference database for the RDP classifier. Click on the header to download trained reference databases the RDP classifier, link MetaWorks user guide: https://terrimporter.github.io/MetaWorksSite/#classifier_table",
-    //         type: "file",
-    //       },
-    //     ],
-    //   },
-    // ],
+    MetaWorks: [
+      {
+        tooltip:
+          "Which gene this run is. This chooses the RDP columns and whether pseudogene filtering is available.",
+        scriptName: "metaworks_ESV.sh",
+        imageName: "pipecraft/metaworks:1.13.0-pc1.2.0",
+        serviceName: "marker",
+        manualLink: "https://terrimporter.github.io/MetaWorksSite/quickstart/",
+        disabled: "never",
+        selected: "always",
+        showExtra: false,
+        extraInputs: [],
+        Inputs: [
+          {
+            name: "marker",
+            items: [
+              "COI",
+              "16S",
+              "16S_vertebrate",
+              "18S_eukaryota",
+              "18S_diatom",
+              "12S_fish",
+              "12S_vertebrate",
+              "ITS_fungi",
+              "28S_fungi",
+              "rbcL_eukaryota",
+              "rbcL_diatom",
+              "rbcL_landPlant",
+              "ITS_plants",
+            ],
+            value: "COI",
+            disabled: "never",
+            tooltip:
+              "Marker passed to MetaWorks. The classifier file is what assigns taxonomy. COI and rbcL fill the pseudogene panel.",
+            type: "select",
+          },
+        ],
+      },
+      {
+        tooltip:
+          "Forward and reverse primers. Cutadapt trimming settings are under advanced options.",
+        scriptName: "metaworks_ESV.sh",
+        imageName: "pipecraft/metaworks:1.13.0-pc1.2.0",
+        serviceName: "primers",
+        disabled: "never",
+        selected: "always",
+        showExtra: false,
+        extraInputs: [
+          {
+            name: "cutadapt_m",
+            value: 150,
+            disabled: "never",
+            tooltip: "Minimum sequence length in base pairs to keep after primer trimming",
+            type: "numeric",
+            rules: [(v) => v >= 1 || "ERROR: specify values >= 1"],
+          },
+          {
+            name: "cutadapt_q",
+            value: "20,20",
+            disabled: "never",
+            tooltip: "Cutadapt quality cutoffs at the 5' and 3' ends, written as 5',3' (default 20,20)",
+            type: "text",
+          },
+          {
+            name: "cutadapt_e",
+            value: 0.1,
+            disabled: "never",
+            tooltip: "Cutadapt primer error rate (default 0.1)",
+            type: "numeric",
+            rules: [(v) => v >= 0 && v <= 1 || "ERROR: specify values from 0 to 1"],
+          },
+          {
+            name: "cutadapt_O",
+            value: 3,
+            disabled: "never",
+            tooltip: "Cutadapt minimum adapter overlap in base pairs (default 3)",
+            type: "numeric",
+            rules: [(v) => v >= 1 || "ERROR: specify values >= 1"],
+          },
+          {
+            name: "cutadapt_mn",
+            value: 3,
+            disabled: "never",
+            tooltip: "Maximum number of N bases allowed after primer trimming",
+            type: "numeric",
+            rules: [(v) => v >= 0 || "ERROR: specify values >= 0"],
+          },
+          {
+            name: "cutadapt_rc",
+            items: ["No", "Yes"],
+            value: "No",
+            disabled: "never",
+            tooltip: "Also search the reverse complement for the linked adapters",
+            type: "select",
+          },
+        ],
+        Inputs: [
+          {
+            name: "forward_primers",
+            value: [],
+            disabled: "never",
+            tooltip: "Forward primers, 5'-3', IUPAC bases. One primer per amplicon, in the same order as the reverse primers.",
+            type: "chip",
+            iupac: true,
+            rules: [(v) => v.length <= 13 || "TOO MANY PRIMERS"],
+          },
+          {
+            name: "reverse_primers",
+            value: [],
+            disabled: "never",
+            tooltip: "Reverse primers, 5'-3', IUPAC bases. PipeCraft reverse-complements each one into the linked-adapter file.",
+            type: "chip",
+            iupac: true,
+            rules: [(v) => v.length <= 13 || "TOO MANY PRIMERS"],
+          },
+        ],
+      },
+      {
+        tooltip:
+          "SeqPrep merges R1 with R2, then unoise3 denoises the pool.",
+        scriptName: "metaworks_ESV.sh",
+        imageName: "pipecraft/metaworks:1.13.0-pc1.2.0",
+        serviceName: "merge and denoise",
+        disabled: "never",
+        selected: "always",
+        showExtra: false,
+        extraInputs: [],
+        Inputs: [
+          {
+            name: "seqprep_q",
+            value: 13,
+            disabled: "never",
+            tooltip: "SeqPrep Phred quality cutoff in the overlap (default 13)",
+            type: "numeric",
+            rules: [(v) => v >= 0 || "ERROR: specify values >= 0"],
+          },
+          {
+            name: "seqprep_o",
+            value: 25,
+            disabled: "never",
+            tooltip: "SeqPrep minimum overlap in base pairs between R1 and R2 (default 25)",
+            type: "numeric",
+            rules: [(v) => v >= 1 || "ERROR: specify values >= 1"],
+          },
+          {
+            name: "seqprep_m",
+            value: 0.02,
+            disabled: "never",
+            tooltip: "SeqPrep maximum fraction of mismatches allowed in the overlap (default 0.02)",
+            type: "numeric",
+            rules: [(v) => v >= 0 && v <= 1 || "ERROR: specify values from 0 to 1"],
+          },
+          {
+            name: "seqprep_n",
+            value: 0.9,
+            disabled: "never",
+            tooltip: "SeqPrep minimum fraction of matching bases in the overlap (default 0.90)",
+            type: "numeric",
+            rules: [(v) => v >= 0 && v <= 1 || "ERROR: specify values from 0 to 1"],
+          },
+          {
+            name: "minsize",
+            value: 8,
+            disabled: "never",
+            tooltip: "unoise3 minimum number of reads to keep a cluster (default 8)",
+            type: "numeric",
+            rules: [(v) => v >= 1 || "ERROR: specify values >= 1"],
+          },
+        ],
+      },
+      {
+        tooltip:
+          "RDP classifier file. ITS region and the built-in 28S fungal classifier appear for those markers.",
+        scriptName: "metaworks_ESV.sh",
+        imageName: "pipecraft/metaworks:1.13.0-pc1.2.0",
+        serviceName: "taxonomy",
+        disabled: "never",
+        selected: "always",
+        showExtra: false,
+        extraInputs: [],
+        Inputs: [
+          {
+            name: "database",
+            btnName: "select RDP db",
+            value: "undefined",
+            disabled: "never",
+            tooltip:
+              "The rRNAClassifier.properties file inside an RDP-trained classifier folder. A FASTA or SINTAX database will not work. Built-in 16S and 28S fungal classifiers do not need this file. Classifier table: https://terrimporter.github.io/MetaWorksSite/#classifier_table",
+            type: "file",
+            depends_on:
+              'metaworksField(state, "marker") != "16S" && metaworksField(state, "marker") != "28S_fungi"',
+          },
+          {
+            name: "ITSpart",
+            items: ["ITS1", "ITS2"],
+            value: "ITS2",
+            disabled: "never",
+            tooltip: "ITS region to extract with ITSx. Used only when the marker is ITS_fungi or ITS_plants.",
+            type: "select",
+            depends_on:
+              'metaworksField(state, "marker") == "ITS_fungi" || metaworksField(state, "marker") == "ITS_plants"',
+          },
+          {
+            name: "rdp_g",
+            items: ["fungallsu", "fungalits_unite", "fungalits_warcup"],
+            value: "fungallsu",
+            disabled: "never",
+            tooltip: "Built-in RDP fungal classifier. Used for the 28S_fungi marker.",
+            type: "select",
+            depends_on: 'metaworksField(state, "marker") == "28S_fungi"',
+          },
+        ],
+      },
+      {
+        tooltip:
+          "Tick this panel to drop variants whose reading frame looks wrong. Only for COI and rbcL markers. Other markers skip this step.",
+        scriptName: "metaworks_ESV.sh",
+        imageName: "pipecraft/metaworks:1.13.0-pc1.2.0",
+        serviceName: "pseudogene filtering",
+        disabled: "never",
+        selected: true,
+        disable_when: (state) => !MW_PROTEIN_MARKERS.includes(metaworksField(state, "marker")),
+        showExtra: false,
+        extraInputs: [
+          {
+            name: "orf_ml",
+            value: 30,
+            disabled: "never",
+            tooltip: "ORFfinder minimum ORF length in nucleotides (default 30)",
+            type: "numeric",
+            rules: [(v) => v >= 30 || "ERROR: specify values >= 30"],
+            depends_on: MW_PSEUDO,
+          },
+          {
+            name: "orf_start",
+            items: ["0", "1", "2"],
+            value: "2",
+            disabled: "never",
+            tooltip: "ORFfinder start codon: 0 = ATG only, 1 = ATG and alternative initiation, 2 = any sense codon",
+            type: "select",
+            depends_on: MW_PSEUDO,
+          },
+          {
+            name: "orf_nested",
+            value: true,
+            disabled: "never",
+            tooltip: "Ignore nested open reading frames",
+            type: "bool",
+            depends_on: MW_PSEUDO,
+          },
+          {
+            name: "orf_strand",
+            items: ["plus", "minus", "both"],
+            value: "plus",
+            disabled: "never",
+            tooltip: "Which strand ORFfinder searches. MetaWorks default is plus.",
+            type: "select",
+            depends_on: MW_PSEUDO,
+          },
+        ],
+        Inputs: [
+          {
+            name: "removal_type",
+            items: ["1", "2"],
+            value: "1",
+            disabled: "never",
+            tooltip: "1 = drop outlier ORF lengths. 2 = drop low HMM scores against bold.hmm (COI only).",
+            type: "select",
+            depends_on: MW_PSEUDO,
+          },
+          {
+            name: "genetic_code",
+            items: ["1", "2", "5"],
+            value: "5",
+            disabled: "never",
+            tooltip: "NCBI translation table. 1 = standard (rbcL). 2 = vertebrate mitochondrial. 5 = invertebrate mitochondrial.",
+            type: "select",
+            depends_on: MW_PSEUDO,
+          },
+          {
+            name: "grep_type",
+            items: ["1", "2"],
+            value: "1",
+            disabled: "never",
+            tooltip: "1 = keep one group. 2 = keep that group, then discard a second group from it.",
+            type: "select",
+            depends_on: MW_PSEUDO,
+          },
+          {
+            name: "taxon1",
+            displayName: "group to keep",
+            value: "Arthropoda",
+            disabled: "never",
+            tooltip: "NCBI name of the group to keep. Example: Arthropoda",
+            type: "text",
+            rules: [
+              (v) =>
+                String(v || "").trim() !== "" ||
+                "Type the group to keep, for example Embryophyta",
+            ],
+            depends_on: MW_PSEUDO,
+          },
+          {
+            name: "taxon2",
+            displayName: "group to discard",
+            value: "Chordata",
+            disabled: "never",
+            tooltip: "NCBI name to discard from the group that was kept. Example: Chordata",
+            type: "text",
+            depends_on:
+              'metaworksField(state, "grep_type") == "2" && ' + MW_PSEUDO,
+          },
+        ],
+      },
+    ],
     // # OptimOTU
     OptimOTU: [
       {
@@ -6100,11 +6231,11 @@ export default new Vuex.Store({
         link: "https://github.com/torognes/vsearch",
         title: "vsearch OTUs workflow",
       },
-      // Metaworks_COI: {
-      //   info: "MetaWorks ASVs workflow for demultiplexed Illumina COI amplicons (paired-end)",
-      //   link: "https://terrimporter.github.io/MetaWorksSite/quickstart/",
-      //   title: "MetaWorks COI ASVs",
-      // },
+      MetaWorks: {
+        info: "MetaWorks v1.13.0 exact sequence variants for demultiplexed Illumina paired-end reads. Put every gzipped R1/R2 file directly in one folder. Subfolders are not read.",
+        link: "https://terrimporter.github.io/MetaWorksSite/quickstart/",
+        title: "MetaWorks ESV",
+      },
       NextITS: {
         info: "NextITS pipeline for demultiplexed PacBio ITS (single-end) amplicons. Please see the special requirement (folder structure) for the data input from the PipeCraft user guide",
         link: "https://github.com/vmikk/NextITS",
@@ -6440,6 +6571,9 @@ export default new Vuex.Store({
     },
     check_depends_on: (state) => (input) => {
       if (input.depends_on && state) {
+        // MetaWorks depends_on strings call these through eval.
+        void metaworksField;
+        void metaworksSelected;
         return !eval(input.depends_on);
       } else {
         return false;
@@ -6853,6 +6987,13 @@ export default new Vuex.Store({
       }
 
       input.value = payload.value;
+
+      if (
+        payload.workflowName === "MetaWorks" &&
+        input.name === "marker"
+      ) {
+        applyPseudogeneDefaults(state.MetaWorks, payload.value);
+      }
 
       if (
         service.serviceName === "swarm" &&

@@ -45,6 +45,10 @@ import { stringify } from "envfile";
 import cloneDeep from 'lodash/cloneDeep';
 import { getServiceScriptsPath } from "../utils/scriptsPath";
 import {
+  MetaWorksConfigError,
+  prepareMetaWorksConfig,
+} from "../utils/metaworksConfig";
+import {
   getContainerUser,
   prepareBindMounts,
   applyEngineHostConfig,
@@ -117,6 +121,7 @@ export default {
   },
   data() {
     return {
+      metaworksClassifierDir: "",
       userId: null,
       groupId: null
     };
@@ -187,6 +192,15 @@ export default {
           steps: this.buildFunBarONTSteps(),
           successTitle: "FunBarONT pipeline finished successfully",
           successText: "Results are in your sequences directory",
+        });
+      }
+
+      if (workflowName === "MetaWorks") {
+        return this.runWorkflow({
+          name: "MetaWorks",
+          steps: this.buildMetaWorksSteps(),
+          successTitle: "MetaWorks finished",
+          successText: "Results are in the metaworks_out folder inside the folder you selected.",
         });
       }
 
@@ -346,6 +360,9 @@ export default {
             try {
               await step.beforeStart();
             } catch (error) {
+              if (error && error.silent) {
+                return;
+              }
               console.error("Failed to generate pipeline configuration:", error);
               await Swal.fire({
                 title: "Configuration Error",
@@ -525,6 +542,98 @@ export default {
           }),
         },
       ];
+    },
+
+    buildMetaWorksSteps() {
+      const scriptsPath = getServiceScriptsPath();
+      return [
+        {
+          serviceName: "MetaWorks",
+          errorFromLogs: true,
+          beforeStart: () => this.prepareMetaWorks(),
+          buildSpec: () => {
+            const jobs = Math.max(
+              1,
+              Number(this.$store.state.dockerInfo.NCPU) ||
+                Number(this.$store.state.systemSpecs.CPU) ||
+                1
+            );
+            const binds = [
+              `${scriptsPath}:/scripts`,
+              `${this.$store.state.inputDir}:/input`,
+            ];
+            if (this.metaworksClassifierDir) {
+              binds.push(`${this.metaworksClassifierDir}:/extraFiles`);
+            }
+            return {
+              imageName: "pipecraft/metaworks:1.13.0-pc1.2.0",
+              containerName: "MetaWorks",
+              command: ["bash", "-c", "bash /scripts/metaworks_ESV.sh"],
+              runAsRoot: true,
+              workingDir: "/opt/tools/Metaworks1.13.0",
+              env: [`jobs=${jobs}`],
+              binds,
+            };
+          },
+        },
+      ];
+    },
+
+    async prepareMetaWorks() {
+      const services = this.$store.state.MetaWorks;
+      const memoryBytes = Number(this.$store.state.dockerInfo.MemTotal) || 0;
+      const coiNeeds = 14 * 1024 * 1024 * 1024;
+      if (memoryBytes > 0 && memoryBytes < coiNeeds) {
+        const allocatedGb = (memoryBytes / (1024 ** 3)).toFixed(1);
+        const warning = await Swal.fire({
+          title: "Less than 14 GB of RAM",
+          text: `Resource Manager allows ${allocatedGb} GB for this container. The COI classifier needs at least 14 GB and can be killed below that. Raise the RAM slider in Resource Manager, or continue with the current limit.`,
+          showCancelButton: true,
+          confirmButtonText: "Continue",
+          cancelButtonText: "Cancel",
+          theme: "dark",
+        });
+        if (!warning.isConfirmed) {
+          const cancelled = new Error("Run cancelled");
+          cancelled.silent = true;
+          throw cancelled;
+        }
+      }
+
+      const runPrepare = (patternOverride) =>
+        prepareMetaWorksConfig({
+          inputDir: this.$store.state.inputDir,
+          readType: this.$store.state.data.readType,
+          services,
+          patternOverride,
+          memoryBytes: this.$store.state.dockerInfo.MemTotal,
+          cpuCount: this.$store.state.dockerInfo.NCPU,
+        });
+
+      try {
+        const prepared = runPrepare();
+        this.metaworksClassifierDir = prepared.classifierDir;
+      } catch (error) {
+        if (!(error instanceof MetaWorksConfigError) || error.code !== "PATTERN") {
+          throw error;
+        }
+        const asked = await Swal.fire({
+          title: "Filename pattern",
+          text: `${error.message} Use {sample} for the sample name and {read} for 1 or 2.`,
+          input: "text",
+          inputPlaceholder: "{sample}_L001_R{read}_001.fastq.gz",
+          showCancelButton: true,
+          confirmButtonText: "Use pattern",
+          theme: "dark",
+        });
+        if (!asked.isConfirmed || !asked.value) {
+          const cancelled = new Error("Run cancelled");
+          cancelled.silent = true;
+          throw cancelled;
+        }
+        const prepared = runPrepare(String(asked.value).trim());
+        this.metaworksClassifierDir = prepared.classifierDir;
+      }
     },
 
     buildNextITSSteps() {

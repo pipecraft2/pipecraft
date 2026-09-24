@@ -1,52 +1,67 @@
+# MetaWorks 1.13.0 for the PipeCraft ESV workflow.
+# Install path and conda env match metaworks_ESV.sh:
+#   /opt/tools/Metaworks1.13.0
+#   MetaWorks_v1.13.0
+#
+# The published pipecraft/metaworks:1.12.0-pc1.2.0 image is a different
+# recipe (Dockerfile_metaworks_1.12) and stays in use for ORF-finder and RDP.
+
 FROM ubuntu:22.04
 
-# Install base utilities
-RUN apt-get update && \
-    apt-get install -y build-essential  && \
-    apt-get install -y wget && \
-    apt-get install -y unzip && \
-    apt-get install -y pigz && \
-    apt-get install -y gzip && \
-    apt-get install libuv1 -y  && \
-    apt-get install libdw1 -y  && \
-    apt-get install libnghttp2-14 -y  && \
-    apt-get clean && \
-    rm -rf /var/lib/apt/lists/*
+ENV DEBIAN_FRONTEND=noninteractive \
+    CONDA_DIR=/opt/conda \
+    METAWORKS_HOME=/opt/tools/Metaworks1.13.0 \
+    PATH=/opt/conda/bin:$PATH
 
-# Install miniconda
-ENV CONDA_DIR=/opt/conda
-RUN wget --quiet https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86_64.sh -O ~/miniconda.sh && \
-    /bin/bash ~/miniconda.sh -b -p /opt/conda
+RUN apt-get update && apt-get install -y --no-install-recommends \
+        build-essential \
+        ca-certificates \
+        wget \
+        unzip \
+        pigz \
+        gzip \
+        libuv1 \
+        libdw1 \
+        libnghttp2-14 \
+    && rm -rf /var/lib/apt/lists/*
 
-# Put conda in path so we can use conda activate
-ENV PATH=$CONDA_DIR/bin:$PATH
+# Pinned installer. The MetaWorks env is Python 3.10.
+RUN wget -q https://repo.anaconda.com/miniconda/Miniconda3-py310_24.1.2-0-Linux-x86_64.sh -O /tmp/miniconda.sh \
+    && bash /tmp/miniconda.sh -b -p /opt/conda \
+    && rm /tmp/miniconda.sh \
+    && conda config --set allow_conda_downgrades true \
+    && (conda tos accept --override-channels --channel https://repo.anaconda.com/pkgs/main || true) \
+    && (conda tos accept --override-channels --channel https://repo.anaconda.com/pkgs/r || true)
 
-RUN conda config --set allow_conda_downgrades true \
-    && echo "yes" | conda tos accept --override-channels --channel https://repo.anaconda.com/pkgs/main || true \
-    && echo "yes" | conda tos accept --override-channels --channel https://repo.anaconda.com/pkgs/r || true
+# Upstream release zip. Folder inside the zip is MetaWorks1.13.0;
+# the workflow script uses Metaworks1.13.0, matching the upstream image layout.
+RUN mkdir -p /opt/tools \
+    && wget -q https://github.com/terrimporter/MetaWorks/releases/download/v1.13.0/MetaWorks1.13.0.zip -O /tmp/MetaWorks.zip \
+    && unzip -q /tmp/MetaWorks.zip -d /opt/tools \
+    && rm /tmp/MetaWorks.zip \
+    && mv /opt/tools/MetaWorks1.13.0 /opt/tools/Metaworks1.13.0 \
+    && conda env create -f /opt/tools/Metaworks1.13.0/environment.yml \
+    && conda clean -afy
 
-# Install Metaworks
-RUN wget https://github.com/terrimporter/MetaWorks/releases/download/v1.12.0/MetaWorks1.12.0.zip
-RUN unzip MetaWorks1.12.0.zip
-RUN rm MetaWorks1.12.0.zip
-RUN cd MetaWorks1.12.0 && conda env create -f environment.yml
+# ORFfinder is not in the conda env. It needs the env's libstdc++/glibc bits,
+# which the MetaWorks FAQ sets via LD_LIBRARY_PATH on activate.
+RUN wget --tries=5 --retry-connrefused --timeout=60 --waitretry=5 \
+        -O /tmp/ORFfinder.gz \
+        https://ftp.ncbi.nlm.nih.gov/genomes/TOOLS/ORFfinder/linux-i64/ORFfinder.gz \
+    && gunzip /tmp/ORFfinder.gz \
+    && chmod 755 /tmp/ORFfinder \
+    && mv /tmp/ORFfinder /usr/local/bin/ORFfinder \
+    && mkdir -p /opt/conda/envs/MetaWorks_v1.13.0/etc/conda/activate.d \
+                /opt/conda/envs/MetaWorks_v1.13.0/etc/conda/deactivate.d \
+    && printf '%s\n' \
+        'export LD_LIBRARY_PATH_CONDA_BACKUP="${LD_LIBRARY_PATH:-}"' \
+        'export LD_LIBRARY_PATH="${CONDA_PREFIX}/lib${LD_LIBRARY_PATH:+:$LD_LIBRARY_PATH}"' \
+        > /opt/conda/envs/MetaWorks_v1.13.0/etc/conda/activate.d/orf_libs.sh \
+    && printf '%s\n' \
+        'export LD_LIBRARY_PATH="${LD_LIBRARY_PATH_CONDA_BACKUP:-}"' \
+        'unset LD_LIBRARY_PATH_CONDA_BACKUP' \
+        > /opt/conda/envs/MetaWorks_v1.13.0/etc/conda/deactivate.d/orf_libs.sh \
+    && chmod 644 /opt/conda/envs/MetaWorks_v1.13.0/etc/conda/activate.d/orf_libs.sh \
+                 /opt/conda/envs/MetaWorks_v1.13.0/etc/conda/deactivate.d/orf_libs.sh
 
-# Install ORFfinder and seqkit
-RUN wget ftp://ftp.ncbi.nlm.nih.gov/genomes/TOOLS/ORFfinder/linux-i64/ORFfinder.gz
-RUN gunzip ORFfinder.gz
-RUN chmod 755 ORFfinder
-RUN mv ORFfinder /bin/.
-RUN wget https://github.com/shenwei356/seqkit/releases/download/v2.13.0/seqkit_linux_amd64.tar.gz -O /tmp/seqkit.tar.gz && \
-    tar zxvf /tmp/seqkit.tar.gz -C /usr/bin/ && rm /tmp/seqkit.tar.gz
-
-# Install R and reshape2
-ARG DEBIAN_FRONTEND=noninteractive
-RUN apt-get update && apt-get install -y --no-install-recommends r-base
-RUN Rscript -e 'install.packages("reshape2", repos="https://cloud.r-project.org")'
-RUN Rscript -e 'install.packages("tidyr", repos = "https://cloud.r-project.org/")'
-
-
-
-#RUN  !!! wget metaworks_environment.yml from SuvalineVana github 
-#RUN . /root/.bashrc && \
-#    conda init bash
+WORKDIR /opt/tools/Metaworks1.13.0

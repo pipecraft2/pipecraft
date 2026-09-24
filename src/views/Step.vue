@@ -139,6 +139,12 @@
                   :inputIndex="i"
                   :list="'extraInputs'"
               /></v-container>
+              <v-container v-if="input.type === 'text'"
+                ><InputNumeric
+                  :serviceIndex="index"
+                  :inputIndex="i"
+                  :list="'extraInputs'"
+              /></v-container>
               <v-container v-if="input.type === 'bool'"
                 ><InputBool
                   :serviceIndex="index"

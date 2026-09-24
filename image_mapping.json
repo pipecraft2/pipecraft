@@ -61,6 +61,13 @@
       "dockerfile": "image_development/Dockerfile_metaworks",
       "context": ".",
       "image": "pipecraft/metaworks",
+      "tags": ["1.13.0-pc1.2.0"]
+    },
+    {
+      "name": "metaworks-1.12",
+      "dockerfile": "image_development/Dockerfile_metaworks_1.12",
+      "context": ".",
+      "image": "pipecraft/metaworks",
       "tags": ["1.12.0-pc1.2.0"]
     },
     {

@@ -80,10 +80,7 @@
       <v-expansion-panel
         v-for="(service, index) in services"
         :key="index"
-        :disabled="
-          Object.values(inputData).includes(service.disabled) &&
-          $store.state.runInfo.active == false
-        "
+        :disabled="panelDisabled(service)"
         :class="Object.values(inputData).includes(service.disabled) && hide"
       >
         <v-tooltip top>
@@ -92,17 +89,23 @@
               v-on="on"
               style="justify-content: left"
               :class="[service.selected]"
-              :disabled="Object.values(inputData).includes(service.disabled)"
+              :disabled="readTypeBlocks(service)"
             >
-              <v-checkbox
-                :disabled="Object.values(inputData).includes(service.disabled) || $store.state.runInfo.active == true"
+              <span
                 v-if="service.selected != 'always'"
-                hide-details="true"
-                @change="check_one($event, index)"
                 @click.stop
-                v-model="service.selected"
-                style="max-width: 34px; padding-top: 0; margin: 0"
-              ></v-checkbox>
+                @mousedown.stop
+                style="display: inline-flex; max-width: 34px"
+              >
+                <v-checkbox
+                  :disabled="readTypeBlocks(service) || markerBlocks(service) || $store.state.runInfo.active == true"
+                  hide-details="true"
+                  @change="check_one($event, index)"
+                  @click.stop
+                  :input-value="markerBlocks(service) ? false : service.selected"
+                  style="max-width: 34px; padding-top: 0; margin: 0"
+                ></v-checkbox>
+              </span>
               {{ service.serviceName.toUpperCase() }}
               <div v-if="service.manualLink">
                 <v-tooltip left>
@@ -249,6 +252,12 @@
                   :inputIndex="i"
                   :list="'extraInputs'"
               /></v-container>
+              <v-container v-if="input.type === 'text'"
+                ><InputNumeric
+                  :serviceIndex="index"
+                  :inputIndex="i"
+                  :list="'extraInputs'"
+              /></v-container>
               <v-container v-if="input.type === 'bool'"
                 ><InputBool
                   :serviceIndex="index"
@@ -349,6 +358,15 @@ export default {
   methods: {
     openLink(value) {
       shell.openExternal(value);
+    },
+    readTypeBlocks(service) {
+      return Object.values(this.inputData).includes(service.disabled);
+    },
+    markerBlocks(service) {
+      return typeof service.disable_when === "function" && service.disable_when(this.$store.state);
+    },
+    panelDisabled(service) {
+      return this.readTypeBlocks(service) && this.$store.state.runInfo.active == false;
     },
     toggleExtra(index) {
       this.$store.commit("toggleExtraCustomWorkflow", {
