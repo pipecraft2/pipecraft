@@ -111,7 +111,7 @@ export default new Vuex.Store({
     steps: [
       {
         stepName: "demultiplex",
-        disabled: "demultiplexed",
+        disabled: "never",
         services: [
           {
             tooltip:
@@ -2630,7 +2630,7 @@ export default new Vuex.Store({
             tooltip:
               "assign taxonomy with BOLDigger3 (query against BOLD Systems v5 online database)",
             scriptName: "taxonomy_boldigger3.sh",
-            imageName: "pipecraft/boldigger3:2.2.0",
+            imageName: "pipecraft/boldigger3:3.0.3",
             serviceName: "BOLDigger3",
             selected: false,
             showExtra: false,
@@ -4449,7 +4449,7 @@ export default new Vuex.Store({
       {
         tooltip: "Specify target taxa and sequence orientation",
         scriptName:"xxx.sh",
-        imageName: "pipecraft/optimotu:5.1-pc1.2.0",
+        imageName: "pipecraft/optimotu:5.1",
         serviceName: "target taxa and sequence orientation",
         manualLink: "https://pipecraft2-manual.readthedocs.io/en/latest/pre-defined_pipelines.html#target-taxa-and-sequence-orientation",
         disabled: "never",
@@ -6650,32 +6650,6 @@ export default new Vuex.Store({
         if (payload == "single_end") {
           state.selectedSteps = state.selectedSteps.filter(
             (item) => !(item.stepName == "assemble paired-end")
-          );
-        }
-      }
-    },
-    toggle_demux_mux(state, payload) {
-      for (const [key] of Object.entries(state.customWorkflowInfo)) {
-        for (let i = 0; i < state[key].length; i++) {
-          if (
-            payload == "demultiplexed" &&
-            state[key][i].disabled == "demultiplexed"
-          ) {
-            console.log(state[key][i].disabled);
-            state[key][i].selected = false;
-          }
-          if (
-            payload == "multiplexed" &&
-            state[key][i].disabled == "demultiplexed"
-          ) {
-            state[key][i].selected = true;
-          }
-        }
-      }
-      for (let i = 0; i < state.selectedSteps.length; i++) {
-        if (payload == "demultiplexed") {
-          state.selectedSteps = state.selectedSteps.filter(
-            (item) => !(item.stepName == "demultiplex")
           );
         }
       }
