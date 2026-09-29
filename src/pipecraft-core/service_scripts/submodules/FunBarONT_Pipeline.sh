@@ -411,11 +411,8 @@ if [ -d "results" ]; then
     cp -r results/* "$RESULTS_DIR/" 2>/dev/null || echo "Note: Some result files may not exist yet"
 fi
 
-# Set ownership if HOST_UID and HOST_GID are provided
-if [ ! -z "$HOST_UID" ] && [ ! -z "$HOST_GID" ]; then
-    echo "Setting ownership of results to $HOST_UID:$HOST_GID"
-    chown -R "$HOST_UID:$HOST_GID" /sequences
-fi
+source /scripts/submodules/host_ownership.sh
+chown_bind_to_host /sequences
 
 echo ""
 echo "=========================================="

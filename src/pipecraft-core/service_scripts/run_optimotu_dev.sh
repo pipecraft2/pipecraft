@@ -173,14 +173,12 @@ printf "Total time: $runtime sec.\n "
 echo "All operations completed."
 
 
-if [ ! -z "$HOST_UID" ] && [ ! -z "$HOST_GID" ]; then
-  echo "Setting ownership of writable outputs under /optimotu_targets/sequences"
-  for entry in /optimotu_targets/sequences/*; do
-    base="$(basename "$entry")"
-    # Skip the nested mount to avoid the loop
-    if [ "$base" = "01_raw" ]; then
-      continue
-    fi
-    chown -R "$HOST_UID:$HOST_GID" "$entry" 2>/dev/null || true
-  done
-fi
+source /scripts/submodules/host_ownership.sh
+for entry in /optimotu_targets/sequences/*; do
+  base="$(basename "$entry")"
+  # Skip the nested mount of the same host dir (would recurse into 01_raw).
+  if [ "$base" = "01_raw" ]; then
+    continue
+  fi
+  chown_bind_to_host "$entry"
+done

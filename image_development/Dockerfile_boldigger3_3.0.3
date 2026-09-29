@@ -1,0 +1,8 @@
+# BOLDigger3 3.0.3 with baked-in BOLD public DuckDB (.ddb)
+FROM python:3.12-slim
+
+RUN pip install --no-cache-dir boldigger3==3.0.3 lxml_html_clean
+
+# Prebuilt database from BOLD_Public.18-Sep-2026.parquet
+COPY BOLD_Public.18-Sep-2026.ddb /opt/bold/BOLD_Public.18-Sep-2026.ddb
+ENV BOLDIGGER3_DB_PATH=/opt/bold/BOLD_Public.18-Sep-2026.ddb

@@ -26,6 +26,9 @@ fasta_file=${fasta_file}
 database=${database}      # BOLD database number (1-8)
 mode=${mode}              # Operating mode (1-3)
 thresholds=${thresholds}  # Space-separated thresholds (optional)
+# boldigger3 3.x requires the local DuckDB as a positional argument.
+# The image bakes this file in and publishes the path as BOLDIGGER3_DB_PATH.
+db_path=${BOLDIGGER3_DB_PATH:-/opt/bold/BOLD_Public.18-Sep-2026.ddb}
 
 # Prep input fasta file path for container
 regex='[^/]*$'
@@ -70,9 +73,15 @@ fi
 fasta_local="$output_dir/$fasta_base.fasta"
 cp "$fasta_in" "$fasta_local"
 
+if [[ ! -f "$db_path" ]]; then
+    printf "ERROR: BOLDigger3 database not found at %s\n" "$db_path"
+    exit 1
+fi
+
 ### Run BOLDigger3
 printf "# Running BOLDigger3 identify ...\n"
-checkerror=$(boldigger3 identify "$fasta_local" \
+printf "# database file = %s\n" "$db_path"
+checkerror=$(boldigger3 identify "$fasta_local" "$db_path" \
     --db "$database" \
     --mode "$mode" \
     $thresholds_flag 2>&1)
@@ -108,6 +117,7 @@ Runtime: $runtime seconds
 
 Query      = $fasta_basename
 Database   = $database
+DB file    = $db_path
 Mode       = $mode
 Thresholds = ${thresholds:-default (97 95 90 85)}
 
@@ -134,7 +144,7 @@ Default similarity thresholds: Species=97%%, Genus=95%%, Family=90%%, Order=85%%
   Custom thresholds: pass up to 5 space-separated values for Species Genus Family Order Class.
 
 Core command ->
-boldigger3 identify $fasta_basename --db $database --mode $mode $thresholds_flag
+boldigger3 identify $fasta_basename $db_path --db $database --mode $mode $thresholds_flag
 
 ##########################################################
 ###Third-party applications [PLEASE CITE]:

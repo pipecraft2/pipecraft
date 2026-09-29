@@ -3,6 +3,53 @@
     <v-card width="85%" style="margin: auto; background-color: rgb(0 0 0 / 40%)">
       <v-card-title style="color: white" class="py-10">RESOURCE MANAGER</v-card-title>
       <v-divider></v-divider>
+      <v-card-subtitle style="color: white">Container runtime</v-card-subtitle>
+      <div class="px-5 pb-4">
+        <!-- Docker | Podman switch when both are installed. Auto is gone. -->
+        <v-btn-toggle
+          v-if="bothEnginesDetected"
+          :value="selectedEngine"
+          :mandatory="Boolean(selectedEngine)"
+          dense
+          color="teal accent-3"
+          background-color="transparent"
+          :disabled="runtimeStarting"
+          @change="handleEngineChange"
+        >
+          <v-btn value="docker" small dark :disabled="!availableRuntimes.docker">Docker</v-btn>
+          <v-btn value="podman" small dark :disabled="!availableRuntimes.podman">Podman</v-btn>
+        </v-btn-toggle>
+        <v-checkbox
+          v-if="bothEnginesDetected"
+          dark
+          hide-details
+          class="mt-3"
+          :disabled="!selectedEngine || runtimeStarting"
+          :input-value="useAsDefault"
+          @change="handleDefaultChange"
+          label="Use as default"
+        ></v-checkbox>
+        <div
+          v-if="bothEnginesDetected"
+          class="mt-1"
+          style="color: white; font-size: 13px; opacity: 0.8"
+        >
+          When checked, this engine starts automatically next time. Uncheck to choose again at launch.
+        </div>
+        <div class="mt-3" style="color: white; font-size: 14px">
+          <div>{{ runtimeStatusLine }}</div>
+          <div v-if="socketPath" style="opacity: 0.8; word-break: break-all">
+            Socket: {{ socketPath }}
+          </div>
+          <div style="opacity: 0.8">
+            Detected: {{ detectedRuntimesText }}
+          </div>
+          <div v-if="!showApplyRestart" class="mt-2" style="opacity: 0.8">
+            CPU and RAM limits are applied to each workflow container. No engine restart is required on Linux.
+          </div>
+        </div>
+      </div>
+      <v-divider></v-divider>
       <v-card-subtitle
         v-if="!isDockerActive"
         style="color: white; display: flex; align-items: center"
@@ -70,22 +117,14 @@
         style="color: white"
       ></v-slider>
       <div style="display: flex; justify-content: center">
-        <v-btn v-if="this.$store.state.OStype != 'Linux'"
-          @click="
-            $store.state.OStype === 'Darwin'
-              ? restartDockerMacOS()
-              : $store.state.OStype === 'Linux'
-              ? restartDockerLinux()
-              : $store.state.OStype === 'Windows_NT'
-              ? restartDockerWin()
-              : null
-          "
+        <v-btn v-if="showApplyRestart"
+          @click="handleApplyResources"
           style="margin: auto"
           class="ma-5"
           outlined
           color="white"
         >
-          Apply & restart docker
+          {{ applyButtonText }}
         </v-btn>
       </div>
     </v-card>
@@ -93,16 +132,13 @@
 </template>
 
 <script>
-const { exec } = require("child_process");
+const { exec, execFile } = require("child_process");
 const fs = require("fs");
-const path = require("path");
 import os from "os";
 import { mapState, mapGetters } from "vuex";
+import { applyPodmanMachineResources, dockerDesktopWindowsExe, writeWslResourceConfig } from "../utils/containerRuntime";
 const CPU = os.cpus().length;
 const MEM = Number((os.totalmem() / 1024 ** 3).toFixed(0));
-const homeDir = require("os").homedir();
-// Path to the .wslconfig file
-const wslConfigPath = path.join(homeDir, ".wslconfig");
 const Swal = require("sweetalert2");
 
 const createNumberList = (start, end) =>
@@ -119,9 +155,19 @@ export default {
   name: "ResourceManager",
   computed: {
     ...mapState({
-      dockerSettingsPath: state => state.systemSpecs.dockerSettings
+      dockerSettingsPath: state => state.systemSpecs.dockerSettings,
+      runtimePreference: state => state.containerRuntime.preference,
+      runtimeStarting: state => state.containerRuntime.starting,
+      socketPath: state => state.containerRuntime.socketPath,
+      availableRuntimes: state => state.containerRuntime.available,
     }),
-    ...mapGetters(['isDockerActive']),
+    ...mapGetters(['isDockerActive', 'engineLabel', 'runtimeStatusText', 'activeEngine', 'bothEnginesDetected', 'sessionEngine']),
+    selectedEngine() {
+      return this.activeEngine || this.sessionEngine || this.runtimePreference || "";
+    },
+    useAsDefault() {
+      return Boolean(this.selectedEngine && this.runtimePreference === this.selectedEngine);
+    },
     ncpu: {
       get() {
         return this.$store.state.dockerInfo.NCPU;
@@ -140,6 +186,27 @@ export default {
         this.$store.commit("setMemTotal", value * 1024 ** 3);
       },
     },
+    resourceEngine() {
+      return this.selectedEngine;
+    },
+    showApplyRestart() {
+      return this.$store.state.OStype !== "Linux";
+    },
+    applyButtonText() {
+      return this.resourceEngine === "podman"
+        ? "Apply & restart Podman machine"
+        : "Apply & restart Docker";
+    },
+    runtimeStatusLine() {
+      const rootless = this.$store.state.containerRuntime.rootless ? " (rootless)" : "";
+      return `${this.runtimeStatusText}${this.isDockerActive ? rootless : ""}`;
+    },
+    detectedRuntimesText() {
+      const found = [];
+      if (this.availableRuntimes.docker) found.push("Docker");
+      if (this.availableRuntimes.podman) found.push("Podman");
+      return found.length ? found.join(", ") : "none";
+    },
   },
   data() {
     return {
@@ -150,61 +217,76 @@ export default {
     };
   },
   methods: {
-        updateWslConfig(memory, processors) {
-      // Check if .wslconfig file exists
-      if (fs.existsSync(wslConfigPath)) {
-        // File exists, read and update it
-        fs.readFile(wslConfigPath, "utf8", (err, data) => {
-          if (err) {
-            console.error("Error reading .wslconfig file:", err);
-            return;
-          }
-
-          // Update memory and processors values
-          let updatedConfig = data.replace(/memory=\d+GB/i, `memory=${memory}`);
-          updatedConfig = updatedConfig.replace(/processors=\d+/i, `processors=${processors}`);
-
-          // Write the updated content back to the file
-          fs.writeFile(wslConfigPath, updatedConfig, "utf8", (err) => {
-            if (err) {
-              console.error("Error writing to .wslconfig file:", err);
-              return;
-            }
-            console.log(`.wslconfig updated: memory=${memory}, processors=${processors}`);
-          });
+    async handleEngineChange(engine) {
+      if (!engine || engine === this.selectedEngine) {
+        return;
+      }
+      try {
+        await this.$store.dispatch("activateEngine", {
+          engine,
+          persistDefault: this.useAsDefault,
+          start: true,
         });
-      } else {
-        // File doesn't exist, create it
-        const defaultConfig = `[wsl2]
-memory=${memory}
-processors=${processors}
-`;
-        fs.writeFile(wslConfigPath, defaultConfig, "utf8", (err) => {
-          if (err) {
-            console.error("Error creating .wslconfig file:", err);
-            return;
-          }
-          console.log(`.wslconfig created: memory=${memory}, processors=${processors}`);
+      } catch (error) {
+        await Swal.fire({
+          title: "Engine start failed",
+          text: error.message || String(error),
+          icon: "error",
+          theme: "dark",
         });
       }
     },
-    updateDockerSettings(memory, processors) {
-      fs.readFile(this.dockerSettingsPath, "utf-8", (err, data) => {
+    handleDefaultChange(value) {
+      const checked = typeof value === "boolean" ? value : !this.useAsDefault;
+      this.$store.dispatch("setDefaultRuntime", checked ? this.selectedEngine : "");
+    },
+    handleApplyResources() {
+      // Win/mac: restart Docker Desktop or Podman machine so CPU/RAM take effect.
+      if (this.resourceEngine === "podman") {
+        this.restartPodmanMachine();
+        return;
+      }
+      if (this.$store.state.OStype === "Darwin") {
+        this.restartDockerMacOS();
+        return;
+      }
+      if (this.$store.state.OStype === "Windows_NT") {
+        this.restartDockerWin();
+      }
+    },
+    updateDockerSettings(memoryMiB, processors) {
+      // macOS Docker Desktop only. Windows WSL2 CPU/RAM are in ~/.wslconfig.
+      const settingsPath = this.dockerSettingsPath;
+      if (!settingsPath) {
+        console.error("Docker Desktop settings file was not found.");
+        return;
+      }
+      fs.readFile(settingsPath, "utf-8", (err, data) => {
         if (err) {
-          console.error(`error reading file ${this.dockerSettingsPath}`);
+          console.error(`error reading file ${settingsPath}`);
           return;
         }
         let settingsJSON = JSON.parse(data);
-        settingsJSON.Cpus = processors;
-        settingsJSON.MemoryMiB = memory;
+        const cpuKeys = ["Cpus", "cpus", "CpuCount", "cpuCount"].filter((key) =>
+          Object.prototype.hasOwnProperty.call(settingsJSON, key)
+        );
+        const memKeys = ["MemoryMiB", "memoryMiB"].filter((key) =>
+          Object.prototype.hasOwnProperty.call(settingsJSON, key)
+        );
+        (cpuKeys.length ? cpuKeys : ["Cpus"]).forEach((key) => {
+          settingsJSON[key] = processors;
+        });
+        (memKeys.length ? memKeys : ["MemoryMiB"]).forEach((key) => {
+          settingsJSON[key] = memoryMiB;
+        });
         const updatedSettings = JSON.stringify(settingsJSON, null, 2);
-        fs.writeFile(this.dockerSettingsPath, updatedSettings, "utf-8", (err) => {
-          if (err) {
-            console.error(`Error writing file ${this.dockerSettingsPath}`);
+        fs.writeFile(settingsPath, updatedSettings, "utf-8", (writeErr) => {
+          if (writeErr) {
+            console.error(`Error writing file ${settingsPath}`);
             return;
           }
           console.log(
-            `Settings file updated: CPUs: ${processors}, RAM: ${memory}`
+            `Settings file updated: CPUs: ${processors}, RAM: ${memoryMiB}`
           );
         });
       });
@@ -239,8 +321,11 @@ processors=${processors}
           return; // User cancelled
         }
 
-        // Update WSL config first
-        this.updateWslConfig(`${this.memtotal}GB`, this.ncpu);
+        // WSL2 VM limits live in ~/.wslconfig, not Docker Desktop's JSON.
+        writeWslResourceConfig({
+          memoryGb: Math.max(1, Number(this.memtotal) || 1),
+          processors: Math.max(1, Number(this.ncpu) || 1),
+        });
         
         const progressDialog = Swal.fire({
           title: 'Applying WSL Resource Changes',
@@ -251,9 +336,13 @@ processors=${processors}
           didOpen: () => Swal.showLoading()
         });
 
-        // Step 1: Stop Docker Desktop processes
-        await this.execPowerShellCommand("Stop-Process -Name 'Docker Desktop' -Force -ErrorAction SilentlyContinue");
-        await this.execPowerShellCommand("Stop-Process -Name 'com.docker.backend' -Force -ErrorAction SilentlyContinue");
+        // Step 1: Stop Docker Desktop processes (best-effort).
+        // Stop-Process still exits 1 when a name is missing or access is
+        // denied, even with -ErrorAction SilentlyContinue — do not abort.
+        await this.execPowerShellCommand(
+          "Get-Process | Where-Object { $_.ProcessName -match '^(Docker Desktop|com\\.docker\\.)' } | Stop-Process -Force -ErrorAction SilentlyContinue; exit 0",
+          { ignoreError: true }
+        );
         
         // Step 2: Shutdown WSL
         progressDialog.update({ html: 'Step 2/5: Shutting down WSL...' });
@@ -269,7 +358,13 @@ processors=${processors}
         
         // Step 4: Start Docker Desktop (which will start WSL with new config)
         progressDialog.update({ html: 'Step 4/5: Starting Docker Desktop...' });
-        await this.execPowerShellCommand("Start-Process 'C:\\Program Files\\Docker\\Docker\\Docker Desktop.exe'");
+        const dockerExe = dockerDesktopWindowsExe();
+        if (!dockerExe) {
+          throw new Error(
+            "Docker Desktop was not found. Install Docker Desktop, then retry."
+          );
+        }
+        await this.execPowerShellCommand(`Start-Process '${dockerExe.replace(/'/g, "''")}'`);
         
         // Step 5: Wait for Docker to initialize
         progressDialog.update({ html: 'Step 5/5: Waiting for Docker to initialize...' });
@@ -317,19 +412,101 @@ processors=${processors}
     restartDockerLinux() {
       console.log("in development");
     },
+    async restartPodmanMachine() {
+      const isWindows = this.$store.state.OStype === "Windows_NT";
+      try {
+        const confirmation = await Swal.fire({
+          title: "Warning: Podman Machine Restart Required",
+          html: `
+            <div style="text-align: left; margin: 15px 0;">
+              <p><strong>This operation will:</strong></p>
+              <ul style="margin: 10px 0; padding-left: 20px;">
+                <li>Stop the Podman machine</li>
+                ${
+                  isWindows
+                    ? `<li>Update <code>~/.wslconfig</code> with <strong>${this.memtotal}GB RAM, ${this.ncpu} CPUs</strong> (WSL-wide; Podman on Windows cannot set per-machine CPU/RAM)</li>
+                <li>Shut down WSL so the new limits apply</li>`
+                    : `<li>Apply new resource settings: <strong>${this.memtotal}GB RAM, ${this.ncpu} CPUs</strong></li>`
+                }
+                <li>Start the Podman machine again</li>
+              </ul>
+              <p><strong>Any running containers will be stopped.</strong></p>
+            </div>
+          `,
+          icon: "warning",
+          showCancelButton: true,
+          confirmButtonText: "Continue",
+          cancelButtonText: "Cancel",
+          confirmButtonColor: "#d33",
+          cancelButtonColor: "#3085d6",
+          theme: "dark",
+        });
 
-    // Helper method for sequential PowerShell execution
-    execPowerShellCommand(command) {
+        if (!confirmation.isConfirmed) {
+          return;
+        }
+
+        const progressDialog = Swal.fire({
+          title: "Applying Podman Resource Changes",
+          html: isWindows
+            ? "Updating .wslconfig and restarting WSL/Podman..."
+            : "Updating machine CPU and memory...",
+          allowOutsideClick: false,
+          showConfirmButton: false,
+          theme: "dark",
+          didOpen: () => Swal.showLoading(),
+        });
+
+        const result = await applyPodmanMachineResources({
+          cpus: this.ncpu,
+          memoryMiB: Math.round(this.memtotal * 1024),
+        });
+
+        progressDialog.update({ html: "Waiting for Podman to come back online..." });
+        await this.sleep(3000);
+        await this.$store.dispatch("probeContainerRuntimes", { force: true });
+        await this.$store.dispatch("fetchDockerInfo");
+        await progressDialog.close();
+
+        const viaNote =
+          result.appliedVia === "wslconfig"
+            ? " (via ~/.wslconfig)"
+            : "";
+        await Swal.fire({
+          title: "Resources Updated Successfully",
+          text: `Podman machine ${result.machineName} restarted with ${this.memtotal}GB RAM, ${this.ncpu} CPUs${viaNote}`,
+          icon: "success",
+          theme: "dark",
+          timer: 4000,
+        });
+      } catch (error) {
+        await Swal.fire({
+          title: "Update Failed",
+          text: error.message || String(error),
+          icon: "error",
+          theme: "dark",
+        });
+      }
+    },
+
+    // Helper method for sequential PowerShell execution.
+    // execFile avoids cmd.exe quote-stripping of nested -Command strings.
+    execPowerShellCommand(command, { ignoreError = false } = {}) {
       return new Promise((resolve, reject) => {
-        exec(`powershell.exe -Command "${command}"`, (error, stdout, stderr) => {
-          if (error) {
-            reject(new Error(`Command failed: ${command}\n${error.message}`));
-          } else {
-            console.log(`✅ Executed: ${command}`);
+        execFile(
+          "powershell.exe",
+          ["-NoProfile", "-NonInteractive", "-Command", command],
+          (error, stdout, stderr) => {
+            if (error && !ignoreError) {
+              reject(new Error(`Command failed: ${command}\n${error.message}`));
+              return;
+            }
+            console.log(`Executed: ${command}`);
             if (stdout) console.log(`Output: ${stdout}`);
+            if (error) console.warn(`Ignored PowerShell error: ${error.message}`);
             resolve({ stdout, stderr });
           }
-        });
+        );
       });
     },
 

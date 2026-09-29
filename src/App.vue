@@ -19,6 +19,7 @@
     </v-main>
 
     <DockerPullSnackbar />
+    <ContainerEngineDialog />
   </v-app>
 </template>
 
@@ -27,6 +28,7 @@ import leftNav from "./components/leftNav";
 import rightNav from "./components/rightNav";
 import UpdateButton from "./components/UpdateButton";
 import DockerPullSnackbar from "./components/DockerPullSnackbar";
+import ContainerEngineDialog from "./components/ContainerEngineDialog";
 
 export default {
   theme: { dark: true },
@@ -36,7 +38,8 @@ export default {
     leftNav,
     rightNav,
     UpdateButton,
-    DockerPullSnackbar
+    DockerPullSnackbar,
+    ContainerEngineDialog
   },
 
   data: () => ({
