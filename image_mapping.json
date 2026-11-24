@@ -75,7 +75,7 @@
       "dockerfile": "image_development/Dockerfile_optimOTU",
       "context": ".",
       "image": "pipecraft/optimotu",
-      "tags": ["5.1-pc1.2.0"]
+      "tags": ["5.1"]
     },
     {
       "name": "reorient",

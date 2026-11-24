@@ -1,6 +1,4 @@
 #!/usr/bin/env Rscript
-library(devtools)
-
 # load variables
 min_ratio_type = Sys.getenv('min_ratio_type')
 min_ratio = as.numeric(Sys.getenv('min_ratio'))

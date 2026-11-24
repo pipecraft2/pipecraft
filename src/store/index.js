@@ -5,16 +5,29 @@ import os from "os";
 import fs from "fs";
 import path from "path";
 import { imageExists } from "dockerode-utils";
-import { getDockerodeOptionsFromContextSync } from "../utils/dockerContext";
+import {
+  candidateForEngine,
+  engineDisplayName,
+  ensureDockerRuntime,
+  ensurePodmanRuntime,
+  getCachedRuntime,
+  getResolvedDockerodeOptions,
+  inspectAvailableRuntimes,
+  pingRuntime,
+  persistRuntimePreference,
+  readRuntimePreference,
+  setCachedRuntime,
+} from "../utils/containerRuntime";
 import { getServiceScriptsPath } from "../utils/scriptsPath";
 var _ = require("lodash");
 const Swal = require("sweetalert2");
 const slash = require("slash");
 const { dialog } = require("@electron/remote");
 
-function getDockerInstance() {
+// Build a dockerode client for the currently selected Docker/Podman runtime.
+function getDockerInstance(runtime = getCachedRuntime()) {
   const Docker = require("dockerode");
-  const options = getDockerodeOptionsFromContextSync();
+  const options = runtime?.options || getResolvedDockerodeOptions();
   return new Docker(options);
 }
 
@@ -45,6 +58,26 @@ export default new Vuex.Store({
     ],
     dockerInfo: { NCPU: 1, MemTotal: 1073741824 },
     dockerStatus: "",
+    // Default engine (docker/podman/unset) vs what this session connected to.
+    containerRuntime: {
+      preference: readRuntimePreference(),
+      active: "",
+      sessionEngine: "",
+      starting: false,
+      startError: "",
+      needChooser: false,
+      needInstallWarning: false,
+      socketPath: "",
+      rootless: false,
+      available: {
+        docker: false,
+        podman: false,
+      },
+      running: {
+        docker: false,
+        podman: false,
+      },
+    },
     OStype: "",
     Qcheck: {
       fileExtension: "",
@@ -78,7 +111,7 @@ export default new Vuex.Store({
     steps: [
       {
         stepName: "demultiplex",
-        disabled: "demultiplexed",
+        disabled: "never",
         services: [
           {
             tooltip:
@@ -2597,7 +2630,7 @@ export default new Vuex.Store({
             tooltip:
               "assign taxonomy with BOLDigger3 (query against BOLD Systems v5 online database)",
             scriptName: "taxonomy_boldigger3.sh",
-            imageName: "pipecraft/boldigger3:2.2.0",
+            imageName: "pipecraft/boldigger3:3.0.3",
             serviceName: "BOLDigger3",
             selected: false,
             showExtra: false,
@@ -4416,7 +4449,7 @@ export default new Vuex.Store({
       {
         tooltip: "Specify target taxa and sequence orientation",
         scriptName:"xxx.sh",
-        imageName: "pipecraft/optimotu:5.1-pc1.2.0",
+        imageName: "pipecraft/optimotu:5.1",
         serviceName: "target taxa and sequence orientation",
         manualLink: "https://pipecraft2-manual.readthedocs.io/en/latest/pre-defined_pipelines.html#target-taxa-and-sequence-orientation",
         disabled: "never",
@@ -6320,6 +6353,53 @@ export default new Vuex.Store({
   },
   getters: {
     isDockerActive: state => state.dockerStatus === "running",
+    activeEngine: state => state.containerRuntime.active,
+    sessionEngine: state => state.containerRuntime.sessionEngine,
+    bothEnginesDetected: state =>
+      Boolean(state.containerRuntime.available.docker && state.containerRuntime.available.podman),
+    engineLabel: (state, getters) =>
+      engineDisplayName(
+        getters.activeEngine ||
+          state.containerRuntime.sessionEngine ||
+          state.containerRuntime.preference
+      ),
+    // Status / error strings that mention Docker or Podman based on preference.
+    runtimeStatusText: (state, getters) => {
+      if (state.containerRuntime.starting) {
+        return `Starting ${getters.engineLabel}...`;
+      }
+      if (getters.isDockerActive) {
+        return `${getters.engineLabel} is running`;
+      }
+      if (state.containerRuntime.startError) {
+        return state.containerRuntime.startError;
+      }
+      if (state.containerRuntime.sessionEngine === "podman" || state.containerRuntime.preference === "podman") {
+        return "Podman is not running";
+      }
+      if (state.containerRuntime.sessionEngine === "docker" || state.containerRuntime.preference === "docker") {
+        return "Docker is not running";
+      }
+      return "No container engine is running";
+    },
+    engineNotFoundMessage: (state, getters) => {
+      if (state.containerRuntime.starting) {
+        return `Starting ${getters.engineLabel}...`;
+      }
+      if (state.containerRuntime.startError) {
+        return state.containerRuntime.startError;
+      }
+      if (state.containerRuntime.sessionEngine === "podman" || state.containerRuntime.preference === "podman") {
+        return "Failed to find Podman";
+      }
+      if (state.containerRuntime.sessionEngine === "docker" || state.containerRuntime.preference === "docker") {
+        return "Failed to find Docker";
+      }
+      if (getters.engineLabel && getters.engineLabel !== "container engine") {
+        return `Failed to find ${getters.engineLabel}`;
+      }
+      return "Failed to find Docker or Podman";
+    },
     mostCommonExtenson: (state) => (files) => {
       const extensionCounts = Object.fromEntries(
         state.SUPPORTED_EXTENSIONS.map(ext => [ext, 0])
@@ -6574,32 +6654,6 @@ export default new Vuex.Store({
         }
       }
     },
-    toggle_demux_mux(state, payload) {
-      for (const [key] of Object.entries(state.customWorkflowInfo)) {
-        for (let i = 0; i < state[key].length; i++) {
-          if (
-            payload == "demultiplexed" &&
-            state[key][i].disabled == "demultiplexed"
-          ) {
-            console.log(state[key][i].disabled);
-            state[key][i].selected = false;
-          }
-          if (
-            payload == "multiplexed" &&
-            state[key][i].disabled == "demultiplexed"
-          ) {
-            state[key][i].selected = true;
-          }
-        }
-      }
-      for (let i = 0; i < state.selectedSteps.length; i++) {
-        if (payload == "demultiplexed") {
-          state.selectedSteps = state.selectedSteps.filter(
-            (item) => !(item.stepName == "demultiplex")
-          );
-        }
-      }
-    },
     loadWorkflow(state, payload) {
       state.selectedSteps = payload;
     },
@@ -6622,6 +6676,41 @@ export default new Vuex.Store({
     },
     updateDockerStatus(state, payload) {
       state.dockerStatus = payload;
+    },
+    setRuntimePreference(state, preference) {
+      state.containerRuntime.preference = preference || "";
+    },
+    setSessionEngine(state, engine) {
+      state.containerRuntime.sessionEngine = engine || "";
+    },
+    setRuntimeStarting(state, starting) {
+      state.containerRuntime.starting = Boolean(starting);
+    },
+    setRuntimeStartError(state, message) {
+      state.containerRuntime.startError = message || "";
+    },
+    setNeedChooser(state, needChooser) {
+      state.containerRuntime.needChooser = Boolean(needChooser);
+    },
+    setNeedInstallWarning(state, needInstallWarning) {
+      state.containerRuntime.needInstallWarning = Boolean(needInstallWarning);
+    },
+    setActiveRuntime(state, runtime) {
+      state.containerRuntime.active = runtime?.engine || "";
+      state.containerRuntime.socketPath = runtime?.socketPath || "";
+      state.containerRuntime.rootless = Boolean(runtime?.rootless);
+    },
+    setAvailableRuntimes(state, available) {
+      state.containerRuntime.available = {
+        docker: Boolean(available?.docker?.detected),
+        podman: Boolean(available?.podman?.detected),
+      };
+    },
+    setRuntimeRunning(state, running) {
+      state.containerRuntime.running = {
+        docker: Boolean(running?.docker),
+        podman: Boolean(running?.podman),
+      };
     },
     addInputDir(state, filePath) {
       state.inputDir = filePath;
@@ -6887,17 +6976,19 @@ export default new Vuex.Store({
         // Get total memory
         const totalMemory = os.totalmem();
   
+        // Docker Desktop JSON is used to apply CPU/RAM on macOS (and Linux
+        // Desktop). Windows WSL2 does not read those keys — VM limits live in
+        // %UserProfile%\.wslconfig.
         let dockerSettings = null;
-        
-        if (platform === 'win32') {
-          const winSettingsPath = path.join(os.homedir(), 'AppData', 'Roaming', 'Docker', 'settings-store.json');
-          if (fs.existsSync(winSettingsPath)) {
-            dockerSettings = winSettingsPath;
-          }
-        } else if (platform === 'darwin') {
-          const macSettingsPath = path.join(os.homedir(), 'Library', 'Group Containers', 'group.com.docker', 'settings-store.json');
+
+        if (platform === 'darwin') {
+          const macDir = path.join(os.homedir(), 'Library', 'Group Containers', 'group.com.docker');
+          const macSettingsPath = path.join(macDir, 'settings-store.json');
+          const macLegacyPath = path.join(macDir, 'settings.json');
           if (fs.existsSync(macSettingsPath)) {
             dockerSettings = macSettingsPath;
+          } else if (fs.existsSync(macLegacyPath)) {
+            dockerSettings = macLegacyPath;
           }
         } else if (platform === 'linux') {
           // Check Docker Desktop first, then fallback to regular Docker
@@ -7134,7 +7225,7 @@ export default new Vuex.Store({
         // Create config object
         const configObj = {
           database_file: "/database/database.fasta",  // Use container path, not host path
-          blastdb_path: "/blastdb",
+          blastdb_path: "/sequences/blastdb",
           run_id: runId,
           // Pipeline options
           use_itsx: useItsx ? 1 : 0,
@@ -7186,8 +7277,213 @@ export default new Vuex.Store({
           const info = await docker.info();
           commit("setDockerInfo", info);
         } catch (error) {
-          console.error("Failed to fetch Docker info:", error);
+          // Leave dockerInfo unchanged. Workflows cannot start while the engine
+          // is inactive; resources are refreshed when status monitoring sees
+          // it become "running" (and again when opening Resource Manager).
+          console.error("Failed to fetch container engine info:", error);
         }
+      }
+    },
+    async setDefaultRuntime({ commit }, engine) {
+      const preference = persistRuntimePreference(engine || "");
+      commit("setRuntimePreference", preference);
+    },
+    async activateEngine({ commit, dispatch, state }, { engine, persistDefault = false, start = true } = {}) {
+      if (engine !== "docker" && engine !== "podman") {
+        throw new Error("Choose Docker or Podman.");
+      }
+
+      commit("setSessionEngine", engine);
+      commit("setNeedChooser", false);
+      commit("setRuntimeStarting", true);
+      commit("setRuntimeStartError", "");
+      commit("updateDockerStatus", "");
+
+      if (persistDefault) {
+        const preference = persistRuntimePreference(engine);
+        commit("setRuntimePreference", preference);
+      }
+
+      try {
+        let runtime = null;
+        if (start) {
+          runtime =
+            engine === "podman" ? await ensurePodmanRuntime() : await ensureDockerRuntime();
+        } else {
+          runtime = candidateForEngine(engine);
+        }
+        if (!runtime?.options) {
+          throw new Error(
+            `${engineDisplayName(engine)} is not installed or its socket could not be located.`
+          );
+        }
+        const connected = await pingRuntime(runtime);
+        if (!connected) {
+          throw new Error(`${engineDisplayName(engine)} is not running.`);
+        }
+        setCachedRuntime(connected);
+        commit("setActiveRuntime", connected);
+        commit("updateDockerStatus", "running");
+        commit("setRuntimeRunning", {
+          ...state.containerRuntime.running,
+          [connected.engine]: true,
+        });
+        await dispatch("fetchDockerInfo");
+        return "running";
+      } catch (error) {
+        setCachedRuntime(null);
+        commit("setActiveRuntime", null);
+        commit("updateDockerStatus", "stopped");
+        commit("setRuntimeStartError", error?.message || String(error));
+        if (state.containerRuntime.available.docker && state.containerRuntime.available.podman) {
+          commit("setNeedChooser", true);
+        }
+        throw error;
+      } finally {
+        commit("setRuntimeStarting", false);
+      }
+    },
+    async setContainerRuntimePreference({ dispatch }, preference) {
+      if (preference === "docker" || preference === "podman") {
+        await dispatch("activateEngine", {
+          engine: preference,
+          persistDefault: true,
+          start: true,
+        });
+        return;
+      }
+      await dispatch("setDefaultRuntime", "");
+      await dispatch("probeContainerRuntimes", { force: true });
+    },
+    async bootstrapContainerRuntime({ commit, dispatch, state }) {
+      const available = inspectAvailableRuntimes();
+      commit("setAvailableRuntimes", available);
+
+      const dockerInstalled = Boolean(available?.docker?.detected);
+      const podmanInstalled = Boolean(available?.podman?.detected);
+
+      let dockerRunning = false;
+      let podmanRunning = false;
+      try {
+        const docker = candidateForEngine("docker");
+        if (docker) {
+          await pingRuntime(docker);
+          dockerRunning = true;
+        }
+      } catch {
+        dockerRunning = false;
+      }
+      try {
+        const podman = candidateForEngine("podman");
+        if (podman) {
+          await pingRuntime(podman);
+          podmanRunning = true;
+        }
+      } catch {
+        podmanRunning = false;
+      }
+      commit("setRuntimeRunning", { docker: dockerRunning, podman: podmanRunning });
+
+      if (!dockerInstalled && !podmanInstalled) {
+        commit("setNeedChooser", false);
+        commit("setNeedInstallWarning", true);
+        commit("updateDockerStatus", "stopped");
+        return { needChooser: false, needInstallWarning: true };
+      }
+
+      commit("setNeedInstallWarning", false);
+
+      if (dockerInstalled && podmanInstalled) {
+        const preference = state.containerRuntime.preference;
+        if (preference === "docker" || preference === "podman") {
+          await dispatch("activateEngine", {
+            engine: preference,
+            persistDefault: false,
+            start: true,
+          });
+          return { needChooser: false };
+        }
+        commit("setNeedChooser", true);
+        commit("updateDockerStatus", "stopped");
+        return { needChooser: true };
+      }
+
+      const only = dockerInstalled ? "docker" : "podman";
+      await dispatch("activateEngine", {
+        engine: only,
+        persistDefault: false,
+        start: true,
+      });
+      return { needChooser: false };
+    },
+    // Ping the chosen engine only. Never start or switch engines here.
+    async probeContainerRuntimes({ commit, dispatch, state }, options = {}) {
+      if (state.containerRuntime.starting) {
+        return state.dockerStatus;
+      }
+      const force = Boolean(options && options.force);
+      const previousStatus = state.dockerStatus;
+      const cached = getCachedRuntime();
+
+      if (!force && cached?.options) {
+        try {
+          const connected = await pingRuntime(cached);
+          commit("setActiveRuntime", connected);
+          commit("updateDockerStatus", "running");
+          if (previousStatus !== "running") {
+            await dispatch("fetchDockerInfo");
+          }
+          return "running";
+        } catch (error) {
+          setCachedRuntime(null);
+        }
+      }
+
+      const available = inspectAvailableRuntimes();
+      commit("setAvailableRuntimes", available);
+
+      const engine =
+        state.containerRuntime.sessionEngine ||
+        state.containerRuntime.preference ||
+        (available.docker?.detected && !available.podman?.detected
+          ? "docker"
+          : available.podman?.detected && !available.docker?.detected
+            ? "podman"
+            : "");
+
+      if (!engine) {
+        setCachedRuntime(null);
+        commit("setActiveRuntime", null);
+        commit("updateDockerStatus", "stopped");
+        return "stopped";
+      }
+
+      const candidate = candidateForEngine(engine);
+      if (!candidate) {
+        setCachedRuntime(null);
+        commit("setActiveRuntime", null);
+        commit("updateDockerStatus", "stopped");
+        return "stopped";
+      }
+
+      try {
+        const connected = await pingRuntime(candidate);
+        setCachedRuntime(connected);
+        commit("setActiveRuntime", connected);
+        commit("updateDockerStatus", "running");
+        if (previousStatus !== "running") {
+          await dispatch("fetchDockerInfo");
+        }
+        return "running";
+      } catch (error) {
+        console.log(
+          `Container engine probe failed for ${engine}:`,
+          error?.message || error
+        );
+        setCachedRuntime(null);
+        commit("setActiveRuntime", null);
+        commit("updateDockerStatus", "stopped");
+        return "stopped";
       }
     },
     async setWorkingDir({ commit, state, dispatch }, mode) {
@@ -7393,26 +7689,9 @@ export default new Vuex.Store({
         return null;
       }
     },
-    async startDockerStatusMonitoring({ commit }) {
-      let lastStatus = null;
-      const checkDockerStatus = async () => {
-        let status = "stopped";
-        try {
-          const docker = getDockerInstance();
-          await docker.version();
-          status = "running";
-        } catch (error) {
-          status = "stopped";
-        }
-
-        if (status !== lastStatus) {
-          lastStatus = status;
-          commit("updateDockerStatus", status);
-        }
-      };
-      // Check immediately
+    async startDockerStatusMonitoring({ dispatch }) {
+      const checkDockerStatus = () => dispatch("probeContainerRuntimes");
       checkDockerStatus();
-      // Set up interval for continuous monitoring
       setInterval(checkDockerStatus, 10000);
     },
   },

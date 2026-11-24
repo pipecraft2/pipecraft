@@ -35,6 +35,8 @@ module.exports = {
           synopsis:
             "Bioinformatics application that implements various popular tools for metabarcoding data analyses.",
           description: "PipeCraft is a desktop application for metabarcoding data analysis.",
+          // Desktop file Exec=… --no-sandbox (CLI AppImage uses afterPack wrapper)
+          executableArgs: ["--no-sandbox"],
           desktop: {
             Name: "PipeCraft2",
             Comment: "Software for metabarcoding data analysis",
@@ -48,6 +50,8 @@ module.exports = {
         appImage: {
           artifactName: "${productName}-${version}-linux-${arch}.AppImage",
         },
+        // Remove chrome-sandbox + wrap binary so CLI AppImage starts on Ubuntu 24.04+
+        afterPack: "build/afterPack.js",
         mac: {
           target: [
             {
