@@ -37,6 +37,21 @@ strip_right=${strip_right}
 #Source for functions
 source /scripts/submodules/framework.functions.sh
 
+# Read gzipped FASTQ directly. extension stays fastq.gz/fq.gz so the next step
+# and the read counts keep that name. inner is the plain suffix VSEARCH writes.
+if [[ $fileFormat == "fastq" ]] || [[ $fileFormat == "fq" ]] || [[ $fileFormat == "fastq.gz" ]] || [[ $fileFormat == "fq.gz" ]]; then
+    extension=$fileFormat
+    inner=${fileFormat%.gz}
+    export extension
+    # Do not set check_compress: clean_and_make_stats would then delete *.$extension.
+    check_compress=""
+else
+    printf '%s\n' "ERROR]: $fileFormat formatting not supported here!
+Supported extensions: fastq(.gz), fq(.gz).
+>Quitting" >&2
+    end_process
+fi
+
 #additional options, if selection != undefined
 if [[ $max_length == null ]] || [[ -z $max_length ]] || [[ $max_length == 0 ]]; then
     max_length=$""
@@ -154,36 +169,15 @@ for seqrun in $DIRS; do
         ## Preparing files for the process
         printf "\n____________________________________\n"
         printf "Processing $inputR1 and $inputR2 ...\n"
-        #If input is compressed, then decompress (keeping the compressed file, but overwriting if filename exists!)
-        check_gz_zip_PE
-        ### Check input formats (fastq supported)
-        check_extension_fastq
 
         ###############################
         ### Start quality filtering ###
         ###############################
         mkdir -p tempdir
-    
-        printf "vsearch --fastq_filter \
-        $inputR1.$extension \
-        $maxee \
-        $maxns \
-        $trunc_length \
-        $minlen \
-        $cores \
-        $qmax \
-        $qmin \
-        $max_length \
-        $maxee_rate \
-        $truncqual \
-        $truncee \
-        $strip_left \
-        $strip_right \
-        --fastqout tempdir/$inputR1.$extension"
 
-        #R1
+        #R1. VSEARCH reads .gz directly and writes a plain temp FASTQ.
         checkerror=$(vsearch --fastq_filter \
-        $inputR1.$extension \
+        "$inputR1.$fileFormat" \
         $maxee \
         $maxns \
         $trunc_length \
@@ -197,12 +191,12 @@ for seqrun in $DIRS; do
         $truncee \
         $strip_left \
         $strip_right \
-        --fastqout tempdir/$inputR1.$extension 2>&1)
+        --fastqout "tempdir/$inputR1.$inner" 2>&1)
         check_app_error
 
         #R2
         checkerror=$(vsearch --fastq_filter \
-        $inputR2.$extension \
+        "$inputR2.$fileFormat" \
         $maxee \
         $maxns \
         $trunc_length \
@@ -216,36 +210,34 @@ for seqrun in $DIRS; do
         $truncee \
         $strip_left \
         $strip_right \
-        --fastqout tempdir/$inputR2.$extension 2>&1)
+        --fastqout "tempdir/$inputR2.$inner" 2>&1)
         check_app_error
 
         #If outputs are not empty, then synchronize R1 and R2
-        if [ -s tempdir/$inputR1.$extension ]; then
-            if [ -s tempdir/$inputR2.$extension ]; then
+        if [ -s "tempdir/$inputR1.$inner" ]; then
+            if [ -s "tempdir/$inputR2.$inner" ]; then
                 printf "\nSynchronizing R1 and R2 reads (matching order for paired-end reads merging)\n"
                 cd tempdir
-                checkerror=$(seqkit pair -1 $inputR1.$extension -2 $inputR2.$extension 2>&1)
+                checkerror=$(seqkit pair -1 "$inputR1.$inner" -2 "$inputR2.$inner" 2>&1)
                 check_app_error
 
-                rm $inputR1.$extension
-                rm $inputR2.$extension
-                mv $inputR1.paired.$extension $inputR1.$extension
-                mv $inputR2.paired.$extension $inputR2.$extension
+                rm "$inputR1.$inner"
+                rm "$inputR2.$inner"
+                mv "$inputR1.paired.$inner" "$inputR1.$inner"
+                mv "$inputR2.paired.$inner" "$inputR2.$inner"
                 cd ..
 
-                #Move final files to $output_dir
-                mv tempdir/$inputR1.$extension $output_dir/$inputR1.$extension
-                mv tempdir/$inputR2.$extension $output_dir/$inputR2.$extension
+                # Gzipped input stays gzipped. Plain input is moved as-is.
+                publish_fastq "tempdir/$inputR1.$inner" "$output_dir/$inputR1.$fileFormat"
+                publish_fastq "tempdir/$inputR2.$inner" "$output_dir/$inputR2.$fileFormat"
 
             else
                 printf '%s\n' "WARNING]: $inputR2 has 0 seqs after filtering (no output for that sample)"
-                rm tempdir/$inputR1.$extension
-                rm tempdir/$inputR2.$extension
+                rm -f "tempdir/$inputR1.$inner" "tempdir/$inputR2.$inner"
             fi
         else
             printf '%s\n' "WARNING]: $inputR1 has 0 seqs after filtering (no output for that sample)"
-            rm tempdir/$inputR1.$extension
-            rm tempdir/$inputR2.$extension
+            rm -f "tempdir/$inputR1.$inner" "tempdir/$inputR2.$inner"
         fi
     done < tempdir2/paired_end_files.txt
 

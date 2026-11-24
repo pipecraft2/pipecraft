@@ -284,6 +284,28 @@ Decompressing other formats is not supported, please decompress manually.
 
 
 ###################################################
+### Publish a plain FASTQ, gzipped when fileFormat is ###
+###################################################
+# VSEARCH writes plain FASTQ. When fileFormat ends in .gz, compress src to dest
+# and remove src. Plain runs move src onto dest. src and dest are the same path
+# when the output is already in its final place.
+function publish_fastq () {
+    src="$1"
+    dest="$2"
+    if [[ $fileFormat == *.gz ]]; then
+        pigz -c "$src" > "$dest"
+        if [[ $? != 0 ]]; then
+            printf '%s\n' "ERROR]: compressing $dest failed.
+>Quitting" >&2
+            end_process
+        fi
+        rm -f "$src"
+    elif [[ "$src" != "$dest" ]]; then
+        mv "$src" "$dest"
+    fi
+}
+
+###################################################
 ### Check if paired-end files are compressed (decompress and check) ###
 ###################################################
 #If input is compressed, then decompress (keeping the compressed file, but overwriting if filename exists!)
@@ -460,7 +482,7 @@ function clean_and_make_stats_assemble () {
 #Delete empty output files
 find "$output_dir" -empty -type f -delete
 # Count input reads
-if [[ $extension == "fastq" ]] || [[ $extension == "fq" ]] || [[ $extension == "fasta" ]] || [[ $extension == "fa" ]] || [[ $extension == "fas" ]]; then
+if [[ $extension == "fastq" ]] || [[ $extension == "fq" ]] || [[ $extension == "fastq.gz" ]] || [[ $extension == "fq.gz" ]] || [[ $extension == "fasta" ]] || [[ $extension == "fa" ]] || [[ $extension == "fas" ]]; then
     : > tempdir2/seq_count.txt
     while read -r LINE; do
         seqkit stats --threads 6 -T "$LINE" | awk -F'\t' 'BEGIN{OFS="\t";} FNR == 2 {print $1,$4}' >> tempdir2/seq_count.txt
@@ -469,7 +491,7 @@ fi
 
 ### Count reads after the process
 output_dir_for_sed=$(echo "$output_dir" | sed -e "s/\//\\\\\//g")
-if [[ $extension == "fastq" ]] || [[ $extension == "fq" ]] || [[ $extension == "fasta" ]] || [[ $extension == "fa" ]] || [[ $extension == "fas" ]]; then
+if [[ $extension == "fastq" ]] || [[ $extension == "fq" ]] || [[ $extension == "fastq.gz" ]] || [[ $extension == "fq.gz" ]] || [[ $extension == "fasta" ]] || [[ $extension == "fa" ]] || [[ $extension == "fas" ]]; then
     : > tempdir2/seq_count_after.txt
     if compgen -G "$output_dir/*.$extension" > /dev/null; then
         seqkit stats --threads 6 -T "$output_dir"/*."$extension" | awk -F'\t' 'BEGIN{OFS="\t";} NR!=1 {print $1,$4}' | sed -e "s/$output_dir_for_sed//" >> tempdir2/seq_count_after.txt

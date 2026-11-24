@@ -126,21 +126,26 @@ for seqrun in $DIRS; do
         ## Preparing files for the process
         printf "\n____________________________________\n"
         printf "Processing $input ...\n"
-        #If input is compressed, then decompress (keeping the compressed file, but overwriting if filename exists!)
-        check_gz_zip_SE
-        ### Check input formats (fastq/fasta supported)
-        check_extension_fastx
-
-        #If input is FASTQ then convert to FASTA
-        if [[ $extension == "fastq" ]] || [[ $extension == "fq" ]]; then
-            checkerror=$(seqkit fq2fa -t dna --line-width 0 $input.$extension -o $input.fasta 2>&1)
+        # FASTQ, including .gz, is read directly and written once as plain FASTA.
+        # FASTA.gz still has to be unpacked because the rest of this script
+        # addresses $input.fasta / $input.fa on disk.
+        inner=${fileFormat%.gz}
+        if [[ $inner == "fastq" ]] || [[ $inner == "fq" ]]; then
+            checkerror=$(seqkit fq2fa -t dna --line-width 0 "$input.$fileFormat" -o "$input.fasta" 2>&1)
             check_app_error
-            printf "Note: converted $extension to FASTA \n"
-
-            extension=$"fasta"
+            printf "Note: converted $fileFormat to FASTA \n"
+            extension="fasta"
             export extension
-            was_fastq=$"true"
+            was_fastq="true"
             export was_fastq
+            check_compress=""
+        elif [[ $fileFormat == *.gz ]]; then
+            check_gz_zip_SE
+            check_extension_fastx
+        else
+            extension=$fileFormat
+            export extension
+            check_extension_fastx
         fi
 
         ###############################

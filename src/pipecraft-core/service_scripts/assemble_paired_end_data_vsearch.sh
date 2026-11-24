@@ -59,9 +59,15 @@ else
     printf "\n workingDir = $DIRS \n"
 fi
 
-### Check file formatting for FASTQ 
+### Check file formatting for FASTQ
+# extension keeps .gz when the input is gzipped. inner is the plain suffix
+# VSEARCH writes before publish_fastq compresses it again.
 if [[ $fileFormat == "fastq" ]] || [[ $fileFormat == "fq" ]] || [[ $fileFormat == "fastq.gz" ]] || [[ $fileFormat == "fq.gz" ]]; then
-    :
+    extension=$fileFormat
+    inner=${fileFormat%.gz}
+    export extension
+    # Do not set check_compress: clean_and_make_stats_assemble would then delete *.$extension.
+    check_compress=""
 else
     printf '%s\n' "ERROR]: $fileFormat formatting not supported here!
 Supported extensions: fastq(.gz), fq(.gz).
@@ -120,35 +126,38 @@ for seqrun in $DIRS; do
         ## Preparing files for the process
         printf "\n____________________________________\n"
         printf "Checking $inputR1 and $inputR2 ...\n"
-        #If input is compressed, then decompress (keeping the compressed file, but overwriting if filename exists!)
-        check_gz_zip_PE
-        ### Check input formats (fastq supported)
-        check_extension_fastq
 
         ########################
         ### Start assembling ###
         ########################
         fastqout=$(echo $inputR1 | sed -E "s/$read_R1.*//")
+        plain_assembled="$output_dir/$fastqout.$inner"
+        plain_not_fwd="$output_dir/not_assembled_paired_end_reads/$inputR1.notAssembled.$inner"
+        plain_not_rev="$output_dir/not_assembled_paired_end_reads/$inputR2.notAssembled.$inner"
+        fastqout_notmerged_fwd=""
+        fastqout_notmerged_rev=""
+        keep_notmerged="false"
 
-        #variables for not_merged output files
+        #variables for not_merged output files. VSEARCH writes these plain; publish_fastq gzips them.
         if [[ $notmerged_files == "TRUE" ]] || [[ $notmerged_files == "true" ]]; then
             mkdir -p $output_dir/not_assembled_paired_end_reads
-            fastqout_notmerged_fwd="--fastqout_notmerged_fwd $output_dir/not_assembled_paired_end_reads/$inputR1.notAssembled.$extension"
-            fastqout_notmerged_rev="--fastqout_notmerged_rev $output_dir/not_assembled_paired_end_reads/$inputR2.notAssembled.$extension"
+            fastqout_notmerged_fwd="--fastqout_notmerged_fwd $plain_not_fwd"
+            fastqout_notmerged_rev="--fastqout_notmerged_rev $plain_not_rev"
+            keep_notmerged="true"
         fi
         if [[ $fastq_allowmergestagger == "TRUE" ]] || [[ $fastq_allowmergestagger == "true" ]]; then
             allowmergestagger=$"--fastq_allowmergestagger"
-        fi 
+        fi
         #When including R1 to the assembled output, then include fastqout_notmerged_fwd (in case notmerged_files=FALSE)
         if [[ $include_R1 == "TRUE" ]] || [[ $include_R1 == "true" ]]; then
             if [[ $notmerged_files == "FALSE" ]] || [[ $notmerged_files == "false" ]]; then
                 mkdir -p $output_dir/not_assembled_paired_end_reads
-                fastqout_notmerged_fwd="--fastqout_notmerged_fwd $output_dir/not_assembled_paired_end_reads/$inputR1.notAssembled.$extension"
+                fastqout_notmerged_fwd="--fastqout_notmerged_fwd $plain_not_fwd"
             fi
         fi
 
-        checkerror=$(vsearch --quiet --fastq_mergepairs $inputR1.$extension \
-        --reverse $inputR2.$extension \
+        checkerror=$(vsearch --quiet --fastq_mergepairs "$inputR1.$fileFormat" \
+        --reverse "$inputR2.$fileFormat" \
         $fastq_minoverlen \
         $fastq_minmergelen \
         $allowmergestagger \
@@ -159,19 +168,29 @@ for seqrun in $DIRS; do
         $fastqout_notmerged_rev \
         --fastq_qmax $fastq_qmax \
         --fastq_qmaxout $fastq_qmax \
-        --fastqout $output_dir/$fastqout.$extension 2>&1)
+        --fastqout "$plain_assembled" 2>&1)
         check_app_error
 
-        #Include R1 reads to assembled data set if include_R1 = TRUE
+        #Include R1 reads to assembled data set if include_R1 = TRUE.
+        #Append while both files are still plain, then compress.
         if [[ $include_R1 == "TRUE" ]] || [[ $include_R1 == "true" ]]; then
             printf '%s\n' "include only R1 = TRUE, including also unmerged R1 reads to the assembled output"
-            cat $output_dir/not_assembled_paired_end_reads/$inputR1.notAssembled.$extension >> $output_dir/$fastqout.$extension
+            cat "$plain_not_fwd" >> "$plain_assembled"
         fi
         ### Check if assembled output is empty; if yes, then report WARNING
-        if [ -s $output_dir/$fastqout.$extension ]; then
+        if [ -s "$plain_assembled" ]; then
             :
         else
-            printf '%s\n' "WARNING]: after assembling, $fastqout.$extension has 0 seqs (no output)" >&2
+            printf '%s\n' "WARNING]: after assembling, $fastqout.$fileFormat has 0 seqs (no output)" >&2
+        fi
+        publish_fastq "$plain_assembled" "$output_dir/$fastqout.$fileFormat"
+        if [[ $keep_notmerged == "true" ]]; then
+            if [[ -f "$plain_not_fwd" ]]; then
+                publish_fastq "$plain_not_fwd" "$output_dir/not_assembled_paired_end_reads/$inputR1.notAssembled.$fileFormat"
+            fi
+            if [[ -f "$plain_not_rev" ]]; then
+                publish_fastq "$plain_not_rev" "$output_dir/not_assembled_paired_end_reads/$inputR2.notAssembled.$fileFormat"
+            fi
         fi
     done < tempdir2/paired_end_files.txt
 

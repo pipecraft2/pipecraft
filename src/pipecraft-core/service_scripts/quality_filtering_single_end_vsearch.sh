@@ -32,6 +32,21 @@ strip_right=${strip_right}
 
 #Source for functions
 source /scripts/submodules/framework.functions.sh
+
+# Read gzipped FASTQ directly. extension stays fastq.gz/fq.gz so the next step
+# and the read counts keep that name. inner is the plain suffix VSEARCH writes.
+if [[ $fileFormat == "fastq" ]] || [[ $fileFormat == "fq" ]] || [[ $fileFormat == "fastq.gz" ]] || [[ $fileFormat == "fq.gz" ]]; then
+    extension=$fileFormat
+    inner=${fileFormat%.gz}
+    export extension
+    # Do not set check_compress: clean_and_make_stats would then delete *.$extension.
+    check_compress=""
+else
+    printf '%s\n' "ERROR]: $fileFormat formatting not supported here!
+Supported extensions: fastq(.gz), fq(.gz).
+>Quitting" >&2
+    end_process
+fi
 #output dir
 output_dir=$"/input/qualFiltered_out"
 
@@ -150,16 +165,13 @@ for seqrun in $DIRS; do
         input=$(echo $file | sed -e "s/.$fileFormat//")
         printf "\n____________________________________\n"
         printf "Processing $input ...\n"
-        #If input is compressed, then decompress (keeping the compressed file, but overwriting if filename exists!)
-        check_gz_zip_SE
-        ### Check input formats (fastq supported)
-        check_extension_fastq
 
         ###############################
         ### Start quality filtering ###
         ###############################
+        mkdir -p tempdir
         checkerror=$(vsearch --fastq_filter \
-        $input.$extension \
+        "$input.$fileFormat" \
         $maxee \
         $maxns \
         $trunc_length \
@@ -173,8 +185,9 @@ for seqrun in $DIRS; do
         $truncee \
         $strip_left \
         $strip_right \
-        --fastqout $output_dir/$input.$extension 2>&1)
+        --fastqout "tempdir/$input.$inner" 2>&1)
         check_app_error
+        publish_fastq "tempdir/$input.$inner" "$output_dir/$input.$fileFormat"
     done
 
     #################################################
