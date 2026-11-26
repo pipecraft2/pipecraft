@@ -30,10 +30,9 @@ thresholds=${thresholds}  # Space-separated thresholds (optional)
 # The image bakes this file in and publishes the path as BOLDIGGER3_DB_PATH.
 db_path=${BOLDIGGER3_DB_PATH:-/opt/bold/BOLD_Public.18-Sep-2026.ddb}
 
-# Prep input fasta file path for container
-regex='[^/]*$'
-fasta_basename=$(echo $fasta_file | grep -oP "$regex")
-fasta_in=$(printf "/extraFiles/$fasta_basename")
+# Input fasta file (container path)
+fasta_in=$fasta_file
+fasta_basename=$(basename "$fasta_in")
 echo "fasta_file = $fasta_in"
 fasta_base=$(basename "$fasta_in" .fasta)
 

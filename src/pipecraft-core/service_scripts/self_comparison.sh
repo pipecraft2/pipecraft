@@ -19,10 +19,8 @@ printf "# vsearch (version $vsearch_version)\n"
 printf "# BLAST (version $blast_version)\n"
 
 
-#get specified input fasta file
-regex='[^/]*$'
-input_fasta_temp=$(echo $fasta_file | grep -oP "$regex")
-input_fasta=$(printf "/extraFiles/$input_fasta_temp")
+#input fasta file (container path, read-only)
+input_fasta=$fasta_file
 printf "\n input fasta = $input_fasta \n"
 
 #Source for functions
@@ -54,11 +52,14 @@ fi
 # Self-fasta comparison with BLAST
 if [[ $method == "BLAST" ]]; then
     printf "\n#Making blast database from the input fasta \n"
-    checkerror=$(makeblastdb -in $input_fasta -parse_seqids -dbtype nucl 2>&1)
+    # the input is mounted read-only, so the BLAST database is built in /tmp
+    blast_db_dir=$(mktemp -d)
+    blast_db="$blast_db_dir/$fasta_basename"
+    checkerror=$(makeblastdb -in $input_fasta -parse_seqids -dbtype nucl -out $blast_db 2>&1)
     check_app_error
 
     printf "# Self-fasta comparison with BLASTn \n"
-    checkerror=$(blastn -db $input_fasta \
+    checkerror=$(blastn -db $blast_db \
             -outfmt '6 qseqid sseqid pident length mismatch gapopen qstart qend sstart send evalue bitscore qlen slen qcovs qcovhsp sstrand' \
             -out $output_dir/$fasta_basename.self_comp.blast.temp \
             -qcov_hsp_perc $coverage \
@@ -110,10 +111,9 @@ fi
 ########################################
 ### CLEAN UP AND COMPILE README FILE ###
 ########################################
-for i in $input_fasta.n*; do
-    [[ -f $i ]] || continue
-    rm -f "$i"
-done
+if [[ -n $blast_db_dir ]]; then
+    rm -rf "$blast_db_dir"
+fi
 
 end=$(date +%s)
 runtime=$((end-start))

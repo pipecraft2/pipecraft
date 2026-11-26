@@ -15,16 +15,8 @@
 # Source for functions
 source /scripts/submodules/framework.functions.sh
 
-# $OTU_table = input OTU_table
-regex='[^/]*$'
-OTU_table_file_path=$(echo $table | grep -oP "$regex")
-OTU_table_temp=$(basename $OTU_table_file_path)
-OTU_table_file=$(printf "/extraFiles/$OTU_table_temp")
-
-# fasta file
-fasta_file_path=$(echo $fasta_file | grep -oP "$regex")
-fasta_file_temp=$(basename $fasta_file_path)
-fasta_file=$(printf "/extraFiles2/$fasta_file_temp")
+# input OTU table and fasta file (container paths)
+OTU_table_file=$table
 
 ## check if fasta file contains sequences from OTU table
 # get first sequence ID from OTU table
@@ -65,7 +57,7 @@ end=$(date +%s)
 runtime=$((end-start))
 
 #Make README.txt file for demultiplexed reads
-in=$(echo $OTU_table_file | sed -e 's/\/extraFiles\///')
+in=$(basename "$OTU_table_file")
 
 printf "# Used UNCROSS2 algorithm with f-parameter = $f_value and p-parameter = $p_value 
     f-parameter defines the expected cross-talk rate. Default is 0.03. A higher value enforces stricter filtering.

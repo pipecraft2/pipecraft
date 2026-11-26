@@ -33,35 +33,14 @@ uc=${uc}                           # file (.uc)
 otu_fasta=${otu_fasta}             # file (fasta)
 otu_table=${otu_table}             # file (csv/tsv)
 
-# Function to convert a UI-provided host file path into the container-visible path.
-# Strategy: prefer `/input/<basename>` (working directory mount), otherwise search `/extraFiles*`
+# Selected files arrive as container paths; "undefined" means not selected.
 container_file() {
     local p="$1"
     if [[ "$p" == "undefined" ]] || [[ -z "$p" ]]; then
         echo ""
         return
     fi
-
-    local base
-    base="$(basename "$p")"
-
-    # Prefer the selected working directory mount.
-    if [[ -f "/input/$base" ]]; then
-        echo "/input/$base"
-        return
-    fi
-
-    # Fall back to any extraFiles mount (slot numbers depend on input order/visibility).
-    local d
-    for d in /extraFiles*; do
-        if [[ -d "$d" ]] && [[ -f "$d/$base" ]]; then
-            echo "$d/$base"
-            return
-        fi
-    done
-
-    # Default to /input for clearer error messages downstream.
-    echo "/input/$base"
+    echo "$p"
 }
 
 source /scripts/submodules/framework.functions.sh
@@ -98,20 +77,22 @@ fi
 # check "Sequence" column in the table file
 if [[ -n "$table" ]] && [[ -f "$table" ]] && grep -q "Sequence" "$table"; then
     printf '%s\n' "WARNIG]: table file contains a 'Sequence' column. Removing this column before running metaMATE." >&2
+    # the input is mounted read-only; the copy lives in the container's /tmp
+    table_no_seqs="/tmp/$(basename "$table").temp"
     awk 'BEGIN {FS=OFS="\t"} NR==1 {for (i=1; i<=NF; i++) if ($i=="Sequence") col=i} \
-        {for (i=1; i<=NF; i++) if (i!=col) printf "%s%s", $i, (i==NF?ORS:OFS)}' $table > $table.temp
-    table=$table.temp
+        {for (i=1; i<=NF; i++) if (i!=col) printf "%s%s", $i, (i==NF?ORS:OFS)}' "$table" > "$table_no_seqs"
+    table=$table_no_seqs
 fi
 
 # Rep seqs handling
 rep_seqs=$(container_file "$rep_seqs")
 
 if [[ -z "$rep_seqs" ]] || [[ ! -f "$rep_seqs" ]]; then
-    printf '%s\n' "ERROR]: rep_seqs is missing or not found in container mounts. Put it in the PipeCraft working directory (/input) or ensure it is selectable as a file input (mounted under /extraFiles*)." >&2
+    printf '%s\n' "ERROR]: rep_seqs file is not selected or could not be read. Select the rep_seqs fasta file and restart." >&2
     end_process
 fi
 if [[ -z "$table" ]] || [[ ! -f "$table" ]]; then
-    printf '%s\n' "ERROR]: ASV/OTU table is missing or not found in container mounts. Put it in the working directory (/input) or ensure it is selectable as a file input (mounted under /extraFiles*)." >&2
+    printf '%s\n' "ERROR]: ASV/OTU table is not selected or could not be read. Select the table file and restart." >&2
     end_process
 fi
 
@@ -287,13 +268,6 @@ if [[ $filter_mode == "global" ]]; then
         --output "$output_dir" \
         --overwrite $taxgroups $otu_args $metamate_extra_args 2>&1)
     check_app_error
-
-    # remove temp table file and assign table to its original name
-    if [[ -e $table.temp ]]; then
-        original_table=${table%.temp}  # Only remove .temp extension
-        rm $table.temp
-        table=$original_table
-    fi
 
     # remove shuffled fasta file
     if [[ -e /input/${rep_seqs_shuffled%.*}_shuffled.fasta ]]; then

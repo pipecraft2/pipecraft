@@ -11,15 +11,12 @@ set -euo pipefail
 # Source for functions
 source /scripts/submodules/framework.functions.sh
 
-# Inputs
-regex='[^/]*$'
-table_temp=$(echo "$table" | tr '\\' '/' | grep -oP "$regex")
-table_in="/extraFiles/$table_temp"
+# Inputs (container paths)
+table_in=$table
 export table_in
 printf "\n input table = %s \n" "$table_in"
 
-fasta_temp=$(echo "$fasta_file" | tr '\\' '/' | grep -oP "$regex")
-fasta_in="/extraFiles2/$fasta_temp"
+fasta_in=$fasta_file
 export fasta_in
 printf "\n input fasta = %s \n" "$fasta_in"
 

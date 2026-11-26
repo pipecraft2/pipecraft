@@ -24,14 +24,9 @@ strand=${strand}          # [both, plus]
 wordlength=${wordlength}  # Length of words (i.e. k-mers) for database indexing. Defaut is 8.
 cores=${cores}            # number of cores to use
 
-# prep input files for container
-regex='[^/]*$'
-db1_temp=$(echo $database_file | grep -oP "$regex")
-database=$(printf "/extraFiles/$db1_temp")
+# input files (container paths)
+database=$database_file
 echo "database = $database"
-
-fasta_file=$(echo $fasta_file | grep -oP "$regex")
-fasta_file=$(printf "/extraFiles2/$fasta_file")
 echo "fasta_file = $fasta_file"
 # overwrite fileFormat variable; get it from input fasta_file
 fileFormat=$(echo $fasta_file | awk -F. '{print $NF}')
@@ -45,22 +40,30 @@ output_dir=$"/input/taxonomy_out.sintax"
 export output_dir
 
 # Check and prepare SINTAX database
-if [[ -f "$database" ]]; then
-    ext="${database##*.}"
-    if [[ "$ext" != "udb" ]]; then
-        printf "# Building SINTAX database from FASTA file: %s\n" "$database"
-        database_formatted="${database%.*}.udb"
-        vsearch --makeudb_usearch "$database" --output "$database_formatted"
+# The database file is mounted read-only; a .udb built from a fasta file is
+# kept in PipeCraft's database cache (submodules/db_cache.sh).
+source /scripts/submodules/db_cache.sh
+if [[ ! -f "$database" ]]; then
+    printf "Error: SINTAX database file %s does not exist.\n" "$database"
+    exit 1
+fi
+ext=$(echo "${database##*.}" | tr '[:upper:]' '[:lower:]')
+if [[ "$ext" != "udb" ]]; then
+    db_cache=$(db_cache_dir)
+    if db_cache_is_complete "$db_cache"; then
+        printf "# Using cached SINTAX database for %s\n" "$(basename "$database")"
+    else
+        printf "# Building SINTAX database from FASTA file: %s (saved for future runs)\n" "$(basename "$database")"
+        db_cache_reset "$db_cache"
+        vsearch --makeudb_usearch "$database" --output "$db_cache/db.udb"
         if [[ $? -ne 0 ]]; then
             printf "Error: Failed to build SINTAX database from %s\n" "$database"
             exit 1
         fi
-        printf "SINTAX database was converted to UDB format (file = %s).\n" "$database_formatted"
-        database="$database_formatted"
+        db_cache_mark_complete "$db_cache"
     fi
-else
-    printf "Error: SINTAX database file %s does not exist.\n" "$database"
-    exit 1
+    database_name=$(basename "$database")
+    database="$db_cache/db.udb"
 fi
 
 # Start time
@@ -106,9 +109,9 @@ end=$(date +%s)
 runtime=$((end - start))
 
 ### Make README.txt file
-# Remove /extraFiles*/ prefix from input files
-fasta_file=$(echo $fasta_file | grep -oP "$regex")
-database=$(echo $database | grep -oP "$regex")
+# File names only, for the README
+fasta_file=$(basename "$fasta_file")
+database=${database_name:-$(basename "$database")}
 
 printf "# Taxonomy was assigned using VSEARCH SINTAX (with database preparation if required).
 

@@ -117,6 +117,7 @@
       </v-card-actions>
       <v-card-actions v-else-if="startError && !starting && !needChooser">
         <v-spacer></v-spacer>
+        <v-btn text @click="handleDismissStartError">Continue anyway</v-btn>
         <v-btn text color="primary" @click="handleRetry">Retry</v-btn>
       </v-card-actions>
     </v-card>
@@ -131,7 +132,7 @@ export default {
   name: "ContainerEngineDialog",
   data() {
     return {
-      rememberAsDefault: true,
+      rememberAsDefault: false,
       dockerInstallUrl: "https://docs.docker.com/get-docker/",
       podmanInstallUrl: "https://podman.io/docs/installation",
     };
@@ -142,6 +143,7 @@ export default {
       needInstallWarning: (state) => state.containerRuntime.needInstallWarning,
       starting: (state) => state.containerRuntime.starting,
       startError: (state) => state.containerRuntime.startError,
+      startErrorDismissed: (state) => state.containerRuntime.startErrorDismissed,
       sessionEngine: (state) => state.containerRuntime.sessionEngine,
       dockerInstalled: (state) => state.containerRuntime.available.docker,
       podmanInstalled: (state) => state.containerRuntime.available.podman,
@@ -153,7 +155,7 @@ export default {
         this.needChooser ||
         this.needInstallWarning ||
         this.starting ||
-        Boolean(this.startError)
+        (Boolean(this.startError) && !this.startErrorDismissed)
       );
     },
     dialogTitle() {
@@ -191,6 +193,9 @@ export default {
     },
     handleDismissInstallWarning() {
       this.$store.commit("setNeedInstallWarning", false);
+    },
+    handleDismissStartError() {
+      this.$store.commit("dismissRuntimeStartError");
     },
     async handleCheckAgain() {
       try {

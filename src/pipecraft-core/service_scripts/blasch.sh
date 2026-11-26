@@ -89,9 +89,7 @@ fi
 
 # Add reference database if provided
 if [[ "$reference_db" != "undefined" ]] && [[ -n "$reference_db" ]]; then
-    # Convert to container path format
-    reference_db_name=$(basename "$reference_db")
-    container_reference_db="/extraFiles/$reference_db_name"
+    container_reference_db=$reference_db
     
     # Check if the file exists in the container mount point
     if [[ -f "$container_reference_db" ]]; then

@@ -1,0 +1,102 @@
+# OptimOTU v6.0.1 (https://github.com/brendanf/optimotu_targets/releases/tag/v6.0.1)
+#
+# Not used by the app yet. The running image is still pipecraft/optimotu:5.1
+# from Dockerfile_optimOTU. Switch the image name only after a real run succeeds.
+#
+# What comes from the v6.0.1 git archive:
+#   the pipeline, conda/OptimOTU_v6.yaml, amplicon models (ITS3_ITS4.cm,
+#   fITS7_ITS4.cm, COI.hmm), and the clustering threshold tables.
+#
+# What is still not in that archive, so it is downloaded at build time.
+# protaxFungi.zip and protaxAnimal.zip used to be copied from
+# image_development/ (commit 9d9c7f4). They were removed from the git repo
+# because they are large, and the v5 Dockerfile downloads the same files.
+#   protaxFungi, protaxAnimal          University of Jyväskylä Nextcloud
+#   ProtaxAnimal classifier binaries   same, then compiled here
+#   UNITE SH-matching reference        PlutoF public file
+#   USEARCH 11                         official old-binaries repo (USEARCH 12 is not supported)
+#
+# FastqIndEx is a conda package in OptimOTU_v6.yaml, so it is no longer
+# downloaded on its own. The conda packages r-optimotu 0.9.4 and
+# r-optimotu.pipeline 0.6.2 are the v6.0.1 pins. Do not also install those
+# from GitHub; that would silently move off this release.
+
+FROM ubuntu:24.04
+
+ENV LANG=C.UTF-8
+ENV LC_ALL=C.UTF-8
+ENV CONDA_DIR=/opt/conda
+ENV PATH=$CONDA_DIR/bin:$PATH
+
+RUN apt-get update && \
+    apt-get install -y --no-install-recommends wget ca-certificates zip unzip build-essential zlib1g-dev && \
+    wget -O /tmp/optimotu_targets.zip https://github.com/brendanf/optimotu_targets/archive/refs/tags/v6.0.1.zip && \
+    unzip /tmp/optimotu_targets.zip -d /tmp && \
+    mv /tmp/optimotu_targets-6.0.1 /optimotu_targets && \
+    rm /tmp/optimotu_targets.zip && \
+    rm -rf /var/lib/apt/lists/*
+
+# The git tag only has a broken protaxFungi symlink. Replace it with the
+# trained models PipeCraft already uses.
+RUN cd /optimotu_targets && \
+    rm -rf protaxFungi protaxAnimal && \
+    wget -O protaxFungi.zip https://nextcloud.jyu.fi/index.php/s/JCdqdNPgsNqJw6o/download && \
+    unzip protaxFungi.zip -d /optimotu_targets && \
+    wget -O protaxAnimal.zip https://nextcloud.jyu.fi/index.php/s/74p3zTjRjLX76fb/download && \
+    unzip protaxAnimal.zip -d /optimotu_targets && \
+    rm protaxFungi.zip protaxAnimal.zip
+
+RUN cd /optimotu_targets && \
+    wget -O FinPROTAX.zip https://github.com/psomervuo/FinPROTAX/archive/refs/heads/main.zip && \
+    unzip FinPROTAX.zip -d . && \
+    mv FinPROTAX-main FinPROTAX && \
+    unzip FinPROTAX/FinPROTAX.zip && \
+    wget -O protaxAnimal_bin.zip https://nextcloud.jyu.fi/index.php/s/NJ6Kxg6Jte4GJow/download && \
+    unzip protaxAnimal_bin.zip -d protaxAnimal_bin && \
+    cd protaxAnimal_bin/protaxA_c2 && make && \
+    cp classify_v2 classify_info dist_best dist_matrix dist_bipart /optimotu_targets/bin && \
+    cd /optimotu_targets && \
+    rm -rf FinPROTAX.zip FinPROTAX protaxAnimal_bin protaxAnimal_bin.zip
+
+# Fungi outgroup used when the screen is set to UNITE_SHs.
+# The v6 repo has the folder, but not these two files.
+RUN mkdir -p /optimotu_targets/data/sh_matching_data && \
+    cd /tmp && \
+    wget https://s3.hpc.ut.ee/plutof-public/original/5dcbe93a-b50c-4ff5-8898-528160c4e593.zip && \
+    unzip -j 5dcbe93a-b50c-4ff5-8898-528160c4e593.zip \
+      data/shs_out.txt data/sanger_refs_sh.fasta \
+      -d /optimotu_targets/data/sh_matching_data && \
+    rm 5dcbe93a-b50c-4ff5-8898-528160c4e593.zip
+
+# v6 looks for USEARCH at bin/usearch. runprotax and scripts/102_protax_refseqs.R
+# still call protaxFungi/scripts/usearch10.0.240_i86linux32 by name, so the
+# 64-bit binary is also placed at that path after the old UDB files are rebuilt.
+RUN wget -O /usr/local/bin/usearch \
+      https://raw.githubusercontent.com/rcedgar/usearch_old_binaries/main/bin/usearch11.0.667_i86linux64 && \
+    chmod +x /usr/local/bin/usearch && \
+    cd /optimotu_targets && \
+    chmod +x protaxFungi/scripts/usearch10.0.240_i86linux32 && \
+    protaxFungi/scripts/usearch10.0.240_i86linux32 -udb2fasta protaxFungi/addedmodel/sintaxits2.udb -output protaxFungi/addedmodel/sintaxits2.fasta && \
+    usearch -makeudb_usearch protaxFungi/addedmodel/sintaxits2.fasta -output protaxFungi/addedmodel/sintaxits2.udb && \
+    usearch -makeudb_usearch protaxFungi/addedmodel/amptk_synmock.fasta -output protaxFungi/addedmodel/amptk_synmock.udb && \
+    usearch -makeudb_usearch protaxFungi/addedmodel/its2.fa -output protaxFungi/addedmodel/its2.udb && \
+    cp /usr/local/bin/usearch bin/usearch && \
+    cp /usr/local/bin/usearch protaxFungi/scripts/usearch10.0.240_i86linux32 && \
+    sed -i 's|BASEDIR=$(pwd)|BASEDIR="/optimotu_targets"|g' scripts/runprotax && \
+    sed -i '1i#!/bin/bash' scripts/runprotax && \
+    chmod +x scripts/runprotax
+
+RUN wget --quiet https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86_64.sh -O /tmp/miniconda.sh && \
+    bash /tmp/miniconda.sh -b -p /opt/conda && \
+    rm /tmp/miniconda.sh && \
+    conda tos accept --override-channels --channel https://repo.anaconda.com/pkgs/main && \
+    conda tos accept --override-channels --channel https://repo.anaconda.com/pkgs/r && \
+    conda env create -f /optimotu_targets/conda/OptimOTU_v6.yaml && \
+    conda clean -afy && \
+    apt-get update && \
+    apt-get remove -y build-essential && \
+    apt-get autoremove -y && \
+    apt-get clean && \
+    rm -rf /var/lib/apt/lists/* && \
+    gzip /optimotu_targets/protaxAnimal/refs.aln && \
+    mv /optimotu_targets/protaxAnimal/refs.aln.gz /optimotu_targets/protaxAnimal/refs.aln

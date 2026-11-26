@@ -25,9 +25,6 @@ if [[ $ASV_fasta == "undefined" ]]; then
     printf '%s\n' "ERROR]: ASV_fasta not selected. >Quitting" >&2
     end_process
 else
-    regex='[^/]*$'
-    ASV_fasta_temp=$(echo $ASV_fasta | grep -oP "$regex")
-    ASV_fasta=$(printf "/extraFiles/$ASV_fasta_temp")
     printf "\n ASV_fasta = $ASV_fasta \n"
 fi
 extension=$(basename $ASV_fasta | awk 'BEGIN{FS="."}{print $NF}')
@@ -38,9 +35,6 @@ if [[ $ASV_table == "undefined" ]]; then
     printf '%s\n' "ERROR]: ASV_table not selected. >Quitting" >&2
     end_process
 else
-    regex='[^/]*$'
-    ASV_table_temp=$(echo $ASV_table | grep -oP "$regex")
-    ASV_table=$(printf "/extraFiles2/$ASV_table_temp")
     printf "\n ASV_table = $ASV_table \n"
 fi
 

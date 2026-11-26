@@ -1,134 +1,212 @@
 <template>
-  <div class="container" >
-    <v-card width="85%" style="margin: auto; background-color: rgb(0 0 0 / 40%)">
-      <v-card-title style="color: white" class="py-10">RESOURCE MANAGER</v-card-title>
-      <v-divider></v-divider>
-      <v-card-subtitle style="color: white">Container runtime</v-card-subtitle>
-      <div class="px-5 pb-4">
-        <!-- Docker | Podman switch when both are installed. Auto is gone. -->
-        <v-btn-toggle
-          v-if="bothEnginesDetected"
-          :value="selectedEngine"
-          :mandatory="Boolean(selectedEngine)"
-          dense
-          color="teal accent-3"
-          background-color="transparent"
-          :disabled="runtimeStarting"
-          @change="handleEngineChange"
-        >
-          <v-btn value="docker" small dark :disabled="!availableRuntimes.docker">Docker</v-btn>
-          <v-btn value="podman" small dark :disabled="!availableRuntimes.podman">Podman</v-btn>
-        </v-btn-toggle>
-        <v-checkbox
-          v-if="bothEnginesDetected"
-          dark
-          hide-details
-          class="mt-3"
-          :disabled="!selectedEngine || runtimeStarting"
-          :input-value="useAsDefault"
-          @change="handleDefaultChange"
-          label="Use as default"
-        ></v-checkbox>
-        <div
-          v-if="bothEnginesDetected"
-          class="mt-1"
-          style="color: white; font-size: 13px; opacity: 0.8"
-        >
-          When checked, this engine starts automatically next time. Uncheck to choose again at launch.
-        </div>
-        <div class="mt-3" style="color: white; font-size: 14px">
-          <div>{{ runtimeStatusLine }}</div>
-          <div v-if="socketPath" style="opacity: 0.8; word-break: break-all">
-            Socket: {{ socketPath }}
-          </div>
-          <div style="opacity: 0.8">
-            Detected: {{ detectedRuntimesText }}
-          </div>
-          <div v-if="!showApplyRestart" class="mt-2" style="opacity: 0.8">
-            CPU and RAM limits are applied to each workflow container. No engine restart is required on Linux.
-          </div>
-        </div>
+  <v-container fluid class="rm-page">
+    <v-card dark class="rm-card">
+      <div class="rm-header">
+        <span class="rm-title">RESOURCE MANAGER</span>
+        <v-spacer></v-spacer>
+        <v-icon x-small :color="statusColor" class="mr-2">mdi-circle</v-icon>
+        <span class="rm-status" role="status">{{ runtimeStatusLine }}</span>
       </div>
       <v-divider></v-divider>
-      <v-card-subtitle
-        v-if="!isDockerActive"
-        style="color: white; display: flex; align-items: center"
-      >
-        CPU:
-        <v-progress-linear
-          rounded
-          reverse
-          color="white"
-          buffer-value="0"
-          stream
-          style="margin-left: 10px; width: 40px"
-        ></v-progress-linear>
-      </v-card-subtitle>
-      <v-card-subtitle v-else style="color: white"
-        >CPU: {{ ncpu }}</v-card-subtitle
-      >
-      <v-slider
-        class="px-5"
-        v-model="ncpu"
-        color="white"
-        track-color="white"
-        step="1"
-        ticks="always"
-        tick-size="5"
-        min="1"
-        :max="processors"
-        :tick-labels="tickLabelsCPU"
-        height="100"
-        style="color: white"
-      ></v-slider>
-      <v-divider></v-divider>
-      <v-card-subtitle
-        v-if="!isDockerActive"
-        style="color: white; display: flex; align-items: center"
-      >
-        RAM:
-        <v-progress-linear
-          rounded
-          reverse
-          color="white"
-          buffer-value="0"
-          stream
-          style="margin-left: 10px; width: 40px"
-        ></v-progress-linear>
-      </v-card-subtitle>
-      <v-card-subtitle v-else style="color: white">
-        RAM:
-        {{ memtotal }}
-        GB</v-card-subtitle
-      >
 
-      <v-slider
-        class="px-5"
-        color="white"
-        v-model="memtotal"
-        track-color="white"
-        step="1"
-        ticks="always"
-        tick-size="5"
-        min="1"
-        :max="memory"
-        :tick-labels="tickLabelsMEM"
-        height="100"
-        style="color: white"
-      ></v-slider>
-      <div style="display: flex; justify-content: center">
-        <v-btn v-if="showApplyRestart"
-          @click="handleApplyResources"
-          style="margin: auto"
-          class="ma-5"
-          outlined
-          color="white"
+      <v-row no-gutters class="rm-columns">
+        <v-col cols="12" sm="6" :class="['rm-section', { 'rm-col-divider': $vuetify.breakpoint.smAndUp }]">
+          <div class="rm-section-title">Engine</div>
+          <template v-if="bothEnginesDetected">
+            <v-btn-toggle
+              :value="selectedEngine"
+              :mandatory="Boolean(selectedEngine)"
+              dense
+              color="teal accent-3"
+              background-color="transparent"
+              :disabled="runtimeStarting"
+              @change="handleEngineChange"
+            >
+              <v-btn value="docker" small :disabled="!availableRuntimes.docker">Docker</v-btn>
+              <v-btn value="podman" small :disabled="!availableRuntimes.podman">Podman</v-btn>
+            </v-btn-toggle>
+            <div class="d-flex align-center mt-2">
+              <v-checkbox
+                dense
+                hide-details
+                class="mt-0 pt-0"
+                color="teal accent-3"
+                label="Use as default"
+                :disabled="!selectedEngine || runtimeStarting"
+                :input-value="useAsDefault"
+                @change="handleDefaultChange"
+              ></v-checkbox>
+              <v-tooltip bottom max-width="260">
+                <template v-slot:activator="{ on, attrs }">
+                  <v-icon small class="ml-2 rm-muted" aria-label="About Use as default" v-bind="attrs" v-on="on">
+                    mdi-information-outline
+                  </v-icon>
+                </template>
+                When checked, this engine starts automatically next time. Uncheck to choose again at launch.
+              </v-tooltip>
+            </div>
+          </template>
+          <div class="rm-muted mt-2">Detected: {{ detectedRuntimesText }}</div>
+          <div v-if="socketPath" class="rm-muted rm-break">Socket: {{ socketPath }}</div>
+          <v-btn
+            v-if="startAction"
+            small
+            depressed
+            color="teal accent-3"
+            class="black--text mt-3"
+            :loading="runtimeStarting"
+            :disabled="runtimeStarting"
+            @click="startAction.handler"
+          >
+            {{ startAction.label }}
+          </v-btn>
+        </v-col>
+
+        <v-col cols="12" sm="6" class="rm-section">
+          <div class="rm-section-title">Resources per workflow</div>
+          <div class="rm-slider-row">
+            <span class="rm-slider-label">CPU</span>
+            <v-slider
+              v-model="ncpu"
+              dense
+              hide-details
+              color="teal accent-3"
+              track-color="grey darken-1"
+              step="1"
+              min="1"
+              :max="processors"
+              :disabled="!isDockerActive"
+              aria-label="CPU cores per workflow"
+            ></v-slider>
+            <span class="rm-slider-value">{{ isDockerActive ? `${ncpu} / ${processors}` : "–" }}</span>
+          </div>
+          <div class="rm-slider-row">
+            <span class="rm-slider-label">RAM</span>
+            <v-slider
+              v-model="memtotal"
+              dense
+              hide-details
+              color="teal accent-3"
+              track-color="grey darken-1"
+              step="1"
+              min="1"
+              :max="memory"
+              :disabled="!isDockerActive"
+              aria-label="Memory in GB per workflow"
+            ></v-slider>
+            <span class="rm-slider-value">{{ isDockerActive ? `${memtotal} / ${memory} GB` : "–" }}</span>
+          </div>
+          <div class="d-flex align-center mt-2">
+            <span class="rm-muted">{{ resourceHint }}</span>
+            <v-spacer></v-spacer>
+            <v-btn
+              v-if="isDockerActive && showApplyRestart"
+              small
+              depressed
+              color="teal accent-3"
+              class="black--text ml-2"
+              :loading="runtimeStarting"
+              :disabled="runtimeStarting"
+              @click="handleApplyResources"
+            >
+              Apply &amp; restart
+            </v-btn>
+          </div>
+        </v-col>
+      </v-row>
+      <v-divider></v-divider>
+
+      <div class="rm-section">
+        <div class="d-flex align-center">
+          <span class="rm-section-title mb-0">Database cache</span>
+          <v-chip x-small class="ml-2">{{ cacheEntries.length }} · {{ formatBytes(cacheTotalBytes) }}</v-chip>
+          <v-tooltip bottom max-width="300">
+            <template v-slot:activator="{ on, attrs }">
+              <v-icon small class="ml-2 rm-muted" aria-label="About the database cache" v-bind="attrs" v-on="on">
+                mdi-help-circle-outline
+              </v-icon>
+            </template>
+            Search indexes built from reference databases (BLAST, SINTAX, NextITS chimera database),
+            reused by every project. Removing an entry is safe; it is rebuilt the next time a workflow needs it.
+          </v-tooltip>
+          <v-spacer></v-spacer>
+          <v-btn icon small title="Refresh" aria-label="Refresh database cache list" @click="handleRefreshCache">
+            <v-icon small>mdi-refresh</v-icon>
+          </v-btn>
+          <v-btn icon small title="Open folder" aria-label="Open database cache folder" @click="handleOpenCacheFolder">
+            <v-icon small>mdi-folder-open-outline</v-icon>
+          </v-btn>
+        </div>
+        <v-data-table
+          v-model="selectedCacheEntries"
+          :headers="cacheHeaders"
+          :items="cacheEntries"
+          item-key="id"
+          show-select
+          checkbox-color="teal accent-3"
+          dense
+          disable-pagination
+          hide-default-footer
+          no-data-text="The database cache is empty."
+          class="rm-table mt-1"
         >
-          {{ applyButtonText }}
-        </v-btn>
+          <template v-slot:[`item.name`]="{ item }">
+            <span :title="item.sourcePath">{{ item.name }}</span>
+          </template>
+          <template v-slot:[`item.sizeBytes`]="{ item }">
+            {{ formatBytes(item.sizeBytes) }}
+          </template>
+          <template v-slot:[`item.lastUsedAt`]="{ item }">
+            <span :title="formatDateTime(item.lastUsedAt)">{{ formatRelativeDate(item.lastUsedAt) }}</span>
+          </template>
+          <template v-slot:[`item.status`]="{ item }">
+            <v-chip
+              x-small
+              label
+              outlined
+              :color="cacheStatusInfo(item.status).color"
+              :title="cacheStatusInfo(item.status).hint"
+            >
+              {{ cacheStatusInfo(item.status).label }}
+            </v-chip>
+          </template>
+        </v-data-table>
+        <div class="d-flex flex-wrap align-center justify-end mt-2">
+          <v-btn
+            small
+            outlined
+            class="ml-2"
+            :disabled="cacheLocked || !selectedCacheEntries.length"
+            @click="handleRemoveSelected"
+          >
+            Remove selected{{ selectedCacheEntries.length ? ` (${selectedCacheEntries.length})` : "" }}
+          </v-btn>
+          <v-btn
+            small
+            outlined
+            class="ml-2"
+            :disabled="cacheLocked || !outdatedCacheEntries.length"
+            @click="handleRemoveOutdated"
+          >
+            Remove outdated{{ outdatedCacheEntries.length ? ` (${outdatedCacheEntries.length})` : "" }}
+          </v-btn>
+          <v-btn
+            small
+            outlined
+            color="red lighten-2"
+            class="ml-2"
+            :disabled="cacheLocked || !cacheEntries.length"
+            @click="handleRemoveAll"
+          >
+            Remove all
+          </v-btn>
+        </div>
+        <div v-if="cacheLocked" class="rm-muted text-right mt-1">
+          Cache entries can be removed after the running workflow finishes.
+        </div>
       </div>
     </v-card>
-  </div>
+  </v-container>
 </template>
 
 <script>
@@ -137,19 +215,20 @@ const fs = require("fs");
 import os from "os";
 import { mapState, mapGetters } from "vuex";
 import { applyPodmanMachineResources, dockerDesktopWindowsExe, writeWslResourceConfig } from "../utils/containerRuntime";
+import { getCacheRoot, listCacheEntries, removeCacheEntries } from "../utils/dbCache";
 const CPU = os.cpus().length;
 const MEM = Number((os.totalmem() / 1024 ** 3).toFixed(0));
 const Swal = require("sweetalert2");
 
-const createNumberList = (start, end) =>
-  Array.from({ length: end - start + 1 }, (_, i) => start + i);
+const CACHE_STATUS = {
+  ok: { label: "Ready", color: "teal accent-3", hint: "Up to date with the source file." },
+  incomplete: { label: "Incomplete", color: "grey lighten-1", hint: "The build did not finish; it is rebuilt when needed." },
+  missing: { label: "Source missing", color: "orange lighten-2", hint: "The source file was moved or deleted." },
+  changed: { label: "Source changed", color: "orange lighten-2", hint: "The source file was edited; a new index is built for the new version." },
+};
+const OUTDATED_STATUSES = ["incomplete", "missing", "changed"];
 
-function modTickLabels(arr) {
-  const modValue = arr.length >= 48 ? 8 : arr.length > 12 ? 4 : 2;
-  return arr.map((value, index) =>
-    index === 0 || value % modValue === 0 ? value : ""
-  );
-}
+const DAY_MS = 24 * 60 * 60 * 1000;
 
 export default {
   name: "ResourceManager",
@@ -192,10 +271,23 @@ export default {
     showApplyRestart() {
       return this.$store.state.OStype !== "Linux";
     },
-    applyButtonText() {
+    resourceHint() {
+      if (!this.isDockerActive) return "Start an engine to change limits.";
+      if (!this.showApplyRestart) return "Applied to each workflow container. No restart needed.";
       return this.resourceEngine === "podman"
-        ? "Apply & restart Podman machine"
-        : "Apply & restart Docker";
+        ? "Restarts the Podman machine to apply."
+        : "Restarts Docker Desktop to apply.";
+    },
+    startAction() {
+      if (this.isDockerActive) return null;
+      if (!this.selectedEngine) {
+        return { label: "Check for Docker or Podman", handler: this.handleDetectEngines };
+      }
+      return { label: `Start ${this.engineLabel}`, handler: this.handleStartEngine };
+    },
+    statusColor() {
+      if (this.runtimeStarting) return "amber";
+      return this.isDockerActive ? "teal accent-3" : "grey";
     },
     runtimeStatusLine() {
       const rootless = this.$store.state.containerRuntime.rootless ? " (rootless)" : "";
@@ -207,33 +299,139 @@ export default {
       if (this.availableRuntimes.podman) found.push("Podman");
       return found.length ? found.join(", ") : "none";
     },
+    // A running workflow may be building or reading a cache entry.
+    cacheLocked() {
+      return Boolean(this.$store.state.runInfo.active);
+    },
+    cacheTotalBytes() {
+      return this.cacheEntries.reduce((total, entry) => total + entry.sizeBytes, 0);
+    },
+    outdatedCacheEntries() {
+      return this.cacheEntries.filter((entry) => OUTDATED_STATUSES.includes(entry.status));
+    },
   },
   data() {
     return {
       processors: CPU,
       memory: MEM,
-      tickLabelsCPU: modTickLabels(createNumberList(1, CPU)),
-      tickLabelsMEM: modTickLabels(createNumberList(1, MEM)),
+      cacheEntries: [],
+      selectedCacheEntries: [],
+      cacheHeaders: [
+        { text: "Database", value: "name" },
+        { text: "Type", value: "format" },
+        { text: "Size", value: "sizeBytes" },
+        { text: "Last used", value: "lastUsedAt" },
+        { text: "Status", value: "status" },
+      ],
     };
   },
+  watch: {
+    cacheLocked(locked) {
+      if (!locked) this.handleRefreshCache();
+    },
+  },
+  mounted() {
+    this.handleRefreshCache();
+  },
   methods: {
+    handleRefreshCache() {
+      try {
+        this.cacheEntries = listCacheEntries();
+      } catch (error) {
+        console.error("Reading the database cache failed:", error);
+        this.cacheEntries = [];
+      }
+      const ids = new Set(this.cacheEntries.map((entry) => entry.id));
+      this.selectedCacheEntries = this.selectedCacheEntries.filter((entry) => ids.has(entry.id));
+    },
+    async handleOpenCacheFolder() {
+      const root = getCacheRoot();
+      try {
+        fs.mkdirSync(root, { recursive: true });
+        const error = await require("@electron/remote").shell.openPath(root);
+        if (error) throw new Error(error);
+      } catch (error) {
+        console.error(`Opening ${root} failed:`, error);
+      }
+    },
+    handleRemoveSelected() {
+      this.removeCache(this.selectedCacheEntries);
+    },
+    handleRemoveOutdated() {
+      this.removeCache(this.outdatedCacheEntries);
+    },
+    async handleRemoveAll() {
+      const confirmation = await Swal.fire({
+        title: "Remove all cached databases?",
+        text: `This frees ${this.formatBytes(this.cacheTotalBytes)}. Indexes are rebuilt the next time a workflow needs them.`,
+        icon: "warning",
+        showCancelButton: true,
+        confirmButtonText: "Remove all",
+        cancelButtonText: "Cancel",
+        confirmButtonColor: "#d33",
+        theme: "dark",
+      });
+      if (!confirmation.isConfirmed) return;
+      this.removeCache(this.cacheEntries);
+    },
+    removeCache(entries) {
+      if (this.cacheLocked) return;
+      try {
+        removeCacheEntries(entries.map((entry) => entry.id));
+      } catch (error) {
+        Swal.fire({ title: "Removing cache entries failed", text: error.message, icon: "error", theme: "dark" });
+      }
+      this.handleRefreshCache();
+    },
+    cacheStatusInfo(status) {
+      return CACHE_STATUS[status] || { label: status, color: "grey", hint: "" };
+    },
+    formatBytes(bytes) {
+      const units = ["B", "KB", "MB", "GB", "TB"];
+      let value = bytes;
+      let unit = 0;
+      while (value >= 1024 && unit < units.length - 1) {
+        value /= 1024;
+        unit += 1;
+      }
+      return `${value.toFixed(unit ? 1 : 0)} ${units[unit]}`;
+    },
+    formatDateTime(isoDate) {
+      return isoDate ? new Date(isoDate).toLocaleString() : "";
+    },
+    formatRelativeDate(isoDate) {
+      if (!isoDate) return "";
+      const date = new Date(isoDate);
+      const startOfToday = new Date().setHours(0, 0, 0, 0);
+      const daysAgo = Math.ceil((startOfToday - date.getTime()) / DAY_MS);
+      if (daysAgo <= 0) return "Today";
+      if (daysAgo === 1) return "Yesterday";
+      if (daysAgo < 30) return `${daysAgo} days ago`;
+      return date.toLocaleDateString();
+    },
     async handleEngineChange(engine) {
       if (!engine || engine === this.selectedEngine) {
         return;
       }
+      await this.activateEngineQuietly(engine);
+    },
+    async handleStartEngine() {
+      await this.activateEngineQuietly(this.selectedEngine);
+    },
+    async handleDetectEngines() {
       try {
-        await this.$store.dispatch("activateEngine", {
-          engine,
-          persistDefault: this.useAsDefault,
-          start: true,
-        });
+        await this.$store.dispatch("bootstrapContainerRuntime");
       } catch (error) {
-        await Swal.fire({
-          title: "Engine start failed",
-          text: error.message || String(error),
-          icon: "error",
-          theme: "dark",
-        });
+        console.error("Container engine detection failed:", error);
+      }
+    },
+    // Failures are shown by ContainerEngineDialog (error + Retry), so no extra popup here.
+    // Never changes the saved default; only the "Use as default" checkbox does.
+    async activateEngineQuietly(engine) {
+      try {
+        await this.$store.dispatch("activateEngine", { engine, start: true });
+      } catch (error) {
+        console.error("Engine start failed:", error);
       }
     },
     handleDefaultChange(value) {
@@ -520,10 +718,80 @@ export default {
 </script>
 
 <style scoped>
-.container {
+.rm-page {
   display: flex;
-  justify-content: center; /* Center horizontally */
-  align-items: center; /* Center vertically */
-  height: 100vh; /* Full height of the viewport for demonstration */
+  justify-content: center;
+  align-items: center;
+  min-height: 100vh;
+  padding: 24px;
+}
+/* Frosted glass: blurs and darkens the background photo so text stays readable. */
+.rm-card.v-card {
+  width: 100%;
+  max-width: 900px;
+  background-color: rgba(20, 20, 24, 0.72) !important;
+  backdrop-filter: blur(14px);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 10px !important;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.35) !important;
+}
+.rm-header {
+  display: flex;
+  align-items: center;
+  padding: 14px 18px;
+}
+.rm-title {
+  font-size: 15px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+}
+.rm-status {
+  font-size: 13px;
+}
+.rm-section,
+.rm-columns.no-gutters > .rm-section {
+  padding: 12px 18px;
+}
+.rm-col-divider {
+  border-right: 1px solid rgba(255, 255, 255, 0.08);
+}
+.rm-section-title {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  opacity: 0.65;
+  margin-bottom: 8px;
+}
+.rm-muted {
+  font-size: 12px;
+  opacity: 0.7;
+}
+.rm-break {
+  word-break: break-all;
+}
+.rm-slider-row {
+  display: flex;
+  align-items: center;
+  height: 32px;
+}
+.rm-slider-label {
+  width: 40px;
+  font-size: 13px;
+}
+.rm-slider-value {
+  min-width: 76px;
+  text-align: right;
+  font-size: 13px;
+  font-variant-numeric: tabular-nums;
+}
+.rm-table.v-data-table {
+  background-color: transparent !important;
+}
+.rm-table ::v-deep th {
+  font-size: 11.5px !important;
+}
+.rm-table ::v-deep tbody tr:hover {
+  background-color: rgba(255, 255, 255, 0.05) !important;
 }
 </style>

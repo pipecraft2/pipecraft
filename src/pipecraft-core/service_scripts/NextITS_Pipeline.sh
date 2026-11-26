@@ -15,59 +15,36 @@ ls -la
 
 #######################################################################
 ## Chimera handling
-## Chimera mode is derived only from whether a chimera_db was supplied
-## (there is no front-end chimera_methods parameter):
-##   - no DB    -> "denovo"
-##   - DB given -> "ref,denovo", and the DB is converted to VSEARCH UDB
-##                 (required by NextITS) and repointed in the params file.
+## The app writes chimera_methods and the final chimera_db path into
+## /scripts/NextFlowConfig.json (read-only here). The chimera_db environment
+## variable is the selected file. A FASTA is converted to /dbcache/db.udb
+## before Nextflow reads the params file.
 #######################################################################
-CONFIG_FILE="/scripts/NextFlowConfig.json"
+source_db="${chimera_db:-}"
 
-# Read a flat JSON string value from the params file
-json_get() { sed -n 's/.*"'"$1"'"[[:space:]]*:[[:space:]]*"\([^"]*\)".*/\1/p' "$CONFIG_FILE" | head -n1; }
+if [ -n "$source_db" ] && [ "$source_db" != "undefined" ]; then
+  [ -f "$source_db" ] || { echo "ERROR: chimera database not found: $(basename "$source_db")" >&2; exit 1; }
 
-# Set a JSON string value: replace it if the key exists, else insert after "{"
-json_set() {
-  if grep -q "\"$1\"" "$CONFIG_FILE"; then
-    sed -i 's|\("'"$1"'"[[:space:]]*:[[:space:]]*"\)[^"]*"|\1'"$2"'"|' "$CONFIG_FILE"
-  else
-    sed -i 's|^{|{"'"$1"'":"'"$2"'",|' "$CONFIG_FILE"
-  fi
-}
-
-chimera_db="$(json_get chimera_db)"
-
-if [ -z "$chimera_db" ] || [ "$chimera_db" = "undefined" ]; then
-  chimera_methods="denovo"
-else
-  chimera_methods="ref,denovo"
-
-  # The front-end /extraFilesN index may be wrong; locate the file by basename
-  db_basename="$(basename "$chimera_db")"
-  for d in /extraFiles /extraFiles[0-9]*; do
-    [ -f "$d/$db_basename" ] && { chimera_db="$d/$db_basename"; break; }
-  done
-  [ -f "$chimera_db" ] || { echo "ERROR: chimera database not found: $db_basename" >&2; exit 1; }
-
-  # Convert to UDB unless it already is one
-  if [ "$(printf '%s' "${chimera_db##*.}" | tr '[:upper:]' '[:lower:]')" = "udb" ]; then
-    final_db="$chimera_db"
-  else
-    # Write/reuse the UDB next to the source FASTA so it survives across runs
-    final_db="${chimera_db%.*}.udb"
-    if [ -s "$final_db" ]; then
-      echo "# Reusing existing UDB next to FASTA: $final_db"
+  if [ "$(printf '%s' "${source_db##*.}" | tr '[:upper:]' '[:lower:]')" != "udb" ]; then
+    if [ ! -d /dbcache ] || [ ! -w /dbcache ]; then
+      echo "ERROR: database cache is not mounted at /dbcache" >&2
+      exit 1
+    fi
+    source /scripts/submodules/db_cache.sh
+    final_db="/dbcache/db.udb"
+    if db_cache_is_complete /dbcache; then
+      echo "# Using cached UDB for $(basename "$source_db")"
     else
-      echo "# Converting chimera DB to UDB: $chimera_db -> $final_db"
-      vsearch --makeudb_usearch "$chimera_db" --output "$final_db"
-      { [ $? -eq 0 ] && [ -s "$final_db" ]; } || { echo "ERROR: failed to build UDB from $chimera_db" >&2; exit 1; }
+      echo "# Converting chimera DB to UDB: $(basename "$source_db") (saved for future runs)"
+      db_cache_reset /dbcache
+      vsearch --makeudb_usearch "$source_db" --output "$final_db"
+      { [ $? -eq 0 ] && [ -s "$final_db" ]; } || { echo "ERROR: failed to build UDB from $source_db" >&2; exit 1; }
+      db_cache_mark_complete /dbcache
     fi
   fi
-  json_set chimera_db "$final_db"
 fi
 
-json_set chimera_methods "$chimera_methods"
-echo "# chimera_methods=$chimera_methods; final config:"; cat "$CONFIG_FILE"
+echo "# final config:"; cat /scripts/NextFlowConfig.json
 
 ## Run Step-1 for all sequencing runs
 find /Input/ -mindepth 1 -maxdepth 1 -type d \

@@ -24,10 +24,8 @@ printf "# cutadapt (version $cutadapt_version)\n"
 printf "# seqkit (version $seqkit_version)\n"
 
 #Load variables
-regex='[^/]*$'
-oligos_file_path=$(echo $index_file | grep -oP "$regex")
-oligos_file=$(basename $oligos_file_path) #basename, needed for macOS
-indexes_file=$(printf "/extraFiles/$oligos_file")
+indexes_file=$index_file
+oligos_file=$(basename "$indexes_file")
 error_rate="-e ${index_mismatch}"
 if [ "$no_indels" = true ] ; then
     no_indels=$"--no-indels"

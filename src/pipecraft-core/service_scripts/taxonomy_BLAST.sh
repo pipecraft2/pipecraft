@@ -19,9 +19,7 @@ printf "# BLAST+ (version $blast_version)\n"
 printf "# seqkit (version $seqkit_version)\n"
 
 #load variables
-regex='[^/]*$'
-db1_temp=$(echo $database_file | grep -oP "$regex")
-db1=$(printf "/extraFiles/$db1_temp")
+db1=$database_file # container path
 echo "db1 = $db1"
 
 #mandatory options
@@ -73,23 +71,38 @@ done
 echo "input = $IN"
 
 ### Check and assign BLAST database
-d1=$(echo $db1 | awk 'BEGIN{FS=OFS="."}{print $NF}') #get the extension
-db_dir=$(dirname $db1)
-check_db_presence=$(ls -1 $db_dir/*.nhr 2>/dev/null | wc -l)
-
-# If the database is not yet formatted for BLAST, format it if it's in FASTA form
-if (( $check_db_presence != 0 )); then
-    if [[ $d1 == "fasta" ]] || [[ $d1 == "fa" ]] || [[ $d1 == "fas" ]] || [[ $d1 == "fna" ]] || [[ $d1 == "ffn" ]]; then
-        database=$"-db $db1"
-    elif [[ $d1 == "ndb" ]] || [[ $d1 == "nhr" ]] || [[ $d1 == "nin" ]] || [[ $d1 == "not" ]] || [[ $d1 == "nsq" ]] || [[ $d1 == "ntf" ]] || [[ $d1 == "nto" ]]; then
-        db1=$(echo $db1 | awk 'BEGIN{FS=OFS="."}NF{NF-=1};1')
-        database=$"-db $db1"
-    fi
-elif [[ $d1 == "fasta" ]] || [[ $d1 == "fa" ]] || [[ $d1 == "fas" ]] || [[ $d1 == "fna" ]] || [[ $d1 == "ffn" ]]; then
-    printf '%s\n' "Note: converting fasta formatted database for BLAST"
-    makeblastdb -in $db1 -input_type fasta -dbtype nucl
-    database=$"-db $db1"
-fi
+# The database folder is mounted read-only; a BLAST database built from a
+# fasta file is kept in PipeCraft's database cache (submodules/db_cache.sh).
+source /scripts/submodules/db_cache.sh
+db_ext=$(echo "${db1##*.}" | tr '[:upper:]' '[:lower:]')
+case $db_ext in
+    ndb|nhr|nin|nsq|not|ntf|nto|nal)
+        # pre-built BLAST database: use the files next to the selected one
+        database=$"-db ${db1%.*}"
+        ;;
+    fasta|fa|fas|fna|ffn)
+        if [[ -f "$db1.nhr" ]] || [[ -f "$db1.nal" ]]; then
+            # BLAST database built next to the fasta by older PipeCraft versions
+            database=$"-db $db1"
+        else
+            db_cache=$(db_cache_dir)
+            if db_cache_is_complete "$db_cache"; then
+                printf '%s\n' "Using cached BLAST database for $(basename "$db1")"
+            else
+                printf '%s\n' "Building BLAST database from $(basename "$db1") (saved for future runs)"
+                db_cache_reset "$db_cache"
+                checkerror=$(makeblastdb -in "$db1" -input_type fasta -dbtype nucl -out "$db_cache/db" 2>&1)
+                check_app_error
+                db_cache_mark_complete "$db_cache"
+            fi
+            database=$"-db $db_cache/db"
+        fi
+        ;;
+    *)
+        printf '%s\n' "ERROR]: unsupported database file '$(basename "$db1")'. Select a fasta file or a BLAST database file (.nhr, .nin, ...). >Quitting" >&2
+        end_process
+        ;;
+esac
 
 ## Perform taxonomy annotation
 printf '%s\n' "Running BLAST"
@@ -296,7 +309,7 @@ fi
 end=$(date +%s)
 runtime=$((end-start))
 
-db_x=$(echo $db1 | sed -e 's/\/extraFiles\///')
+db_x=$(basename "$db1")
 
 # Make README.txt file
 printf "# Taxonomy was assigned using BLAST (see 'Core command' below for the used settings).

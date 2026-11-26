@@ -3,8 +3,7 @@
 #Filter DADA2 ASV table; collapse no mismatch and/or filer by ASV length
 
 #load variables
-table_rds = Sys.getenv('DADA2_table')
-table_rds = paste0("/extraFiles/", basename(table_rds))
+table_rds = Sys.getenv('DADA2_table') # container path
 
 collapseNoMismatch = Sys.getenv('collapseNoMismatch')
 minOverlap = as.numeric(Sys.getenv('minOverlap'))

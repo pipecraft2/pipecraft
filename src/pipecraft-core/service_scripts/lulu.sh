@@ -51,17 +51,13 @@ if [ -d $output_dir ]; then
 fi
 mkdir -p $output_dir
 
-#get specified input OTU table file
-regex='[^/]*$'
-otu_table_temp=$(echo $table | grep -oP "$regex")
-otu_table=$(printf "/extraFiles/$otu_table_temp")
+#input OTU table file (container path)
+otu_table=$table
 export otu_table # for lulu.R
 printf "\n input table = $otu_table \n"
 
-#get specified input fasta file
-regex='[^/]*$'
-input_fasta_temp=$(echo $fasta_file | grep -oP "$regex")
-input_fasta=$(printf "/extraFiles2/$input_fasta_temp")
+#input fasta file (container path, read-only)
+input_fasta=$fasta_file
 export input_fasta # for lulu.R
 printf "\n input fasta = $input_fasta \n"
 
@@ -84,11 +80,14 @@ fi
 ### Generate match list for LULU
 if [[ $match_list_soft == "BLAST" ]]; then
     printf "\n#Making blast database from the input fasta \n"
-    checkerror=$(makeblastdb -in $input_fasta -parse_seqids -dbtype nucl 2>&1)
+    # the input is mounted read-only, so the BLAST database is built in /tmp
+    blast_db_dir=$(mktemp -d)
+    blast_db="$blast_db_dir/$(basename "$input_fasta")"
+    checkerror=$(makeblastdb -in $input_fasta -parse_seqids -dbtype nucl -out $blast_db 2>&1)
     check_app_error
 
     printf "# Generating match list for lulu using BLASTn \n"
-    checkerror=$(blastn -db $input_fasta \
+    checkerror=$(blastn -db $blast_db \
             -outfmt '6 qseqid sseqid pident' \
             -out $output_dir/match_list.lulu \
             -qcov_hsp_perc $coverage_perc \
@@ -154,10 +153,9 @@ check_app_error
 ########################################
 ### CLEAN UP AND COMPILE README FILE ###
 ########################################
-for i in $input_fasta.n*; do
-    [[ -f $i ]] || continue
-    rm -f "$i"
-done
+if [[ -n $blast_db_dir ]]; then
+    rm -rf "$blast_db_dir"
+fi
 if [[ $debugger != "true" ]]; then
     # if [[ -f $output_dir/lulu_R_run.log ]]; then
     #     rm -f $output_dir/lulu_R_run.log

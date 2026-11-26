@@ -15,8 +15,7 @@ var win;
 const fs = require("fs");
 const os = require("os");
 const { execFileSync } = require("child_process");
-const sudo = require('sudo-prompt');
-const { getServiceScriptsPath } = require("./utils/scriptsPath");
+const { syncServiceScripts } = require("./utils/scriptsPath");
 
 // AppImage chrome-sandbox cannot be root+setuid on a FUSE mount, and Ubuntu
 // 24.04+ often blocks the unprivileged userns fallback. Disable Chromium's
@@ -128,39 +127,6 @@ function checkForUpdates() {
   return autoUpdater.checkForUpdates();
 }
 
-async function checkScriptsPermissions() {
-  const scriptsPath = getServiceScriptsPath();
-
-  if (process.platform === 'linux' && !isDevelopment) {
-    try {
-      const stats = fs.statSync(scriptsPath);
-      const currentPermissions = (stats.mode & 0o777).toString(8);
-      
-      if (currentPermissions !== '777') {
-        await new Promise((resolve, reject) => {
-          sudo.exec(
-            `chmod -R 777 "${scriptsPath}"`,
-            { name: 'PipeCraft' },
-            (error, stdout, stderr) => {
-              if (error) {
-                console.error('Sudo exec error:', error);
-                console.error('Stderr:', stderr);
-                reject(error);
-              } else {
-                log.info('Scripts directory permissions updated successfully');
-                resolve(stdout);
-              }
-            }
-          );
-        });
-      }
-    } catch (error) {
-      log.error('Error checking/setting permissions:', error);
-      throw error;
-    }
-  }
-}
-
 log.info("App starting...");
 
 autoUpdater.on("checking-for-update", () => {
@@ -254,16 +220,14 @@ app.on("activate", () => {
 // This method will be called when Electron has finished
 // initialization and is ready to create browser windows.
 // Some APIs can only be used after this event occurs.
-app.on("ready", async () => {
+app.on("ready", () => {
   try {
-    getServiceScriptsPath();
-    await checkScriptsPermissions();
+    syncServiceScripts(app.getVersion());
   } catch (error) {
-    log.error('Failed to set permissions:', error);
-    // You might want to show a dialog here to inform the user
+    log.error("Failed to copy service scripts:", error);
     dialog.showErrorBox(
-      'Permission Error',
-      'Failed to set required permissions. Some features might not work correctly.'
+      "Script copy failed",
+      "Failed to copy workflow scripts. Some workflows might not work correctly."
     );
   }
   createWindow();

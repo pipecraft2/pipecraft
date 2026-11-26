@@ -8,13 +8,9 @@
 # The RDP classifier v2.13 [via metaworks container]
 ################################################
 
-#load variables
-regex='[^/]*$'
-db1_temp=$(echo $database | grep -oP "$regex")
-db1=$(printf "/extraFiles/$db1_temp")
+#load variables (container paths)
+db1=$database
 echo "db1 = $db1"
-fasta_file=$(echo $fasta_file | grep -oP "$regex")
-fasta_file=$(printf "/extraFiles2/$fasta_file")
 echo "fasta_file = $fasta_file"
 confidence=$"--conf ${confidence}"  # default is 0.8. Assignment confidence cutoff used to determine the assignment count for each taxon. Range [0-1]
 mem=$"-Xmx${mem}g"                  # default is 8GB. The amount of memory to allocate to the RDP classifier
@@ -78,9 +74,9 @@ end=$(date +%s)
 runtime=$((end-start))
 
 #Make README.txt file
-# Remove /extraFiles*/ prefix from input files
-fasta_file=$(echo $fasta_file | grep -oP "$regex")
-db_x=$(echo $db1 | sed -e 's/\/extraFiles\///')
+# File names only, for the README
+fasta_file=$(basename "$fasta_file")
+db_x=$(basename "$db1")
 printf "# Taxonomy was assigned using RDP classifier (see 'Core command' below for the used settings).
 
 Start time: $start_time

@@ -21,13 +21,9 @@ if (dir.exists(path_results)) {
 #create output dir
 dir.create(path_results)
 
-#load environment variables
+#load environment variables (container paths)
 database = Sys.getenv('dada2_database')
-database = gsub("\\\\", "/", database) #replace backslashes \ in the database path
-database = paste("/extraFiles", basename(database), sep = "/")
 fasta_file = Sys.getenv('fasta_file')
-fasta_file = gsub("\\\\", "/", fasta_file) #replace backslashes \ in the fasta file path
-fasta_file = paste("/extraFiles2", basename(fasta_file), sep = "/")
 minBoot = as.integer(Sys.getenv('minBoot'))
 tryRC = Sys.getenv('tryRC')
 

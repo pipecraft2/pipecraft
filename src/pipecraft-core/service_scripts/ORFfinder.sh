@@ -11,17 +11,11 @@
 #pigz
 ##################################
 
-# input fasta file
-regex='[^/]*$'
-rep_seqs_file_path=$(echo $fasta_file | grep -oP "$regex")
-rep_seqs_temp=$(basename $rep_seqs_file_path) #basename, needed for macOS
-rep_seqs_file=$(printf "/extraFiles/$rep_seqs_temp")
+# input fasta file (container path)
+rep_seqs_file=$fasta_file
 echo "rep_seqs_file = $rep_seqs_file"
 
-# input table file
-table_file_path=$(echo $table_file | grep -oP "$regex")
-table_temp=$(basename $table_file_path)
-table_file=$(printf "/extraFiles2/$table_temp")
+# input table file (container path)
 table_in_name=$(basename $table_file | awk -F "." '(NF=NF-1)' | sed -e 's/ /\./')
 echo "table_in_name = $table_in_name"
 
@@ -152,7 +146,7 @@ end=$(date +%s)
 runtime=$((end-start))
 
 #Make README.txt
-in=$(echo $in_name | sed -e 's/\/extraFiles\///')
+in=$in_name
 printf "# Used ORFfinder to remove features that failed open reading frame (ORF) detection and or ORF length constraints. 
     (details in the MetaWorks user guide: https://terrimporter.github.io/MetaWorksSite/details/ - sequences are translated into every possible open reading frame (ORF) using ORFfinder, the longest ORF is reatined. Putative pseudogenes are removed as outliers with unusually small/large ORF lengths. 
 

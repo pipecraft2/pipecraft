@@ -43,7 +43,9 @@ import JSONfn from 'json-fn';
 import { mapState, mapGetters } from "vuex";
 import { stringify } from "envfile";
 import cloneDeep from 'lodash/cloneDeep';
-import { getServiceScriptsPath } from "../utils/scriptsPath";
+import { getServiceScriptsPath, getWorkflowConfigPath, applyNextItsChimeraParams } from "../utils/scriptsPath";
+import { buildFileBinds, containerPathsByInput } from "../utils/fileMounts";
+import { prepareDbCacheBind } from "../utils/dbCache";
 import {
   getContainerUser,
   prepareBindMounts,
@@ -480,7 +482,7 @@ export default {
           buildSpec: () => ({
             imageName: "pipecraft/optimotu:5.1",
             containerName: "optimotu",
-            command: ["/scripts/run_optimotu_dev.sh"],
+            command: ["bash", "/scripts/run_optimotu_dev.sh"],
             // Docker: write into root-owned /optimotu_targets; script chowns sequences.
             runAsRoot: true,
             env: [
@@ -538,6 +540,7 @@ export default {
           },
           buildSpec: () => {
             const step = cloneDeep(this.$store.state.NextITS[0]);
+            step.scriptName = "NextITS_Pipeline.sh";
             step.Inputs = step.Inputs.concat(this.$store.state.NextITS[1].Inputs);
             step.extraInputs = step.extraInputs.concat(
               this.$store.state.NextITS[1].extraInputs
@@ -629,6 +632,10 @@ export default {
       let envVariables = [];
       let nextFlowParams = {};
       let inputs = element.Inputs.concat(element.extraInputs);
+      const containerPaths = containerPathsByInput(
+        inputs,
+        this.$store.getters.check_depends_on
+      );
 
       if (Array.isArray(element.extraEnvFromServices)) {
         const resolvedName =
@@ -649,14 +656,16 @@ export default {
 
       inputs.forEach((input) => {
         let varObj = {};
-        if (input.type === "boolfile") {
+        const containerPath = containerPaths.get(input);
+        if (containerPath) {
+          nextFlowParams[input.name] = containerPath;
+          varObj[input.name] = containerPath;
+        } else if (input.type === "boolfile") {
           if (input.active === true && input.value != "undefined" && input.value != "") {
             if (Array.isArray(input.value)) {
               nextFlowParams[input.name] = input.value.join();
             } else if (input.name == "ITSx_evalue") {
               nextFlowParams[input.name] = parseFloat(input.value);
-            } else if (input.name == "chimera_db") {
-              nextFlowParams[input.name] = `/extraFiles15/${path.basename(input.value)}`;
             } else {
               nextFlowParams[input.name] = input.value;
             }
@@ -670,8 +679,6 @@ export default {
               nextFlowParams[input.name] = input.value.join();
             } else if (input.name == "ITSx_evalue") {
               nextFlowParams[input.name] = parseFloat(input.value);
-            } else if (input.name == "chimera_db") {
-              nextFlowParams[input.name] = `/extraFiles15/${path.basename(input.value)}`;
             } else {
               nextFlowParams[input.name] = input.value;
             }
@@ -698,47 +705,32 @@ export default {
         varObj[key] = value;
         envVariables.push(stringify(varObj).replace(/(\r\n|\n|\r)/gm, ""));
       });
-      let NextFlowConfigPath = `${getServiceScriptsPath()}/NextFlowConfig.json`;
       if (element.serviceName == "Step_1") {
-        fs.writeFile(
-          NextFlowConfigPath,
-          JSON.stringify(nextFlowParams),
-          (error) => {
-            if (error) throw error;
-          }
-        );
+        const config = applyNextItsChimeraParams(nextFlowParams);
+        fs.writeFileSync(getWorkflowConfigPath("NextFlowConfig.json"), JSON.stringify(config));
       }
       return envVariables;
     },
     getBinds_c(element, Input) {
       const scriptsPath = getServiceScriptsPath();
-      let Binds = [`${scriptsPath}:/scripts`, `${Input}:/input`];
-      let serviceInputs = element.Inputs.concat(element.extraInputs);
-      serviceInputs.forEach((input, index) => {
-        if (
-          (input.type == "file" &&
-            (input.depends_on == undefined ||
-              !this.$store.getters.check_depends_on(input))) ||
-          (input.type == "boolfile" && input.active == true)
-        ) {
-          let correctedPath = path.dirname(slash(input.value));
-          if (index == 0) {
-            let bind = `${correctedPath}:/extraFiles`;
-            console.log(bind);
-            Binds.push(bind);
-          } else {
-            let bind = `${correctedPath}:/extraFiles${index + 1}`;
-            console.log(bind);
-            Binds.push(bind);
-          }
-        }
-      });
-      return Binds;
+      const inputs = element.Inputs.concat(element.extraInputs);
+      const isHidden = this.$store.getters.check_depends_on;
+      const binds = [
+        `${scriptsPath}:/scripts`,
+        `${Input}:/input`,
+        ...buildFileBinds(inputs, isHidden, element.scriptName),
+      ];
+      const dbCacheBind = prepareDbCacheBind(element, inputs, isHidden);
+      if (dbCacheBind) {
+        binds.push(dbCacheBind);
+      }
+      return binds;
     },
     getOptimOTUBinds() {
       const scriptsPath = getServiceScriptsPath();
       const runsDir = this.$store.state.inputDir;
       let binds = [
+        `${slash(getWorkflowConfigPath("pipeline_options.yaml"))}:/scripts/pipeline_options.yaml:ro`,
         `${scriptsPath}:/scripts`,
         `${runsDir}:/optimotu_targets/sequences`,
         `${runsDir}:/optimotu_targets/sequences/01_raw:rw`,
@@ -806,7 +798,7 @@ export default {
       }
 
       const scriptDir = getServiceScriptsPath();
-      const configPath = `${scriptDir}/FunBarONTConfig.json`;
+      const configPath = slash(getWorkflowConfigPath("FunBarONTConfig.json"));
 
       return [
         `${workDir}:/Input:rw`,
@@ -850,6 +842,9 @@ export default {
       let WorkingDir = "/";
       let envVariables = this.createCustomVariableObj(step);
       let Binds = this.getBinds_c(step, this.$store.state.inputDir);
+      Binds.unshift(
+        `${slash(getWorkflowConfigPath("NextFlowConfig.json"))}:/scripts/NextFlowConfig.json:ro`
+      );
       Binds = prepareBindMounts(Binds.map(b => b.replace(/:\/input(:|$)/, ':/Input$1')));
       return {
         Tty: false,

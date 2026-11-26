@@ -62,6 +62,10 @@ fi
 end=$(date +%s)
 runtime=$((end-start))
 
+# File names only, for the README
+fasta_file=$(basename "$fasta_file")
+dada2_database=$(basename "$dada2_database")
+
 ###Make README.txt file
 printf "# Taxonomy was assigned using DADA2 classifier (see 'Core command' below for the used settings).
 

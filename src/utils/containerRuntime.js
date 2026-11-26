@@ -20,9 +20,44 @@ const PREFERENCES = ["docker", "podman"];
 const CLI_TIMEOUT_MS = 8000;
 const MACHINE_TIMEOUT_MS = 120000;
 const DOCKER_READY_TIMEOUT_MS = 90000;
+const REDETECT_INTERVAL_MS = 60000;
+const ENGINE_START_REDETECT_MS = 10000;
 
 // Last engine we successfully connected to (socket options, engine name, etc.)
 let cachedRuntime = null;
+// Last address found per engine, kept while the engine is stopped so status
+// checks can ping it without re-running CLI detection (which blocks the window).
+const knownRuntimes = { docker: null, podman: null };
+let lastDetectionAt = null;
+
+// Milliseconds from a monotonic clock; unaffected by system clock changes.
+function monotonicNow() {
+  const [seconds, nanoseconds] = process.hrtime();
+  return seconds * 1000 + nanoseconds / 1e6;
+}
+
+function isPermissionDenied(error) {
+  return (
+    error?.code === "EACCES" ||
+    /EACCES|permission denied/i.test(String(error?.message || ""))
+  );
+}
+
+// Linux Docker Engine: the socket is up but this user is not allowed to use it.
+function dockerPermissionError(runtime) {
+  const socket = runtime?.socketPath || "/var/run/docker.sock";
+  const error = new Error(
+    `PipeCraft does not have permission to use Docker (${socket}). ` +
+      'Add your user to the docker group with "sudo usermod -aG docker $USER", ' +
+      "then log out and back in (or restart the computer)."
+  );
+  error.code = "DOCKER_PERMISSION_DENIED";
+  return error;
+}
+
+function isLinuxDockerPermissionError(engine, error) {
+  return engine === "docker" && process.platform === "linux" && isPermissionDenied(error);
+}
 // Background `podman system service` process, if we had to start one ourselves.
 let podmanServiceChild = null;
 
@@ -89,15 +124,25 @@ async function pingRuntime(candidate, timeout = 5000) {
   return { ...candidate, engine };
 }
 
-async function waitForEngineReady(engine, timeoutMs) {
-  const started = Date.now();
+// Polls until the engine answers. Pings the known address and re-detects only
+// every ENGINE_START_REDETECT_MS, since some sockets appear only after start.
+async function waitForEngineReady(engine, timeoutMs, known = null) {
+  const started = monotonicNow();
+  let candidate = known;
+  let lastDetect = known ? monotonicNow() : 0;
   let lastError = null;
-  while (Date.now() - started < timeoutMs) {
-    const candidate = candidateForEngine(engine);
+  while (monotonicNow() - started < timeoutMs) {
+    if (!candidate || monotonicNow() - lastDetect >= ENGINE_START_REDETECT_MS) {
+      candidate = detectEngine(engine) || candidate;
+      lastDetect = monotonicNow();
+    }
     if (candidate) {
       try {
         return await pingRuntime(candidate);
       } catch (error) {
+        if (isLinuxDockerPermissionError(engine, error)) {
+          throw dockerPermissionError(candidate);
+        }
         lastError = error;
       }
     }
@@ -141,8 +186,28 @@ function extraBinDirs() {
   return ["/usr/bin", "/usr/local/bin", "/opt/podman/bin", path.join(home, ".local", "bin")];
 }
 
-// Find `docker` / `podman` on PATH, then fall back to known install folders.
+// `where`/`which` blocks the window, so lookups are remembered until the next
+// full detection (clearExecutableCache), which picks up new installs.
+const executableCache = new Map();
+
+function clearExecutableCache() {
+  executableCache.clear();
+}
+
 function findExecutable(commandName) {
+  if (executableCache.has(commandName)) {
+    const cached = executableCache.get(commandName);
+    if (cached === null || fs.existsSync(cached)) {
+      return cached;
+    }
+  }
+  const found = locateExecutable(commandName);
+  executableCache.set(commandName, found);
+  return found;
+}
+
+// Find `docker` / `podman` on PATH, then fall back to known install folders.
+function locateExecutable(commandName) {
   const exe =
     process.platform === "win32" && !commandName.endsWith(".exe")
       ? `${commandName}.exe`
@@ -938,12 +1003,16 @@ async function startDockerEngine() {
   );
 }
 
-async function ensureDockerRuntime() {
-  const already = tryResolveDocker();
+async function ensureDockerRuntime(known = null) {
+  const already = known || detectEngine("docker");
   if (already) {
     try {
       return await pingRuntime(already);
-    } catch {
+    } catch (error) {
+      // Permission denied means the engine is up; starting it again cannot help.
+      if (isLinuxDockerPermissionError("docker", error)) {
+        throw dockerPermissionError(already);
+      }
       // Installed but not running — try to start it.
     }
   }
@@ -952,17 +1021,17 @@ async function ensureDockerRuntime() {
   if (process.platform === "win32") {
     await waitForPath("\\\\.\\pipe\\dockerDesktopLinuxEngine", 30000);
   }
-  return waitForEngineReady("docker", DOCKER_READY_TIMEOUT_MS);
+  return waitForEngineReady("docker", DOCKER_READY_TIMEOUT_MS, already);
 }
 
 // Make Podman usable: start machine (Win/mac) or socket/service (Linux) if needed.
-async function ensurePodmanRuntime() {
-  const podmanBin = findPodmanBinary();
+async function ensurePodmanRuntime(known = null) {
+  const podmanBin = known?.binaryPath || findPodmanBinary();
   if (!podmanBin) {
     return null;
   }
 
-  const already = tryResolvePodman();
+  const already = known || detectEngine("podman");
   if (already) {
     try {
       return await pingRuntime(already);
@@ -1037,16 +1106,40 @@ async function ensurePodmanRuntime() {
   }
 }
 
-// Lightweight "is Docker / Podman installed?" snapshot for the UI.
-function inspectAvailableRuntimes() {
-  const docker = tryResolveDocker();
-  const podmanBin = findPodmanBinary();
-  const podman = tryResolvePodman();
+// Runs the CLI-based lookup for one engine. Blocks the window (~0.2–0.5 s).
+function detectEngine(engine) {
+  const runtime = candidateForEngine(engine);
+  knownRuntimes[engine] = runtime;
+  lastDetectionAt = monotonicNow();
+  return runtime;
+}
+
+// Runs the lookup for both engines once and summarizes what is installed.
+function detectRuntimes() {
+  clearExecutableCache();
+  const docker = detectEngine("docker");
+  const podman = detectEngine("podman");
+  return { docker, podman, available: summarizeRuntimes(docker, podman) };
+}
+
+function getKnownRuntime(engine) {
+  return knownRuntimes[engine] || null;
+}
+
+function detectionIsStale() {
+  return lastDetectionAt === null || monotonicNow() - lastDetectionAt >= REDETECT_INTERVAL_MS;
+}
+
+// "Is Docker / Podman installed?" summary for the UI, from detection results.
+// tryResolveDocker() returns a result whenever the docker CLI exists, so a
+// null docker result means Docker is not installed.
+function summarizeRuntimes(docker, podman) {
+  const podmanBin = podman?.binaryPath || findPodmanBinary();
   return {
     docker: {
-      detected: Boolean(docker || findExecutable("docker")),
+      detected: Boolean(docker),
       socketPath: docker?.socketPath || "",
-      binaryPath: docker?.binaryPath || findExecutable("docker"),
+      binaryPath: docker?.binaryPath || null,
     },
     podman: {
       detected: Boolean(podmanBin),
@@ -1090,6 +1183,9 @@ function resolveContainerRuntimeSync(forceRefresh = false) {
 
 function setCachedRuntime(runtime) {
   cachedRuntime = runtime || null;
+  if (runtime?.engine) {
+    knownRuntimes[runtime.engine] = runtime;
+  }
 }
 
 function clearRuntimeCache() {
@@ -1412,6 +1508,7 @@ async function reclaimBindMountOwnership(hostPaths) {
 }
 
 /** Host paths from dockerode-style "host:container[:opts]" bind specs. */
+// Host paths of writable binds; read-only mounts cannot gain foreign-owned files.
 function hostPathsFromBinds(binds) {
   if (!Array.isArray(binds)) {
     return [];
@@ -1419,7 +1516,10 @@ function hostPathsFromBinds(binds) {
   return binds
     .map((bind) => {
       const parsed = parseBindSpec(bind);
-      return parsed?.host || null;
+      if (!parsed || parsed.options.split(",").includes("ro")) {
+        return null;
+      }
+      return parsed.host;
     })
     .filter(Boolean);
 }
@@ -1542,8 +1642,10 @@ module.exports = {
   appendBindOption,
   applyEngineHostConfig,
   applyPodmanMachineResources,
-  candidateForEngine,
   clearRuntimeCache,
+  detectEngine,
+  detectionIsStale,
+  detectRuntimes,
   engineDisplayName,
   ensureDockerRuntime,
   ensurePodmanRuntime,
@@ -1552,10 +1654,10 @@ module.exports = {
   getCachedRuntime,
   getContainerUser,
   getDockerodeOptionsFromContextSync,
+  getKnownRuntime,
   getResolvedDockerodeOptions,
   hostPathsFromBinds,
   identifyEngineFromVersion,
-  inspectAvailableRuntimes,
   listRuntimeCandidates,
   parseHostToOptions,
   pingRuntime,

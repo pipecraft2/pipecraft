@@ -44,19 +44,13 @@ source /scripts/submodules/framework.functions.sh
 #output dir
 output_dir=$"/input/DEICODE_out"
 
-# get input OTU table file
-regex='[^/]*$'
-otu_table_temp=$(echo $table | grep -oP "$regex")
-otu_table=$(printf "/extraFiles/$otu_table_temp")
+# input OTU table file (container path)
+otu_table=$table
 printf "\n input table = $otu_table \n "
 
-#If specified, get OTUs subset
-if [[ $subset_IDs == "undefined" ]]; then
-    :
-else
-    regex='[^/]*$'
-    subset_IDs_temp=$(echo $subset_IDs | grep -oP "$regex")
-    otu_subset=$(printf "/extraFiles2/$subset_IDs_temp")
+#If specified, get OTUs subset (container path)
+if [[ $subset_IDs != "undefined" ]]; then
+    otu_subset=$subset_IDs
     printf "\n subset = $otu_subset \n "
 fi
 

@@ -27,14 +27,9 @@ source /scripts/submodules/framework.functions.sh
 #output dir
 output_dir=$"/input/chimera_Filtered_out"
 
-#load path to reference database (if specified)
-if [[ $reference_based == "undefined" ]]; then
-    :
-else
-    regex='[^/]*$'
-    ref=$(echo $reference_based | grep -oP "$regex")
-    db=$(printf "/extraFiles4/$ref")
-    database=$db
+#reference database (container path, if specified)
+if [[ $reference_based != "undefined" ]]; then
+    database=$reference_based
 fi
 
 #ERROR if both chimera filtering methods = false
