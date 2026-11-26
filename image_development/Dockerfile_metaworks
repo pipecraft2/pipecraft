@@ -29,6 +29,14 @@ RUN conda config --set allow_conda_downgrades true \
 RUN wget https://github.com/terrimporter/MetaWorks/releases/download/v1.12.0/MetaWorks1.12.0.zip
 RUN unzip MetaWorks1.12.0.zip
 RUN rm MetaWorks1.12.0.zip
+# ORFfinder can report stop before start. A signed subtraction then stores a
+# negative length and drops a valid ORF during longest-ORF selection.
+# The IQR test is forced true so every longest ORF is still written.
+RUN orf_parser=/MetaWorks1.12.0/perl_scripts/parse_orfs3.plx \
+    && grep -q '\$length = \$stop - \$start + 1;' "$orf_parser" \
+    && sed -i 's/\$length = \$stop - \$start + 1;/\$length = abs(\$stop - \$start) + 1;/' "$orf_parser" \
+    && grep -q 'if (\$length >= \$min && \$length <= \$max)' "$orf_parser" \
+    && sed -i 's/if (\$length >= \$min && \$length <= \$max)/if (1)/' "$orf_parser"
 RUN cd MetaWorks1.12.0 && conda env create -f environment.yml
 
 # Install ORFfinder and seqkit
