@@ -43,8 +43,6 @@ source /scripts/submodules/framework.functions.sh
 #############################
 start_time=$(date)
 start=$(date +%s)
-eval "$(conda shell.bash hook)"
-conda activate MetaWorks_v1.12.0
 
 ### Make ORFfinder tempdir
 if [[ -d "$output_dir/tempdir_filter_numts" ]]; then
@@ -67,8 +65,10 @@ fi
 echo "# Running ORFfinder | "
     # -outfmt 0 = list of ORFs in FASTA format (aa)
     # -outfmt 1 = CDS in FASTA format (nucl)
+    # -ml 30 (ORFfinder minimum); -ml counts whole codons without the stop codon, unlike the
+    # output length, so min/max are applied to the output length in parse_ORFs.plx instead
 checkerror=$(ORFfinder -in $rep_seqs_file \
-    -ml $min_length \
+    -ml 30 \
     -g $genetic_code \
     -s $start_codon \
     -n $ignore_nested \
@@ -77,20 +77,15 @@ checkerror=$(ORFfinder -in $rep_seqs_file \
     -out $output_dir/tempdir_filter_numts/ORFs.nt.fasta 2>&1)
 check_app_error
 
-### retain the longest ORF
+### retain the longest ORF per sequence within min_length-max_length
 echo "# Sorting ORFfinder -outfmt 1 results | "
 in_name=$(basename $rep_seqs_file | awk -F "." '(NF=NF-1)' | sed -e 's/ /\./')
 
-#below parsing does not work if sequence IDs have _
-perl /MetaWorks1.12.0/perl_scripts/parse_orfs3.plx $output_dir/tempdir_filter_numts/ORFs.nt.fasta $output_dir/$in_name.ORFs.temp
-
-# filter by max_length
-checkerror=$(seqkit seq --quiet -g -w 0  -M $max_length $output_dir/$in_name.ORFs.temp \
-    > $output_dir/$in_name.ORFs.fasta 2>&1)
+checkerror=$(perl /scripts/parse_ORFs.plx \
+    $output_dir/tempdir_filter_numts/ORFs.nt.fasta \
+    $output_dir/$in_name.ORFs.fasta \
+    $min_length $max_length 2>&1)
 check_app_error
-
-# remove temp file
-rm $output_dir/$in_name.ORFs.temp
 
 # make list of ORFs
 checkerror=$(seqkit seq --quiet --name $output_dir/$in_name.ORFs.fasta \
@@ -118,10 +113,11 @@ fi
 
 ### Filter table file
 echo "# Filtering table file | "    
-Rscript /scripts/submodules/ORFfinder_table_filter.R \
+checkerror=$(Rscript /scripts/submodules/ORFfinder_table_filter.R \
                             --table_file $table_file \
                             --notORFs_list $output_dir/$in_name.notORFs.list.txt \
-                            --output_dir $output_dir
+                            --output_dir $output_dir 2>&1)
+check_app_error
 
 echo "# Table file filtered | "
 
@@ -148,7 +144,7 @@ runtime=$((end-start))
 #Make README.txt
 in=$in_name
 printf "# Used ORFfinder to remove features that failed open reading frame (ORF) detection and or ORF length constraints. 
-    (details in the MetaWorks user guide: https://terrimporter.github.io/MetaWorksSite/details/ - sequences are translated into every possible open reading frame (ORF) using ORFfinder, the longest ORF is reatined. Putative pseudogenes are removed as outliers with unusually small/large ORF lengths. 
+    (based on MetaWorks: https://terrimporter.github.io/MetaWorksSite/details/ - sequences are translated into every possible open reading frame (ORF) using ORFfinder, the longest ORF is retained. Putative pseudogenes are removed when the longest ORF is shorter than min_length ($min_length) or longer than max_length ($max_length). 
 
 Start time: $start_time
 End time: $(date)
@@ -166,8 +162,8 @@ Generated files:
 # notORFs/$in.notORFs.list.txt = list of sequence identifiers of the above file.
 
 Core commands -> 
-ORFfinder -in $rep_seqs_file_path -ml $min_length -g $genetic_code -s $start_codon -n $ignore_nested -strand $strand
-seqkit seq --quiet -g -w 0  -M $max_length $in_name.ORFs.temp > $in_name.ORFs.fasta \n" > $output_dir/README_ORFfinder.txt
+ORFfinder -in $rep_seqs_file -ml 30 -g $genetic_code -s $start_codon -n $ignore_nested -strand $strand
+perl parse_ORFs.plx ORFs.nt.fasta $in_name.ORFs.fasta $min_length $max_length \n" > $output_dir/README_ORFfinder.txt
 
 printf "
 ##############################################

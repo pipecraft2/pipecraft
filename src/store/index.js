@@ -2181,7 +2181,7 @@ export default new Vuex.Store({
             tooltip:
               "search open reading frames with ORFfinder and remove potential NUMTs and off-target sequences",
             scriptName: "ORFfinder.sh",
-            imageName: "pipecraft/metaworks:1.12.0-pc1.2.0",
+            imageName: 'pipecraft/vsearch_dada2:4-pc1.2.0',
             serviceName: "ORF-finder",
             selected: false,
             showExtra: false,

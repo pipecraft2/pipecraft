@@ -32,8 +32,8 @@ if (!dir.exists(outdir)) {
   dir.create(outdir, recursive = TRUE)
 }
 
-# Read the list of ASVs that should be discarded based on ORFfinder output
-discard = read.table(discard_file, header = FALSE)
+# Read the list of ASVs that should be discarded based on ORFfinder output (empty when all passed)
+discard_ids <- trimws(readLines(discard_file, warn = FALSE))
 
 # Read the ASV table
 feature_table = read.table(feature_table_file, header = TRUE, sep = "\t", stringsAsFactors = FALSE)
@@ -49,8 +49,7 @@ if ("Sequence" %in% colnames(feature_table)) {
 }
 
 # Remove non-ORFs from feature table
-discard_ids <- unique(trimws(as.character(discard[[1]])))
-discard_ids <- discard_ids[!is.na(discard_ids) & discard_ids != ""]
+discard_ids <- unique(discard_ids[discard_ids != ""])
 feature_table <- feature_table[!rownames(feature_table) %in% discard_ids, , drop = FALSE]
 
 # Further filter feature_table to remove OTUs/ASVs with zero total reads
